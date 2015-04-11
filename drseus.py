@@ -17,6 +17,10 @@ import time
 import random
 
 
+class TimeoutException(Exception):
+    pass
+
+
 class dut:
     def __init__(self, ip_address, serial_port, baud_rate=115200,
                  prompt='root@p2020rdb:~#'):
@@ -47,16 +51,30 @@ class dut:
         dut_scp.get(file, local_path=local_path)
         ssh.close()
 
-    # TODO: add timeout, delete print statement
-    def read_until(self, string, debug=True):
+    # TODO: remove print statement, why is this being called?
+    def timeout_handler(self, signum, frame):
+        print ('*'*80+'\ntimed out\n'+'*'*80)
+        raise TimeoutException
+
+    def read_until(self, string, timeout=0, debug=True):
+        if timeout > 0:
+            # old_handler = signal.getsignal(signal.SIGALRM)
+            signal.signal(signal.SIGALRM, self.timeout_handler)
+            signal.alarm(timeout)
         buff = ''
-        while True:
-            char = self.serial.read()
-            if debug:
-                print(char, end='')
-            buff += char
-            if buff[-len(string):] == string:
-                return buff
+        try:
+            while True:
+                char = self.serial.read()
+                if debug:
+                    print(char, end='')
+                buff += char
+                if buff[-len(string):] == string:
+                    break
+        finally:
+            if timeout > 0:
+                signal.alarm(0)
+                # signal.signal(signal.SIGALRM, old_handler)
+            return buff
 
     def command(self, command, debug=True):
         self.serial.write(command+'\n')
@@ -325,8 +343,8 @@ class fault_injector:
     #         self.debugger.continue_dut()
     #         self.dut.read_until(self.dut.serial_prompt)
 
-DrSEUS = fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
-DrSEUS.setup_campaign('../simics-workspace/simicsfs', 'ppc_fi_mm_omp')
-# DrSEUS = fault_injector()
-# DrSEUS.setup_campaign('../FIapps', 'ppc_fi_mm_omp')
-DrSEUS.exit()
+drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
+drseus.setup_campaign('fiapps/', 'ppc_fi_mm_omp')
+# drseus = fault_injector()
+# drseus.setup_campaign('fiapps', 'ppc_fi_mm_omp')
+drseus.exit()
