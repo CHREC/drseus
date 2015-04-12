@@ -7,32 +7,34 @@ import telnetlib
 import serial
 
 import paramiko
+# TODO: remove scp and just use sftp in paramiko
 import scp
 
 import subprocess
 import signal
 
+import optparse
+import shutil
 import os
 import time
 import random
 
-
-class TimeoutException(Exception):
-    pass
+import simics_targets
+import checkpoint_injection
 
 
 class dut:
     def __init__(self, ip_address, serial_port, baud_rate=115200,
                  prompt='root@p2020rdb:~#'):
-        self.serial = serial.Serial(port=serial_port,
-                                    baudrate=baud_rate,
+        self.serial = serial.Serial(port=serial_port, baudrate=baud_rate,
+                                    # TODO: use timeout (handle in read_until)
                                     timeout=None, rtscts=True)
         self.prompt = prompt+' '
         self.ip_address = ip_address
 
     def close(self):
-        # TODO: new solution instead of sync to preserver filesystem, maybe halt?
-        self.command('sync')
+        # TODO: remove this (used when resetting board alot)
+        # self.command('sync')
         self.serial.close()
 
     def send_files(self, files):
@@ -51,34 +53,20 @@ class dut:
         dut_scp.get(file, local_path=local_path)
         ssh.close()
 
-    # TODO: remove print statement, why is this being called?
-    def timeout_handler(self, signum, frame):
-        print ('*'*80+'\ntimed out\n'+'*'*80)
-        raise TimeoutException
-
-    def read_until(self, string, timeout=0, debug=True):
-        if timeout > 0:
-            # old_handler = signal.getsignal(signal.SIGALRM)
-            signal.signal(signal.SIGALRM, self.timeout_handler)
-            signal.alarm(timeout)
+    # TODO: add console monitoring
+    def read_until(self, string, debug=True):
         buff = ''
-        try:
-            while True:
-                char = self.serial.read()
-                if debug:
-                    print(char, end='')
-                buff += char
-                if buff[-len(string):] == string:
-                    break
-        finally:
-            if timeout > 0:
-                signal.alarm(0)
-                # signal.signal(signal.SIGALRM, old_handler)
-            return buff
+        while True:
+            char = self.serial.read()
+            if debug:
+                print(char, end='')
+            buff += char
+            if buff[-len(string):] == string:
+                return buff
 
-    def command(self, command, debug=True):
+    def command(self, command):
         self.serial.write(command+'\n')
-        return self.read_until(self.prompt, debug)
+        return self.read_until(self.prompt)
 
     def do_login(self):
         self.read_until('login: ')
@@ -92,7 +80,6 @@ class dut:
 class bdi:
     # check debugger is ready and boot device
     def __init__(self, ip_address):
-        self.simics = None
         self.telnet = telnetlib.Telnet(ip_address)
         if not self.ready():
             print('debugger not ready')
@@ -177,33 +164,48 @@ class bdi_arm(bdi):
         pass
 
 
+class simics_injector():
+    def __init__(self):
+        pass
+
+    def inject_fault(self, injection_number):
+        self.injected_checkpoint = checkpoint_injection.InjectCheckpoint(
+            injectionNumber=injection_number, selectedTargets=['GPR'])
+
+
 class simics:
     # create simics instance and boot device
-    def __init__(self, simics_workspace='/home/ed/simics-workspace/',
-                 dut_ip_address='10.10.0.100'):
-        self.simics = subprocess.Popen([simics_workspace+'simics',
-                                        '-no-win', '-no-gui', '-q', '-x',
-                                        'simplifi/DrSEUS.simics'],
-                                       cwd=simics_workspace,
+    def __init__(self, dut_ip_address='10.10.0.100', new=True, checkpoint=None):
+        self.simics = subprocess.Popen([os.getcwd()+'/simics-workspace/simics',
+                                        '-no-win', '-no-gui', '-q'],
+                                       cwd=os.getcwd()+'/simics-workspace',
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
-        self.continue_dut()
-        # TODO: add timeout and remove print
-        while True:
-            line = self.simics.stdout.readline()
-            print(line, end='')
+        if new:
+            self.command('$drseus=TRUE')
+            self.command(
+                'run-command-file p2020rdb-simics/p2020rdb-linux.simics')
+        else:
+            self.command('read-configuration '+checkpoint)
+        buff = self.read_until('simics> ')
+        for line in buff.split('\n'):
             if 'pseudo device opened: /dev/pts/' in line:
                 serial_port = line.split(':')[1].strip()
                 break
-        self.read_until('simics> ')
+        else:
+            print('could not find pseudoterminal to attach to')
+            sys.exit()
         self.dut = dut(dut_ip_address, serial_port, baud_rate=38400)
-        self.do_uboot()
+        self.continue_dut()
+        if new:
+            self.do_uboot()
 
     def close(self):
         self.simics.send_signal(signal.SIGINT)
         self.simics.stdin.write('quit\n')
         self.simics.terminate()
+        self.dut.close()
 
     def halt_dut(self, debug=True):
         self.simics.send_signal(signal.SIGINT)
@@ -226,9 +228,9 @@ class simics:
                     print('')
                 return buff
 
-    def command(self, command, debug=True):
+    def command(self, command):
         self.simics.stdin.write(command+'\n')
-        return self.read_until('simics> ', debug)
+        return self.read_until('simics> ',)
 
     def do_uboot(self):
         self.dut.read_until('autoboot: ')
@@ -251,47 +253,50 @@ class simics:
                               'bootm ef080000 10000000 ef040000\n')
 
     def create_checkpoints(self, target_app, cycles, num_checkpoints):
-        if not os.path.exists('../simics-workspace/gold_checkpoints'):
-            os.mkdir('../simics-workspace/gold_checkpoints')
+        os.mkdir('simics-workspace/gold-checkpoints')
         step_cycles = cycles / num_checkpoints
         self.halt_dut()
         self.dut.serial.write('./'+target_app+'\n')
         for checkpoint in xrange(num_checkpoints):
             self.command('run-cycles '+str(step_cycles))
-            self.command('write-configuration gold_checkpoints/checkpoint-'+str(checkpoint))
+            self.command('write-configuration gold-checkpoints/checkpoint-' +
+                         str(checkpoint)+'.ckpt')
             # TODO: merge and delete partial checkpoints
-
-
-class simics_p2020(simics):
-    def __init__(self):
-        pass
+        self.close()
+        self.dut.close()
 
 
 class fault_injector:
     # setup dut and debugger
     def __init__(self, dut_ip_address='10.42.0.21',
                  dut_serial_port='/dev/ttyUSB2',
-                 debugger_ip_address='10.42.0.50', use_simics=False):
-        if use_simics:
-            self.debugger = simics()
-            self.dut = self.debugger.dut
-        else:
-            self.debugger = bdi(debugger_ip_address)
-            self.dut = dut(dut_ip_address, dut_serial_port)
-        # generate key while we wait for system to boot
-        self.dut.rsakey = paramiko.RSAKey.generate(1024)
-        self.dut.do_login()
-        if use_simics:
-            self.dut.command('ifconfig eth0 '+dut_ip_address +
-                             ' netmask 255.255.255.0')
+                 debugger_ip_address='10.42.0.50',
+                 use_simics=False, new=True):
+        self.simics = use_simics
+        if new:
+            if use_simics:
+                self.debugger = simics(new=new)
+                self.dut = self.debugger.dut
+            else:
+                self.debugger = bdi(debugger_ip_address)
+                self.dut = dut(dut_ip_address, dut_serial_port)
+            # generate key while we wait for system to boot
+            self.dut.rsakey = paramiko.RSAKey.generate(1024)
+            with open('private.key', 'w') as keyfile:
+                self.dut.rsakey.write_private_key(keyfile)
+            self.dut.do_login()
+            if use_simics:
+                self.dut.command('ifconfig eth0 '+dut_ip_address +
+                                 ' netmask 255.255.255.0')
 
     def exit(self):
         self.debugger.close()
-        self.dut.serial.close()
+        if not self.simics:
+            self.dut.serial.close()
         sys.exit()
 
     def setup_campaign(self, directory, application, arguments='',
-                       additional_files=None, num_checkpoints=100):
+                       additional_files=None, num_checkpoints=50):
         if arguments:
             self.target_app = application+' '+arguments
         else:
@@ -304,13 +309,15 @@ class fault_injector:
         self.dut.send_files(files)
         self.exec_time = self.time_application(5)
         self.dut.get_file('result.dat')
-
-        if self.debugger.simics:
-            self.debugger.create_checkpoints(self.target_app, self.exec_time, num_checkpoints)
+        self.dut.command('rm result.dat')
+        os.rename('result.dat', 'gold.dat')
+        if self.simics:
+            self.debugger.create_checkpoints(self.target_app, self.exec_time,
+                                             num_checkpoints)
 
     # TODO: get cycles if using simics
     def time_application(self, iterations):
-        if self.debugger.simics:
+        if self.simics:
             for i in xrange(iterations-1):
                 self.dut.command('./'+self.target_app)
             self.debugger.halt_dut()
@@ -327,24 +334,101 @@ class fault_injector:
                 self.dut.command('./'+self.target_app)
             return (time.time() - start) / iterations
 
-    # def main(self):
-    #     if self.debugger.simics is None:
-    #         injection_time = random.uniform(0, self.exec_time)
-    #         print('injection at: '+str(injection_time))
-    #         self.dut.serial.write('./'+self.application+' '+self.arguments+'\n')
+    def inject_fault(self, injection_number):
+        # if using simics, switch debugger to simics fault injector
+        if self.simics:
+            self.debugger = simics_injector()
 
-    #         time.sleep(injection_time)
-    #         if not self.debugger.halt_dut():
-    #             print('error halting dut')
-    #             sys.exit()
+        self.debugger.inject_fault(injection_number)
 
-    #         print(self.debugger.get_dut_regs())
+        # if using simics, switch debugger to simics with injected checkpoint
+        if self.simics:
+            self.injected_checkpoint = self.debugger.injected_checkpoint
+            self.debugger = simics(new=False,
+                                   checkpoint=self.injected_checkpoint)
+            self.dut = self.debugger.dut
+            with open('private.key') as keyfile:
+                self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
 
-    #         self.debugger.continue_dut()
-    #         self.dut.read_until(self.dut.serial_prompt)
+    def monitor_execution(self):
+        self.debugger.continue_dut()
+        self.dut.read_until(self.dut.prompt)
+        missing_output = False
+        try:
+            self.dut.get_file('result.dat')
+        except paramiko.ssh_exception.AuthenticationException:
+            missing_output = True
+            print('could not create ssh connection')
+        except scp.SCPException:
+            missing_output = True
+            print('could not get output file')
+        if self.simics:
+            if not missing_output:
+                shutil.move('result.dat', 'simics-workspace/' +
+                            self.injected_checkpoint+'/')
+            self.debugger.close()
 
-drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
-drseus.setup_campaign('fiapps/', 'ppc_fi_mm_omp')
-# drseus = fault_injector()
-# drseus.setup_campaign('fiapps', 'ppc_fi_mm_omp')
-drseus.exit()
+    def main(self):
+        if not self.simics:
+            injection_time = random.uniform(0, self.exec_time)
+            print('injection at: '+str(injection_time))
+            self.dut.serial.write('./'+self.application+' '+self.arguments+'\n')
+
+            time.sleep(injection_time)
+            if not self.debugger.halt_dut():
+                print('error halting dut')
+                sys.exit()
+
+            print(self.debugger.get_dut_regs())
+
+            self.debugger.continue_dut()
+            self.dut.read_until(self.dut.serial_prompt)
+
+parser = optparse.OptionParser('drseus.py application {options}')
+parser.add_option('-n', action='store', type='int', dest='num_injections',
+                  default=1, help='number of injections to perform')
+parser.add_option('-s', action='store_true', dest='simics', default=False,
+                  help='use simics simulator')
+
+simics_group = optparse.OptionGroup(parser, 'Simics Options')
+simics_group.add_option('-d', action='store_true', dest='clean', default=False,
+                        help='clean simics workspace')
+simics_group.add_option('-c', action='store_true', dest='resume',
+                        default=False, help='continue a previous campaign')
+parser.add_option_group(simics_group)
+# bdi_group = optparse.OptionGroup(parser, 'BDI3000 Options')
+# parser.add_option_group(bdi_group)
+
+options, args = parser.parse_args()
+if options.clean:
+    shutil.rmtree('simics-workspace/injected-checkpoints')
+    print('simics workspace cleaned, deleted injected checkpoints')
+else:
+    if len(args) < 1:
+        parser.error('please specify an application')
+
+    if options.simics:
+        if options.resume:
+            drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True, new=False)
+        else:
+            if os.path.exists('simics-workspace/gold-checkpoints'):
+                print('warning: gold checkpoints directory already exists, continuing will overwrite it')
+                if raw_input('continue [Y/n]') in ['n', 'N', 'no', 'No', 'NO']:
+                    sys.exit()
+                else:
+                    shutil.rmtree('simics-workspace/gold-checkpoints')
+                    shutil.rmtree('simics-workspace/injected-checkpoints')
+            drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
+            drseus.setup_campaign('fiapps/', args[0])
+    else:
+        drseus = fault_injector()
+        drseus.setup_campaign('fiapps/', args[0])
+
+    start = 0
+    if drseus.simics:
+        if os.path.exists('simics-workspace/injected-checkpoints'):
+            start = len(os.listdir('simics-workspace/injected-checkpoints'))
+    for injection_number in xrange(start, start + options.num_injections):
+        drseus.inject_fault(injection_number)
+        drseus.monitor_execution()
+    drseus.exit()
