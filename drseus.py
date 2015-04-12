@@ -177,14 +177,14 @@ class bdi:
         print(self.get_dut_regs())
 
 
-class bdi_p2020(bdi):
-    def __init__(self):
-        pass
+# class bdi_p2020(bdi):
+#     def __init__(self):
+#         pass
 
 
-class bdi_arm(bdi):
-    def __init__(self):
-        pass
+# class bdi_arm(bdi):
+#     def __init__(self):
+#         pass
 
 
 class simics:
@@ -198,8 +198,20 @@ class simics:
                                        stderr=subprocess.PIPE)
         if new:
             self.command('$drseus=TRUE')
-            self.command(
-                'run-command-file p2020rdb-simics/p2020rdb-linux.simics')
+            try:
+                self.command(
+                    'run-command-file p2020rdb-simics/p2020rdb-linux.simics')
+            except IOError:
+                print('lost contact with simics')
+                if raw_input(
+                    'launch simics-license.sh? [Y/n]: ') not in ['n', 'no',
+                                                                 'N', 'No',
+                                                                 'NO']:
+                    subprocess.call(['gnome-terminal', '-x',
+                                     os.getcwd()+'/simics-license.sh'])
+                    raw_input('press enter to restart')
+                    os.execv(__file__, sys.argv)
+                sys.exit()
         else:
             self.injected_checkpoint = checkpoint
             self.command('read-configuration '+checkpoint)
@@ -210,6 +222,13 @@ class simics:
                 break
         else:
             print('could not find pseudoterminal to attach to')
+            if raw_input('launch simics-license.sh? [Y/n]: ') not in ['n', 'no',
+                                                                      'N', 'No',
+                                                                      'NO']:
+                subprocess.call(['gnome-terminal', '-x',
+                                 os.getcwd()+'/simics-license.sh'])
+                raw_input('press enter to restart')
+                os.execv(__file__, sys.argv)
             sys.exit()
         self.dut = dut(dut_ip_address, serial_port, baud_rate=38400)
         if new:
@@ -233,7 +252,7 @@ class simics:
     # TODO: add timeout and remove print
     def read_until(self, string, debug=True):
         buff = ''
-        while True:
+        while self.simics.poll() is None:
             char = self.simics.stdout.read(1)
             if debug:
                 print(char, end='')
@@ -242,6 +261,7 @@ class simics:
                 if debug:
                     print('')
                 return buff
+        return buff
 
     def command(self, command):
         self.simics.stdin.write(command+'\n')
