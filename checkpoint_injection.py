@@ -319,8 +319,10 @@ def InjectCheckpoint(injectionNumber, selectedTargets):
     # create injected checkpoint directory
     if not(os.path.exists('simics-workspace/injected-checkpoints')):
         os.mkdir('simics-workspace/injected-checkpoints')
-    checkpointNumber = int(goldCheckpoint.split('/')[2][goldCheckpoint.split('/')[2].index('-')+1:goldCheckpoint.split('/')[2].index('.ckpt')])
-    injectedCheckpoint = 'simics-workspace/injected-checkpoints/'+str(injectionNumber)+'_'+'checkpoint-'+str(checkpointNumber)+'.ckpt'
+    checkpointNumber = int(goldCheckpoint.split('/')[-1][goldCheckpoint.split('/')[-1].index('-') +
+                           1:goldCheckpoint.split('/')[-1].index('.ckpt')])
+    injectedCheckpoint = ('simics-workspace/injected-checkpoints/' +
+                          str(injectionNumber)+'_'+'checkpoint-'+str(checkpointNumber)+'.ckpt')
     os.mkdir(injectedCheckpoint)
     # copy gold checkpoint files
     checkpointFiles = os.listdir(goldCheckpoint)
@@ -351,8 +353,8 @@ def RegenerateInjectedCheckpoint(injectionData):
     # create temporary directory
     if not(os.path.exists('./temp')):
         os.mkdir('./temp')
-    injectedCheckpoint = (
-        './temp/'+str(injectionData['injectionNumber'])+'_'+'checkpoint-'+str(injectionData['checkpointNumber'])+'.ckpt')
+    injectedCheckpoint = ('./temp/'+str(injectionData['injectionNumber'])+'_' +
+                          'checkpoint-'+str(injectionData['checkpointNumber'])+'.ckpt')
     os.mkdir(injectedCheckpoint)
     # copy gold checkpoint files
     checkpointFiles = os.listdir(goldCheckpoint)

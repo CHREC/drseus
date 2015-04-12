@@ -21,6 +21,7 @@ import random
 
 # import simics_targets
 import checkpoint_injection
+import checkpoint_comparison
 
 # TODO: add support for multiple boards (ethernet tests) and concurrent simics injections
 
@@ -186,19 +187,6 @@ class bdi_arm(bdi):
         pass
 
 
-class simics_injector():
-    def __init__(self):
-        pass
-
-    # in case we get keyboard interrupt
-    def close(self):
-        pass
-
-    def inject_fault(self, injection_number):
-        self.injected_checkpoint = checkpoint_injection.InjectCheckpoint(
-            injectionNumber=injection_number, selectedTargets=['GPR'])
-
-
 class simics:
     # create simics instance and boot device
     def __init__(self, dut_ip_address='10.10.0.100', new=True, checkpoint=None):
@@ -213,6 +201,7 @@ class simics:
             self.command(
                 'run-command-file p2020rdb-simics/p2020rdb-linux.simics')
         else:
+            self.injected_checkpoint = checkpoint
             self.command('read-configuration '+checkpoint)
         buff = self.read_until('simics> ')
         for line in buff.split('\n'):
@@ -223,8 +212,8 @@ class simics:
             print('could not find pseudoterminal to attach to')
             sys.exit()
         self.dut = dut(dut_ip_address, serial_port, baud_rate=38400)
-        self.continue_dut()
         if new:
+            self.continue_dut()
             self.do_uboot()
 
     def close(self):
@@ -289,7 +278,24 @@ class simics:
                          str(checkpoint)+'.ckpt')
             # TODO: merge and delete partial checkpoints
         self.close()
-        self.dut.close()
+        with open('cycles', 'w') as cycle_file:
+            cycle_file.write(str(step_cycles)+'\n')
+        return step_cycles
+
+    def compare_checkpoints(self, checkpoint,
+                            cycles_between_checkpoints, num_checkpoints):
+        checkpoint_number = int(
+            checkpoint.split('/')[-1][checkpoint.split('/')[-1].index(
+                '-')+1:checkpoint.split('/')[-1].index('.ckpt')])
+        incremental_results = []
+        for i in xrange(checkpoint_number+1, num_checkpoints):
+            self.command('run-cycles '+str(cycles_between_checkpoints))
+            gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
+                               str(i)+'.ckpt')
+            incremental_results.append(
+                checkpoint_comparison.CompareCheckpoints(gold_checkpoint,
+                                                         checkpoint))
+        return incremental_results
 
 
 class fault_injector:
@@ -338,8 +344,8 @@ class fault_injector:
         self.dut.command('rm result.dat')
         os.rename('result.dat', 'gold.dat')
         if self.simics:
-            self.debugger.create_checkpoints(self.target_app, self.exec_time,
-                                             num_checkpoints)
+            self.cycles_between = self.debugger.create_checkpoints(
+                self.target_app, self.exec_time, num_checkpoints)
 
     # TODO: get cycles if using simics
     def time_application(self, iterations):
@@ -347,11 +353,13 @@ class fault_injector:
             for i in xrange(iterations-1):
                 self.dut.command('./'+self.target_app)
             self.debugger.halt_dut()
-            start_cycles = self.debugger.command('print-time').split('\n')[-2].split()[2]
+            start_cycles = self.debugger.command(
+                'print-time').split('\n')[-2].split()[2]
             self.debugger.continue_dut()
             self.dut.command('./'+self.target_app)
             self.debugger.halt_dut()
-            end_cycles = self.debugger.command('print-time').split('\n')[-2].split()[2]
+            end_cycles = self.debugger.command(
+                'print-time').split('\n')[-2].split()[2]
             self.debugger.continue_dut()
             return int(end_cycles) - int(start_cycles)
         else:
@@ -361,28 +369,25 @@ class fault_injector:
             return (time.time() - start) / iterations
 
     def inject_fault(self, injection_number):
-        # if using simics, switch debugger to simics fault injector
         if self.simics:
-            self.debugger = simics_injector()
-            number_time = injection_number
-        else:
-            injection_time = random.uniform(0, self.exec_time)
-            number_time = injection_time
-            print('injection at: '+str(injection_time))
-
-        self.debugger.inject_fault(number_time)
-
-        # if using simics, switch debugger to simics with injected checkpoint
-        if self.simics:
-            self.injected_checkpoint = self.debugger.injected_checkpoint
+            self.injected_checkpoint = checkpoint_injection.InjectCheckpoint(
+                injectionNumber=injection_number, selectedTargets=None)  # ['GPR'])
             self.debugger = simics(new=False,
                                    checkpoint=self.injected_checkpoint)
             self.dut = self.debugger.dut
             with open('private.key') as keyfile:
                 self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
+        else:
+            self.injection_time = random.uniform(0, self.exec_time)
+            print('injection at: '+str(self.injection_time))
+            self.debugger.inject_fault(self.injection_time)
 
     def monitor_execution(self):
-        # TODO: watch out for hanging
+        if self.simics:
+            self.simics_results = self.debugger.compare_checkpoints(
+                'simics-workspace/'+self.injected_checkpoint,
+                self.cycles_between, 50)
+            # TODO: log simics results
         self.debugger.continue_dut()
         try:
             self.dut.read_until(self.dut.prompt)
@@ -399,6 +404,9 @@ class fault_injector:
         except scp.SCPException:
             missing_output = True
             print('could not get output file')
+        else:
+            pass
+            # TODO: check output
         if self.simics:
             if not missing_output:
                 shutil.move('result.dat', 'simics-workspace/' +
@@ -425,7 +433,10 @@ if options.clean:
     shutil.rmtree('simics-workspace/injected-checkpoints')
     print('deleted injected checkpoints')
 if len(args) < 1:
-    parser.error('please specify an application')
+    if options.clean:
+        sys.exit()
+    else:
+        parser.error('please specify an application')
 
 if not os.path.exists('fiapps'):
     os.system('./setup_apps.sh')
@@ -437,17 +448,21 @@ if options.simics:
     if not os.path.exists('simics-workspace'):
         os.system('./setup_simics.sh')
     if options.resume:
-        drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True, new=False)
+        drseus = fault_injector(dut_ip_address='10.10.0.100',
+                                use_simics=True, new=False)
+        with open('cycles', 'r') as cycle_file:
+            drseus.cycles_between = int(cycle_file.readline())
     else:
-        if (os.path.exists('simics-workspace/gold-checkpoints') or
-                os.path.exists('simics-workspace/injected-checkpoints')):
-            print('warning: checkpoint directories already exist, continuing will delete them')
+        if os.path.exists('simics-workspace/gold-checkpoints'):
+            print('warning: checkpoint directories already exist, ' +
+                  'continuing will delete them')
             if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
                 sys.exit()
             else:
                 shutil.rmtree('simics-workspace/gold-checkpoints')
                 print('deleted gold checkpoints')
-                shutil.rmtree('simics-workspace/injected-checkpoints')
+                if os.path.exists('simics-workspace/injected-checkpoints'):
+                    shutil.rmtree('simics-workspace/injected-checkpoints')
                 print('deleted injected checkpoints')
         drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
         drseus.setup_campaign('fiapps', args[0])
