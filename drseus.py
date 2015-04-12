@@ -19,16 +19,28 @@ import os
 import time
 import random
 
-import simics_targets
+# import simics_targets
 import checkpoint_injection
+
+# TODO: add support for multiple boards (ethernet tests) and concurrent simics injections
+
+
+class dut_hanging(Exception):
+    def __init__(self, console_buffer):
+        self.console_buffer = console_buffer
+
+
+# TODO: use this for console monitoring
+# class dut_panic(Exception):
+#     def __init__(self, console_buffer):
+#         self.console_buffer
 
 
 class dut:
     def __init__(self, ip_address, serial_port, baud_rate=115200,
-                 prompt='root@p2020rdb:~#'):
+                 prompt='root@p2020rdb:~#', timeout=120):  # TODO: should timeout increased?
         self.serial = serial.Serial(port=serial_port, baudrate=baud_rate,
-                                    # TODO: use timeout (handle in read_until)
-                                    timeout=None, rtscts=True)
+                                    timeout=timeout, rtscts=True)
         self.prompt = prompt+' '
         self.ip_address = ip_address
 
@@ -58,6 +70,8 @@ class dut:
         buff = ''
         while True:
             char = self.serial.read()
+            if not char:
+                raise dut_hanging(buff)
             if debug:
                 print(char, end='')
             buff += char
@@ -153,6 +167,14 @@ class bdi:
                 regs[core][register] = value
         return regs
 
+    def inject_fault(self, injection_time):
+        self.dut.serial.write('./'+self.application+' '+self.arguments+'\n')
+        time.sleep(injection_time)
+        if not self.debugger.halt_dut():
+            print('error halting dut')
+            sys.exit()
+        print(self.get_dut_regs())
+
 
 class bdi_p2020(bdi):
     def __init__(self):
@@ -166,6 +188,10 @@ class bdi_arm(bdi):
 
 class simics_injector():
     def __init__(self):
+        pass
+
+    # in case we get keyboard interrupt
+    def close(self):
         pass
 
     def inject_fault(self, injection_number):
@@ -338,8 +364,13 @@ class fault_injector:
         # if using simics, switch debugger to simics fault injector
         if self.simics:
             self.debugger = simics_injector()
+            number_time = injection_number
+        else:
+            injection_time = random.uniform(0, self.exec_time)
+            number_time = injection_time
+            print('injection at: '+str(injection_time))
 
-        self.debugger.inject_fault(injection_number)
+        self.debugger.inject_fault(number_time)
 
         # if using simics, switch debugger to simics with injected checkpoint
         if self.simics:
@@ -351,8 +382,14 @@ class fault_injector:
                 self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
 
     def monitor_execution(self):
+        # TODO: watch out for hanging
         self.debugger.continue_dut()
-        self.dut.read_until(self.dut.prompt)
+        try:
+            self.dut.read_until(self.dut.prompt)
+        except dut_hanging:  # as dut:
+            print('hanging dut detected')
+            # log the partial buffer
+            # print(dut.buff)
         missing_output = False
         try:
             self.dut.get_file('result.dat')
@@ -367,22 +404,6 @@ class fault_injector:
                 shutil.move('result.dat', 'simics-workspace/' +
                             self.injected_checkpoint+'/')
             self.debugger.close()
-
-    def main(self):
-        if not self.simics:
-            injection_time = random.uniform(0, self.exec_time)
-            print('injection at: '+str(injection_time))
-            self.dut.serial.write('./'+self.application+' '+self.arguments+'\n')
-
-            time.sleep(injection_time)
-            if not self.debugger.halt_dut():
-                print('error halting dut')
-                sys.exit()
-
-            print(self.debugger.get_dut_regs())
-
-            self.debugger.continue_dut()
-            self.dut.read_until(self.dut.serial_prompt)
 
 parser = optparse.OptionParser('drseus.py application {options}')
 parser.add_option('-n', action='store', type='int', dest='num_injections',
@@ -402,33 +423,48 @@ parser.add_option_group(simics_group)
 options, args = parser.parse_args()
 if options.clean:
     shutil.rmtree('simics-workspace/injected-checkpoints')
-    print('simics workspace cleaned, deleted injected checkpoints')
-else:
-    if len(args) < 1:
-        parser.error('please specify an application')
+    print('deleted injected checkpoints')
+if len(args) < 1:
+    parser.error('please specify an application')
 
-    if options.simics:
-        if options.resume:
-            drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True, new=False)
-        else:
-            if os.path.exists('simics-workspace/gold-checkpoints'):
-                print('warning: gold checkpoints directory already exists, continuing will overwrite it')
-                if raw_input('continue [Y/n]') in ['n', 'N', 'no', 'No', 'NO']:
-                    sys.exit()
-                else:
-                    shutil.rmtree('simics-workspace/gold-checkpoints')
-                    shutil.rmtree('simics-workspace/injected-checkpoints')
-            drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
-            drseus.setup_campaign('fiapps/', args[0])
+if not os.path.exists('fiapps'):
+    os.system('./setup_apps.sh')
+
+if not os.path.exists('fiapps/'+args[0]):
+    os.system('cd fiapps/; make '+args[0])
+
+if options.simics:
+    if not os.path.exists('simics-workspace'):
+        os.system('./setup_simics.sh')
+    if options.resume:
+        drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True, new=False)
     else:
-        drseus = fault_injector()
-        drseus.setup_campaign('fiapps/', args[0])
+        if (os.path.exists('simics-workspace/gold-checkpoints') or
+                os.path.exists('simics-workspace/injected-checkpoints')):
+            print('warning: checkpoint directories already exist, continuing will delete them')
+            if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
+                sys.exit()
+            else:
+                shutil.rmtree('simics-workspace/gold-checkpoints')
+                print('deleted gold checkpoints')
+                shutil.rmtree('simics-workspace/injected-checkpoints')
+                print('deleted injected checkpoints')
+        drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
+        drseus.setup_campaign('fiapps', args[0])
+else:
+    drseus = fault_injector()
+    drseus.setup_campaign('fiapps', args[0])
 
-    start = 0
-    if drseus.simics:
-        if os.path.exists('simics-workspace/injected-checkpoints'):
-            start = len(os.listdir('simics-workspace/injected-checkpoints'))
+start = 0
+if drseus.simics:
+    if os.path.exists('simics-workspace/injected-checkpoints'):
+        start = len(os.listdir('simics-workspace/injected-checkpoints'))
+try:
     for injection_number in xrange(start, start + options.num_injections):
         drseus.inject_fault(injection_number)
         drseus.monitor_execution()
     drseus.exit()
+except KeyboardInterrupt:
+    drseus.exit()
+    if drseus.simics:
+        shutil.rmtree('simics-workspace/'+drseus.debugger.injected_checkpoint)
