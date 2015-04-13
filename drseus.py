@@ -113,7 +113,6 @@ class bdi:
         if not self.ready():
             print('debugger not ready')
             sys.exit()
-
         if not self.reset_dut():
             print('error resetting dut')
             sys.exit()
@@ -327,7 +326,7 @@ class simics:
             self.command('run-cycles '+str(step_cycles))
             self.command('write-configuration gold-checkpoints/checkpoint-' +
                          str(checkpoint)+'.ckpt')
-            # TODO: merge and delete partial checkpoints
+            # TODO: merge checkpionts?
         self.close()
         return step_cycles
 
@@ -412,7 +411,6 @@ class fault_injector:
         with open('campaign-data/campaign.pickle', 'w') as campaign_pickle:
             pickle.dump(campaign, campaign_pickle)
 
-    # TODO: get cycles if using simics
     def time_application(self, iterations):
         if self.simics:
             for i in xrange(iterations-1):
@@ -454,7 +452,6 @@ class fault_injector:
         if self.simics:
             self.simics_results = self.debugger.compare_checkpoints(
                 self.injected_checkpoint, self.cycles_between, 50)
-            # TODO: log simics results
         self.debugger.continue_dut()
         try:
             self.dut.read_until(self.dut.prompt)
@@ -493,7 +490,6 @@ class fault_injector:
             self.outcome = 'data error'
         else:
             self.outcome = 'no error'
-
         if self.simics:
             self.debugger.close()
 
@@ -527,16 +523,14 @@ parser.add_option('-s', action='store_true', dest='simics', default=False,
                   help='use simics simulator')
 parser.add_option('-d', action='store_true', dest='clean', default=False,
                   help='clean simics workspace and results')
-
 simics_group = optparse.OptionGroup(parser, 'Simics Options')
 simics_group.add_option('-c', action='store_true', dest='resume',
                         default=False, help='continue a previous campaign')
 parser.add_option_group(simics_group)
-
 # bdi_group = optparse.OptionGroup(parser, 'BDI3000 Options')
 # parser.add_option_group(bdi_group)
-
 options, args = parser.parse_args()
+
 if options.clean:
     if os.path.exists('campaign-data/results'):
         shutil.rmtree('campaign-data/results')
@@ -553,7 +547,6 @@ if len(args) < 1:
 
 if not os.path.exists('fiapps'):
     os.system('./setup_apps.sh')
-
 if not os.path.exists('fiapps/'+args[0]):
     os.system('cd fiapps/; make '+args[0])
 
