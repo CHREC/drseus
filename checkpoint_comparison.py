@@ -3,7 +3,7 @@ from simics_targets import P2020 as targets
 import os
 import re
 import subprocess
-from collections import OrderedDict
+# from collections import OrderedDict
 
 
 def CompareCheckpoints(
@@ -148,7 +148,7 @@ def CompareRegisters(goldCheckpoint, monitoredCheckpoint):
                         if monitoredRegisters[targetKey][register] != goldRegisters[targetKey][register]:
                             registerErrors += 1
                             if targetKey not in registerDiffs:
-                                registerDiffs[targetKey] = OrderedDict()
+                                registerDiffs[targetKey] = {}  # OrderedDict()
                             registerDiffs[targetKey][register] = {
                                 'goldValue': goldRegisters[targetKey][register],
                                 'monitoredValue': monitoredRegisters[targetKey][register]}
@@ -162,7 +162,7 @@ def CompareRegisters(goldCheckpoint, monitoredCheckpoint):
                                 else:
                                     registerDiffKey = register+':'+str(index1)
                                 if targetKey not in registerDiffs:
-                                    registerDiffs[targetKey] = OrderedDict()
+                                    registerDiffs[targetKey] = {}  # OrderedDict()
                                 if registerDiffKey not in registerDiffs[targetKey]:
                                     registerDiffs[targetKey][registerDiffKey] = {}
                                 registerDiffs[targetKey][registerDiffKey] = {
@@ -176,7 +176,7 @@ def CompareRegisters(goldCheckpoint, monitoredCheckpoint):
                                     registerErrors += 1
                                     registerDiffKey = register+':'+str(index1)+':'+str(index2)
                                     if targetKey not in registerDiffs:
-                                        registerDiffs[targetKey] = OrderedDict()
+                                        registerDiffs[targetKey] = {}  # OrderedDict()
                                     if registerDiffKey not in registerDiffs[targetKey]:
                                         registerDiffs[targetKey][registerDiffKey] = {}
                                     registerDiffs[targetKey][registerDiffKey] = {
