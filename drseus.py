@@ -9,6 +9,7 @@ import sys
 import telnetlib
 import serial
 
+# TODO: do try except to run install dependencies
 import paramiko
 # TODO: remove scp and just use sftp in paramiko
 import scp
@@ -32,7 +33,7 @@ import checkpoint_comparison
 # TODO: add support for multiple boards (ethernet tests) and
 #       concurrent simics injections
 # TODO: isolate injections on real device
-
+# TODO: add telnet setup for bdi
 
 class DrSEUSError(Exception):
     def __init__(self, error_type, console_buffer=None):
@@ -41,6 +42,7 @@ class DrSEUSError(Exception):
 
 
 class dut:
+    error_messages = ['panic', 'Oops', 'Segmentation fault']
     # TODO: should timeout increased?
     def __init__(self, ip_address, serial_port, baud_rate=115200,
                  prompt='root@p2020rdb:~#', timeout=120):
@@ -79,16 +81,31 @@ class dut:
     # TODO: add console monitoring
     def read_until(self, string, debug=True):
         buff = ''
-        while True:
+        done = False
+        hanging = False
+        while not done:
             char = self.serial.read()
             self.output += char
-            if not char:
-                raise DrSEUSError('dut_hanging', buff)
             if debug:
                 print(char, end='')
             buff += char
-            if buff[-len(string):] == string:
-                return buff
+            if not char:
+                done = True
+                hanging = True
+            elif buff[-len(string):] == string:
+                done = True
+        error = False
+        for message in self.error_messages:
+            if message in buff:
+                error_message = message
+                error = True
+                break
+        if error:
+            raise DrSEUSError(error_message, buff)
+        elif hanging:
+            raise DrSEUSError('dut_hanging', buff)
+        else:
+            return buff
 
     def command(self, command):
         self.serial.write(command+'\n')
@@ -334,10 +351,11 @@ class simics:
                               # 'setenv ip1addr 10.10.0.101\n' +
                               'setenv eth2addr 00:01:af:07:9b:8c\n' +
                               # 'setenv ip2addr 10.10.0.102\n' +
-                              'setenv othbootargs\n' +
+                              # 'setenv othbootargs\n' +
                               'setenv consoledev ttyS0\n' +
                               'setenv bootargs root=/dev/ram rw console=' +
-                              '$consoledev,$baudrate $othbootargs\n' +
+                              # '$consoledev,$baudrate $othbootargs\n' +
+                              '$consoledev,$baudrate\n' +
                               'bootm ef080000 10000000 ef040000\n')
 
     def create_checkpoints(self, target_command, cycles, num_checkpoints):
@@ -479,7 +497,7 @@ class fault_injector:
         os.mkdir('campaign-data/results/'+str(injection_number))
         if self.simics:
             self.injected_checkpoint = checkpoint_injection.InjectCheckpoint(
-                injectionNumber=injection_number, selectedTargets=None)
+                injectionNumber=injection_number, selectedTargets=['GPR'])
             self.debugger = simics(new=False,
                                    checkpoint=self.injected_checkpoint)
             self.dut = self.debugger.dut
@@ -672,7 +690,7 @@ else:
     drseus = fault_injector(use_simics=campaign_data['use_simics'], new=False)
     drseus.target_command = campaign_data['target_command']
     drseus.output_file = campaign_data['output_file']
-    if options.simics:
+    if campaign_data['use_simics']:
         drseus.cycles_between = campaign_data['cycles_between']
     else:
         drseus.exec_time = campaign_data['exec_time']
