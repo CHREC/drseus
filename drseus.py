@@ -1,8 +1,5 @@
 #!/usr/bin/python
 
-# python -c "import pprint; import pickle; pprint.PrettyPrinter(indent=4).pprint(pickle.load(open('log.pickle', 'r')))"
-# System Halted, OK to turn off power
-
 from __future__ import print_function
 import sys
 
@@ -13,7 +10,7 @@ import serial
 import paramiko
 # TODO: remove scp and just use sftp in paramiko
 import scp
-import socket  # used for "except socket.error:""
+import socket  # used for "except socket.error:"
 
 import subprocess
 import signal
@@ -30,10 +27,12 @@ import pickle
 import checkpoint_injection
 import checkpoint_comparison
 
+# TODO: re-transfer files (and ssh key) if using initramfs
 # TODO: add support for multiple boards (ethernet tests) and
 #       concurrent simics injections
 # TODO: isolate injections on real device
-# TODO: add telnet setup for bdi
+# TODO: add telnet setup for bdi (firmware, configs, etc.)
+# TODO: make script for setting up tftp for BDI3000
 
 
 class DrSEUSError(Exception):
@@ -98,7 +97,6 @@ class dut:
             elif buff[-len('login: '):] == 'login: ':
                 return False
 
-    # TODO: add console monitoring
     def read_until(self, string, debug=True):
         buff = ''
         done = False
@@ -141,18 +139,32 @@ class dut:
         self.serial.write(command+'\n')
         return self.read_until(self.prompt)
 
-    def do_login(self):
+    def do_login(self, debug=True):
         if not self.is_logged_in():
-            self.command('root')
+            self.serial.write('root\n')
+            buff = ''
+            while True:
+                char = self.serial.read()
+                self.output += char
+                if debug:
+                    print(char, end='')
+                buff += char
+                if not char:
+                    raise DrSEUSError('dut_hanging', buff)
+                elif buff[-len(self.prompt):] == self.prompt:
+                    break
+                elif buff[-len('Password: '):] == 'Password: ':
+                    self.command('chrec')
+                    break
         self.command('mkdir .ssh')
         self.command('touch .ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
-                     '\" > /home/root/.ssh/authorized_keys')
+                     '\" > .ssh/authorized_keys')
 
 
 class bdi:
     # check debugger is ready and boot device
-    def __init__(self, ip_address, dut, new=True):
+    def __init__(self, ip_address, dut, new):
         self.output = ''
         try:
             self.telnet = telnetlib.Telnet(ip_address)
@@ -174,14 +186,15 @@ class bdi:
         self.telnet.close()
 
     def ready(self):
-        if self.telnet.expect(['P2020>'], timeout=10)[0] < 0:
+        if self.telnet.expect(self.prompts, timeout=10)[0] < 0:
             return False
         else:
             return True
 
     def reset_dut(self):
         try:
-            self.dut.command('sync')
+            if self.dut.is_logged_in():
+                self.dut.command('sync')
         except DrSEUSError as error:
             if error.type == 'dut_hanging':
                 pass
@@ -193,6 +206,97 @@ class bdi:
             return False
         else:
             return True
+
+    def command(self, command):
+        # TODO: make robust
+        # self.debugger.read_very_eager()  # clear telnet buffer
+        self.telnet.write(command+'\r\n')
+        index, match, text = self.telnet.expect(self.prompts, timeout=10)
+        if index < 0:
+            return False
+        else:
+            return text
+
+    def inject_fault(self, injection_time, command):
+        self.dut.serial.write('./'+command+'\n')
+        time.sleep(injection_time)
+        if not self.halt_dut():
+            print('error halting dut')
+            sys.exit()
+        regs = self.get_dut_regs()
+        core_to_inject = random.randrange(2)
+        reg_to_inject = random.choice(regs[core_to_inject].keys())
+        value_to_inject = int(regs[core_to_inject][reg_to_inject], base=16)
+        print('core to inject: ', core_to_inject)
+        print('reg to inject: ', reg_to_inject)
+        print('value to inject: ', hex(value_to_inject))
+        bit_to_inject = random.randrange(64)
+        value_injected = value_to_inject ^ (1 << bit_to_inject)
+        print('injected value: ', hex(value_injected))
+        self.command('select '+str(core_to_inject))
+        self.command('rm '+reg_to_inject+' '+hex(value_injected))
+        injection_data = {
+            'time': injection_time,
+            'core': core_to_inject,
+            'register': reg_to_inject,
+            'bit': bit_to_inject,
+            'value': value_to_inject,
+            'injected_value': value_injected,
+        }
+        return injection_data
+
+
+class bdi_arm(bdi):
+    def __init__(self, ip_address, dut, new=True):
+        self.prompts = ['A9#0>', 'A9#1>']
+        bdi.__init__(self, ip_address, dut, new)
+
+    def halt_dut(self):
+        self.telnet.write('halt 3\r\n')
+        for i in xrange(2):
+            if self.telnet.expect(['- TARGET: core #0 has entered debug mode',
+                                   '- TARGET: core #1 has entered debug mode'],
+                                  timeout=10)[0] < 0:
+                return False
+        return True
+
+    def continue_dut(self):
+        self.telnet.write('cont 3\r\n')
+        # TODO: check for prompt
+
+    def select_core(self, core):
+        # TODO: check if cores are running (not in debug mode)
+        self.telnet.write('select '+str(core)+'\r\n')
+        for i in xrange(6):
+            if self.telnet.expect(['Core number', 'Core state',
+                                   'Debug entry cause', 'Current PC',
+                                   'Current CPSR', 'Current SPSR'],
+                                  timeout=10)[0] < 0:
+                return False
+        # TODO: replace this with regular expressions for
+        #       getting hexadecimals for above categories
+        self.telnet.read_very_eager()
+        return True
+
+    def get_dut_regs(self):
+        # TODO: get GPRs
+        # TODO: check for unused registers ttbc? iaucfsr?
+        regs = [{}, {}]
+        for core in xrange(2):
+            self.select_core(core)
+            debug_reglist = self.command('rdump')
+            for line in debug_reglist.split('\r\n')[:-1]:
+                line = line.split(': ')
+                register = line[0].strip()
+                value = line[1].split(' ')[0].strip()
+                regs[core][register] = value
+        return regs
+
+
+class bdi_p2020(bdi):
+    def __init__(self, ip_address, dut, new=True):
+        self.prompts = ['P2020>']
+        bdi.__init__(self, ip_address, dut, new)
 
     def halt_dut(self):
         self.telnet.write('halt 0 1\r\n')
@@ -208,6 +312,7 @@ class bdi:
         # TODO: check for prompt
 
     def select_core(self, core):
+        # TODO: check if cores are running (not in debug mode)
         self.telnet.write('select '+str(core)+'\r\n')
         for i in xrange(8):
             if self.telnet.expect(['Target CPU', 'Core state',
@@ -220,16 +325,6 @@ class bdi:
         self.telnet.read_very_eager()
         return True
 
-    def command(self, command):
-        # TODO: make robust
-        # self.debugger.read_very_eager()  # clear telnet buffer
-        self.telnet.write(command+'\r\n')
-        index, match, text = self.telnet.expect(['P2020>'], timeout=10)
-        if index < 0:
-            return False
-        else:
-            return text
-
     def get_dut_regs(self):
         regs = [{}, {}]
         for core in xrange(2):
@@ -241,33 +336,6 @@ class bdi:
                 value = line[1].split(' ')[0].strip()
                 regs[core][register] = value
         return regs
-
-    def inject_fault(self, injection_time, command):
-        self.dut.serial.write('./'+command+'\n')
-        time.sleep(injection_time)
-        if not self.halt_dut():
-            print('error halting dut')
-            sys.exit()
-        regs = self.get_dut_regs()
-        core_to_inject = random.randrange(2)
-        reg_to_inject = random.choice(regs[core_to_inject].keys())
-        value_to_inject = int(regs[core_to_inject][reg_to_inject], base=16)
-        print('reg to inject: '+reg_to_inject)
-        print('value to inject: '+hex(value_to_inject))
-        bit_to_inject = random.randrange(64)
-        value_injected = value_to_inject ^ (1 << bit_to_inject)
-        print('injected value: '+hex(value_injected))
-        self.command('select '+str(core_to_inject))
-        self.command('rm '+reg_to_inject+' '+hex(value_injected))
-        injection_data = {
-            'time': injection_time,
-            'core': core_to_inject,
-            'register': reg_to_inject,
-            'bit': bit_to_inject,
-            'value': value_to_inject,
-            'injected_value': value_injected,
-        }
-        return injection_data
 
 
 class simics:
@@ -429,17 +497,27 @@ class fault_injector:
     def __init__(self, dut_ip_address='10.42.0.21',
                  dut_serial_port='/dev/ttyUSB1',
                  debugger_ip_address='10.42.0.50',
+                 architecture='p2020',
                  use_simics=False, new=True):
         if not os.path.exists('campaign-data'):
             os.mkdir('campaign-data')
+        self.architecture = architecture
         self.simics = use_simics
         if new:
             if use_simics:
                 self.debugger = simics()
                 self.dut = self.debugger.dut
             else:
-                self.dut = dut(dut_ip_address, dut_serial_port)
-                self.debugger = bdi(debugger_ip_address, self.dut)
+                if architecture == 'p2020':
+                    self.dut = dut(dut_ip_address, dut_serial_port)
+                    self.debugger = bdi_p2020(debugger_ip_address, self.dut)
+                elif architecture == 'arm':
+                    self.dut = dut(dut_ip_address, dut_serial_port,
+                                   prompt='[root@ZED]#')
+                    self.debugger = bdi_arm(debugger_ip_address, self.dut)
+                else:
+                    print('invalid architecture: ', architecture)
+                    sys.exit()
             self.dut.rsakey = paramiko.RSAKey.generate(1024)
             with open('campaign-data/private.key', 'w') as keyfile:
                 self.dut.rsakey.write_private_key(keyfile)
@@ -448,8 +526,19 @@ class fault_injector:
                 self.dut.command('ifconfig eth0 '+dut_ip_address +
                                  ' netmask 255.255.255.0')
         elif not use_simics:  # continuing bdi campaign
-            self.dut = dut(dut_ip_address, dut_serial_port)
-            self.debugger = bdi(debugger_ip_address, self.dut, new=new)
+            if architecture == 'p2020':
+                self.dut = dut(dut_ip_address, dut_serial_port)
+                self.debugger = bdi_p2020(debugger_ip_address, self.dut,
+                                          new=False)
+            elif architecture == 'arm':
+                self.dut = dut(dut_ip_address, dut_serial_port,
+                               prompt='[root@ZED]#')
+                self.debugger = bdi_arm(debugger_ip_address, self.dut,
+                                        new=False)
+            # TODO: should not need this
+            else:
+                print('invalid architecture: ', architecture)
+                sys.exit()
             with open('campaign-data/private.key', 'r') as keyfile:
                 self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
 
@@ -488,6 +577,7 @@ class fault_injector:
             'application': self.application,
             'output_file': self.output_file,
             'command': self.command,
+            'architecture': self.architecture,
             'use_simics': self.simics,
         }
         if self.simics:
@@ -535,7 +625,7 @@ class fault_injector:
                 self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
         else:
             injection_time = random.uniform(0, self.exec_time)
-            print('injection at: '+str(injection_time))
+            print('injection at: ', injection_time)
             self.injection_data = self.debugger.inject_fault(
                 injection_time, self.command)
 
@@ -554,6 +644,7 @@ class fault_injector:
                 raise DrSEUSError(error.type, error.console_buffer)
         else:
             hanging = False
+        self.data_diff = None
         if not hanging:
             try:
                 output_location = ('campaign-data/results/' +
@@ -583,7 +674,7 @@ class fault_injector:
             self.outcome = 'data error'
         else:
             self.outcome = 'no error'
-        print('outcome: '+self.outcome)
+        print('outcome: ', self.outcome)
         if self.simics:
             self.debugger.close()
 
@@ -708,6 +799,9 @@ parser.add_option('-a', '--arguments', action='store', type='str',
 parser.add_option('-f', '--files', action='store', type='str', dest='files',
                   default='',
                   help='additional files to copy to dut (comma-seperated list)')
+parser.add_option('-r', '--architecture', action='store', type='str',
+                  dest='architecture', default='p2020',
+                  help='target architecture [default=p2020]')
 parser.add_option('-s', '--simics', action='store_true', dest='simics',
                   default=False, help='use simics simulator')
 parser.add_option('-x', '--auxiliary', action='store_true', dest='aux',
@@ -755,7 +849,7 @@ if not options.inject and not options.aux:
     if options.simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics.sh')
     if os.path.exists('campaign-data'):
-        print('warning: previous campaign data exists, ' +
+        print('warning: previous campaign data exists, ',
               'continuing will delete it')
         if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
             sys.exit()
@@ -771,7 +865,15 @@ if not options.inject and not options.aux:
     if options.simics:
         drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
     else:
-        drseus = fault_injector()
+        if options.architecture == 'p2020':
+            drseus = fault_injector()
+        elif options.architecture == 'arm':
+            drseus = fault_injector(dut_ip_address='10.42.0.30',
+                                    dut_serial_port='/dev/ttyACM0',
+                                    architecture=options.architecture)
+        else:
+            print('invalid architecture: ', options.architecture)
+            sys.exit()
     drseus.setup_campaign('fiapps', args[0], options.arguments,
                           options.output_file, options.files,
                           options.iterations, options.num_checkpoints)
@@ -792,13 +894,25 @@ elif options.inject:
         campaign_data = pickle.load(campaign_pickle)
     if len(args) > 0:
         if args[0] != campaign_data['application']:
-            print('campaign created with different application: ' +
+            print('campaign created with different application: ',
                   campaign_data['application'])
             sys.exit()
     if options.simics and not campaign_data['use_simics']:
         print('previous campaign was not created with simics')
         sys.exit()
-    drseus = fault_injector(use_simics=campaign_data['use_simics'], new=False)
+    if campaign_data['architecture'] == 'p2020':
+        drseus = fault_injector(use_simics=campaign_data['use_simics'],
+                                new=False)
+    elif campaign_data['architecture'] == 'arm':
+        drseus = fault_injector(dut_ip_address='10.42.0.30',
+                                dut_serial_port='/dev/ttyACM0',
+                                architecture='arm',
+                                use_simics=campaign_data['use_simics'],
+                                new=False)
+    # TODO: should not need this
+    else:
+        print('invalid architecture: ', campaign_data['architecture'])
+        sys.exit()
     drseus.command = campaign_data['command']
     drseus.output_file = campaign_data['output_file']
     if campaign_data['use_simics']:
