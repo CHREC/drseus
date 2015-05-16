@@ -4,6 +4,7 @@ import sys
 
 import paramiko
 import scp
+from termcolor import colored
 
 from error import DrSEUSError
 
@@ -14,7 +15,7 @@ class dut:
                            'SIGIOT', 'SIGTRAP', 'SIGSYS', 'SIGEMT']
 
     # TODO: should timeout increased?
-    def __init__(self, ip_address, serial_port, baud_rate=115200,
+    def __init__(self, ip_address, serial_port, baud_rate=115200, ssh_port=22,
                  prompt='root@p2020rdb:~#', timeout=120, debug=True):
         self.output = ''
         try:
@@ -26,6 +27,7 @@ class dut:
             sys.exit()
         self.prompt = prompt+' '
         self.ip_address = ip_address
+        self.ssh_port = ssh_port
         self.debug = debug
 
     def close(self):
@@ -34,7 +36,8 @@ class dut:
     def send_files(self, files):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.ip_address, username='root', pkey=self.rsakey)
+        ssh.connect(self.ip_address, port=self.ssh_port, username='root',
+                    pkey=self.rsakey)
         dut_scp = scp.SCPClient(ssh.get_transport())
         dut_scp.put(files)
         ssh.close()
@@ -42,7 +45,8 @@ class dut:
     def get_file(self, file, local_path='', delete_file=True):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.ip_address, username='root', pkey=self.rsakey)
+        ssh.connect(self.ip_address, port=self.ssh_port, username='root',
+                    pkey=self.rsakey)
         dut_scp = scp.SCPClient(ssh.get_transport())
         dut_scp.get(file, local_path=local_path)
         ssh.close()
@@ -56,7 +60,7 @@ class dut:
             char = self.serial.read()
             self.output += char
             if self.debug:
-                print(char, end='')
+                print(colored(char, 'green'), end='')
             buff += char
             if not char:
                 raise DrSEUSError('dut_hanging', buff)
@@ -73,7 +77,7 @@ class dut:
             char = self.serial.read()
             self.output += char
             if self.debug:
-                print(char, end='')
+                print(colored(char, 'green'), end='')
             buff += char
             if not char:
                 done = True
@@ -115,7 +119,7 @@ class dut:
                 char = self.serial.read()
                 self.output += char
                 if self.debug:
-                    print(char, end='')
+                    print(colored(char, 'green'), end='')
                 buff += char
                 if not char:
                     raise DrSEUSError('dut_hanging', buff)

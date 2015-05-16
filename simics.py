@@ -4,6 +4,8 @@ import os
 import sys
 import signal
 
+from termcolor import colored
+
 from error import DrSEUSError
 from dut import dut
 import checkpoint_comparison
@@ -11,7 +13,7 @@ import checkpoint_comparison
 
 class simics:
     # create simics instance and boot device
-    def __init__(self, dut_ip_address='10.10.0.100', new=True, checkpoint=None,
+    def __init__(self, dut_ip_address='127.0.0.1', new=True, checkpoint=None,
                  debug=True):
         self.debug = debug
         self.output = ''
@@ -68,7 +70,8 @@ class simics:
                 raw_input('press enter to restart...')
                 os.execv(__file__, sys.argv)
             sys.exit()
-        self.dut = dut(dut_ip_address, serial_port, baud_rate=38400)
+        self.dut = dut(dut_ip_address, serial_port, baud_rate=38400,
+                       ssh_port=4022)
         if new:
             self.continue_dut()
             self.do_uboot()
@@ -93,7 +96,7 @@ class simics:
             char = self.simics.stdout.read(1)
             self.output += char
             if self.debug:
-                print(char, end='')
+                print(colored(char, 'yellow'), end='')
             buff += char
             if buff[-len(string):] == string:
                 if self.debug:

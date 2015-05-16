@@ -49,8 +49,8 @@ class fault_injector:
                 self.dut.rsakey.write_private_key(keyfile)
             self.dut.do_login()
             if use_simics:
-                self.dut.command('ifconfig eth0 '+dut_ip_address +
-                                 ' netmask 255.255.255.0')
+                self.dut.command('ifconfig eth0 '+dut_ip_address+'/24')
+                self.dut.command('')
         elif not use_simics:  # continuing bdi campaign
             if architecture == 'p2020':
                 self.dut = dut(dut_ip_address, dut_serial_port)
