@@ -6,5 +6,5 @@ chmod +x simics_license.sh
 
 mkdir simics-workspace
 cd simics-workspace
-/opt/simics/simics-4.6/simics-4.6*/bin/workspace-setup
-git clone https://ed4@bitbucket.org/ed4/p2020rdb-simics.git
+/opt/simics/simics-4.6/simics-4.8*/bin/workspace-setup
+git clone git@gitlab.hcs.ufl.edu:F4/simics-p2020rdb

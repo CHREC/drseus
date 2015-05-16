@@ -1,3 +1,3 @@
 #!/bin/bash
 
-git clone https://ed4@bitbucket.org/ed4/fiapps.git
+git clone git@gitlab.hcs.ufl.edu:F4/fiapps.git

@@ -24,7 +24,7 @@ class simics:
             self.command('$drseus=TRUE')
             try:
                 self.command(
-                    'run-command-file p2020rdb-simics/p2020rdb-linux.simics')
+                    'run-command-file simics-p2020rdb/p2020rdb-linux.simics')
             except IOError:
                 print('lost contact with simics')
                 if raw_input(
