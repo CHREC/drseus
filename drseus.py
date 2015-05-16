@@ -10,6 +10,7 @@ import pickle
 from fault_injector import fault_injector
 from supervisor import supervisor
 
+# TODO: check if simics-common is already running
 # TODO: re-transfer files (and ssh key) if using initramfs
 # TODO: add support for multiple boards (ethernet tests) and
 #       concurrent simics injections

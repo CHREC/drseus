@@ -42,7 +42,7 @@ class fault_injector:
                                    prompt='[root@ZED]#')
                     self.debugger = bdi_arm(debugger_ip_address, self.dut)
                 else:
-                    print('invalid architecture: ', architecture)
+                    print('invalid architecture:', architecture)
                     sys.exit()
             self.dut.rsakey = paramiko.RSAKey.generate(1024)
             with open('campaign-data/private.key', 'w') as keyfile:
@@ -63,7 +63,7 @@ class fault_injector:
                                         new=False)
             # TODO: should not need this
             else:
-                print('invalid architecture: ', architecture)
+                print('invalid architecture:', architecture)
                 sys.exit()
             with open('campaign-data/private.key', 'r') as keyfile:
                 self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
@@ -153,11 +153,12 @@ class fault_injector:
         else:
             injection_time = random.uniform(0, self.exec_time)
             if self.debug:
-                print('injection at: ', injection_time)
+                print('injection at:', injection_time)
             self.injection_data = self.debugger.inject_fault(
                 injection_time, self.command)
 
     def monitor_execution(self, injection_number):
+        self.outcome = None
         if self.simics:
             self.simics_results = self.debugger.compare_checkpoints(
                 self.injected_checkpoint, self.cycles_between, 50)
@@ -165,15 +166,10 @@ class fault_injector:
         try:
             self.dut.read_until(self.dut.prompt)
         except DrSEUSError as error:
-            if error.type == 'dut_hanging':
-                print('hanging dut detected')
-                hanging = True
-            else:
-                raise DrSEUSError(error.type, error.console_buffer)
-        else:
-            hanging = False
+            self.outcome = error.type
         self.data_diff = None
-        if not hanging:
+        data_error = False
+        if self.outcome is None:
             try:
                 output_location = ('campaign-data/results/' +
                                    str(injection_number)+'/'+self.output_file)
@@ -194,16 +190,14 @@ class fault_injector:
                 self.data_diff = difflib.SequenceMatcher(
                     None, solutionContents, resultContents).quick_ratio()
                 data_error = self.data_diff < 1.0
-        if hanging:
-            self.outcome = 'hanging'
-        elif missing_output:
-            self.outcome = 'execution error'
-        elif data_error:
-            self.outcome = 'data error'
-        else:
-            self.outcome = 'no error'
+            if missing_output:
+                self.outcome = 'missing output'
+            elif data_error:
+                self.outcome = 'data error'
+            else:
+                self.outcome = 'no error'
         if self.debug:
-            print('\noutcome: ', self.outcome, '\n')
+            print('\noutcome:', self.outcome, '\n')
         if self.simics:
             self.debugger.close()
 
