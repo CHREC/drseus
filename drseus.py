@@ -106,7 +106,15 @@ if not options.inject and not options.aux:
                 shutil.rmtree('simics-workspace/injected-checkpoints')
                 print('deleted injected checkpoints')
     if options.simics:
-        drseus = fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
+    	if options.architecture == 'p2020':
+            fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
+        elif options.architecture == 'arm':
+            drseus = fault_injector(dut_ip_address='11.11.11.12',
+                                    architecture=options.architecture,
+                                    use_simics=True)
+        else:
+            print('invalid architecture:', options.architecture)
+            sys.exit()
     else:
         if options.architecture == 'p2020':
             drseus = fault_injector()
@@ -115,7 +123,7 @@ if not options.inject and not options.aux:
                                     dut_serial_port='/dev/ttyACM0',
                                     architecture=options.architecture)
         else:
-            print('invalid architecture: ', options.architecture)
+            print('invalid architecture:', options.architecture)
             sys.exit()
     drseus.setup_campaign('fiapps', args[0], options.arguments,
                           options.output_file, options.files,
@@ -137,7 +145,7 @@ elif options.inject:
         campaign_data = pickle.load(campaign_pickle)
     if len(args) > 0:
         if args[0] != campaign_data['application']:
-            print('campaign created with different application: ',
+            print('campaign created with different application:',
                   campaign_data['application'])
             sys.exit()
     if options.simics and not campaign_data['use_simics']:
@@ -154,7 +162,7 @@ elif options.inject:
                                 new=False)
     # TODO: should not need this
     else:
-        print('invalid architecture: ', campaign_data['architecture'])
+        print('invalid architecture:', campaign_data['architecture'])
         sys.exit()
     drseus.command = campaign_data['command']
     drseus.output_file = campaign_data['output_file']

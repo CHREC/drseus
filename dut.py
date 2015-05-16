@@ -65,8 +65,10 @@ class dut:
             if not char:
                 raise DrSEUSError('dut_hanging', buff)
             elif buff[-len(self.prompt):] == self.prompt:
+                print(colored('logged in', 'red'))
                 return True
             elif buff[-len('login: '):] == 'login: ':
+                print(colored('NOT logged in', 'red'))
                 return False
 
     def read_until(self, string):

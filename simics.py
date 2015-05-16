@@ -13,20 +13,28 @@ import checkpoint_comparison
 
 class simics:
     # create simics instance and boot device
-    def __init__(self, dut_ip_address='127.0.0.1', new=True, checkpoint=None,
-                 debug=True):
+    def __init__(self, architecture='p2020', dut_ip_address='127.0.0.1',
+                 new=True, checkpoint=None, debug=True):
         self.debug = debug
         self.output = ''
+        self.architecture = architecture
         self.simics = subprocess.Popen([os.getcwd()+'/simics-workspace/simics',
                                         '-no-win', '-no-gui', '-q'],
                                        cwd=os.getcwd()+'/simics-workspace',
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
         if new:
-            self.command('$drseus=TRUE')
+            # self.command('$drseus=TRUE')
             try:
-                self.command(
-                    'run-command-file simics-p2020rdb/p2020rdb-linux.simics')
+                if self.architecture == 'p2020':
+                    self.command(
+                        'run-command-file simics-p2020rdb/drseus.simics')
+                elif self.architecture == 'arm':
+                    self.command(
+                        'run-command-file simics-vexpress-a9x4/drseus.simics')
+                else:
+                    print('invalid architecture:', self.architecture)
+                    sys.exit()
             except IOError:
                 print('lost contact with simics')
                 if raw_input(
@@ -70,8 +78,12 @@ class simics:
                 raw_input('press enter to restart...')
                 os.execv(__file__, sys.argv)
             sys.exit()
-        self.dut = dut(dut_ip_address, serial_port, baud_rate=38400,
-                       ssh_port=4022)
+        if self.architecture == 'p2020':
+            self.dut = dut(dut_ip_address, serial_port, baud_rate=38400,
+                           ssh_port=4022)
+        elif self.architecture == 'arm':
+            self.dut = dut(dut_ip_address, serial_port, prompt='#',
+                           baud_rate=38400, ssh_port=4022)
         if new:
             self.continue_dut()
             self.do_uboot()
@@ -113,25 +125,42 @@ class simics:
         return self.read_until('simics> ',)
 
     def do_uboot(self):
-        self.dut.read_until('autoboot: ')
-        self.dut.serial.write('\n')
-        self.halt_dut()
-        self.command('$system.soc.phys_mem.load-file ' +
-                     '$initrd_image $initrd_addr')
-        self.command('$dut_system = $system')
-        self.continue_dut()
-        self.dut.serial.write('setenv ethaddr 00:01:af:07:9b:8a\n' +
-                              # 'setenv ipaddr 10.10.0.100\n' +
-                              'setenv eth1addr 00:01:af:07:9b:8b\n' +
-                              # 'setenv ip1addr 10.10.0.101\n' +
-                              'setenv eth2addr 00:01:af:07:9b:8c\n' +
-                              # 'setenv ip2addr 10.10.0.102\n' +
-                              # 'setenv othbootargs\n' +
-                              'setenv consoledev ttyS0\n' +
-                              'setenv bootargs root=/dev/ram rw console=' +
-                              # '$consoledev,$baudrate $othbootargs\n' +
-                              '$consoledev,$baudrate\n' +
-                              'bootm ef080000 10000000 ef040000\n')
+        if self.architecture == 'p2020':
+            self.dut.read_until('autoboot: ')
+            self.dut.serial.write('\n')
+            self.halt_dut()
+            self.command('$system.soc.phys_mem.load-file ' +
+                         '$initrd_image $initrd_addr')
+            self.command('$dut_system = $system')
+            self.continue_dut()
+            self.dut.serial.write('setenv ethaddr 00:01:af:07:9b:8a\n' +
+                                  # 'setenv ipaddr 10.10.0.100\n' +
+                                  'setenv eth1addr 00:01:af:07:9b:8b\n' +
+                                  # 'setenv ip1addr 10.10.0.101\n' +
+                                  'setenv eth2addr 00:01:af:07:9b:8c\n' +
+                                  # 'setenv ip2addr 10.10.0.102\n' +
+                                  # 'setenv othbootargs\n' +
+                                  'setenv consoledev ttyS0\n' +
+                                  'setenv bootargs root=/dev/ram rw console=' +
+                                  # '$consoledev,$baudrate $othbootargs\n' +
+                                  '$consoledev,$baudrate\n' +
+                                  'bootm ef080000 10000000 ef040000\n')
+        elif self.architecture == 'arm':
+            self.dut.read_until('autoboot: ')
+            self.dut.serial.write('\n')
+            self.halt_dut()
+            self.command('$phys_mem.load-file $kernel_image $kernel_addr')
+            self.command('$phys_mem.load-file $initrd_image $initrd_addr')
+            self.command('$dut_system = $system')
+            self.continue_dut()
+            self.dut.read_until('VExpress# ')
+            self.dut.serial.write('setenv bootargs console=ttyAMA0 ' +
+                                  'root=/dev/ram0 rw\n')
+            self.dut.read_until('VExpress# ')
+            self.dut.serial.write('bootm 0x40800000 0x70000000\n')
+            # TODO: remove these after fixing command prompt of simics arm
+            self.dut.read_until('##')
+            self.dut.read_until('##')
 
     def create_checkpoints(self, command, cycles, num_checkpoints):
         os.mkdir('simics-workspace/gold-checkpoints')
