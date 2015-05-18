@@ -1,4 +1,4 @@
 #!/bin/bash
 
-sudo apt-get install uml-utilities python-pip
+sudo apt-get install python-pip
 sudo pip install paramiko scp termcolor
