@@ -106,8 +106,10 @@ if not options.inject and not options.aux:
                 shutil.rmtree('simics-workspace/injected-checkpoints')
                 print('deleted injected checkpoints')
     if options.simics:
-    	if options.architecture == 'p2020':
-            fault_injector(dut_ip_address='10.10.0.100', use_simics=True)
+        if options.architecture == 'p2020':
+            drseus = fault_injector(dut_ip_address='10.10.0.100',
+                                    architecture=options.architecture,
+                                    use_simics=True)
         elif options.architecture == 'arm':
             drseus = fault_injector(dut_ip_address='11.11.11.12',
                                     architecture=options.architecture,
