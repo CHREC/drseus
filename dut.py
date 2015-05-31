@@ -111,7 +111,7 @@ class dut:
         self.serial.write(command+'\n')
         return self.read_until(self.prompt)
 
-    def do_login(self):
+    def do_login(self, change_prompt=False):
         if not self.is_logged_in():
             self.serial.write('root\n')
             buff = ''
@@ -128,6 +128,10 @@ class dut:
                 elif buff[-len('Password: '):] == 'Password: ':
                     self.command('chrec')
                     break
+        if change_prompt:
+            self.serial.write('export PS1=\"DrSEUS# \"\n')
+            self.read_until('DrSEUS# ')
+            self.prompt = 'DrSEUS# '
         self.command('mkdir .ssh')
         self.command('touch .ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +

@@ -33,6 +33,13 @@ class fault_injector:
             if use_simics:
                 self.debugger = simics(architecture=architecture)
                 self.dut = self.debugger.dut
+                if architecture == 'p2020':
+                    self.board = 'p2020rdb'
+                elif architecture == 'arm':
+                    self.board = 'a9x4'
+                else:
+                    print('invalid architecture:', architecture)
+                    sys.exit()
             else:
                 if architecture == 'p2020':
                     self.dut = dut(dut_ip_address, dut_serial_port)
@@ -47,7 +54,7 @@ class fault_injector:
             self.dut.rsakey = paramiko.RSAKey.generate(1024)
             with open('campaign-data/private.key', 'w') as keyfile:
                 self.dut.rsakey.write_private_key(keyfile)
-            self.dut.do_login()
+            self.dut.do_login(change_prompt=use_simics)
             if use_simics:
                 self.dut.command('ifconfig eth0 '+dut_ip_address +
                                  ' netmask 255.255.255.0 up')
@@ -99,6 +106,7 @@ class fault_injector:
                               'campaign-data/gold_'+self.output_file)
         except SCPException:
             print ('could not get gold output file from dut')
+            import pdb; pdb.set_trace()
             sys.exit()
         campaign = {
             'application': self.application,
@@ -110,6 +118,8 @@ class fault_injector:
         if self.simics:
             self.cycles_between = self.debugger.create_checkpoints(
                 self.command, self.exec_time, num_checkpoints)
+            campaign['board'] = self.board
+            campaign['num_checkpoints'] = num_checkpoints
             campaign['cycles_between'] = self.cycles_between
             campaign['dut_output'] = self.dut.output
             campaign['debugger_output'] = self.debugger.output
@@ -149,6 +159,7 @@ class fault_injector:
             self.debugger = simics(new=False,
                                    checkpoint=self.injected_checkpoint)
             self.dut = self.debugger.dut
+            self.dut.prompt = 'DrSEUS# '
             with open('campaign-data/private.key') as keyfile:
                 self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
         else:

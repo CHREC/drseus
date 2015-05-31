@@ -1,5 +1,3 @@
-from simics_targets import P2020 as targets
-
 import random
 import pickle
 import os
@@ -30,6 +28,12 @@ def ChooseTarget(selectedTargets):
     If no list of targets is given, choose from all available targets.
     Random selection takes into account the number of bits each target contains.
     """
+    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
+        campaignData = pickle.load(campaign_pickle)
+    if campaignData['board'] == 'p2020rdb':
+        from simics_targets import P2020 as targets
+    elif campaignData['board'] == 'a9x4':
+        from simics_targets import A9 as targets
     targetToInject = None
     targetList = []
     totalBits = 0
@@ -59,6 +63,12 @@ def ChooseRegister(target):
     Random selection takes into account the number of bits each register
     contains.
     """
+    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
+        campaignData = pickle.load(campaign_pickle)
+    if campaignData['board'] == 'p2020rdb':
+        from simics_targets import P2020 as targets
+    elif campaignData['board'] == 'a9x4':
+        from simics_targets import A9 as targets
     if ':' in target:
         target = target.split(':')[0]
     registers = targets[target]['registers']
@@ -87,9 +97,14 @@ def InjectRegister(goldCheckpoint, injectedCheckpoint, register, target, previou
     register of the target in the goldCheckpoint and return the injection
     information.
     """
+    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
+        campaignData = pickle.load(campaign_pickle)
+    if campaignData['board'] == 'p2020rdb':
+        from simics_targets import P2020 as targets
+    elif campaignData['board'] == 'a9x4':
+        from simics_targets import A9 as targets
     if previousInjectionData is None:
         # create injectionData
-        campaignData = {'board': 'p2020rdb'}
         injectionData = {}
         injectionData['register'] = register
         if ':' in target:
@@ -303,18 +318,23 @@ def InjectCheckpoint(injectionNumber, selectedTargets):
     Create a new injected checkpoint (only performing injection on the
     selectedTargets if provided) and return the path of the injected checkpoint.
     """
+    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
+        campaignData = pickle.load(campaign_pickle)
+    if campaignData['board'] == 'p2020rdb':
+        from simics_targets import P2020 as targets
+    elif campaignData['board'] == 'a9x4':
+        from simics_targets import A9 as targets
     # verify selected targets exist
     if selectedTargets is not None:
         for target in selectedTargets:
             if target not in targets:
                 raise Exception('CheckpointInjection:InjectCheckpoint(): invalid injection target: '+target)
-    campaignData = {'numCheckpoints': 50}
     # choose a checkpoint for injection
     checkpointList = os.listdir('simics-workspace/gold-checkpoints')
     for checkpoint in checkpointList:
         if '.ckpt' not in checkpoint:
             checkpointList.remove(checkpoint)
-    checkpointList.remove('checkpoint-'+str(campaignData['numCheckpoints']-1)+'.ckpt')
+    checkpointList.remove('checkpoint-'+str(campaignData['num_checkpoints']-1)+'.ckpt')
     goldCheckpoint = 'simics-workspace/gold-checkpoints/'+checkpointList[random.randrange(len(checkpointList))]
     # create injected checkpoint directory
     if not(os.path.exists('simics-workspace/injected-checkpoints')):

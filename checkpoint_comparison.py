@@ -1,8 +1,7 @@
-from simics_targets import P2020 as targets
-
 import os
 import re
 import subprocess
+import pickle
 # from collections import OrderedDict
 
 
@@ -43,7 +42,12 @@ def ParseRegisters(configFile):
     InjectionTargets for the specified checkpoint configFile and returns a
     dictionary with all the values.
     """
-    campaignData = {'board': 'p2020rdb'}
+    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
+        campaignData = pickle.load(campaign_pickle)
+    if campaignData['board'] == 'p2020rdb':
+        from simics_targets import P2020 as targets
+    elif campaignData['board'] == 'a9x4':
+        from simics_targets import A9 as targets
     registers = {}
     for target in targets:
         if target != 'TLB':
@@ -120,7 +124,12 @@ def CompareRegisters(goldCheckpoint, monitoredCheckpoint):
     goldCheckpoint and returns the differences in dictionary as well as the
     total number of differences.
     """
-    campaignData = {'board': 'p2020rdb'}
+    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
+        campaignData = pickle.load(campaign_pickle)
+    if campaignData['board'] == 'p2020rdb':
+        from simics_targets import P2020 as targets
+    elif campaignData['board'] == 'a9x4':
+        from simics_targets import A9 as targets
     goldRegisters = ParseRegisters(goldCheckpoint+'/config')
     monitoredRegisters = ParseRegisters(monitoredCheckpoint+'/config')
     registerErrors = 0
@@ -234,7 +243,8 @@ def CompareMemoryContents(goldCheckpoint, monitoredIncrementalCheckpoint, monito
     true then extract any blocks that do not match to
     monitoredIncrementalCheckpoint.
     """
-    campaignData = {'board': 'p2020rdb'}
+    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
+        campaignData = pickle.load(campaign_pickle)
     goldCheckpointRAM = goldCheckpoint+'/DUT_'+campaignData['board']+'.soc.ram_image[0].craff'
     monitoredCheckpointRAM = monitoredMergedCheckpoint+'/DUT_'+campaignData['board']+'.soc.ram_image[0].craff'
     diffFile = monitoredCheckpointRAM+'.diff'

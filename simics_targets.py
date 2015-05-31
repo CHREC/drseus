@@ -2137,3 +2137,56 @@ for target in P2020:
             else:
                 P2020[target]['registers'][register]['adjustBit'] = sorted(adjustBit)
     P2020[target]['totalBits'] = totalBits
+
+A9 = {
+    'CPU': {
+        'count': 4,
+        'OBJECT': '.coretile.mpcore.core',
+        'TYPE': 'arm-cortex-a9',
+        'registers': {
+            'cpsr': {},
+            'spsr': {
+                'count': (7, ),
+            },
+        },
+    },
+    'GPR': {
+        'count': 4,
+        'OBJECT': '.coretile.mpcore.core',
+        'TYPE': 'arm-cortex-a9',
+        'registers': {
+            'gprs': {
+                'count': (7, 16),
+            }
+        }
+    }
+}
+
+for target in A9:
+    # count bits for each target
+    totalBits = 0
+    for register in A9[target]['registers']:
+        if 'bits' in A9[target]['registers'][register]:
+            bits = A9[target]['registers'][register]['bits']
+        else:
+            bits = 32
+        if 'count' in A9[target]['registers'][register]:
+            count = 1
+            for dimension in A9[target]['registers'][register]['count']:
+                count *= dimension
+        else:
+            count = 1
+        A9[target]['registers'][register]['totalBits'] = count * bits
+        totalBits += count * bits
+        # if a register is partially implemented generate an adjustBit mapping list
+        # to ensure an unimplemented field is not injected into
+        if 'partial' in A9[target]['registers'][register] and A9[target]['registers'][register]['partial']:
+            adjustBit = []
+            for field, fieldRange in A9[target]['registers'][register]['fields'].iteritems():
+                for bit in xrange(fieldRange[0], fieldRange[1]+1):
+                    adjustBit.append(bit)
+            if len(adjustBit) != bits:
+                raise Exception('InjectionTargets: bits mismatch for register: '+register+' in target: '+target)
+            else:
+                A9[target]['registers'][register]['adjustBit'] = sorted(adjustBit)
+    A9[target]['totalBits'] = totalBits
