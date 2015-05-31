@@ -87,6 +87,8 @@ class simics:
         if new:
             self.continue_dut()
             self.do_uboot()
+        else:
+            self.dut.prompt = 'DrSEUS# '
 
     def close(self):
         self.simics.send_signal(signal.SIGINT)

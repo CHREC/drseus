@@ -159,7 +159,6 @@ class fault_injector:
             self.debugger = simics(new=False,
                                    checkpoint=self.injected_checkpoint)
             self.dut = self.debugger.dut
-            self.dut.prompt = 'DrSEUS# '
             with open('campaign-data/private.key') as keyfile:
                 self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
         else:
