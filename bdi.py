@@ -10,6 +10,7 @@ from error import DrSEUSError
 class bdi:
     # check debugger is ready and boot device
     def __init__(self, ip_address, dut, new, debug):
+        self.debug = debug
         self.output = ''
         try:
             self.telnet = telnetlib.Telnet(ip_address)
@@ -21,10 +22,10 @@ class bdi:
         if not self.ready():
             print('debugger not ready')
             sys.exit()
-        if new:
-            if not self.reset_dut():
-                print('error resetting dut')
-                sys.exit()
+        # if new:
+        #     if not self.reset_dut():
+        #         print('error resetting dut')
+        #         sys.exit()
 
     def close(self):
         self.command('quit')
@@ -93,9 +94,9 @@ class bdi:
 
 
 class bdi_arm(bdi):
-    def __init__(self, ip_address, dut, new=True, debug=False):
+    def __init__(self, ip_address, dut, new=True, debug=True):
         self.prompts = ['A9#0>', 'A9#1>']
-        bdi.__init__(self, ip_address, dut, new)
+        bdi.__init__(self, ip_address, dut, new, debug)
 
     def halt_dut(self):
         self.telnet.write('halt 3\r\n')
@@ -140,9 +141,9 @@ class bdi_arm(bdi):
 
 
 class bdi_p2020(bdi):
-    def __init__(self, ip_address, dut, new=True, debug=False):
+    def __init__(self, ip_address, dut, new=True, debug=True):
         self.prompts = ['P2020>']
-        bdi.__init__(self, ip_address, dut, new)
+        bdi.__init__(self, ip_address, dut, new, debug)
 
     def halt_dut(self):
         self.telnet.write('halt 0 1\r\n')

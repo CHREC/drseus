@@ -20,8 +20,8 @@ import checkpoint_injection
 class fault_injector:
     # setup dut and debugger
     # TODO: move dut into debugger
-    def __init__(self, dut_ip_address='10.42.0.21',
-                 dut_serial_port='/dev/ttyUSB1',
+    def __init__(self, dut_ip_address='10.42.0.20',
+                 dut_serial_port='/dev/ttyUSB0',
                  debugger_ip_address='10.42.0.50',
                  architecture='p2020', use_simics=False, new=True, debug=True):
         if not os.path.exists('campaign-data'):
