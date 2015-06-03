@@ -9,9 +9,9 @@ def register_chart(request, title, sidebar_items):
         series=[
             {
                 'options': {
-                    'source': simics_results.objects.all(),
+                    'source': simics_results.objects.filter(register='gprs'),
                     'categories': [
-                        'register',
+                        # 'register',
                         'register_index',
                     ],
                     'legend_by': 'outcome'
@@ -21,7 +21,7 @@ def register_chart(request, title, sidebar_items):
                 }
             }
         ],
-        sortf_mapf_mts=(lambda x: int(x[1]), None, False)
+        sortf_mapf_mts=(lambda x: int(x[0]), None, False)
     )
 
     chart = PivotChart(
