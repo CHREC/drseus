@@ -2,9 +2,6 @@ from __future__ import print_function
 import os
 import sys
 import pickle
-from socket import error as SocketError
-
-import paramiko
 
 from dut import dut
 
@@ -21,7 +18,7 @@ class supervisor:
         if new:
             self.dut = dut(dut_ip_address, dut_serial_port)
             self.aux = dut(aux_ip_address, aux_serial_port)
-            self.dut.rsakey = paramiko.RSAKey.generate(1024)
+            self.dut.set_rsakey()
             self.aux.rsakey = self.dut.rsakey
             with open('campaign-data/private.key', 'w') as keyfile:
                 self.dut.rsakey.write_private_key(keyfile)
@@ -31,7 +28,7 @@ class supervisor:
             self.dut = dut(dut_ip_address, dut_serial_port)
             self.aux = dut(aux_ip_address, aux_serial_port)
             with open('campaign-data/private.key', 'r') as keyfile:
-                self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
+                self.dut.set_rsakey()
 
     def exit(self):
         self.dut.serial.close()
@@ -56,13 +53,13 @@ class supervisor:
         aux_files.append(directory+'/'+aux_application)
         try:
             self.dut.send_files(files)
-        except SocketError:
-            print('could not connect to dut over ssh')
+        except:
+            print('could not send files to dut')
             sys.exit()
         try:
             self.aux.send_files(aux_files)
-        except SocketError:
-            print('could not connect to aux over ssh')
+        except:
+            print('could not send files to aux')
             sys.exit()
         campaign = {
             'application': self.application,

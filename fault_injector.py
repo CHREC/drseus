@@ -5,10 +5,7 @@ import difflib
 import pickle
 import random
 import time
-from socket import error as SocketError
-
-import paramiko
-from scp import SCPException
+import sqlite3
 
 from error import DrSEUSError
 from dut import dut
@@ -51,7 +48,7 @@ class fault_injector:
                 else:
                     print('invalid architecture:', architecture)
                     sys.exit()
-            self.dut.rsakey = paramiko.RSAKey.generate(1024)
+            self.dut.set_rsakey()
             with open('campaign-data/private.key', 'w') as keyfile:
                 self.dut.rsakey.write_private_key(keyfile)
             self.dut.do_login(change_prompt=use_simics)
@@ -74,7 +71,7 @@ class fault_injector:
                 print('invalid architecture:', architecture)
                 sys.exit()
             with open('campaign-data/private.key', 'r') as keyfile:
-                self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
+                self.dut.set_rsakey(keyfile)
 
     def exit(self):
         if not self.simics:
@@ -95,18 +92,17 @@ class fault_injector:
         if additional_files:
             for item in additional_files.split(','):
                 files.append(directory+'/'+item.lstrip().rstrip())
-        try:
-            self.dut.send_files(files)
-        except SocketError:
-            print('could not connect to dut over ssh')
-            sys.exit()
+        # try:
+        self.dut.send_files(files)
+        # except:
+        #     print('could not send files to dut')
+        #     sys.exit()
         self.exec_time = self.time_application(5)
         try:
             self.dut.get_file(self.output_file,
                               'campaign-data/gold_'+self.output_file)
-        except SCPException:
+        except:
             print ('could not get gold output file from dut')
-            import pdb; pdb.set_trace()
             sys.exit()
         campaign = {
             'application': self.application,
@@ -160,7 +156,7 @@ class fault_injector:
                                    checkpoint=self.injected_checkpoint)
             self.dut = self.debugger.dut
             with open('campaign-data/private.key') as keyfile:
-                self.dut.rsakey = paramiko.RSAKey.from_private_key(keyfile)
+                self.dut.set_rsakey(keyfile)
         else:
             injection_time = random.uniform(0, self.exec_time)
             if self.debug:
@@ -186,10 +182,7 @@ class fault_injector:
                                    str(injection_number)+'/'+self.output_file)
                 gold_location = 'campaign-data/gold_'+self.output_file
                 self.dut.get_file(self.output_file, output_location)
-            except paramiko.ssh_exception.AuthenticationException:
-                missing_output = True
-                print('could not create ssh connection')
-            except SCPException:
+            except:
                 missing_output = True
                 print('could not get output file')
             else:
@@ -213,14 +206,16 @@ class fault_injector:
             self.debugger.close()
 
     def log_injection(self, injection_number):
+        if not os.path.exists('django-logging/db.sqlite3'):
+            os.system('./django-logging/manage.py migrate')
         with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
             campaign_data = pickle.load(campaign_pickle)
         if self.simics:
             with open('simics-workspace/'+self.injected_checkpoint +
                       '/InjectionData.pickle', 'r') as injection_data_pickle:
-                self.injection_data = pickle.load(injection_data_pickle)
+                injection_data = pickle.load(injection_data_pickle)
         log = {
-            'injection_data': self.injection_data,
+            'injection_data': injection_data,
             'dut_output': self.dut.output,
             'debugger_output': self.debugger.output,
             'data_diff': self.data_diff,
@@ -235,3 +230,16 @@ class fault_injector:
         with open('campaign-data/results/'+str(injection_number)+'/log.pickle',
                   'w') as log_pickle:
             pickle.dump(log, log_pickle)
+        sql_db = sqlite3.connect('django-logging/db.sqlite3')
+        sql = sql_db.cursor()
+        registerIndex = ''
+        for index in injection_data['registerIndex']:
+            registerIndex += str(index)+':'
+        registerIndex = registerIndex[:-1]
+        sql.execute('INSERT INTO drseus_logging_simics_results ' +
+                    '(register,register_index,bit,outcome,qty) ' +
+                    'VALUES (?,?,?,?,?)', (
+                        injection_data['register'], registerIndex,
+                        injection_data['bit'], log['outcome'], 1))
+        sql_db.commit()
+        sql_db.close()

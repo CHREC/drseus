@@ -6,6 +6,7 @@ import optparse
 import shutil
 import os
 import pickle
+import subprocess
 
 from fault_injector import fault_injector
 from supervisor import supervisor
@@ -67,6 +68,11 @@ parser.add_option('-c', '--checkpoints', action='store', type='int',
                   dest='num_checkpoints', default=50,
                   help='number of gold checkpoints to create [default=50]')
 
+# log options
+parser.add_option('-l', '--view_logs', action='store_true',
+                  dest='view_logs', default=False,
+                  help='open logs in browser')
+
 options, args = parser.parse_args()
 
 # clean campaign (results and injected checkpoints)
@@ -77,6 +83,14 @@ if options.clean:
     if os.path.exists('simics-workspace/injected-checkpoints'):
         shutil.rmtree('simics-workspace/injected-checkpoints')
         print('deleted injected checkpoints')
+
+if options.view_logs:
+    server = subprocess.Popen([os.getcwd()+'/django-logging/manage.py',
+                               'runserver'],
+                              cwd=os.getcwd()+'/django-logging/')
+    os.system('google-chrome http://localhost:8000/register-chart/')
+    os.system('killall python')
+    sys.exit()
 
 # setup fault injection campaign
 if not options.inject and not options.aux:

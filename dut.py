@@ -33,6 +33,12 @@ class dut:
     def close(self):
         self.serial.close()
 
+    def set_rsakey(self, keyfile=None):
+        if keyfile is None:
+            self.rsakey = paramiko.RSAKey.generate(1024)
+        else:
+            self.rsakey = paramiko.RSAKey.from_private_key(keyfile)
+
     def send_files(self, files):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
