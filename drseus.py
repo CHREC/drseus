@@ -7,6 +7,7 @@ import shutil
 import os
 import pickle
 import subprocess
+import signal
 
 from fault_injector import fault_injector
 from supervisor import supervisor
@@ -89,7 +90,7 @@ if options.view_logs:
                                'runserver'],
                               cwd=os.getcwd()+'/django-logging/')
     os.system('google-chrome http://localhost:8000/register-chart/')
-    os.system('killall python')
+    os.killpg(os.getpgid(server.pid), signal.SIGKILL)
     sys.exit()
 
 # setup fault injection campaign
