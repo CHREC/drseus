@@ -1,0 +1,20 @@
+diff -ru chartit/templatetags/chartit.py chartit-simplejson/templatetags/chartit.py
+--- chartit/templatetags/chartit.py	2015-06-04 13:39:27.000000000 -0400
++++ chartit-simplejson/templatetags/chartit.py	2015-06-04 13:40:03.175502815 -0400
+@@ -1,7 +1,8 @@
+ from itertools import izip_longest
+ 
+ from django import template
+-from django.utils import simplejson
++# from django.utils import simplejson
++import simplejson
+ from django.utils.safestring import mark_safe
+ from django.conf import settings
+ import posixpath
+@@ -71,4 +72,4 @@
+                                         CHART_LOADER_URL))
+     else:
+         embed_script = embed_script %((), CHART_LOADER_URL)
+-    return mark_safe(embed_script)
+\ No newline at end of file
++    return mark_safe(embed_script)
