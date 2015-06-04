@@ -11,7 +11,6 @@ def register_chart(request, title, sidebar_items):
                 'options': {
                     'source': simics_results.objects.filter(register='gprs'),
                     'categories': [
-                        # 'register',
                         'register_index',
                     ],
                     'legend_by': 'outcome'
@@ -30,24 +29,24 @@ def register_chart(request, title, sidebar_items):
             {
                 'options': {
                     'type': 'column',
-                    'stacking': True,
-                    'xAxis': 0,
-                    'yAxis': 0
+                    'stacking': True
                 },
                 'terms': ['injections']
             }
         ],
         chart_options={
-            'chart': {
-                'title': {
-                    'text': 'Weather Chart'
-                }
+            'title': {
+                'text': 'General Purpose Registers'
             },
             'xAxis': {
-                'title': 'month'
+                'title': {
+                    'text': 'Register Number'
+                }
             },
             'yAxis': {
-                'title': 'temperature'
+                'title': {
+                    'text': 'Number of Injections'
+                }
             }
         }
     )

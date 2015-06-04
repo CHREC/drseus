@@ -15,6 +15,13 @@ class simics:
     # create simics instance and boot device
     def __init__(self, architecture='p2020', dut_ip_address='127.0.0.1',
                  new=True, checkpoint=None, debug=True):
+        if 'simics-common' in subprocess.check_output('ps -a', shell=True):
+            if raw_input('simics is already running, ' +
+                         'killall simics-common? [Y/n]: ') not in ['n', 'no',
+                                                                   'N', 'No,',
+                                                                   'NO']:
+                subprocess.call(['killall', 'simics-common'])
+
         self.debug = debug
         self.output = ''
         self.architecture = architecture
@@ -49,21 +56,21 @@ class simics:
         else:
             self.injected_checkpoint = checkpoint
             self.command('read-configuration '+checkpoint)
-        try:
-            buff = self.read_until('simics> ')
-        except DrSEUSError as error:
-            if error.type == 'simics_error':
-                print('error initializing simics')
-                if raw_input(
-                    'killall simics-commont? [Y/n]: ') not in ['n', 'no',
-                                                               'N', 'No,',
-                                                               'NO']:
-                    subprocess.call(['gnome-terminal', '-e',
-                                     'sudo killall simics-common'])
-                    raw_input('press enter to restart...')
-                    os.execv(__file__, sys.argv)
-            else:
-                raise DrSEUSError(error.type, error.console_buffer)
+        # try:
+        buff = self.read_until('simics> ')
+        # except DrSEUSError as error:
+        #     if error.type == 'simics_error':
+        #         print('error initializing simics')
+        #         if raw_input(
+        #             'killall simics-common? [Y/n]: ') not in ['n', 'no',
+        #                                                        'N', 'No,',
+        #                                                        'NO']:
+        #             subprocess.call(['gnome-terminal', '-e',
+        #                              'sudo killall simics-common'])
+        #             raw_input('press enter to restart...')
+        #             os.execv(__file__, sys.argv)
+        #     else:
+        #         raise DrSEUSError(error.type, error.console_buffer)
         for line in buff.split('\n'):
             if 'pseudo device opened: /dev/pts/' in line:
                 serial_port = line.split(':')[1].strip()
@@ -94,6 +101,7 @@ class simics:
         self.simics.send_signal(signal.SIGINT)
         self.simics.stdin.write('quit\n')
         self.simics.terminate()
+        self.simics.wait()
         self.dut.close()
 
     def halt_dut(self):

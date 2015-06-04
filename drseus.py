@@ -12,13 +12,11 @@ import signal
 from fault_injector import fault_injector
 from supervisor import supervisor
 
-# TODO: check if simics-common is already running
 # TODO: re-transfer files (and ssh key) if using initramfs
 # TODO: add support for multiple boards (ethernet tests) and
 #       concurrent simics injections
 # TODO: isolate injections on real device
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
-# TODO: make script for setting up tftp for BDI3000
 
 parser = optparse.OptionParser('drseus.py {application} {options}')
 
@@ -80,7 +78,10 @@ options, args = parser.parse_args()
 if options.clean:
     if os.path.exists('campaign-data/results'):
         shutil.rmtree('campaign-data/results')
-        print ('deleted results')
+        print('deleted results')
+    if os.path.exists('django-logging/db.sqlite3'):
+        os.remove('django-logging/db.sqlite3')
+        print('deleted database')
     if os.path.exists('simics-workspace/injected-checkpoints'):
         shutil.rmtree('simics-workspace/injected-checkpoints')
         print('deleted injected checkpoints')
@@ -114,6 +115,9 @@ if not options.inject and not options.aux:
         else:
             shutil.rmtree('campaign-data')
             print('deleted campaign data')
+            if os.path.exists('django-logging/db.sqlite3'):
+                os.remove('django-logging/db.sqlite3')
+                print('deleted database')
             if os.path.exists('simics-workspace/gold-checkpoints'):
                 shutil.rmtree('simics-workspace/gold-checkpoints')
                 print('deleted gold checkpoints')
