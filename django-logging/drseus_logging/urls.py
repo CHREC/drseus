@@ -16,14 +16,16 @@ Including another URLconf
 from django.conf.urls import patterns
 
 chart_view_title = [
-    (r'register-chart/', 'register_chart', 'Injections By Register'),
+    (r'', 'table', 'Results Table'),
+    (r'charts/register/', 'register_chart', 'Injections By Register Chart'),
+    (r'charts/bit/', 'bit_chart', 'Injections By Bit Chart'),
 ]
 
-chart_sidebar = [
+sidebar = [
     (r'../' + myurl, title) for (myurl, view, title) in chart_view_title
 ]
 
-sidebar_items = [("Charts", chart_sidebar)]
+sidebar_items = [("Navigation", sidebar)]
 
 chart_pattern_tuples = [
     (
@@ -36,7 +38,7 @@ chart_pattern_tuples = [
     ) for (myurl, view, title) in chart_view_title
 ]
 
-# homepatterns = patterns('homepage.views', (r'^$', 'homepage'), )
+# homepatterns = patterns('drseus_logging.views', (r'^$', 'table'), )
 chartpatterns = patterns('drseus_logging.views', *chart_pattern_tuples)
 
 urlpatterns = chartpatterns  # + homepatterns

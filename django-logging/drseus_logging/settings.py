@@ -37,6 +37,8 @@ INSTALLED_APPS = (
     # 'django.contrib.messages',
     'django.contrib.staticfiles',
     'chartit',
+    'django_tables2',
+    'django_filters',
     'drseus_logging',
 )
 
@@ -61,7 +63,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
-                # 'django.template.context_processors.request',
+                'django.template.context_processors.request',
                 "django.core.context_processors.i18n",
                 "django.core.context_processors.media",
                 "django.core.context_processors.static",

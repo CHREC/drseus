@@ -1,18 +1,13 @@
 {% extends "base.html" %}
 
-{%block chart_loader_header %}
-        {% load chartit %}
-        {{ chart_list|load_charts:"c1" }}
-{% endblock %}
-
 {% block body %}
                         <div class="source" align="center">
                             <div class="section">
                                 <h2>
                                     {{ title }}
                                 </h2>
-                                <div id="c1">
-                                </div>
+                                {% load django_tables2 %}
+                                {% render_table table %}
                             </div>
                         </div>
 {% endblock %}

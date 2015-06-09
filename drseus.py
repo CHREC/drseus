@@ -90,7 +90,7 @@ if options.view_logs:
     server = subprocess.Popen([os.getcwd()+'/django-logging/manage.py',
                                'runserver'],
                               cwd=os.getcwd()+'/django-logging/')
-    os.system('google-chrome http://localhost:8000/register-chart/')
+    os.system('google-chrome http://localhost:8000')
     os.killpg(os.getpgid(server.pid), signal.SIGKILL)
     sys.exit()
 

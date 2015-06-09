@@ -7,7 +7,8 @@
             DrSEUS
         </title>
         {% load static %}
-        <link rel="stylesheet" type="text/css" href="{% get_static_prefix %}styles/nature.css">
+        <link rel="stylesheet" type="text/css" href="{% get_static_prefix %}css/nature.css">
+        <link rel="stylesheet" type="text/css" href="{% get_static_prefix %}css/table.css">
         <script src="{% get_static_prefix %}js/jquery-1.6.4.min.js" type="text/javascript">
         </script>
         <script src="{% get_static_prefix %}js/highcharts-2.1.7.js" type="text/javascript">
@@ -15,35 +16,17 @@
         {%block chart_loader_header %}{% endblock %}
     </head>
     <body>
-        <div class="related">
-            <h3>
-                Navigation
-            </h3>
-            <ul>
-                <li class="right" style="margin-right: 10px" >
-                    <a href="/demo" title = "Demo">
-                        Demo
-                    </a>
-                </li>
-                <li class="right" style="margin-right: 10px" >
-                    <a href="/" title = "Home">
-                        Home
-                    </a>
-                    |
-                </li>
-                <li>
-                    <a href="/demo">
-                        Demo
-                    </a>
-                </li>
-            </ul>
+        <div class="related" align="center">
+            <h1 style="margin:0;padding:5px">
+                DrSEUS Fault-Injection Campaign Results
+            </h1>
         </div>
         <div class="document">
             <div class="documentwrapper">
                 <div class="bodywrapper">
                     <div class="body">
-                        {% block welcome %} {% endblock %}
-                        {% block chart %}{% endblock %}
+                        {% block body %}
+                        {% endblock %}
                     </div>
                 </div>
             </div>
@@ -65,6 +48,15 @@
                         </ul>
                     </ul>
                     {% endfor %}
+                    <h3>
+                        Filter
+                    </h3>
+                    <form action="" method="get">
+                        <ul>
+                            {{ filter.form.as_p }}
+                        </ul>
+                        <input type="submit" style="display:block;margin-left:auto;margin-right:auto;width:65%;" />
+                    </form>
                 </div>
             </div>
             <div class="clearer">
@@ -73,6 +65,7 @@
         <div class="related">
         </div>
         <div class="footer">
+            DrSEUS was created by Ed Carlisle IV
         </div>
     </body>
 </html>
