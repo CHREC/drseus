@@ -1,7 +1,7 @@
 import random
-import pickle
 import os
 import shutil
+import sqlite3
 
 
 def FlipBit(valToInject, numBitsToInject, bitToInject):
@@ -22,18 +22,12 @@ def FlipBit(valToInject, numBitsToInject, bitToInject):
     return injectedVal
 
 
-def ChooseTarget(selectedTargets):
+def ChooseTarget(selectedTargets, targets):
     """
     Given a list of targets, randomly choose one and return it.
     If no list of targets is given, choose from all available targets.
     Random selection takes into account the number of bits each target contains.
     """
-    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
-        campaignData = pickle.load(campaign_pickle)
-    if campaignData['board'] == 'p2020rdb':
-        from simics_targets import P2020 as targets
-    elif campaignData['board'] == 'a9x4':
-        from simics_targets import A9 as targets
     targetToInject = None
     targetList = []
     totalBits = 0
@@ -57,18 +51,12 @@ def ChooseTarget(selectedTargets):
     return targetToInject
 
 
-def ChooseRegister(target):
+def ChooseRegister(target, targets):
     """
     Randomly choose a register from the target and return it.
     Random selection takes into account the number of bits each register
     contains.
     """
-    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
-        campaignData = pickle.load(campaign_pickle)
-    if campaignData['board'] == 'p2020rdb':
-        from simics_targets import P2020 as targets
-    elif campaignData['board'] == 'a9x4':
-        from simics_targets import A9 as targets
     if ':' in target:
         target = target.split(':')[0]
     registers = targets[target]['registers']
@@ -91,18 +79,12 @@ def ChooseRegister(target):
     return registerToInject
 
 
-def InjectRegister(goldCheckpoint, injectedCheckpoint, register, target, previousInjectionData=None):
+def InjectRegister(goldCheckpoint, injectedCheckpoint, register, target, board, targets, previousInjectionData=None):
     """
     Creates config file for injectedCheckpoint with an injected value for the
     register of the target in the goldCheckpoint and return the injection
     information.
     """
-    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
-        campaignData = pickle.load(campaign_pickle)
-    if campaignData['board'] == 'p2020rdb':
-        from simics_targets import P2020 as targets
-    elif campaignData['board'] == 'a9x4':
-        from simics_targets import A9 as targets
     if previousInjectionData is None:
         # create injectionData
         injectionData = {}
@@ -110,10 +92,10 @@ def InjectRegister(goldCheckpoint, injectedCheckpoint, register, target, previou
         if ':' in target:
             targetIndex = target.split(':')[1]
             target = target.split(':')[0]
-            configObject = 'DUT_'+campaignData['board']+targets[target]['OBJECT']+'['+targetIndex+']'
+            configObject = 'DUT_'+board+targets[target]['OBJECT']+'['+targetIndex+']'
         else:
             targetIndex = 'N/A'
-            configObject = 'DUT_'+campaignData['board']+targets[target]['OBJECT']
+            configObject = 'DUT_'+board+targets[target]['OBJECT']
         injectionData['targetIndex'] = targetIndex
         configType = targets[target]['TYPE']
         injectionData['configType'] = configType
@@ -313,16 +295,14 @@ def InjectRegister(goldCheckpoint, injectedCheckpoint, register, target, previou
     return injectionData
 
 
-def InjectCheckpoint(injectionNumber, selectedTargets):
+def InjectCheckpoint(injectionNumber, board, selectedTargets, num_checkpoints):
     """
     Create a new injected checkpoint (only performing injection on the
     selectedTargets if provided) and return the path of the injected checkpoint.
     """
-    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
-        campaignData = pickle.load(campaign_pickle)
-    if campaignData['board'] == 'p2020rdb':
+    if board == 'p2020rdb':
         from simics_targets import P2020 as targets
-    elif campaignData['board'] == 'a9x4':
+    elif board == 'a9x4':
         from simics_targets import A9 as targets
     # verify selected targets exist
     if selectedTargets is not None:
@@ -334,7 +314,7 @@ def InjectCheckpoint(injectionNumber, selectedTargets):
     for checkpoint in checkpointList:
         if '.ckpt' not in checkpoint:
             checkpointList.remove(checkpoint)
-    checkpointList.remove('checkpoint-'+str(campaignData['num_checkpoints']-1)+'.ckpt')
+    checkpointList.remove('checkpoint-'+str(num_checkpoints-1)+'.ckpt')
     goldCheckpoint = 'simics-workspace/gold-checkpoints/'+checkpointList[random.randrange(len(checkpointList))]
     # create injected checkpoint directory
     if not(os.path.exists('simics-workspace/injected-checkpoints')):
@@ -351,40 +331,34 @@ def InjectCheckpoint(injectionNumber, selectedTargets):
     for checkpointFile in checkpointFiles:
         shutil.copyfile(goldCheckpoint+'/'+checkpointFile, injectedCheckpoint+'/'+checkpointFile)
     # choose injection target
-    target = ChooseTarget(selectedTargets)
-    register = ChooseRegister(target)
+    target = ChooseTarget(selectedTargets, targets)
+    register = ChooseRegister(target, targets)
     # perform fault injection
-    injectionData = InjectRegister(goldCheckpoint, injectedCheckpoint, register, target)
+    injectionData = InjectRegister(goldCheckpoint, injectedCheckpoint, register, target, board, targets)
     # log injection data
     injectionData['injectionNumber'] = injectionNumber
     injectionData['checkpointNumber'] = checkpointNumber
     # with open(goldCheckpoint+'/DebugInfo.txt', 'r') as debugInfo:
     #     injectionData['goldDebugInfo'] = debugInfo.read()
-    with open(injectedCheckpoint+'/InjectionData.pickle', 'w') as injectionPickle:
-        pickle.dump(injectionData, injectionPickle)
+    sql_db = sqlite3.connect('django-logging/db.sqlite3')
+    sql = sql_db.cursor()
+    registerIndex = ''
+    for index in injectionData['registerIndex']:
+        registerIndex += str(index)+':'
+    registerIndex = registerIndex[:-1]
+    sql.execute(
+        'INSERT INTO drseus_logging_simics_injection ' +
+        '(injection_number,register,bit,gold_value,injected_value,' +
+        'checkpoint_number,target_index,target,config_object,register_index,' +
+        'field) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+        (
+            injectionData['injectionNumber'], injectionData['register'],
+            injectionData['bit'], injectionData['goldValue'],
+            injectionData['injectedValue'], injectionData['checkpointNumber'],
+            injectionData['targetIndex'], injectionData['target'],
+            injectionData['configObject'], registerIndex, injectionData['field']
+        )
+    )
+    sql_db.commit()
+    sql_db.close()
     return injectedCheckpoint.replace('simics-workspace/', '')
-
-
-def RegenerateInjectedCheckpoint(injectionData):
-    """
-    Regenerate a previously created injected checkpoint using injectionData.
-    """
-    goldCheckpoint = 'simics-workspace/gold-checkpoints/checkpoint-'+str(injectionData['checkpointNumber'])+'.ckpt'
-    # create temporary directory
-    if not(os.path.exists('./temp')):
-        os.mkdir('./temp')
-    injectedCheckpoint = ('./temp/'+str(injectionData['injectionNumber'])+'_' +
-                          'checkpoint-'+str(injectionData['checkpointNumber'])+'.ckpt')
-    os.mkdir(injectedCheckpoint)
-    # copy gold checkpoint files
-    checkpointFiles = os.listdir(goldCheckpoint)
-    checkpointFiles.remove('config')
-    checkpointFiles.remove('DebugInfo.txt')
-    for checkpointFile in checkpointFiles:
-        shutil.copyfile(goldCheckpoint+'/'+checkpointFile, injectedCheckpoint+'/'+checkpointFile)
-    # perform fault injection
-    InjectRegister(
-        goldCheckpoint, injectedCheckpoint, injectionData['register'], injectionData['target'], injectionData)
-    with open(injectedCheckpoint+'/InjectionData.pickle', 'w') as injectionPickle:
-        pickle.dump(injectionData, injectionPickle)
-    return injectedCheckpoint

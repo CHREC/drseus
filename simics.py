@@ -185,23 +185,24 @@ class simics:
         self.close()
         return step_cycles
 
-    def compare_checkpoints(self, checkpoint,
+    def compare_checkpoints(self, injection_number, checkpoint, board,
                             cycles_between_checkpoints, num_checkpoints):
         if not os.path.exists('simics-workspace/'+checkpoint+'/monitored'):
             os.mkdir('simics-workspace/'+checkpoint+'/monitored')
         checkpoint_number = int(
             checkpoint.split('/')[-1][checkpoint.split('/')[-1].index(
                 '-')+1:checkpoint.split('/')[-1].index('.ckpt')])
-        incremental_results = []
-        for i in xrange(checkpoint_number+1, num_checkpoints):
+        for monitored_checkpoint_number in xrange(checkpoint_number+1,
+                                                  num_checkpoints):
             self.command('run-cycles '+str(cycles_between_checkpoints))
             monitor_checkpoint = (checkpoint +
-                                  '/monitored/checkpoint-'+str(i)+'.ckpt')
+                                  '/monitored/checkpoint-' +
+                                  str(monitored_checkpoint_number)+'.ckpt')
             self.command('write-configuration '+monitor_checkpoint)
             monitor_checkpoint = 'simics-workspace/'+monitor_checkpoint
             gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
-                               str(i)+'.ckpt')
-            incremental_results.append(
-                checkpoint_comparison.CompareCheckpoints(gold_checkpoint,
-                                                         monitor_checkpoint))
-        return incremental_results
+                               str(monitored_checkpoint_number)+'.ckpt')
+            checkpoint_comparison.CompareRegisters(
+                injection_number, monitored_checkpoint_number,
+                gold_checkpoint, monitor_checkpoint, board
+            )

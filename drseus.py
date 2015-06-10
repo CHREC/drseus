@@ -5,9 +5,9 @@ import sys
 import optparse
 import shutil
 import os
-import pickle
 import subprocess
 import signal
+import sqlite3
 
 from fault_injector import fault_injector
 from supervisor import supervisor
@@ -80,8 +80,15 @@ if options.clean:
         shutil.rmtree('campaign-data/results')
         print('deleted results')
     if os.path.exists('django-logging/db.sqlite3'):
-        os.remove('django-logging/db.sqlite3')
-        print('deleted database')
+        sql_db = sqlite3.connect('django-logging/db.sqlite3')
+        sql = sql_db.cursor()
+        sql.execute('DELETE FROM drseus_logging_hw_injection')
+        sql.execute('DELETE FROM drseus_logging_result')
+        sql.execute('DELETE FROM drseus_logging_simics_injection')
+        sql.execute('DELETE FROM drseus_logging_simics_register_diff')
+        sql_db.commit()
+        sql_db.close()
+        print('flushed database')
     if os.path.exists('simics-workspace/injected-checkpoints'):
         shutil.rmtree('simics-workspace/injected-checkpoints')
         print('deleted injected checkpoints')
@@ -108,8 +115,7 @@ if not options.inject and not options.aux:
     if options.simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics.sh')
     if os.path.exists('campaign-data'):
-        print('warning: previous campaign data exists, ',
-              'continuing will delete it')
+        print('previous campaign data exists, continuing will delete it')
         if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
             sys.exit()
         else:
@@ -138,17 +144,18 @@ if not options.inject and not options.aux:
             sys.exit()
     else:
         if options.architecture == 'p2020':
-            drseus = fault_injector()
+            drseus = fault_injector(num_checkpoints=options.num_checkpoints)
         elif options.architecture == 'arm':
             drseus = fault_injector(dut_ip_address='10.42.0.30',
                                     dut_serial_port='/dev/ttyACM0',
-                                    architecture=options.architecture)
+                                    architecture=options.architecture,
+                                    num_checkpoints=options.num_checkpoints)
         else:
             print('invalid architecture:', options.architecture)
             sys.exit()
     drseus.setup_campaign('fiapps', args[0], options.arguments,
                           options.output_file, options.files,
-                          options.iterations, options.num_checkpoints)
+                          options.iterations)
     print('\nsuccessfully setup fault injection campaign:')
     print('\tcopied target application to dut')
     print('\ttimed target application')
@@ -159,27 +166,32 @@ if not options.inject and not options.aux:
 # perform fault injections
 elif options.inject:
     # TODO: check state of dut
-    if not os.path.exists('campaign-data'):
+    if (not os.path.exists('campaign-data') or
+            not os.path.exists('django-logging/db.sqlite3')):
         print('could not find previously created campaign')
         sys.exit()
-    with open('campaign-data/campaign.pickle', 'r') as campaign_pickle:
-        campaign_data = pickle.load(campaign_pickle)
+    sql_db = sqlite3.connect('django-logging/db.sqlite3')
+    sql_db.row_factory = sqlite3.Row
+    sql = sql_db.cursor()
+    sql.execute('select * from drseus_logging_campaign_data')
+    campaign_data = sql.fetchone()
+    sql_db.close()
     if len(args) > 0:
         if args[0] != campaign_data['application']:
             print('campaign created with different application:',
                   campaign_data['application'])
             sys.exit()
-    if options.simics and not campaign_data['use_simics']:
+    if options.simics and not campaign_data['simics']:
         print('previous campaign was not created with simics')
         sys.exit()
     if campaign_data['architecture'] == 'p2020':
-        drseus = fault_injector(use_simics=campaign_data['use_simics'],
+        drseus = fault_injector(use_simics=campaign_data['simics'],
                                 new=False)
     elif campaign_data['architecture'] == 'arm':
         drseus = fault_injector(dut_ip_address='10.42.0.30',
                                 dut_serial_port='/dev/ttyACM0',
                                 architecture='arm',
-                                use_simics=campaign_data['use_simics'],
+                                use_simics=campaign_data['simics'],
                                 new=False)
     # TODO: should not need this
     else:
@@ -187,19 +199,39 @@ elif options.inject:
         sys.exit()
     drseus.command = campaign_data['command']
     drseus.output_file = campaign_data['output_file']
-    if campaign_data['use_simics']:
-        drseus.cycles_between = campaign_data['cycles_between']
+    if campaign_data['simics']:
+        sql_db = sqlite3.connect('django-logging/db.sqlite3')
+        sql_db.row_factory = sqlite3.Row
+        sql = sql_db.cursor()
+        sql.execute('SELECT * FROM drseus_logging_simics_campaign_data')
+        simics_campaign_data = sql.fetchone()
+        sql_db.close()
+        drseus.num_checkpoints = simics_campaign_data['num_checkpoints']
+        drseus.cycles_between = simics_campaign_data['cycles_between']
+        drseus.board = simics_campaign_data['board']
     else:
         drseus.exec_time = campaign_data['exec_time']
-    if os.path.exists('campaign-data/results'):
-        start = len(os.listdir('campaign-data/results'))
+    sql_db = sqlite3.connect('django-logging/db.sqlite3')
+    sql_db.row_factory = sqlite3.Row
+    sql = sql_db.cursor()
+    sql.execute('SELECT * FROM drseus_logging_simics_injection ORDER BY ' +
+                'injection_number DESC LIMIT 1')
+    simics_row = sql.fetchone()
+    if simics_row is None:
+        sql.execute('SELECT * FROM drseus_logging_hw_injection ORDER BY ' +
+                    'injection_number DESC LIMIT 1')
+        hw_row = sql.fetchone()
+        if hw_row is None:
+            start = 0
+        else:
+            start = hw_row['injection_number'] + 1
     else:
-        start = 0
+        start = simics_row['injection_number'] + 1
+    sql_db.close()
     try:
         for injection_number in xrange(start, start + options.num_injections):
             drseus.inject_fault(injection_number)
             drseus.monitor_execution(injection_number)
-            drseus.log_injection(injection_number)
         drseus.exit()
     except KeyboardInterrupt:
         if not drseus.simics:
