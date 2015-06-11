@@ -215,8 +215,9 @@ class fault_injector:
         sql_db = sqlite3.connect('django-logging/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
-            'INSERT INTO drseus_logging_result ' +
-            '(injection_number,outcome,outcome_category,data_diff,' +
+            'INSERT INTO drseus_logging_' +
+            ('simics_result ' if self.simics else 'hw_reset ') +
+            '(injection_id,outcome,outcome_category,data_diff,' +
             'detected_errors,qty,dut_output,debugger_output) ' +
             'VALUES (?,?,?,?,?,?,?,?)', (
                 injection_number, outcome, outcome_category, data_diff,

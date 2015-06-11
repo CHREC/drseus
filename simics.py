@@ -100,6 +100,7 @@ class simics:
     def close(self):
         self.simics.send_signal(signal.SIGINT)
         self.simics.stdin.write('quit\n')
+        self.output += 'quit\n'
         self.simics.terminate()
         self.simics.wait()
         self.dut.close()
@@ -110,6 +111,7 @@ class simics:
 
     def continue_dut(self):
         self.simics.stdin.write('run\n')
+        self.output += 'run\n'
 
     # TODO: add timeout
     def read_until(self, string):
@@ -132,6 +134,7 @@ class simics:
 
     def command(self, command):
         self.simics.stdin.write(command+'\n')
+        self.output += command+'\n'
         return self.read_until('simics> ',)
 
     def do_uboot(self):

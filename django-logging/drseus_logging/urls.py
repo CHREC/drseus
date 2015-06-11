@@ -15,17 +15,23 @@ Including another URLconf
 """
 from django.conf.urls import patterns
 
-chart_view_title = [
+charts_and_tables = [
     (r'', 'table', 'Results Table'),
     (r'charts/register/', 'register_chart', 'Injections By Register Chart'),
     (r'charts/bit/', 'bit_chart', 'Injections By Bit Chart'),
+    (r'charts/outcome/', 'outcome_chart', 'Injections By Outcome')
 ]
 
-sidebar = [
-    (r'../' + myurl, title) for (myurl, view, title) in chart_view_title
+sidebar_group1 = [
+    (r'../' + myurl, title) for (myurl, view, title) in charts_and_tables
 ]
 
-sidebar_items = [("Navigation", sidebar)]
+sidebar_groups = [("Navigation", sidebar_group1)]
+
+charts_and_tables.append(
+    (r'injection/(?P<injection_number>[0-9]+)/', 'injection_result',
+     'Injection Result')
+)
 
 chart_pattern_tuples = [
     (
@@ -33,12 +39,9 @@ chart_pattern_tuples = [
         view,
         {
             'title': title,
-            'sidebar_items': sidebar_items
+            'sidebar_items': sidebar_groups
         }
-    ) for (myurl, view, title) in chart_view_title
+    ) for (myurl, view, title) in charts_and_tables
 ]
 
-# homepatterns = patterns('drseus_logging.views', (r'^$', 'table'), )
-chartpatterns = patterns('drseus_logging.views', *chart_pattern_tuples)
-
-urlpatterns = chartpatterns  # + homepatterns
+urlpatterns = patterns('drseus_logging.views', *chart_pattern_tuples)

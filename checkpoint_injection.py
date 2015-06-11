@@ -344,7 +344,7 @@ def InjectCheckpoint(injectionNumber, board, selectedTargets, num_checkpoints):
     sql = sql_db.cursor()
     registerIndex = ''
     for index in injectionData['registerIndex']:
-        registerIndex += str(index)+':'
+        registerIndex += str(index).zfill(2)+':'
     registerIndex = registerIndex[:-1]
     sql.execute(
         'INSERT INTO drseus_logging_simics_injection ' +

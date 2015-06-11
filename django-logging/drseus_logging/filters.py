@@ -1,41 +1,43 @@
 from django import forms
 import django_filters
-from .models import simics_results
+from .models import simics_result, simics_injection, simics_register_diff
 
 register_choices = []
-for item in sorted(simics_results.objects.values('register').distinct()):
+for item in sorted(
+        simics_injection.objects.values('register').distinct()):
     register_choices.append((item['register'], item['register']))
 
 register_index_choices = []
-for item in sorted(simics_results.objects.values('register_index').distinct()):
+for item in sorted(
+        simics_injection.objects.values('register_index').distinct()):
     register_index_choices.append(
         (item['register_index'], item['register_index']))
 
 bit_choices = []
-for item in sorted(simics_results.objects.values('bit').distinct()):
+for item in sorted(simics_injection.objects.values('bit').distinct()):
     bit_choices.append((item['bit'], item['bit']))
 
 outcome_choices = []
-for item in sorted(simics_results.objects.values('outcome').distinct()):
+for item in sorted(simics_result.objects.values('outcome').distinct()):
     outcome_choices.append((item['outcome'], item['outcome']))
 
 
-class results_filter(django_filters.FilterSet):
-    register = django_filters.MultipleChoiceFilter(
+class simics_result_filter(django_filters.FilterSet):
+    injection__register = django_filters.MultipleChoiceFilter(
         choices=register_choices,
         widget=forms.SelectMultiple(attrs={
             'size': str(len(register_choices)),
             'style': 'width:100%;'
         })
     )
-    register_index = django_filters.MultipleChoiceFilter(
+    injection__register_index = django_filters.MultipleChoiceFilter(
         choices=register_index_choices,
         widget=forms.SelectMultiple(attrs={
             'size': '10',
             'style': 'width:100%;'
         })
     )
-    bit = django_filters.MultipleChoiceFilter(
+    injection__bit = django_filters.MultipleChoiceFilter(
         choices=bit_choices,
         widget=forms.SelectMultiple(attrs={
             'size': '10',
@@ -51,5 +53,44 @@ class results_filter(django_filters.FilterSet):
     )
 
     class Meta:
-        model = simics_results
-        fields = ['register', 'register_index', 'bit', 'outcome']
+        model = simics_result
+        fields = ['injection__register', 'injection__register_index',
+                  'injection__bit', 'outcome']
+
+monitored_checkpoint_number_choices = []
+for item in sorted(
+        simics_register_diff.objects.values(
+            'monitored_checkpoint_number').distinct()):
+    monitored_checkpoint_number_choices.append(
+        (item['monitored_checkpoint_number'],
+         item['monitored_checkpoint_number']))
+
+register_diff_choices = []
+for item in sorted(
+        simics_register_diff.objects.values('register').distinct()):
+    register_diff_choices.append((item['register'], item['register']))
+
+
+class simics_register_diff_filter(django_filters.FilterSet):
+    monitored_checkpoint_number = django_filters.MultipleChoiceFilter(
+        choices=monitored_checkpoint_number_choices,
+        widget=forms.SelectMultiple(attrs={
+            'size': str(len(register_diff_choices) if
+                        len(register_diff_choices) < 30 else '30'),
+            'style': 'width:100%;'
+        })
+    )
+
+    register = django_filters.MultipleChoiceFilter(
+        choices=register_diff_choices,
+        widget=forms.SelectMultiple(attrs={
+            'size': str(len(register_diff_choices) if
+                        len(register_diff_choices) < 30 else '30'),
+            'style': 'width:100%;'
+        })
+    )
+
+    class Meta:
+        model = simics_register_diff
+        fields = ['monitored_checkpoint_number',  # 'config_object',
+                  'register']

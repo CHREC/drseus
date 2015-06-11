@@ -56,9 +56,21 @@ class simics_register_diff(models.Model):
     monitored_value = models.TextField()
 
 
-class result(models.Model):
+class simics_result(models.Model):
     # common fields
-    injection_number = models.IntegerField(primary_key=True)
+    injection = models.OneToOneField(simics_injection, primary_key=True)
+    outcome = models.TextField()
+    outcome_category = models.TextField()
+    data_diff = models.FloatField()
+    detected_errors = models.IntegerField()
+    qty = models.IntegerField()
+    dut_output = models.TextField()
+    debugger_output = models.TextField()
+
+
+class hw_result(models.Model):
+    # common fields
+    injection = models.OneToOneField(hw_injection, primary_key=True)
     outcome = models.TextField()
     outcome_category = models.TextField()
     data_diff = models.FloatField()

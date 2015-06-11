@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="source" align="center">
+    <h2>
+        {{ title }}
+    </h2>
+    <table>
+        <tr>
+            <td valign="top">
+                <div class="section">
+                    <h3>
+                        Register Diffs
+                    </h3>
+                    {% load django_tables2 %}
+                    {% render_table table %}
+                </div>
+            </td>
+            <td valign="top">
+                <div class="section">
+                    <h3>
+                        Injection Summary
+                    </h3>
+                    <table>
+                        <tr>
+                            <th>
+                                Injection Number
+                            </th>
+                            <td>
+                                {{ result.injection.injection_number }}
+                            </td>
+                            <th>
+                                Register
+                            </th>
+                            <td>
+                                {{ result.injection.register }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                Outcome Category
+                            </th>
+                            <td>
+                                {{ result.outcome_category }}
+                            </td>
+                            <th>
+                                Register Index
+                            </th>
+                            <td>
+                                {{ result.injection.register_index }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                Outcome
+                            </th>
+                            <td>
+                                {{ result.outcome }}
+                            </td>
+                            <th>
+                                Bit
+                            </th>
+                            <td>
+                                {{ result.injection.bit }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                Data Diff
+                            </th>
+                            <td>
+                                {{ result.data_diff }}
+                            </td>
+                            <th>
+                                Checkpoint Number
+                            </th>
+                            <td>
+                                {{ result.injection.checkpoint_number }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                Gold Value
+                            </th>
+                            <td>
+                                {{ result.injection.gold_value }}
+                            </td>
+                            <th>
+                                Inected Value
+                            </th>
+                            <td>
+                                {{ result.injection.injected_value }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                Detected Errors
+                            </th>
+                            <td>
+                                {{ result.detected_errors }}
+                            </td>
+                            <th>
+                                Target
+                            </th>
+                            <td>
+                                {{ result.injection.target }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                Target Index
+                            </th>
+                            <td>
+                                {{ result.injection.target_index }}
+                            </td>
+                            <th>
+                                Config Object
+                            </th>
+                            <td>
+                                {{ result.injection.config_object }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                Field
+                            </th>
+                            <td>
+                                {{ result.injection.field }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <br>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th colspan="4">
+                                DUT Output
+                            </th>
+                        </tr>
+                        <tr>
+
+                            <td colspan="4">
+                                {{ result.dut_output|linebreaks }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th colspan="4">
+                                Debugger Output
+                            </th>
+                        </tr>
+                        <tr>
+                            <td colspan="4">
+                                {{ result.debugger_output|linebreaks }}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+{% endblock %}
