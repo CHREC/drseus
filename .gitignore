@@ -1,0 +1,6 @@
+*.pyc
+campaign-data/
+fiapps/
+simics-workspace/
+simics_license.sh
+django-logging/db.sqlite3
