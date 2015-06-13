@@ -173,7 +173,8 @@ def outcome_chart(request, title, sidebar_items):
 
 
 def table(request, title, sidebar_items):
-    queryset = simics_result.objects.all()
+    queryset = simics_result.objects.all().annotate(
+        register_errors=Count('simics_register_diff'))
     fltr = simics_result_filter(request.GET, queryset=queryset)
     table = simics_result_table(fltr.qs)
     RequestConfig(request, paginate={'per_page': 30}).configure(table)
@@ -192,7 +193,7 @@ def table(request, title, sidebar_items):
 def injection_result(request, injection_number, title, sidebar_items):
     result = simics_result.objects.get(injection_id=injection_number)
     queryset = simics_register_diff.objects.filter(
-        injection_number=injection_number)
+        injection=injection_number)
     fltr = simics_register_diff_filter(request.GET, queryset=queryset)
     table = simics_register_diff_table(fltr.qs)
     RequestConfig(request, paginate=False).configure(table)

@@ -47,15 +47,6 @@ class hw_injection(models.Model):
     core = models.IntegerField()
 
 
-class simics_register_diff(models.Model):
-    injection_number = models.IntegerField()
-    monitored_checkpoint_number = models.IntegerField()
-    config_object = models.TextField()
-    register = models.TextField()
-    gold_value = models.TextField()
-    monitored_value = models.TextField()
-
-
 class simics_result(models.Model):
     # common fields
     injection = models.OneToOneField(simics_injection, primary_key=True)
@@ -66,6 +57,15 @@ class simics_result(models.Model):
     qty = models.IntegerField()
     dut_output = models.TextField()
     debugger_output = models.TextField()
+
+
+class simics_register_diff(models.Model):
+    injection = models.ForeignKey(simics_result)
+    monitored_checkpoint_number = models.IntegerField()
+    config_object = models.TextField()
+    register = models.TextField()
+    gold_value = models.TextField()
+    monitored_value = models.TextField()
 
 
 class hw_result(models.Model):

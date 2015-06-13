@@ -1,17 +1,6 @@
 import sqlite3
 
 
-def CompareCheckpoints(injection_number, checkpoint_number, board):
-    """
-    Compares the registers and memory of the monitored checkpoint to the
-    goldCheckpoint and returns an incrementalResult dictionary.
-    """
-
-
-    CompareRegisters(
-        gold_checkpoint, monitoredCheckpoint, board, targets)
-
-
 def ParseRegisters(configFile, board, targets):
     """
     Retrieves all the register values of the targets specified in
@@ -127,7 +116,7 @@ def CompareRegisters(injection_number, monitored_checkpoint_number,
                             sql.execute(
                                 'INSERT INTO ' +
                                 'drseus_logging_simics_register_diff ' +
-                                '(injection_number,' +
+                                '(injection_id,' +
                                 'monitored_checkpoint_number,config_object,' +
                                 'register,gold_value,monitored_value) ' +
                                 'VALUES (?,?,?,?,?,?)', (
@@ -145,7 +134,7 @@ def CompareRegisters(injection_number, monitored_checkpoint_number,
                                 sql.execute(
                                     'INSERT INTO ' +
                                     'drseus_logging_simics_register_diff ' +
-                                    '(injection_number,' +
+                                    '(injection_id,' +
                                     'monitored_checkpoint_number,config_object,' +
                                     'register,gold_value,monitored_value) ' +
                                     'VALUES (?,?,?,?,?,?)', (
@@ -164,7 +153,7 @@ def CompareRegisters(injection_number, monitored_checkpoint_number,
                                     sql.execute(
                                         'INSERT INTO ' +
                                         'drseus_logging_simics_register_diff ' +
-                                        '(injection_number,' +
+                                        '(injection_id,' +
                                         'monitored_checkpoint_number,config_object,' +
                                         'register,gold_value,monitored_value) ' +
                                         'VALUES (?,?,?,?,?,?)', (
