@@ -57,7 +57,7 @@ class simics:
             self.injected_checkpoint = checkpoint
             buff = self.command('read-configuration '+checkpoint)
             buff += self.command('connect-real-network-port-in ssh ' +
-                                 'ethernet_switch0 target-ip='+'10.10.0.100')
+                                 'ethernet_switch0 target-ip=10.10.0.100')
         found_settings = 0
         for line in buff.split('\n'):
             if 'pseudo device opened: /dev/pts/' in line:

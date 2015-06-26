@@ -208,226 +208,226 @@ P2020 = {
         'TYPE': 'ppce500',
         'registers': {
             'tlb0': {
-                'isTLB': True,
+                'is_tlb': True,
                 'bits': 77,
                 'count': (128, 4, 5),
                 'fields': {
                     'V': {
                         'bits': 1,
                         'index': 1,
-                        'bitIndicies': (63-32, 63-32)
+                        'bit_indicies': (63-32, 63-32)
                     },
                     'TS': {
                         'bits': 1,
                         'index': 1,
-                        'bitIndicies': (63-51, 63-51)
+                        'bit_indicies': (63-51, 63-51)
                     },
                     'TID': {
                         'bits': 8,
                         'index': 1,
-                        'bitIndicies': (63-47, 63-40)
+                        'bit_indicies': (63-47, 63-40)
                     },
                     'EPN': {
                         'bits': 20,
                         'index': 2,
-                        'bitIndicies': (63-51, 63-32)
+                        'bit_indicies': (63-51, 63-32)
                     },
                     'RPN': {
                         'bits': 24,
                         'split': True,
-                        'bitsH': 4,
-                        'bitsL': 20,
-                        'indexH': 4,
-                        'indexL': 3,
-                        'bitIndiciesH': (63-63, 63-60),
-                        'bitIndiciesL': (63-51, 63-32)
+                        'bits_h': 4,
+                        'bits_l': 20,
+                        'index_h': 4,
+                        'index_l': 3,
+                        'bit_indicies_h': (63-63, 63-60),
+                        'bit_indicies_l': (63-51, 63-32)
                     },
                     'SIZE': {
                         'bits': 4,
                         'index': 1,
-                        'bitIndicies': (63-55, 63-52)
+                        'bit_indicies': (63-55, 63-52)
                     },
                     'UX': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-58, 63-58)
+                        'bit_indicies': (63-58, 63-58)
                     },
                     'SX': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-59, 63-59)
+                        'bit_indicies': (63-59, 63-59)
                     },
                     'UW': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-60, 63-60)
+                        'bit_indicies': (63-60, 63-60)
                     },
                     'SW': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-61, 63-61)
+                        'bit_indicies': (63-61, 63-61)
                     },
                     'UR': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-62, 63-62)
+                        'bit_indicies': (63-62, 63-62)
                     },
                     'SR': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-63, 63-63)
+                        'bit_indicies': (63-63, 63-63)
                     },
                     'W': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-59, 63-59)
+                        'bit_indicies': (63-59, 63-59)
                     },
                     'I': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-60, 63-60)
+                        'bit_indicies': (63-60, 63-60)
                     },
                     'M': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-61, 63-61)
+                        'bit_indicies': (63-61, 63-61)
                     },
                     'G': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-62, 63-62)
+                        'bit_indicies': (63-62, 63-62)
                     },
                     'E': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-63, 63-63)
+                        'bit_indicies': (63-63, 63-63)
                     },
                     'X': {
                         'bits': 2,
                         'index': 2,
-                        'bitIndicies': (63-58, 63-57)
+                        'bit_indicies': (63-58, 63-57)
                     },
                     'U': {
                         'bits': 4,
                         'index': 3,
-                        'bitIndicies': (63-57, 63-54)
+                        'bit_indicies': (63-57, 63-54)
                     },
                     'NV': {
                         'bits': 2,
                         'index': 0,
-                        'bitIndicies': (63-63, 63-62)
+                        'bit_indicies': (63-63, 63-62)
                     }
                 }
             },
             'tlb1': {
-                'isTLB': True,
+                'is_tlb': True,
                 'bits': 76,
                 'count': (16, 5),
                 'fields': {
                     'V': {
                         'bits': 1,
                         'index': 1,
-                        'bitIndicies': (63-32, 63-32)
+                        'bit_indicies': (63-32, 63-32)
                     },
                     'TS': {
                         'bits': 1,
                         'index': 1,
-                        'bitIndicies': (63-51, 63-51)
+                        'bit_indicies': (63-51, 63-51)
                     },
                     'TID': {
                         'bits': 8,
                         'index': 1,
-                        'bitIndicies': (63-47, 63-40)
+                        'bit_indicies': (63-47, 63-40)
                     },
                     'EPN': {
                         'bits': 20,
                         'index': 2,
-                        'bitIndicies': (63-51, 63-32)
+                        'bit_indicies': (63-51, 63-32)
                     },
                     'RPN': {
                         'bits': 24,
                         'split': True,
-                        'bitsH': 4,
-                        'bitsL': 20,
-                        'indexH': 4,
-                        'indexL': 3,
-                        'bitIndiciesH': (63-63, 63-60),
-                        'bitIndiciesL': (63-51, 63-32)
+                        'bits_h': 4,
+                        'bits_l': 20,
+                        'index_h': 4,
+                        'index_l': 3,
+                        'bit_indicies_h': (63-63, 63-60),
+                        'bit_indicies_l': (63-51, 63-32)
                     },
                     'SIZE': {
                         'bits': 4,
                         'index': 1,
-                        'bitIndicies': (63-55, 63-52)
+                        'bit_indicies': (63-55, 63-52)
                     },
                     'UX': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-58, 63-58)
+                        'bit_indicies': (63-58, 63-58)
                     },
                     'SX': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-59, 63-59)
+                        'bit_indicies': (63-59, 63-59)
                     },
                     'UW': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-60, 63-60)
+                        'bit_indicies': (63-60, 63-60)
                     },
                     'SW': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-61, 63-61)
+                        'bit_indicies': (63-61, 63-61)
                     },
                     'UR': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-62, 63-62)
+                        'bit_indicies': (63-62, 63-62)
                     },
                     'SR': {
                         'bits': 1,
                         'index': 3,
-                        'bitIndicies': (63-63, 63-63)
+                        'bit_indicies': (63-63, 63-63)
                     },
                     'W': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-59, 63-59)
+                        'bit_indicies': (63-59, 63-59)
                     },
                     'I': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-60, 63-60)
+                        'bit_indicies': (63-60, 63-60)
                     },
                     'M': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-61, 63-61)
+                        'bit_indicies': (63-61, 63-61)
                     },
                     'G': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-62, 63-62)
+                        'bit_indicies': (63-62, 63-62)
                     },
                     'E': {
                         'bits': 1,
                         'index': 2,
-                        'bitIndicies': (63-63, 63-63)
+                        'bit_indicies': (63-63, 63-63)
                     },
                     'X': {
                         'bits': 2,
                         'index': 2,
-                        'bitIndicies': (63-58, 63-57)
+                        'bit_indicies': (63-58, 63-57)
                     },
                     'U': {
                         'bits': 4,
                         'index': 3,
-                        'bitIndicies': (63-57, 63-54)
+                        'bit_indicies': (63-57, 63-54)
                     },
                     'IPROT': {
                         'bits': 1,
                         'index': 1,
-                        'bitIndicies': (63-33, 63-33)
+                        'bit_indicies': (63-33, 63-33)
                     }
                 }
             }
@@ -467,7 +467,7 @@ P2020 = {
                     'Reserved0': (31-31, 31-16)
                     # Not Implemented: DPCI_ORDER, DTFLOWLVL, DTRANSINT
                 },
-                # 'adjustBit': lambda bit: bit if bit < 31-15 else bit + 4
+                # 'adjust_bit': lambda bit: bit if bit < 31-15 else bit + 4
             },
             # Pseudo register, not present in Simics checkpoint config files
             # P2020 docs say this is just a combination of other channel status bits
@@ -518,7 +518,7 @@ P2020 = {
                     # Not Implemented
                     # 'CS': (31-31, 31-31)
                 },
-                # 'adjustBit': lambda bit: bit + 1 if bit < 31-(10+1) else bit + 2
+                # 'adjust_bit': lambda bit: bit + 1 if bit < 31-(10+1) else bit + 2
             },
             'NLDAR': {
                 'count': (4, )
@@ -546,7 +546,7 @@ P2020 = {
                     'Reserved0': (31-31, 31-16)
                     # Not Implemented: SPCI_ORDER, STFLOWLVL, STRANSIT
                 },
-                # 'adjustBit': lambda bit: bit if bit < 31-15 else bit + 4
+                # 'adjust_bit': lambda bit: bit if bit < 31-15 else bit + 4
             },
             'SR': {
                 'count': (4, )
@@ -611,7 +611,7 @@ P2020 = {
                     # Not Implemented
                     # 'BMTPS': (31-31, 31-28)
                 },
-                # 'adjustBit': lambda bit: bit + 4 if bit < 31-27 else bit + 14 if bit < 31-24 else bit + 17
+                # 'adjust_bit': lambda bit: bit + 4 if bit < 31-27 else bit + 14 if bit < 31-24 else bit + 17
             },
             'LCRR': {
                 'bits': 25,
@@ -626,7 +626,7 @@ P2020 = {
                     # Not Implemented
                     # 'CLKDIV': (31-31, 31-27)
                 },
-                # 'adjustBit': lambda bit: bit + 5 if bit < 31-(15+5) else bit + 7
+                # 'adjust_bit': lambda bit: bit + 5 if bit < 31-(15+5) else bit + 7
             },
             'LSOR': {},
             'LTEAR': {},
@@ -1421,7 +1421,7 @@ P2020 = {
                     # Not Implemented
                     # 'BI': (31-31, 31-31)
                 },
-                # 'adjustBit': lambda bit: bit + 1
+                # 'adjust_bit': lambda bit: bit + 1
             },
             'DDR_SDRAM_CFG_2': {
                 'bits': 31,
@@ -1447,7 +1447,7 @@ P2020 = {
                     'Reserved0': (31-30, 31-30),
                     'MD_EN': (31-31, 31-31)
                 },
-                # 'adjustBit': lambda bit: bit if bit < 31-27 else bit + 1
+                # 'adjust_bit': lambda bit: bit if bit < 31-27 else bit + 1
             },
             'DDR_SDRAM_CLK_CNTRL': {},
             'DDR_SDRAM_INTERVAL': {},
@@ -2111,7 +2111,7 @@ P2020 = {
 
 for target in P2020:
     # count bits for each target
-    totalBits = 0
+    total_bits = 0
     for register in P2020[target]['registers']:
         if 'bits' in P2020[target]['registers'][register]:
             bits = P2020[target]['registers'][register]['bits']
@@ -2123,20 +2123,25 @@ for target in P2020:
                 count *= dimension
         else:
             count = 1
-        P2020[target]['registers'][register]['totalBits'] = count * bits
-        totalBits += count * bits
-        # if a register is partially implemented generate an adjustBit mapping list
-        # to ensure an unimplemented field is not injected into
-        if 'partial' in P2020[target]['registers'][register] and P2020[target]['registers'][register]['partial']:
-            adjustBit = []
-            for field, fieldRange in P2020[target]['registers'][register]['fields'].iteritems():
-                for bit in xrange(fieldRange[0], fieldRange[1]+1):
-                    adjustBit.append(bit)
-            if len(adjustBit) != bits:
-                raise Exception('InjectionTargets: bits mismatch for register: '+register+' in target: '+target)
+        P2020[target]['registers'][register]['total_bits'] = count * bits
+        total_bits += count * bits
+        # if a register is partially implemented generate an adjust_bit
+        # mapping list to ensure an unimplemented field is not injected into
+        if ('partial' in P2020[target]['registers'][register] and
+                P2020[target]['registers'][register]['partial']):
+            adjust_bit = []
+            for field, field_range in (P2020[target]['registers'][register]
+                                            ['fields'].iteritems()):
+                for bit in xrange(field_range[0], field_range[1]+1):
+                    adjust_bit.append(bit)
+            if len(adjust_bit) != bits:
+                raise Exception('simics_targets.py: ' +
+                                'bits mismatch for register: '+register +
+                                ' in target: '+target)
             else:
-                P2020[target]['registers'][register]['adjustBit'] = sorted(adjustBit)
-    P2020[target]['totalBits'] = totalBits
+                P2020[target]['registers'][register]['adjust_bit'] = \
+                    sorted(adjust_bit)
+    P2020[target]['total_bits'] = total_bits
 
 A9 = {
     'CPU': {
@@ -2164,7 +2169,7 @@ A9 = {
 
 for target in A9:
     # count bits for each target
-    totalBits = 0
+    total_bits = 0
     for register in A9[target]['registers']:
         if 'bits' in A9[target]['registers'][register]:
             bits = A9[target]['registers'][register]['bits']
@@ -2176,17 +2181,22 @@ for target in A9:
                 count *= dimension
         else:
             count = 1
-        A9[target]['registers'][register]['totalBits'] = count * bits
-        totalBits += count * bits
-        # if a register is partially implemented generate an adjustBit mapping list
-        # to ensure an unimplemented field is not injected into
-        if 'partial' in A9[target]['registers'][register] and A9[target]['registers'][register]['partial']:
-            adjustBit = []
-            for field, fieldRange in A9[target]['registers'][register]['fields'].iteritems():
-                for bit in xrange(fieldRange[0], fieldRange[1]+1):
-                    adjustBit.append(bit)
-            if len(adjustBit) != bits:
-                raise Exception('InjectionTargets: bits mismatch for register: '+register+' in target: '+target)
+        A9[target]['registers'][register]['total_bits'] = count * bits
+        total_bits += count * bits
+        # if a register is partially implemented generate an adjust_bit
+        # mapping list to ensure an unimplemented field is not injected into
+        if ('partial' in A9[target]['registers'][register] and
+                A9[target]['registers'][register]['partial']):
+            adjust_bit = []
+            for field, field_range in (A9[target]['registers'][register]
+                                         ['fields'].iteritems()):
+                for bit in xrange(field_range[0], field_range[1]+1):
+                    adjust_bit.append(bit)
+            if len(adjust_bit) != bits:
+                raise Exception('simics_targets.py: ' +
+                                'bits mismatch for register: '+register +
+                                ' in target: '+target)
             else:
-                A9[target]['registers'][register]['adjustBit'] = sorted(adjustBit)
-    A9[target]['totalBits'] = totalBits
+                A9[target]['registers'][register]['adjust_bit'] = \
+                    sorted(adjust_bit)
+    A9[target]['total_bits'] = total_bits

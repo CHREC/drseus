@@ -8,11 +8,11 @@ import os
 import subprocess
 import signal
 import sqlite3
-import threading
 import multiprocessing
 
 from fault_injector import fault_injector
 from supervisor import supervisor
+from checkpoint_injection import regenerate_injected_checkpoint
 
 # TODO: re-transfer files (and ssh key) if using initramfs
 # TODO: add support for multiple boards (ethernet tests) and
@@ -113,6 +113,16 @@ def get_campaign_data():
     return campaign_data
 
 
+def get_simics_campaign_data():
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db.row_factory = sqlite3.Row
+    sql = sql_db.cursor()
+    sql.execute('SELECT * FROM drseus_logging_simics_campaign_data')
+    simics_campaign_data = sql.fetchone()
+    sql_db.close()
+    return simics_campaign_data
+
+
 def get_injection_number(campaign_data):
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
@@ -131,6 +141,22 @@ def get_injection_number(campaign_data):
         injection_number = injection_data['injection_number'] + 1
     sql_db.close()
     return injection_number
+
+
+def get_injection_data(campaign_data, injection_number):
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db.row_factory = sqlite3.Row
+    sql = sql_db.cursor()
+    if campaign_data['simics']:
+        sql.execute('SELECT * FROM drseus_logging_simics_injection WHERE ' +
+                    'injection_number = (?)', (injection_number, ))
+        injection_data = sql.fetchone()
+    else:
+        sql.execute('SELECT * FROM drseus_logging_hw_injection WHERE ' +
+                    'injection_number = (?)', (injection_number, ))
+        injection_data = sql.fetchone()
+    sql_db.close()
+    return injection_data
 
 
 def perform_injections(campaign_data, injection_counter, options):
@@ -152,19 +178,13 @@ def perform_injections(campaign_data, injection_counter, options):
                                 architecture='arm',
                                 use_simics=campaign_data['simics'],
                                 new=False)
-    # TODO: should not need this
     else:
         print('invalid architecture:', campaign_data['architecture'])
         sys.exit()
     drseus.command = campaign_data['command']
     drseus.output_file = campaign_data['output_file']
     if campaign_data['simics']:
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
-        sql_db.row_factory = sqlite3.Row
-        sql = sql_db.cursor()
-        sql.execute('SELECT * FROM drseus_logging_simics_campaign_data')
-        simics_campaign_data = sql.fetchone()
-        sql_db.close()
+        simics_campaign_data = get_simics_campaign_data()
         drseus.num_checkpoints = simics_campaign_data['num_checkpoints']
         drseus.cycles_between = simics_campaign_data['cycles_between']
         drseus.board = simics_campaign_data['board']
@@ -250,6 +270,9 @@ parser.add_option('-c', '--checkpoints', action='store', type='int',
 parser.add_option('-p', '--processes', action='store', type='int',
                   dest='num_processes', default=1,
                   help='number of simics injections to perform in parallel')
+parser.add_option('-g', '--regenerate_checkpoint', action='store', type='int',
+                  dest='regenerate_checkpoint', default=-1,
+                  help='regenerate an injected checkpoint and launch in Simics')
 
 # log options
 parser.add_option('-l', '--view_logs', action='store_true',
@@ -265,14 +288,8 @@ if options.clean:
 if options.view_logs:
     view_logs()
 
-# setup fault injection campaign
-if not options.inject and not options.aux:
-    if len(args) < 1:
-        parser.error('please specify an application')
-    setup_drseus(args[0], options)
-
 # perform fault injections
-elif options.inject:
+if options.inject:
     campaign_data = get_campaign_data()
     starting_injection = get_injection_number(campaign_data)
     injection_counter = multiprocessing.Value('I', starting_injection)
@@ -295,6 +312,36 @@ elif options.inject:
     else:
         perform_injections(campaign_data, injection_counter, options)
 
+elif options.regenerate_checkpoint >= 0:
+    campaign_data = get_campaign_data()
+    if not campaign_data['simics']:
+        print('This feature is only available for Simics campaigns')
+        sys.exit()
+    simics_campaign_data = get_simics_campaign_data()
+    injection_data = get_injection_data(campaign_data,
+                                        options.regenerate_checkpoint)
+    checkpoint = regenerate_injected_checkpoint(simics_campaign_data['board'],
+                                                injection_data)
+    # launch checkpoint
+    board = 'DUT_'+simics_campaign_data['board']
+    if campaign_data['architecture'] == 'p2020':
+        serial_port = 'serial[0]'
+    else:
+        serial_port = 'serial0'
+    simics_commands = ('read-configuration '+checkpoint+';' +
+                       'new-text-console-comp text_console0;' +
+                       'disconnect '+board+'.console0.serial ' +
+                       board+'.'+serial_port+';' +
+                       'connect text_console0.serial ' +
+                       board+'.'+serial_port+';' +
+                       'connect-real-network-port-in ssh ' +
+                       'ethernet_switch0 target-ip=10.10.0.100')
+    os.system('cd simics-workspace; ./simics-gui -e \"'+simics_commands+'\"')
+    shutil.rmtree('simics-workspace/'+checkpoint)
+    if not os.listdir('simics-workspace/temp'):
+        os.rmdir('simics-workspace/temp')
+
+
 # setup supervisor
 elif options.aux:
     if len(args) < 1:
@@ -311,3 +358,9 @@ elif options.aux:
     drseus.monitor_execution()
     drseus.exit()
 # ./drseus.py ppc_fi_socket_echo -a "65222" -x -y ppc_fi_socket_send_recv -z "10.42.0.21 65222 -i 10"
+
+# setup fault injection campaign
+else:
+    if len(args) < 1:
+        parser.error('please specify an application')
+    setup_drseus(args[0], options)

@@ -12,7 +12,7 @@ from error import DrSEUSError
 from dut import dut
 from bdi import bdi_p2020, bdi_arm
 from simics import simics
-import checkpoint_injection
+from checkpoint_injection import inject_checkpoint
 
 
 class fault_injector:
@@ -154,9 +154,10 @@ class fault_injector:
         os.mkdir('campaign-data/results/'+str(injection_number))
         if self.simics:
             # TODO: try moving this all to simics class
-            self.injected_checkpoint = checkpoint_injection.InjectCheckpoint(
+            self.injected_checkpoint = inject_checkpoint(
                 injection_number, self.board, selected_targets,
-                self.num_checkpoints)
+                self.num_checkpoints
+            )
             self.debugger = simics(new=False,
                                    checkpoint=self.injected_checkpoint)
             self.dut = self.debugger.dut

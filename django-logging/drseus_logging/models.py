@@ -30,6 +30,7 @@ class simics_injection(models.Model):
     target_index = models.TextField()
     target = models.TextField()
     config_object = models.TextField()
+    config_type = models.TextField()
     register_index = models.TextField()
     field = models.TextField()
     # gold_debug_info = models.TextField()
