@@ -51,7 +51,7 @@ class simics:
                     subprocess.call(['gnome-terminal', '-x',
                                      os.getcwd()+'/simics_license.sh'])
                     raw_input('press enter to restart')
-                    os.execv(__file__, sys.argv)
+                    os.execv('drseus.py', sys.argv)
                 sys.exit()
         else:
             self.injected_checkpoint = checkpoint
@@ -75,8 +75,8 @@ class simics:
                                                                       'NO']:
                 subprocess.call(['gnome-terminal', '-x',
                                  os.getcwd()+'/simics_license.sh'])
-                raw_input('press enter to restart...')
-                os.execv(__file__, sys.argv)
+                raw_input('press enter to restart')
+                os.execv('drseus.py', sys.argv)
             sys.exit()
         if self.architecture == 'p2020':
             self.dut = dut(dut_ip_address, serial_port, baud_rate=38400,
