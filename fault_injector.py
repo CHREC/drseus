@@ -1,10 +1,12 @@
 from __future__ import print_function
 import os
+import shutil
 import sys
 import difflib
 import random
 import time
 import sqlite3
+from scp import SCPException
 
 from error import DrSEUSError
 from dut import dut
@@ -98,7 +100,7 @@ class fault_injector:
         self.exec_time = self.time_application(5)
         self.dut.get_file(
             self.output_file, 'campaign-data/gold_'+self.output_file)
-        sql_db = sqlite3.connect('django-logging/db.sqlite3')
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
             'INSERT INTO drseus_logging_campaign_data ' +
@@ -184,13 +186,15 @@ class fault_injector:
         detected_errors = 0
         if outcome is None:
             try:
-                output_location = ('campaign-data/results/' +
-                                   str(injection_number)+'/'+self.output_file)
+                result_folder = 'campaign-data/results/'+str(injection_number)
+                output_location = result_folder+'/'+self.output_file
                 gold_location = 'campaign-data/gold_'+self.output_file
                 self.dut.get_file(self.output_file, output_location)
-            except:
+            except KeyboardInterrupt:
+                # let DrSEUS handle this
+                raise KeyboardInterrupt
+            except SCPException:
                 missing_output = True
-                print('could not get output file')
             else:
                 missing_output = False
                 with open(gold_location, 'r') as solution:
@@ -200,6 +204,11 @@ class fault_injector:
                 data_diff = difflib.SequenceMatcher(
                     None, solutionContents, resultContents).quick_ratio()
                 data_error = data_diff < 1.0
+                if not data_error:
+                    # TODO: remove result folder
+                    os.remove(output_location)
+                    if not os.listdir(result_folder):
+                        os.rmdir(result_folder)
             if missing_output:
                 outcome = 'missing output'
             elif data_error:
@@ -212,7 +221,8 @@ class fault_injector:
             print('\noutcome:', outcome, '\n')
         if self.simics:
             self.debugger.close()
-        sql_db = sqlite3.connect('django-logging/db.sqlite3')
+            shutil.rmtree('simics-workspace/'+self.injected_checkpoint)
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
             'INSERT INTO drseus_logging_' +

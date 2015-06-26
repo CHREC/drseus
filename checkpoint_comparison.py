@@ -90,7 +90,7 @@ def CompareRegisters(injection_number, monitored_checkpoint_number,
         from simics_targets import A9 as targets
     goldRegisters = ParseRegisters(goldCheckpoint+'/config', board, targets)
     monitoredRegisters = ParseRegisters(monitoredCheckpoint+'/config', board, targets)
-    sql_db = sqlite3.connect('django-logging/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql = sql_db.cursor()
     for target in targets:
         if target != 'TLB':

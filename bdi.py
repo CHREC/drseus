@@ -42,7 +42,7 @@ class bdi:
             if self.dut.is_logged_in():
                 self.dut.command('sync')
         except DrSEUSError as error:
-            if error.type == 'dut_hanging':
+            if error.type == DrSEUSError.dut_hanging:
                 pass
             else:
                 raise DrSEUSError(error.type, error.console_buffer)

@@ -340,7 +340,7 @@ def InjectCheckpoint(injectionNumber, board, selectedTargets, num_checkpoints):
     injectionData['checkpointNumber'] = checkpointNumber
     # with open(goldCheckpoint+'/DebugInfo.txt', 'r') as debugInfo:
     #     injectionData['goldDebugInfo'] = debugInfo.read()
-    sql_db = sqlite3.connect('django-logging/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql = sql_db.cursor()
     registerIndex = ''
     for index in injectionData['registerIndex']:

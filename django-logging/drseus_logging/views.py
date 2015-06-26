@@ -177,7 +177,7 @@ def table(request, title, sidebar_items):
         register_errors=Count('simics_register_diff'))
     fltr = simics_result_filter(request.GET, queryset=queryset)
     table = simics_result_table(fltr.qs)
-    RequestConfig(request, paginate={'per_page': 30}).configure(table)
+    RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return render(
         request,
         'table.html',
@@ -196,7 +196,7 @@ def injection_result(request, injection_number, title, sidebar_items):
         injection=injection_number)
     fltr = simics_register_diff_filter(request.GET, queryset=queryset)
     table = simics_register_diff_table(fltr.qs)
-    RequestConfig(request, paginate=False).configure(table)
+    RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return render(
         request,
         'injection_result.html',

@@ -3,4 +3,4 @@ campaign-data/
 fiapps/
 simics-workspace/
 simics_license.sh
-django-logging/db.sqlite3
+campaign-data/db.sqlite3

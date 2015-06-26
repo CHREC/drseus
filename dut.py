@@ -69,7 +69,7 @@ class dut:
                 print(colored(char, 'green'), end='')
             buff += char
             if not char:
-                raise DrSEUSError('dut_hanging', buff)
+                raise DrSEUSError(DrSEUSError.dut_hanging, buff)
             elif buff[-len(self.prompt):] == self.prompt:
                 return True
             elif buff[-len('login: '):] == 'login: ':
@@ -109,7 +109,7 @@ class dut:
         elif error:
             raise DrSEUSError(error_message, buff)
         elif hanging:
-            raise DrSEUSError('dut_hanging', buff)
+            raise DrSEUSError(DrSEUSError.dut_hanging, buff)
         else:
             return buff
 
@@ -128,7 +128,7 @@ class dut:
                     print(colored(char, 'green'), end='')
                 buff += char
                 if not char:
-                    raise DrSEUSError('dut_hanging', buff)
+                    raise DrSEUSError(DrSEUSError.dut_hanging, buff)
                 elif buff[-len(self.prompt):] == self.prompt:
                     break
                 elif buff[-len('Password: '):] == 'Password: ':

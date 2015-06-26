@@ -15,12 +15,12 @@ class simics:
     # create simics instance and boot device
     def __init__(self, architecture='p2020', dut_ip_address='127.0.0.1',
                  new=True, checkpoint=None, debug=True):
-        if 'simics-common' in subprocess.check_output('ps -a', shell=True):
-            if raw_input('simics is already running, ' +
-                         'killall simics-common? [Y/n]: ') not in ['n', 'no',
-                                                                   'N', 'No,',
-                                                                   'NO']:
-                subprocess.call(['killall', 'simics-common'])
+        # if 'simics-common' in subprocess.check_output('ps -a', shell=True):
+        #     if raw_input('simics is already running, ' +
+        #                  'killall simics-common? [Y/n]: ') not in ['n', 'no',
+        #                                                            'N', 'No,',
+        #                                                            'NO']:
+        #         subprocess.call(['killall', 'simics-common'])
 
         self.debug = debug
         self.output = ''
@@ -30,14 +30,14 @@ class simics:
                                        cwd=os.getcwd()+'/simics-workspace',
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
+        self.read_until('simics> ')
         if new:
-            # self.command('$drseus=TRUE')
             try:
                 if self.architecture == 'p2020':
-                    self.command(
+                    buff = self.command(
                         'run-command-file simics-p2020rdb/drseus.simics')
                 elif self.architecture == 'arm':
-                    self.command(
+                    buff = self.command(
                         'run-command-file simics-vexpress-a9x4/drseus.simics')
                 else:
                     print('invalid architecture:', self.architecture)
@@ -55,28 +55,21 @@ class simics:
                 sys.exit()
         else:
             self.injected_checkpoint = checkpoint
-            self.command('read-configuration '+checkpoint)
-        # try:
-        buff = self.read_until('simics> ')
-        # except DrSEUSError as error:
-        #     if error.type == 'simics_error':
-        #         print('error initializing simics')
-        #         if raw_input(
-        #             'killall simics-common? [Y/n]: ') not in ['n', 'no',
-        #                                                        'N', 'No,',
-        #                                                        'NO']:
-        #             subprocess.call(['gnome-terminal', '-e',
-        #                              'sudo killall simics-common'])
-        #             raw_input('press enter to restart...')
-        #             os.execv(__file__, sys.argv)
-        #     else:
-        #         raise DrSEUSError(error.type, error.console_buffer)
+            buff = self.command('read-configuration '+checkpoint)
+            buff += self.command('connect-real-network-port-in ssh ' +
+                                 'ethernet_switch0 target-ip='+'10.10.0.100')
+        found_settings = 0
         for line in buff.split('\n'):
             if 'pseudo device opened: /dev/pts/' in line:
                 serial_port = line.split(':')[1].strip()
+                found_settings += 1
+            elif 'Host TCP port' in line:
+                ssh_port = int(line.split('->')[0].split(' ')[-2])
+                found_settings += 1
+            if found_settings == 2:
                 break
         else:
-            print('could not find pseudoterminal to attach to')
+            print('could not find port or pseudoterminal to attach to')
             if raw_input('launch simics_license.sh? [Y/n]: ') not in ['n', 'no',
                                                                       'N', 'No',
                                                                       'NO']:
@@ -87,10 +80,10 @@ class simics:
             sys.exit()
         if self.architecture == 'p2020':
             self.dut = dut(dut_ip_address, serial_port, baud_rate=38400,
-                           ssh_port=4022)
+                           ssh_port=ssh_port)
         elif self.architecture == 'arm':
             self.dut = dut(dut_ip_address, serial_port, prompt='#',
-                           baud_rate=38400, ssh_port=4022)
+                           baud_rate=38400, ssh_port=ssh_port)
         if new:
             self.continue_dut()
             self.do_uboot()
