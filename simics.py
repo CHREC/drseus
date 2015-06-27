@@ -198,7 +198,7 @@ class simics:
             monitor_checkpoint = 'simics-workspace/'+monitor_checkpoint
             gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
                                str(monitored_checkpoint_number)+'.ckpt')
-            checkpoint_comparison.CompareRegisters(
+            checkpoint_comparison.compare_registers(
                 injection_number, monitored_checkpoint_number,
                 gold_checkpoint, monitor_checkpoint, board
             )

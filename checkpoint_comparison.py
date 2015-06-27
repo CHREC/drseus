@@ -1,10 +1,14 @@
 import sqlite3
 
+from simics_targets import devices
 
-def ParseRegisters(configFile, board, targets):
+# TODO: consider saving pickle of parsed registers from gold checkpoints
+
+
+def parse_registers(config_file, board, targets):
     """
     Retrieves all the register values of the targets specified in
-    InjectionTargets for the specified checkpoint configFile and returns a
+    simics_targets.py for the specified checkpoint config_file and returns a
     dictionary with all the values.
     """
     registers = {}
@@ -14,159 +18,195 @@ def ParseRegisters(configFile, board, targets):
                 count = targets[target]['count']
             else:
                 count = 1
-            for targetIndex in xrange(count):
-                configObject = 'DUT_'+board+targets[target]['OBJECT']
-                configType = targets[target]['TYPE']
+            for target_index in xrange(count):
+                config_object = 'DUT_'+board+targets[target]['OBJECT']
+                config_type = targets[target]['TYPE']
                 if count > 1:
-                    configObject += '['+str(targetIndex)+']'
+                    config_object += '['+str(target_index)+']'
                 if target == 'GPR':
-                    targetKey = configObject + ':gprs'
+                    target_key = config_object + ':gprs'
                 else:
-                    targetKey = configObject
-                registers[targetKey] = {}
-                with open(configFile, 'r') as config:
-                    currentLine = config.readline()
-                    while 'OBJECT '+configObject+' TYPE '+configType+' {' not in currentLine:
-                        currentLine = config.readline()
-                        if currentLine == '':
-                            raise Exception(
-                                'ExecutionMonitoring:ParseRegisters(): could not find '+configObject+' in '+configFile)
-                    currentLine = config.readline()
-                    while 'OBJECT' not in currentLine and currentLine != '':
-                        if ':' in currentLine:
-                            currentItem = currentLine.split(':')[0].strip()
-                            if currentItem in targets[target]['registers']:
-                                if 'count' in targets[target]['registers'][currentItem]:
-                                    dimensions = len(targets[target]['registers'][currentItem]['count'])
-                                    registerBuffer = currentLine.strip()
+                    target_key = config_object
+                registers[target_key] = {}
+                with open(config_file, 'r') as config:
+                    current_line = config.readline()
+                    while ('OBJECT '+config_object+' TYPE '+config_type+' {'
+                           not in current_line):
+                        current_line = config.readline()
+                        if current_line == '':
+                            raise Exception('checkpoint_comparison.py:'
+                                            'parse_registers(): '
+                                            'could not find '+config_object +
+                                            ' in '+config_file)
+                    current_line = config.readline()
+                    while 'OBJECT' not in current_line and current_line != '':
+                        if ':' in current_line:
+                            current_item = current_line.split(':')[0].strip()
+                            if current_item in targets[target]['registers']:
+                                if 'count' in (targets[target]['registers']
+                                                      [current_item]):
+                                    dimensions = len(targets[target]
+                                                            ['registers']
+                                                            [current_item]
+                                                            ['count'])
+                                    register_buffer = current_line.strip()
                                     if dimensions == 1:
-                                        while ')' not in currentLine:
-                                            currentLine = config.readline()
-                                            registerBuffer += currentLine.strip()
-                                        registerBuffer = registerBuffer.replace(' ', '')
-                                        registerList = registerBuffer[
-                                            registerBuffer.index('(')+1:registerBuffer.index(')')].split(',')
+                                        while ')' not in current_line:
+                                            current_line = config.readline()
+                                            register_buffer += \
+                                                current_line.strip()
+                                        register_buffer = \
+                                            register_buffer.replace(' ', '')
+                                        register_list = register_buffer[
+                                            register_buffer.index('(')+1:
+                                            register_buffer.index(')')
+                                        ].split(',')
                                     elif dimensions == 2:
-                                        while '))' not in currentLine:
-                                            currentLine = config.readline()
-                                            registerBuffer += currentLine.strip()
-                                        registerBuffer = registerBuffer.replace(' ', '')
-                                        registerList = registerBuffer[
-                                            registerBuffer.index('((')+2:registerBuffer.index('))')].split('),(')
-                                        for index in xrange(len(registerList)):
-                                            registerList[index] = registerList[index].split(',')
+                                        while '))' not in current_line:
+                                            current_line = config.readline()
+                                            register_buffer += \
+                                                current_line.strip()
+                                        register_buffer = \
+                                            register_buffer.replace(' ', '')
+                                        register_list = register_buffer[
+                                            register_buffer.index('((')+2:
+                                            register_buffer.index('))')
+                                        ].split('),(')
+                                        for index in xrange(len(register_list)):
+                                            register_list[index] = \
+                                                register_list[index].split(',')
                                     else:
                                         raise Exception(
-                                            'ExecutionMonitoring:ParseRegisters(): Too many dimensions for register ' +
+                                            'checkpoint_comparison.py:'
+                                            'parse_registers(): '
+                                            'Too many dimensions for register'
                                             ' in target: '+target)
-                                    registers[targetKey][currentItem] = registerList
+                                    registers[target_key][current_item] = \
+                                        register_list
                                 else:
-                                    currentValue = currentLine.split(':')[1].strip()
-                                    registers[targetKey][currentItem] = currentValue
-                        currentLine = config.readline()
-                if len(registers[targetKey]) != len(targets[target]['registers']):
-                    print registers[targetKey]
+                                    current_value = \
+                                        current_line.split(':')[1].strip()
+                                    registers[target_key][current_item] = \
+                                        current_value
+                        current_line = config.readline()
+                if (len(registers[target_key]) !=
+                        len(targets[target]['registers'])):
+                    print registers[target_key]
                     print targets[target]['registers']
-                    missingRegisters = []
+                    missing_registers = []
                     for register in targets[target]['registers']:
-                        if register not in registers[targetKey]:
-                            missingRegisters.append(register)
-                    raise Exception(
-                        'ExecutionMonitoring:ParseRegisters(): Could not find the following registers for ' +
-                        configObject+': '+str(missingRegisters))
+                        if register not in registers[target_key]:
+                            missing_registers.append(register)
+                    raise Exception('checkpoint_comparison.py:'
+                                    'parse_registers(): '
+                                    'Could not find the following registers '
+                                    'for '+config_object+': ' +
+                                    str(missing_registers))
     return registers
 
 
-def CompareRegisters(injection_number, monitored_checkpoint_number,
-                     goldCheckpoint, monitoredCheckpoint, board):
+def compare_registers(injection_number, monitored_checkpoint_number,
+                      gold_checkpoint, monitored_checkpoint, board):
     """
-    Compares the register values of the monitoredCheckpoint to the
-    goldCheckpoint and returns the differences in dictionary as well as the
-    total number of differences.
+    Compares the register values of the monitored_checkpoint to the
+    gold_checkpoint and adds the differences to the database.
     """
     if board == 'p2020rdb':
-        from simics_targets import P2020 as targets
+        targets = devices['P2020']
     elif board == 'a9x4':
-        from simics_targets import A9 as targets
-    goldRegisters = ParseRegisters(goldCheckpoint+'/config', board, targets)
-    monitoredRegisters = ParseRegisters(monitoredCheckpoint+'/config', board, targets)
+        targets = devices['A9']
+    gold_registers = parse_registers(gold_checkpoint+'/config', board, targets)
+    monitored_registers = parse_registers(monitored_checkpoint+'/config', board,
+                                          targets)
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql = sql_db.cursor()
     for target in targets:
         if target != 'TLB':
             if 'count' in targets[target]:
-                targetCount = targets[target]['count']
+                target_count = targets[target]['count']
             else:
-                targetCount = 1
-            for targetIndex in xrange(targetCount):
-                configObject = 'DUT_'+board+targets[target]['OBJECT']
-                if targetCount > 1:
-                    configObject += '['+str(targetIndex)+']'
+                target_count = 1
+            for target_index in xrange(target_count):
+                config_object = 'DUT_'+board+targets[target]['OBJECT']
+                if target_count > 1:
+                    config_object += '['+str(target_index)+']'
                 if target == 'GPR':
-                    targetKey = configObject + ':gprs'
+                    target_key = config_object + ':gprs'
                 else:
-                    targetKey = configObject
+                    target_key = config_object
                 for register in targets[target]['registers']:
                     if 'count' in targets[target]['registers'][register]:
-                        registerCount = targets[target]['registers'][register]['count']
+                        register_count = (targets[target]['registers']
+                                                 [register]['count'])
                     else:
-                        registerCount = ()
-                    if len(registerCount) == 0:
-                        if monitoredRegisters[targetKey][register] != goldRegisters[targetKey][register]:
+                        register_count = ()
+                    if len(register_count) == 0:
+                        if (monitored_registers[target_key][register] !=
+                                gold_registers[target_key][register]):
                             sql.execute(
                                 'INSERT INTO ' +
-                                'drseus_logging_simics_register_diff ' +
-                                '(injection_id,' +
-                                'monitored_checkpoint_number,config_object,' +
-                                'register,gold_value,monitored_value) ' +
-                                'VALUES (?,?,?,?,?,?)', (
+                                'drseus_logging_simics_register_diff '
+                                '(injection_id,monitored_checkpoint_number,'
+                                'config_object,register,gold_value,'
+                                'monitored_value) VALUES (?,?,?,?,?,?)', (
                                     injection_number,
-                                    monitored_checkpoint_number, targetKey,
+                                    monitored_checkpoint_number, target_key,
                                     register,
-                                    goldRegisters[targetKey][register],
-                                    monitoredRegisters[targetKey][register]
+                                    gold_registers[target_key][register],
+                                    monitored_registers[target_key][register]
                                 )
                             )
-                    elif len(registerCount) == 1:
-                        for index1 in xrange(registerCount[0]):
-                            if monitoredRegisters[targetKey][register][index1] != \
-                                    goldRegisters[targetKey][register][index1]:
+                    elif len(register_count) == 1:
+                        for index1 in xrange(register_count[0]):
+                            if (monitored_registers[target_key]
+                                                   [register][index1] !=
+                                gold_registers[target_key]
+                                              [register][index1]):
                                 sql.execute(
-                                    'INSERT INTO ' +
-                                    'drseus_logging_simics_register_diff ' +
-                                    '(injection_id,' +
-                                    'monitored_checkpoint_number,config_object,' +
-                                    'register,gold_value,monitored_value) ' +
-                                    'VALUES (?,?,?,?,?,?)', (
+                                    'INSERT INTO '
+                                    'drseus_logging_simics_register_diff '
+                                    '(injection_id,monitored_checkpoint_number,'
+                                    'config_object,register,gold_value,'
+                                    'monitored_value) VALUES (?,?,?,?,?,?)', (
                                         injection_number,
-                                        monitored_checkpoint_number, targetKey,
+                                        monitored_checkpoint_number, target_key,
                                         register+':'+str(index1),
-                                        goldRegisters[targetKey][register][index1],
-                                        monitoredRegisters[targetKey][register][index1]
+                                        gold_registers[target_key]
+                                                      [register][index1],
+                                        monitored_registers[target_key]
+                                                           [register][index1]
                                     )
                                 )
-                    elif len(registerCount) == 2:
-                        for index1 in xrange(registerCount[0]):
-                            for index2 in xrange(registerCount[1]):
-                                if monitoredRegisters[targetKey][register][index1][index2] != \
-                                        goldRegisters[targetKey][register][index1][index2]:
+                    elif len(register_count) == 2:
+                        for index1 in xrange(register_count[0]):
+                            for index2 in xrange(register_count[1]):
+                                if (monitored_registers[target_key][register]
+                                                       [index1][index2] !=
+                                    gold_registers[target_key][register]
+                                                  [index1][index2]):
                                     sql.execute(
-                                        'INSERT INTO ' +
-                                        'drseus_logging_simics_register_diff ' +
-                                        '(injection_id,' +
-                                        'monitored_checkpoint_number,config_object,' +
-                                        'register,gold_value,monitored_value) ' +
-                                        'VALUES (?,?,?,?,?,?)', (
+                                        'INSERT INTO '
+                                        'drseus_logging_simics_register_diff '
+                                        '(injection_id,'
+                                        'monitored_checkpoint_number,'
+                                        'config_object,register,gold_value,'
+                                        'monitored_value) VALUES (?,?,?,?,?,?)',
+                                        (
                                             injection_number,
-                                            monitored_checkpoint_number, targetKey,
-                                            register+':'+str(index1)+':'+str(index2),
-                                            goldRegisters[targetKey][register][index1][index2],
-                                            monitoredRegisters[targetKey][register][index1][index2]
+                                            monitored_checkpoint_number,
+                                            target_key, register+':' +
+                                            str(index1)+':'+str(index2),
+                                            gold_registers[target_key][register]
+                                                          [index1][index2],
+                                            monitored_registers[target_key]
+                                                               [register]
+                                                               [index1][index2]
                                         )
                                     )
                     else:
-                        raise Exception(
-                            'ExecutionMonitoring:CompareRegisters(): Too many dimensions for register '+register +
-                            ' in target: '+target)
+                        raise Exception('checkpoint_comparison.py:'
+                                        'compare_registers(): '
+                                        'Too many dimensions for register ' +
+                                        register+' in target: '+target)
     sql_db.commit()
     sql_db.close()

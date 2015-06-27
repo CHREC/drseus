@@ -3,6 +3,8 @@ import os
 import shutil
 import sqlite3
 
+from simics_targets import devices
+
 
 def flip_bit(value_to_inject, num_bits_to_inject, bit_to_inject):
     """
@@ -374,9 +376,9 @@ def inject_checkpoint(injection_number, board, selected_targets,
     checkpoint.
     """
     if board == 'p2020rdb':
-        from simics_targets import P2020 as targets
+        targets = devices['P2020']
     elif board == 'a9x4':
-        from simics_targets import A9 as targets
+        targets = devices['A9']
     # verify selected targets exist
     if selected_targets is not None:
         for target in selected_targets:
@@ -468,9 +470,9 @@ def regenerate_injected_checkpoint(board, injection_data):
                         injected_checkpoint+'/'+checkpointFile)
     # perform fault injection
     if board == 'p2020rdb':
-        from simics_targets import P2020 as targets
+        targets = devices['P2020']
     elif board == 'a9x4':
-        from simics_targets import A9 as targets
+        targets = devices['A9']
     inject_register(gold_checkpoint, injected_checkpoint,
                     injection_data['register'], injection_data['target'],
                     board, targets, injection_data)
