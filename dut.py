@@ -3,6 +3,7 @@ import serial
 import sys
 
 import paramiko
+# paramiko.util.log_to_file('paramiko.log')
 import scp
 from termcolor import colored
 
@@ -46,6 +47,7 @@ class dut:
                     pkey=self.rsakey)
         dut_scp = scp.SCPClient(ssh.get_transport())
         dut_scp.put(files)
+        dut_scp.close()
         ssh.close()
 
     def get_file(self, file, local_path='', delete_file=True):
@@ -55,6 +57,7 @@ class dut:
                     pkey=self.rsakey)
         dut_scp = scp.SCPClient(ssh.get_transport())
         dut_scp.get(file, local_path=local_path)
+        dut_scp.close()
         ssh.close()
         if delete_file:
             self.command('rm '+file)

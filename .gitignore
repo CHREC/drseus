@@ -4,3 +4,4 @@ fiapps/
 simics-workspace/
 simics_license.sh
 campaign-data/db.sqlite3
+paramiko.log

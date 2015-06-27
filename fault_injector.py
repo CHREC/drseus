@@ -196,6 +196,8 @@ class fault_injector:
                 raise KeyboardInterrupt
             except SCPException:
                 missing_output = True
+                # TODO: why does this happen on arm board in simics so often?
+                # import pdb; pdb.set_trace()
             else:
                 missing_output = False
                 with open(gold_location, 'r') as solution:
@@ -206,7 +208,6 @@ class fault_injector:
                     None, solutionContents, resultContents).quick_ratio()
                 data_error = data_diff < 1.0
                 if not data_error:
-                    # TODO: remove result folder
                     os.remove(output_location)
                     if not os.listdir(result_folder):
                         os.rmdir(result_folder)
