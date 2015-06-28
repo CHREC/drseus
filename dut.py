@@ -1,10 +1,9 @@
 from __future__ import print_function
 import serial
 import sys
-import os
 
 import paramiko
-# paramiko.util.log_to_file('paramiko.log')
+paramiko.util.log_to_file('paramiko.log')
 import scp
 from termcolor import colored
 
@@ -18,7 +17,7 @@ class dut:
 
     # TODO: should timeout be increased?
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug,
-                 baud_rate=115200, ssh_port=22, timeout=120):
+                 baud_rate=115200, ssh_port=22, color='green', timeout=120):
         self.output = ''
         try:
             self.serial = serial.Serial(port=serial_port, baudrate=baud_rate,
@@ -32,6 +31,7 @@ class dut:
         self.ssh_port = ssh_port
         self.debug = debug
         self.rsakey = rsakey
+        self.color = color
 
     def close(self):
         self.serial.close()
@@ -65,7 +65,7 @@ class dut:
             char = self.serial.read()
             self.output += char
             if self.debug:
-                print(colored(char, 'green'), end='')
+                print(colored(char, self.color), end='')
             buff += char
             if not char:
                 raise DrSEUSError(DrSEUSError.dut_hanging, buff)
@@ -86,7 +86,7 @@ class dut:
                 break
             self.output += char
             if self.debug:
-                print(colored(char, 'green'), end='')
+                print(colored(char, self.color), end='')
             buff += char
             if buff[-len(string):] == string:
                 break
@@ -125,7 +125,7 @@ class dut:
                 char = self.serial.read()
                 self.output += char
                 if self.debug:
-                    print(colored(char, 'green'), end='')
+                    print(colored(char, self.color), end='')
                 buff += char
                 if not char:
                     raise DrSEUSError(DrSEUSError.dut_hanging, buff)

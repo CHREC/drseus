@@ -72,22 +72,24 @@ def setup_drseus(application, options):
         if options.architecture == 'p2020':
             drseus = fault_injector(dut_ip_address='10.10.0.100',
                                     architecture=options.architecture,
-                                    use_simics=True)
+                                    use_simics=True, use_aux=options.aux)
         elif options.architecture == 'arm':
             drseus = fault_injector(dut_ip_address='10.10.0.100',
                                     architecture=options.architecture,
-                                    use_simics=True)
+                                    use_simics=True, use_aux=options.aux)
         else:
             print('invalid architecture:', options.architecture)
             sys.exit()
     else:
         if options.architecture == 'p2020':
-            drseus = fault_injector(num_checkpoints=options.num_checkpoints)
+            drseus = fault_injector(num_checkpoints=options.num_checkpoints,
+                                    use_aux=options.aux)
         elif options.architecture == 'arm':
             drseus = fault_injector(dut_ip_address='10.42.0.30',
                                     dut_serial_port='/dev/ttyACM0',
                                     architecture=options.architecture,
-                                    num_checkpoints=options.num_checkpoints)
+                                    num_checkpoints=options.num_checkpoints,
+                                    use_aux=options.aux)
         else:
             print('invalid architecture:', options.architecture)
             sys.exit()
@@ -357,19 +359,23 @@ elif options.regenerate_checkpoint >= 0:
 # setup supervisor
 elif options.aux:
     if len(args) < 1:
-        if options.clean:
-            sys.exit()
-        else:
-            parser.error('please specify an application')
-    drseus = supervisor()
-    drseus.setup_campaign('fiapps', args[0], options.arguments,
-                          args[0] if options.aux_app is None else
-                          options.aux_app,
-                          options.arguments if options.aux_args is None else
-                          options.aux_args)
+        parser.error('please specify an application')
+    application = 'ppc_fi_'+args[0]
+    if options.aux_app is None:
+        aux_application = 'ppc_fi_'+args[0]
+    else:
+        aux_application = 'ppc_fi_'+options.aux_app
+    if not os.path.exists('fiapps/'+application):
+        os.system('cd fiapps/; make '+application)
+    drseus = supervisor(architecture=options.architecture,
+                        use_simics=options.simics)
+    drseus.setup_campaign('ppc_fi_'+args[0], options.arguments,
+                          aux_application, options.arguments if
+                          options.aux_args is None else options.aux_args)
     drseus.monitor_execution()
     drseus.exit()
-# ./drseus.py ppc_fi_socket_echo -a "65222" -x -y ppc_fi_socket_send_recv -z "10.42.0.21 65222 -i 10"
+# ./drseus.py socket_echo -a "65222" -s \
+#             -x -y socket_send_recv -z "10.10.0.100 65222 -i 10" -s
 
 # setup fault injection campaign
 else:

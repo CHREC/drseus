@@ -16,9 +16,9 @@ class simics:
     error_messages = ['where nothing is mapped', 'Error']
 
     # create simics instance and boot device
-    def __init__(self, architecture, rsakey, new, debug):
+    def __init__(self, architecture, rsakey, use_aux, new, debug):
         # if 'simics-common' in subprocess.check_output('ps -a', shell=True):
-        #     if raw_input('simics is already running, ' +
+        #     if raw_input('simics is already running, '
         #                  'killall simics-common? [Y/n]: ') not in ['n', 'no',
         #                                                            'N', 'No,',
         #                                                            'NO']:
@@ -26,6 +26,7 @@ class simics:
         self.debug = debug
         self.architecture = architecture
         self.rsakey = rsakey
+        self.use_aux = use_aux
         if new:
             self.launch_simics()
 
@@ -40,11 +41,17 @@ class simics:
         if checkpoint is None:
             try:
                 if self.architecture == 'p2020':
-                    buff = self.command(
-                        'run-command-file simics-p2020rdb/drseus.simics')
+                    buff = self.command('run-command-file simics-p2020rdb/'
+                                        'p2020rdb-linux'+('-ethernet' if
+                                                          self.use_aux
+                                                          else '') +
+                                        '.simics')
                 elif self.architecture == 'arm':
-                    buff = self.command(
-                        'run-command-file simics-vexpress-a9x4/drseus.simics')
+                    buff = self.command('run-command-file simics-vexpress-a9x4/'
+                                        'vexpress-a9x4-linux'+('-ethernet' if
+                                                               self.use_aux
+                                                               else '') +
+                                        '.simics')
                 else:
                     print('invalid architecture:', self.architecture)
                     sys.exit()
@@ -62,17 +69,21 @@ class simics:
         else:
             self.injected_checkpoint = checkpoint
             buff = self.command('read-configuration '+checkpoint)
-            buff += self.command('connect-real-network-port-in ssh ' +
+            buff += self.command('connect-real-network-port-in ssh '
                                  'ethernet_switch0 target-ip=10.10.0.100')
         found_settings = 0
+        serial_ports = []
+        ssh_ports = []
         for line in buff.split('\n'):
             if 'pseudo device opened: /dev/pts/' in line:
-                serial_port = line.split(':')[1].strip()
+                serial_ports.append(line.split(':')[1].strip())
                 found_settings += 1
             elif 'Host TCP port' in line:
-                ssh_port = int(line.split('->')[0].split(' ')[-2])
+                ssh_ports.append(int(line.split('->')[0].split(' ')[-2]))
                 found_settings += 1
-            if found_settings == 2:
+            if not self.use_aux and found_settings == 2:
+                break
+            elif self.use_aux and found_settings == 4:
                 break
         else:
             print('could not find port or pseudoterminal to attach to')
@@ -85,19 +96,32 @@ class simics:
                 os.execv('drseus.py', sys.argv)
             sys.exit()
         if self.architecture == 'p2020':
-            self.dut = dut('127.0.0.1', self.rsakey, serial_port,
-                           'root@p2020rdb:~#', self.debug, 38400, ssh_port)
+            self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
+                           'root@p2020rdb:~#', self.debug, 38400, ssh_ports[0])
+            if self.use_aux:
+                self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
+                               'root@p2020rdb:~#', self.debug, 38400,
+                               ssh_ports[1], 'cyan')
         elif self.architecture == 'arm':
-            self.dut = dut('127.0.0.1', self.rsakey, serial_port,
-                           '#', self.debug, 38400, ssh_port)
+            self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
+                           '#', self.debug, 38400, ssh_ports[0])
+            if self.use_aux:
+                self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
+                               '#', self.debug, 38400, ssh_ports[1], 'cyan')
         if checkpoint is None:
             self.continue_dut()
             self.do_uboot()
             self.dut.do_login(change_prompt=True)
             self.dut.command('ifconfig eth0 10.10.0.100 '
                              'netmask 255.255.255.0 up')
-            time.sleep(1)
-            self.dut.command()
+            if self.use_aux:
+                self.dut.read_until()
+                if self.debug:
+                    print()
+                self.aux.do_login(change_prompt=True)
+                self.aux.command('ifconfig eth0 10.10.0.104 '
+                                 'netmask 255.255.255.0 up')
+                self.aux.read_until()
         else:
             self.dut.prompt = 'DrSEUS# '
 
@@ -106,6 +130,8 @@ class simics:
         self.command('quit')
         self.simics.wait()
         self.dut.close()
+        if self.use_aux:
+            self.aux.close()
 
     def halt_dut(self):
         self.simics.send_signal(signal.SIGINT)
@@ -147,47 +173,70 @@ class simics:
         if self.architecture == 'p2020':
             self.dut.read_until('autoboot: ')
             self.dut.serial.write('\n')
+            if self.use_aux:
+                self.aux.read_until('autoboot: ')
+                self.aux.serial.write('\n')
             if self.debug:
                 print()
             self.halt_dut()
-            self.command('$system.soc.phys_mem.load-file ' +
+            self.command('DUT_p2020rdb.soc.phys_mem.load-file '
                          '$initrd_image $initrd_addr')
-            self.command('$dut_system = $system')
+            if self.use_aux:
+                self.command('AUX_p2020rdb1.soc.phys_mem.load-file '
+                             '$initrd_image $initrd_addr')
             if self.debug:
                 print()
             self.continue_dut()
-            self.dut.serial.write('setenv ethaddr 00:01:af:07:9b:8a\n' +
-                                  # 'setenv ipaddr 10.10.0.100\n' +
-                                  'setenv eth1addr 00:01:af:07:9b:8b\n' +
-                                  # 'setenv ip1addr 10.10.0.101\n' +
-                                  'setenv eth2addr 00:01:af:07:9b:8c\n' +
-                                  # 'setenv ip2addr 10.10.0.102\n' +
-                                  # 'setenv othbootargs\n' +
-                                  'setenv consoledev ttyS0\n' +
-                                  'setenv bootargs root=/dev/ram rw console=' +
-                                  # '$consoledev,$baudrate $othbootargs\n' +
-                                  '$consoledev,$baudrate\n' +
+            self.dut.serial.write('setenv ethaddr 00:01:af:07:9b:8a\n'
+                                  # 'setenv eth1addr 00:01:af:07:9b:8b\n'
+                                  # 'setenv eth2addr 00:01:af:07:9b:8c\n'
+                                  'setenv consoledev ttyS0\n'
+                                  'setenv bootargs root=/dev/ram rw '
+                                  'console=$consoledev,$baudrate\n'
                                   'bootm ef080000 10000000 ef040000\n')
+            if self.use_aux:
+                self.aux.serial.write('setenv ethaddr 00:01:af:07:9b:8d\n'
+                                      # 'setenv eth1addr 00:01:af:07:9b:8e\n'
+                                      # 'setenv eth2addr 00:01:af:07:9b:8f\n'
+                                      'setenv consoledev ttyS0\n'
+                                      'setenv bootargs root=/dev/ram rw '
+                                      'console=$consoledev,$baudrate\n'
+                                      'bootm ef080000 10000000 ef040000\n')
         elif self.architecture == 'arm':
             self.dut.read_until('autoboot: ')
             self.dut.serial.write('\n')
             if self.debug:
                 print()
             self.halt_dut()
-            self.command('$phys_mem.load-file $kernel_image $kernel_addr')
-            self.command('$phys_mem.load-file $initrd_image $initrd_addr')
-            self.command('$dut_system = $system')
+            self.command('DUT_a9x4.coretile.mpcore.phys_mem.load-file '
+                         '$kernel_image $kernel_addr')
+            self.command('DUT_a9x4.coretile.mpcore.phys_mem.load-file '
+                         '$initrd_image $initrd_addr')
+            if self.use_aux:
+                self.command('AUX_a9x41.coretile.mpcore.phys_mem.load-file '
+                             '$kernel_image $kernel_addr')
+                self.command('AUX_a9x41.coretile.mpcore.phys_mem.load-file '
+                             '$initrd_image $initrd_addr')
             if self.debug:
                 print()
             self.continue_dut()
             self.dut.read_until('VExpress# ')
-            self.dut.serial.write('setenv bootargs console=ttyAMA0 ' +
+            self.dut.serial.write('setenv bootargs console=ttyAMA0 '
                                   'root=/dev/ram0 rw\n')
             self.dut.read_until('VExpress# ')
             self.dut.serial.write('bootm 0x40800000 0x70000000\n')
             # TODO: remove these after fixing command prompt of simics arm
             self.dut.read_until('##')
             self.dut.read_until('##')
+            if self.use_aux:
+                self.aux.read_until('VExpress# ')
+                self.aux.serial.write('setenv bootargs console=ttyAMA0 '
+                                      'root=/dev/ram0 rw\n')
+                self.aux.read_until('VExpress# ')
+                self.aux.serial.write('bootm 0x40800000 0x70000000\n')
+                # TODO: remove these after fixing command prompt of simics arm
+                self.aux.read_until('##')
+                self.aux.read_until('##')
 
     def time_application(self, command, iterations):
         for i in xrange(iterations-1):
@@ -236,7 +285,7 @@ class simics:
         injected_checkpoint = inject_checkpoint(injection_number,
                                                 checkpoint_number, board,
                                                 selected_targets, self.debug)
-        self.launch_simics(injected_checkpoint)
+        self.launch_simics(checkpoint=injected_checkpoint)
         return injected_checkpoint
 
     def compare_checkpoints(self, injection_number, checkpoint, board,

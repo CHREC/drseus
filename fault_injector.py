@@ -19,7 +19,7 @@ class fault_injector:
                  dut_serial_port='/dev/ttyUSB0',
                  debugger_ip_address='10.42.0.50',
                  architecture='p2020',
-                 new=True, debug=True,
+                 use_aux=False, new=True, debug=True,
                  use_simics=False, num_checkpoints=50):
         if not os.path.exists('campaign-data'):
             os.mkdir('campaign-data')
@@ -34,7 +34,8 @@ class fault_injector:
             self.rsakey.write_private_key_file('campaign-data/private.key')
         if self.simics:
             self.num_checkpoints = num_checkpoints
-            self.debugger = simics(architecture, self.rsakey, new, debug)
+            self.debugger = simics(architecture, self.rsakey, use_aux, new,
+                                   debug)
             if architecture == 'p2020':
                 self.board = 'p2020rdb'
             elif architecture == 'arm':
