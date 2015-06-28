@@ -5,7 +5,7 @@
 devices = {
     'A9': {
         'CPU': {
-            'count': 4,
+            'count': 2,
             'OBJECT': '.coretile.mpcore.core',
             'TYPE': 'arm-cortex-a9',
             'registers': {
@@ -16,7 +16,7 @@ devices = {
             },
         },
         'GPR': {
-            'count': 4,
+            'count': 2,
             'OBJECT': '.coretile.mpcore.core',
             'TYPE': 'arm-cortex-a9',
             'registers': {

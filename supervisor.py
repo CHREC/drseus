@@ -15,20 +15,11 @@ class supervisor:
         self.use_aux = use_aux
         if not os.path.exists('campaign-data'):
             os.mkdir('campaign-data')
+        self.dut = dut(dut_ip_address, dut_serial_port)
+        self.aux = dut(aux_ip_address, aux_serial_port)
         if new:
-            self.dut = dut(dut_ip_address, dut_serial_port)
-            self.aux = dut(aux_ip_address, aux_serial_port)
-            self.dut.set_rsakey()
-            self.aux.rsakey = self.dut.rsakey
-            with open('campaign-data/private.key', 'w') as keyfile:
-                self.dut.rsakey.write_private_key(keyfile)
             self.dut.do_login()
             self.aux.do_login()
-        else:
-            self.dut = dut(dut_ip_address, dut_serial_port)
-            self.aux = dut(aux_ip_address, aux_serial_port)
-            with open('campaign-data/private.key', 'r') as keyfile:
-                self.dut.set_rsakey()
 
     def exit(self):
         self.dut.serial.close()
@@ -74,5 +65,5 @@ class supervisor:
     def monitor_execution(self):
         self.dut.serial.write('./'+self.command+'\n')
         self.aux.serial.write('./'+self.aux_command+'\n')
-        self.aux.read_until(self.aux.prompt)
-        self.dut.read_until(self.dut.prompt)
+        self.aux.read_until()
+        self.dut.read_until()

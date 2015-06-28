@@ -12,11 +12,10 @@ import multiprocessing
 
 from fault_injector import fault_injector
 from supervisor import supervisor
-from checkpoint_injection import regenerate_injected_checkpoint
+from simics_checkpoints import regenerate_injected_checkpoint
 
 # TODO: re-transfer files (and ssh key) if using initramfs
-# TODO: add support for multiple boards (ethernet tests) and
-#       concurrent simics injections
+# TODO: add support for multiple boards (ethernet tests)
 # TODO: isolate injections on real device
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 
@@ -43,13 +42,17 @@ def delete_results():
 
 
 def setup_drseus(application, options):
+    if options.architecture == 'p2020':
+        application = 'ppc_fi_'+application
+    elif options.architecture == 'arm':
+        application = 'arm_fi_'+application
     if not os.path.exists('fiapps'):
         os.system('./setup_apps.sh')
     if not os.path.exists('fiapps/'+application):
         os.system('cd fiapps/; make '+application)
     if options.simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics.sh')
-    if os.path.exists('campaign-data'):
+    if os.path.exists('campaign-data') and os.listdir('campaign-data'):
         print('previous campaign data exists, continuing will delete it')
         if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
             sys.exit()
@@ -166,6 +169,10 @@ def perform_injections(campaign_data, injection_counter, options):
             print('campaign created with different application:',
                   campaign_data['application'])
             sys.exit()
+    if options.selected_targets is not None:
+        selected_targets = options.selected_targets.split(',')
+    else:
+        selected_targets = None
     if options.simics and not campaign_data['simics']:
         print('previous campaign was not created with simics')
         sys.exit()
@@ -184,6 +191,8 @@ def perform_injections(campaign_data, injection_counter, options):
     drseus.command = campaign_data['command']
     drseus.output_file = campaign_data['output_file']
     if campaign_data['simics']:
+        if not os.path.exists('simics-workspace/injected-checkpoints'):
+            os.mkdir('simics-workspace/injected-checkpoints')
         simics_campaign_data = get_simics_campaign_data()
         drseus.num_checkpoints = simics_campaign_data['num_checkpoints']
         drseus.cycles_between = simics_campaign_data['cycles_between']
@@ -195,7 +204,7 @@ def perform_injections(campaign_data, injection_counter, options):
             with injection_counter.get_lock():
                 injection_number = injection_counter.value
                 injection_counter.value += 1
-            drseus.inject_fault(injection_number)
+            drseus.inject_fault(injection_number, selected_targets)
             drseus.monitor_execution(injection_number)
         drseus.exit()
     except KeyboardInterrupt:
@@ -230,7 +239,7 @@ parser.add_option('-i', '--inject', action='store_true', dest='inject',
                   help='perform fault injections on an existing campaign')
 
 # new campaign options
-parser.add_option('-t', '--timing', action='store', type='int',
+parser.add_option('-m', '--timing', action='store', type='int',
                   dest='iterations', default=5,
                   help='number of timing iterations of application ' +
                        'to run [default=5]')
@@ -262,6 +271,9 @@ parser.add_option('-z', '--auxiliary_arguments', action='store', type='str',
 parser.add_option('-n', '--num', action='store', type='int',
                   dest='num_injections', default=10,
                   help='number of injections to perform [default=10]')
+parser.add_option('-t', '--targets', action='store', type='str',
+                  dest='selected_targets', default=None,
+                  help='comma seperated list of targets for injection')
 
 # simics options
 parser.add_option('-c', '--checkpoints', action='store', type='int',

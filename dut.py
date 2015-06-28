@@ -1,6 +1,7 @@
 from __future__ import print_function
 import serial
 import sys
+import os
 
 import paramiko
 # paramiko.util.log_to_file('paramiko.log')
@@ -15,9 +16,9 @@ class dut:
     sighandler_messages = ['SIGSEGV', 'SIGILL', 'SIGBUS', 'SIGFPE', 'SIGABRT',
                            'SIGIOT', 'SIGTRAP', 'SIGSYS', 'SIGEMT']
 
-    # TODO: should timeout increased?
-    def __init__(self, ip_address, serial_port, baud_rate=115200, ssh_port=22,
-                 prompt='root@p2020rdb:~#', timeout=120, debug=True):
+    # TODO: should timeout be increased?
+    def __init__(self, ip_address, rsakey, serial_port, prompt, debug,
+                 baud_rate=115200, ssh_port=22, timeout=120):
         self.output = ''
         try:
             self.serial = serial.Serial(port=serial_port, baudrate=baud_rate,
@@ -30,15 +31,10 @@ class dut:
         self.ip_address = ip_address
         self.ssh_port = ssh_port
         self.debug = debug
+        self.rsakey = rsakey
 
     def close(self):
         self.serial.close()
-
-    def set_rsakey(self, keyfile=None):
-        if keyfile is None:
-            self.rsakey = paramiko.RSAKey.generate(1024)
-        else:
-            self.rsakey = paramiko.RSAKey.from_private_key(keyfile)
 
     def send_files(self, files):
         ssh = paramiko.SSHClient()
@@ -78,21 +74,22 @@ class dut:
             elif buff[-len('login: '):] == 'login: ':
                 return False
 
-    def read_until(self, string):
+    def read_until(self, string=None):
+        if string is None:
+            string = self.prompt
         buff = ''
-        done = False
         hanging = False
-        while not done:
+        while True:
             char = self.serial.read()
+            if not char:
+                hanging = True
+                break
             self.output += char
             if self.debug:
                 print(colored(char, 'green'), end='')
             buff += char
-            if not char:
-                done = True
-                hanging = True
-            elif buff[-len(string):] == string:
-                done = True
+            if buff[-len(string):] == string:
+                break
         caught_signal = False
         error = False
         if 'drseus_sighandler:' in buff:
@@ -116,9 +113,9 @@ class dut:
         else:
             return buff
 
-    def command(self, command):
+    def command(self, command=''):
         self.serial.write(command+'\n')
-        return self.read_until(self.prompt)
+        return self.read_until()
 
     def do_login(self, change_prompt=False):
         if not self.is_logged_in():
@@ -139,8 +136,8 @@ class dut:
                     break
         if change_prompt:
             self.serial.write('export PS1=\"DrSEUS# \"\n')
-            self.read_until('DrSEUS# ')
             self.prompt = 'DrSEUS# '
+            self.read_until()
         self.command('mkdir .ssh')
         self.command('touch .ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +

@@ -3,13 +3,18 @@ import sys
 import telnetlib
 import time
 import random
+import sqlite3
 
+from termcolor import colored
+
+from dut import dut
 from error import DrSEUSError
 
 
 class bdi:
     # check debugger is ready and boot device
-    def __init__(self, ip_address, dut, new, debug):
+    def __init__(self, ip_address, dut_ip_address, rsakey,
+                 dut_serial_port, dut_prompt, debug):
         self.debug = debug
         self.output = ''
         try:
@@ -18,18 +23,16 @@ class bdi:
             print('could not connect to debugger')
             # TODO: killall telnet
             sys.exit()
-        self.dut = dut
+        self.dut = dut(dut_ip_address, rsakey,
+                       dut_serial_port, dut_prompt, debug)
         if not self.ready():
             print('debugger not ready')
             sys.exit()
-        # if new:
-        #     if not self.reset_dut():
-        #         print('error resetting dut')
-        #         sys.exit()
 
     def close(self):
         self.command('quit')
         self.telnet.close()
+        self.dut.close()
 
     def ready(self):
         if self.telnet.expect(self.prompts, timeout=10)[0] < 0:
@@ -63,40 +66,56 @@ class bdi:
         else:
             return text
 
-    def inject_fault(self, injection_time, command):
+    def time_application(self, command, iterations):
+        start = time.time()
+        for i in xrange(iterations):
+            self.debugger.dut.command('./'+command)
+        return (time.time() - start) / iterations
+
+    def inject_fault(self, injection_number, injection_time, command):
+        # TODO: log injection
+        if self.debug:
+            print(colored('injection time: '+injection_time, 'blue'))
         self.dut.serial.write('./'+command+'\n')
         time.sleep(injection_time)
         if not self.halt_dut():
             print('error halting dut')
             sys.exit()
         regs = self.get_dut_regs()
-        core_to_inject = random.randrange(2)
-        reg_to_inject = random.choice(regs[core_to_inject].keys())
-        value_to_inject = int(regs[core_to_inject][reg_to_inject], base=16)
-        bit_to_inject = random.randrange(64)
-        value_injected = value_to_inject ^ (1 << bit_to_inject)
+        core = random.randrange(2)
+        register = random.choice(regs[core].keys())
+        gold_value = int(regs[core][register], base=16)
+        # TODO: are all registers 64 bits?
+        bit = random.randrange(64)
+        injected_value = gold_value ^ (1 << bit)
         if self.debug:
-            print('core to inject: ', core_to_inject)
-            print('reg to inject: ', reg_to_inject)
-            print('value to inject: ', hex(value_to_inject))
-            print('injected value: ', hex(value_injected))
-        self.command('select '+str(core_to_inject))
-        self.command('rm '+reg_to_inject+' '+hex(value_injected))
-        injection_data = {
-            'time': injection_time,
-            'core': core_to_inject,
-            'register': reg_to_inject,
-            'bit': bit_to_inject,
-            'value': value_to_inject,
-            'injected_value': value_injected,
-        }
-        return injection_data
+            print(colored('core: '+core, 'blue'))
+            print(colored('register: '+register, 'blue'))
+            print(colored('gold value: '+hex(gold_value), 'blue'))
+            print(colored('injected value: '+hex(injected_value), 'blue'))
+        self.command('select '+str(core))
+        self.command('rm '+register+' '+hex(injected_value))
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql = sql_db.cursor()
+        sql.execute(
+            'INSERT INTO drseus_logging_hw_injection ' +
+            '(injection_number,register,bit,gold_value,injected_value,' +
+            'time,core) VALUES (?,?,?,?,?,?,?)',
+            (
+                injection_number, register, bit, gold_value, injected_value,
+                injection_time, core
+            )
+        )
+        sql_db.commit()
+        sql_db.close()
 
 
 class bdi_arm(bdi):
-    def __init__(self, ip_address, dut, new=True, debug=True):
+    def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
+                 dut_prompt, debug):
         self.prompts = ['A9#0>', 'A9#1>']
-        bdi.__init__(self, ip_address, dut, new, debug)
+        bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
+                     dut_prompt, debug)
 
     def halt_dut(self):
         self.telnet.write('halt 3\r\n')
@@ -141,9 +160,11 @@ class bdi_arm(bdi):
 
 
 class bdi_p2020(bdi):
-    def __init__(self, ip_address, dut, new=True, debug=True):
+    def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
+                 dut_prompt, debug):
         self.prompts = ['P2020>']
-        bdi.__init__(self, ip_address, dut, new, debug)
+        bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
+                     dut_prompt, debug)
 
     def halt_dut(self):
         self.telnet.write('halt 0 1\r\n')

@@ -3,35 +3,41 @@ import subprocess
 import os
 import sys
 import signal
+import time
 
 from termcolor import colored
 
 from error import DrSEUSError
 from dut import dut
-import checkpoint_comparison
+from simics_checkpoints import inject_checkpoint, compare_registers
 
 
 class simics:
+    error_messages = ['where nothing is mapped', 'Error']
+
     # create simics instance and boot device
-    def __init__(self, architecture='p2020', dut_ip_address='127.0.0.1',
-                 new=True, checkpoint=None, debug=True):
+    def __init__(self, architecture, rsakey, new, debug):
         # if 'simics-common' in subprocess.check_output('ps -a', shell=True):
         #     if raw_input('simics is already running, ' +
         #                  'killall simics-common? [Y/n]: ') not in ['n', 'no',
         #                                                            'N', 'No,',
         #                                                            'NO']:
         #         subprocess.call(['killall', 'simics-common'])
-
         self.debug = debug
-        self.output = ''
         self.architecture = architecture
+        self.rsakey = rsakey
+        if new:
+            self.launch_simics()
+
+    def launch_simics(self, checkpoint=None):
+        self.output = ''
         self.simics = subprocess.Popen([os.getcwd()+'/simics-workspace/simics',
                                         '-no-win', '-no-gui', '-q'],
                                        cwd=os.getcwd()+'/simics-workspace',
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
-        self.read_until('simics> ')
-        if new:
+        self.read_until()
+        if checkpoint is None:
             try:
                 if self.architecture == 'p2020':
                     buff = self.command(
@@ -79,65 +85,76 @@ class simics:
                 os.execv('drseus.py', sys.argv)
             sys.exit()
         if self.architecture == 'p2020':
-            self.dut = dut(dut_ip_address, serial_port, baud_rate=38400,
-                           ssh_port=ssh_port)
+            self.dut = dut('127.0.0.1', self.rsakey, serial_port,
+                           'root@p2020rdb:~#', self.debug, 38400, ssh_port)
         elif self.architecture == 'arm':
-            self.dut = dut(dut_ip_address, serial_port, prompt='#',
-                           baud_rate=38400, ssh_port=ssh_port)
-        if new:
+            self.dut = dut('127.0.0.1', self.rsakey, serial_port,
+                           '#', self.debug, 38400, ssh_port)
+        if checkpoint is None:
             self.continue_dut()
             self.do_uboot()
+            self.dut.do_login(change_prompt=True)
+            self.dut.command('ifconfig eth0 10.10.0.100 '
+                             'netmask 255.255.255.0 up')
+            time.sleep(1)
+            self.dut.command()
         else:
             self.dut.prompt = 'DrSEUS# '
 
     def close(self):
-        self.simics.send_signal(signal.SIGINT)
-        self.simics.stdin.write('quit\n')
-        self.output += 'quit\n'
-        self.simics.terminate()
+        self.halt_dut()
+        self.command('quit')
         self.simics.wait()
         self.dut.close()
 
     def halt_dut(self):
         self.simics.send_signal(signal.SIGINT)
-        return self.read_until('simics> ')
+        self.read_until()
+        return True
 
     def continue_dut(self):
         self.simics.stdin.write('run\n')
         self.output += 'run\n'
 
     # TODO: add timeout
-    def read_until(self, string):
+    def read_until(self, string=None):
+        if string is None:
+            string = 'simics> '
         buff = ''
-        while self.simics.poll() is None:
+        while True:
             char = self.simics.stdout.read(1)
+            if not char:
+                break
             self.output += char
             if self.debug:
                 print(colored(char, 'yellow'), end='')
             buff += char
             if buff[-len(string):] == string:
-                if self.debug:
-                    print('')  # TODO: why is this here?
-                if 'Error' in buff:
-                    raise DrSEUSError('simics_error', buff)
-                return buff
-        if 'Error' in buff:
-            raise DrSEUSError('simics_error', buff)
+                break
+        for message in self.error_messages:
+            if message in buff:
+                raise DrSEUSError(message, buff)
         return buff
 
     def command(self, command):
         self.simics.stdin.write(command+'\n')
         self.output += command+'\n'
-        return self.read_until('simics> ',)
+        if self.debug:
+            print(colored(command+'\n', 'yellow'), end='')
+        return self.read_until()
 
     def do_uboot(self):
         if self.architecture == 'p2020':
             self.dut.read_until('autoboot: ')
             self.dut.serial.write('\n')
+            if self.debug:
+                print()
             self.halt_dut()
             self.command('$system.soc.phys_mem.load-file ' +
                          '$initrd_image $initrd_addr')
             self.command('$dut_system = $system')
+            if self.debug:
+                print()
             self.continue_dut()
             self.dut.serial.write('setenv ethaddr 00:01:af:07:9b:8a\n' +
                                   # 'setenv ipaddr 10.10.0.100\n' +
@@ -154,10 +171,14 @@ class simics:
         elif self.architecture == 'arm':
             self.dut.read_until('autoboot: ')
             self.dut.serial.write('\n')
+            if self.debug:
+                print()
             self.halt_dut()
             self.command('$phys_mem.load-file $kernel_image $kernel_addr')
             self.command('$phys_mem.load-file $initrd_image $initrd_addr')
             self.command('$dut_system = $system')
+            if self.debug:
+                print()
             self.continue_dut()
             self.dut.read_until('VExpress# ')
             self.dut.serial.write('setenv bootargs console=ttyAMA0 ' +
@@ -168,6 +189,29 @@ class simics:
             self.dut.read_until('##')
             self.dut.read_until('##')
 
+    def time_application(self, command, iterations):
+        for i in xrange(iterations-1):
+            self.dut.command('./'+command)
+        self.dut.read_until()
+        if self.debug:
+            print()
+        self.halt_dut()
+        start_cycles = self.command(
+            'print-time').split('\n')[-2].split()[2]
+        if self.debug:
+            print()
+        self.continue_dut()
+        self.dut.command('./'+command)
+        if self.debug:
+            print()
+        self.halt_dut()
+        end_cycles = self.command(
+            'print-time').split('\n')[-2].split()[2]
+        if self.debug:
+            print()
+        self.continue_dut()
+        return int(end_cycles) - int(start_cycles)
+
     def create_checkpoints(self, command, cycles, num_checkpoints):
         os.mkdir('simics-workspace/gold-checkpoints')
         step_cycles = cycles / num_checkpoints
@@ -177,9 +221,23 @@ class simics:
             self.command('run-cycles '+str(step_cycles))
             self.command('write-configuration gold-checkpoints/checkpoint-' +
                          str(checkpoint)+'.ckpt')
-            # TODO: merge checkpionts?
+            # TODO: merge checkpoints
+        if self.debug:
+            print()
+        self.continue_dut()
+        self.dut.read_until()
+        if self.debug:
+            print()
         self.close()
         return step_cycles
+
+    def inject_fault(self, injection_number, checkpoint_number, board,
+                     selected_targets):
+        injected_checkpoint = inject_checkpoint(injection_number,
+                                                checkpoint_number, board,
+                                                selected_targets, self.debug)
+        self.launch_simics(injected_checkpoint)
+        return injected_checkpoint
 
     def compare_checkpoints(self, injection_number, checkpoint, board,
                             cycles_between_checkpoints, num_checkpoints):
@@ -198,7 +256,8 @@ class simics:
             monitor_checkpoint = 'simics-workspace/'+monitor_checkpoint
             gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
                                str(monitored_checkpoint_number)+'.ckpt')
-            checkpoint_comparison.compare_registers(
-                injection_number, monitored_checkpoint_number,
-                gold_checkpoint, monitor_checkpoint, board
-            )
+            compare_registers(injection_number, monitored_checkpoint_number,
+                              gold_checkpoint, monitor_checkpoint, board)
+            # TODO: compare memory
+        if self.debug:
+            print()

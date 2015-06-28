@@ -25,7 +25,7 @@ def register_chart(request, title, sidebar_items):
                 }
             }
         ],
-        sortf_mapf_mts=(lambda x: int(x[0]), None, False)
+        # sortf_mapf_mts=(lambda x: int(x[0]), None, False)
     )
 
     chart = PivotChart(
