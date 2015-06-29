@@ -69,6 +69,13 @@ class simics_register_diff(models.Model):
     monitored_value = models.TextField()
 
 
+class simics_memory_diff(models.Model):
+    injection = models.ForeignKey(simics_result)
+    monitored_checkpoint_number = models.IntegerField()
+    image_index = models.IntegerField()
+    block = models.TextField()
+
+
 class hw_result(models.Model):
     # common fields
     injection = models.OneToOneField(hw_injection, primary_key=True)

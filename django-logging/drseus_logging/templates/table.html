@@ -4,6 +4,45 @@
                         <div class="source" align="center">
                             <div class="section">
                                 <h2>
+                                    Campaign Data
+                                </h2>
+                                <table>
+                                    <tr>
+                                        <th>
+                                            Application
+                                        </th>
+                                        <th>
+                                            Ouput File
+                                        </th>
+                                        <th>
+                                            Architecture
+                                        </th>
+                                        <th>
+                                            Checkpoints
+                                        </th>
+                                        <th>
+                                            Cycles Between
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            {{ campaign_data.application }}
+                                        </td>
+                                        <td>
+                                            {{ campaign_data.output_file }}
+                                        </td>
+                                        <td>
+                                            {{ campaign_data.architecture }}
+                                        </td>
+                                        <td>
+                                            {{ simics_campaign_data.num_checkpoints }}
+                                        </td>
+                                        <td>
+                                            {{ simics_campaign_data.cycles_between }}
+                                        </td>
+                                    </tr>
+                                </table>
+                                <h2>
                                     {{ title }}
                                 </h2>
                                 {% load django_tables2 %}

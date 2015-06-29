@@ -1,6 +1,8 @@
 import random
 import os
 import shutil
+import subprocess
+import re
 import sqlite3
 
 from termcolor import colored
@@ -14,7 +16,7 @@ def flip_bit(value_to_inject, num_bits_to_inject, bit_to_inject):
     return the new value.
     """
     if bit_to_inject >= num_bits_to_inject or bit_to_inject < 0:
-        raise Exception('checkpoint_injection.py:flip_bit():' +
+        raise Exception('simics_checkpoints.py:flip_bit():'
                         ' invalid bit_to_inject: '+str(bit_to_inject) +
                         ' for num_bits_to_inject: '+str(num_bits_to_inject))
     value_to_inject = int(value_to_inject, base=0)
@@ -48,7 +50,7 @@ def choose_target(selected_targets, targets):
             target_to_inject = target[0]
             break
     else:
-        raise Exception('checkpoint_injection.py:choose_target(): ' +
+        raise Exception('simics_checkpoints.py:choose_target(): '
                         'Error choosing injection target')
     if 'count' in targets[target_to_inject]:
         target_index = random.randrange(targets[target_to_inject]['count'])
@@ -80,7 +82,7 @@ def choose_register(target, targets):
             register_to_inject = register[0]
             break
     else:
-        raise Exception('checkpoint_injection.py:choose_register(): ' +
+        raise Exception('simics_checkpoints.py:choose_register(): '
                         'Error choosing register for target: '+target)
     return register_to_inject
 
@@ -136,7 +138,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                     field_to_inject = field[0]
                     break
             else:
-                raise Exception('checkpoint_injection.py:inject_register(): ' +
+                raise Exception('simics_checkpoints.py:inject_register(): '
                                 'Error choosing TLB field to inject')
             injection_data['field'] = field_to_inject
             if ('split' in fields[field_to_inject] and
@@ -184,8 +186,8 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                         field_to_inject = field_name
                         break
                 else:
-                    raise Exception('checkpoint_injection.py:' +
-                                    'inject_register(): ' +
+                    raise Exception('simics_checkpoints.py:'
+                                    'inject_register(): '
                                     'Error finding register field name')
                 injection_data['field'] = field_to_inject
             else:
@@ -213,14 +215,14 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
             current_line = gold_config.readline()
             injected_config.write(current_line)
             if current_line == '':
-                raise Exception('checkpoint_injection.py:inject_register(): ' +
+                raise Exception('simics_checkpoints.py:inject_register(): '
                                 'Could not find '+config_object +
                                 ' in '+gold_checkpoint+'/config')
         # find target register
         while '\t'+register+': ' not in current_line:
             current_line = gold_config.readline()
             if 'OBJECT' in current_line:
-                raise Exception('checkpoint_injection.py:inject_register(): ' +
+                raise Exception('simics_checkpoints.py:inject_register(): '
                                 'Could not find '+register +
                                 ' in '+config_object +
                                 ' in '+gold_checkpoint+'/config')
@@ -358,7 +360,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                                     ')))\n'
                                 )
             else:
-                raise Exception('checkpoint_injection.py:inject_register(): ' +
+                raise Exception('simics_checkpoints.py:inject_register(): '
                                 'Too many dimensions for register '+register +
                                 ' in target: '+target)
         injection_data['gold_value'] = gold_value
@@ -385,7 +387,7 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
     if selected_targets is not None:
         for target in selected_targets:
             if target not in targets:
-                raise Exception('checkpoint_injection.py:inject_checkpoint():' +
+                raise Exception('simics_checkpoints.py:inject_checkpoint():'
                                 ' invalid injection target: '+target)
     gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
                        str(checkpoint_number)+'.ckpt')
@@ -403,9 +405,9 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
     checkpoint_files = os.listdir(gold_checkpoint)
     checkpoint_files.remove('config')
     # checkpoint_files.remove('DebugInfo.txt')
-    for checkpointFile in checkpoint_files:
-        shutil.copyfile(gold_checkpoint+'/'+checkpointFile,
-                        injected_checkpoint+'/'+checkpointFile)
+    for checkpoint_file in checkpoint_files:
+        shutil.copyfile(gold_checkpoint+'/'+checkpoint_file,
+                        injected_checkpoint+'/'+checkpoint_file)
     # choose injection target
     target = choose_target(selected_targets, targets)
     register = choose_register(target, targets)
@@ -415,14 +417,17 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
     # log injection data
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql = sql_db.cursor()
-    register_index = ''
-    for index in injection_data['register_index']:
-        register_index += str(index).zfill(2)+':'
-    register_index = register_index[:-1]
+    if injection_data['register_index'] != 'N/A':
+        register_index = ''
+        for index in injection_data['register_index']:
+            register_index += str(index).zfill(3)+':'
+        register_index = register_index[:-1]
+    else:
+        register_index = injection_data['register_index']
     sql.execute(
-        'INSERT INTO drseus_logging_simics_injection ' +
-        '(injection_number,register,bit,gold_value,injected_value,' +
-        'checkpoint_number,target_index,target,config_object,config_type,' +
+        'INSERT INTO drseus_logging_simics_injection '
+        '(injection_number,register,bit,gold_value,injected_value,'
+        'checkpoint_number,target_index,target,config_object,config_type,'
         'register_index,field) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
         (
             injection_number, injection_data['register'],
@@ -438,7 +443,7 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
     sql_db.close()
     if debug:
         print(colored('target: '+injection_data['target'], 'blue'))
-        print(colored('register to inject: '+register, 'blue'))
+        print(colored('register: '+register, 'blue'))
         print(colored('gold value: '+injection_data['gold_value'], 'blue'))
         print(colored('injected value: ' +
                       injection_data['injected_value'], 'blue'))
@@ -455,16 +460,16 @@ def regenerate_injected_checkpoint(board, injection_data):
     if not os.path.exists('simics-workspace/temp'):
         os.mkdir('simics-workspace/temp')
     injected_checkpoint = ('simics-workspace/temp/' +
-                           str(injection_data['injection_number'])+'_' +
+                           str(injection_data['injection_number'])+'_'
                            'checkpoint-' +
                            str(injection_data['checkpoint_number'])+'.ckpt')
     os.mkdir(injected_checkpoint)
     # copy gold checkpoint files
     checkpoint_files = os.listdir(gold_checkpoint)
     checkpoint_files.remove('config')
-    for checkpointFile in checkpoint_files:
-        shutil.copyfile(gold_checkpoint+'/'+checkpointFile,
-                        injected_checkpoint+'/'+checkpointFile)
+    for checkpoint_file in checkpoint_files:
+        shutil.copyfile(gold_checkpoint+'/'+checkpoint_file,
+                        injected_checkpoint+'/'+checkpoint_file)
     # perform fault injection
     if board == 'p2020rdb':
         targets = devices['P2020']
@@ -506,7 +511,7 @@ def parse_registers(config_file, board, targets):
                            not in current_line):
                         current_line = config.readline()
                         if current_line == '':
-                            raise Exception('checkpoint_comparison.py:'
+                            raise Exception('simics_checkpoints.py:'
                                             'parse_registers(): '
                                             'could not find '+config_object +
                                             ' in '+config_file)
@@ -549,7 +554,7 @@ def parse_registers(config_file, board, targets):
                                                 register_list[index].split(',')
                                     else:
                                         raise Exception(
-                                            'checkpoint_comparison.py:'
+                                            'simics_checkpoints.py:'
                                             'parse_registers(): '
                                             'Too many dimensions for register'
                                             ' in target: '+target)
@@ -569,7 +574,7 @@ def parse_registers(config_file, board, targets):
                     for register in targets[target]['registers']:
                         if register not in registers[target_key]:
                             missing_registers.append(register)
-                    raise Exception('checkpoint_comparison.py:'
+                    raise Exception('simics_checkpoints.py:'
                                     'parse_registers(): '
                                     'Could not find the following registers '
                                     'for '+config_object+': ' +
@@ -676,9 +681,111 @@ def compare_registers(injection_number, monitored_checkpoint_number,
                                         )
                                     )
                     else:
-                        raise Exception('checkpoint_comparison.py:'
+                        raise Exception('simics_checkpoints.py:'
                                         'compare_registers(): '
                                         'Too many dimensions for register ' +
                                         register+' in target: '+target)
+    sql_db.commit()
+    sql_db.close()
+
+
+def parse_content_map(content_map, block_size):
+    """
+    Parse a content_map created by the Simics craff utility and returns a list
+    of the addresses of the image that contain data.
+    """
+    with open(content_map, 'r') as content_map_file:
+        diff_addresses = []
+        for line in content_map_file:
+            if 'empty' not in line:
+                line = line.split()
+                base_address = int(line[0], 16)
+                offsets = [index for index, value in enumerate(line[1])
+                           if value == 'D']
+                for offset in offsets:
+                    diff_addresses.append(base_address+offset*block_size)
+    return diff_addresses
+
+
+def extract_diff_blocks(gold_ram, monitored_ram, incremental_checkpoint,
+                        addresses, block_size):
+    """
+    Extract all of the blocks of size block_size specified in addresses of
+    both the gold_ram image and the monitored_ram image.
+    """
+    if len(addresses) > 0:
+        os.mkdir(incremental_checkpoint+'/memory-blocks')
+        for address in addresses:
+            gold_block = (incremental_checkpoint+'/memory-blocks/' +
+                          hex(address)+'_gold.raw')
+            monitored_block = (incremental_checkpoint+'/memory-blocks/' +
+                               hex(address)+'_monitored.raw')
+            os.system('simics-workspace/bin/craff '+gold_ram +
+                      ' --extract='+hex(address) +
+                      ' --extract-block-size='+str(block_size) +
+                      ' --output='+gold_block)
+            os.system('simics-workspace/bin/craff '+monitored_ram +
+                      ' --extract='+hex(address) +
+                      ' --extract-block-size='+str(block_size) +
+                      ' --output='+monitored_block)
+
+
+def compare_memory(injection_number, monitored_checkpoint_number,
+                   gold_checkpoint, monitored_checkpoint, board,
+                   extract_blocks=False):
+    """
+    Compare the memory contents of gold_checkpoint with merged_checkpoint
+    and return the list of blocks that do not match. If extract_blocks is
+    true then extract any blocks that do not match to
+    incremental_checkpoint/memory-blocks/.
+    """
+    merged_checkpoint = monitored_checkpoint+'/merged.ckpt'
+    if os.system('simics-workspace/bin/checkpoint-merge ' +
+                 monitored_checkpoint+' '+merged_checkpoint):
+        raise Exception('simics_checkpoints.py:compare_memory_contents(): '
+                        'Could not merge monitored checkpoint: ' +
+                        monitored_checkpoint)
+    if board == 'p2020rdb':
+        gold_rams = [gold_checkpoint+'/DUT_'+board +
+                     '.soc.ram_image['+str(index)+'].craff'
+                     for index in xrange(1)]
+        monitored_rams = [merged_checkpoint+'/DUT_'+board +
+                          '.soc.ram_image['+str(index)+'].craff'
+                          for index in xrange(1)]
+    elif board == 'a9x4':
+        gold_rams = [gold_checkpoint+'/DUT_'+board +
+                     '.coretile.ddr_image['+str(index)+'].craff'
+                     for index in xrange(2)]
+        monitored_rams = [merged_checkpoint+'/DUT_'+board +
+                          '.coretile.ddr_image['+str(index)+'].craff'
+                          for index in xrange(2)]
+    ram_diffs = [ram+'.diff' for ram in monitored_rams]
+    diff_content_maps = [diff+'.content_map' for diff in ram_diffs]
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql = sql_db.cursor()
+    for image_index, gold_ram, monitored_ram, ram_diff, diff_content_map in \
+            zip(range(len(monitored_rams)), gold_rams, monitored_rams,
+                ram_diffs, diff_content_maps):
+        os.system('simics-workspace/bin/craff --diff '+gold_ram+' ' +
+                  monitored_ram+' --output='+ram_diff)
+        os.system('simics-workspace/bin/craff --content-map '+ram_diff +
+                  ' --output='+diff_content_map)
+        craffOutput = subprocess.check_output('simics-workspace/bin/craff '
+                                              '--info '+ram_diff, shell=True)
+        block_size = int(re.findall(r'\d+', craffOutput.split('\n')[2])[1])
+        changed_blocks = parse_content_map(diff_content_map, block_size)
+        if extract_blocks:
+            extract_diff_blocks(gold_ram, monitored_ram, monitored_checkpoint,
+                                changed_blocks, block_size)
+        for block in changed_blocks:
+            sql.execute(
+                'INSERT INTO drseus_logging_simics_memory_diff '
+                '(injection_id,monitored_checkpoint_number,image_index,block) '
+                'VALUES (?,?,?,?)',
+                (
+                    injection_number, monitored_checkpoint_number, image_index,
+                    hex(block)
+                )
+            )
     sql_db.commit()
     sql_db.close()

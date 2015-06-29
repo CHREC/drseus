@@ -105,9 +105,8 @@ def setup_drseus(application, options):
 
 
 def get_campaign_data():
-    if (not os.path.exists('campaign-data') or
-            not os.path.exists('campaign-data/db.sqlite3')):
-        print('could not find previously created campaign')
+    if not os.path.exists('campaign-data/db.sqlite3'):
+        print('could not find campaign data')
         sys.exit()
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
@@ -119,6 +118,9 @@ def get_campaign_data():
 
 
 def get_simics_campaign_data():
+    if not os.path.exists('campaign-data/db.sqlite3'):
+        print('could not find campaign data')
+        sys.exit()
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
@@ -128,7 +130,10 @@ def get_simics_campaign_data():
     return simics_campaign_data
 
 
-def get_injection_number(campaign_data):
+def get_next_injection_number(campaign_data):
+    if not os.path.exists('campaign-data/db.sqlite3'):
+        print('could not find campaign data')
+        sys.exit()
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
@@ -149,6 +154,9 @@ def get_injection_number(campaign_data):
 
 
 def get_injection_data(campaign_data, injection_number):
+    if not os.path.exists('campaign-data/db.sqlite3'):
+        print('could not find campaign data')
+        sys.exit()
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
@@ -164,7 +172,7 @@ def get_injection_data(campaign_data, injection_number):
     return injection_data
 
 
-def perform_injections(campaign_data, injection_counter, options):
+def perform_injections(campaign_data, injection_counter, options, debug):
     # TODO: check state of dut
     if len(args) > 0:
         if args[0] != campaign_data['application']:
@@ -180,13 +188,13 @@ def perform_injections(campaign_data, injection_counter, options):
         sys.exit()
     if campaign_data['architecture'] == 'p2020':
         drseus = fault_injector(use_simics=campaign_data['simics'],
-                                new=False)
+                                new=False, debug=debug)
     elif campaign_data['architecture'] == 'arm':
         drseus = fault_injector(dut_ip_address='10.42.0.30',
                                 dut_serial_port='/dev/ttyACM0',
                                 architecture='arm',
                                 use_simics=campaign_data['simics'],
-                                new=False)
+                                new=False, debug=debug)
     else:
         print('invalid architecture:', campaign_data['architecture'])
         sys.exit()
@@ -201,25 +209,25 @@ def perform_injections(campaign_data, injection_counter, options):
         drseus.board = simics_campaign_data['board']
     else:
         drseus.exec_time = campaign_data['exec_time']
-    try:
-        for i in xrange(options.num_injections):
-            with injection_counter.get_lock():
-                injection_number = injection_counter.value
-                injection_counter.value += 1
-            drseus.inject_fault(injection_number, selected_targets)
-            drseus.monitor_execution(injection_number)
-        drseus.exit()
-    except KeyboardInterrupt:
-        shutil.rmtree('campaign-data/results/'+str(injection_number))
-        if drseus.simics:
-            try:
-                shutil.rmtree('simics-workspace/' +
-                              drseus.debugger.injected_checkpoint)
-            except:
-                pass
-        else:
-            drseus.debugger.continue_dut()
-        drseus.exit()
+    # try:
+    for i in xrange(options.num_injections):
+        with injection_counter.get_lock():
+            injection_number = injection_counter.value
+            injection_counter.value += 1
+        drseus.inject_fault(injection_number, selected_targets)
+        drseus.monitor_execution(injection_number)
+    drseus.exit()
+    # except KeyboardInterrupt:
+    #     shutil.rmtree('campaign-data/results/'+str(injection_number))
+    #     if drseus.simics:
+    #         try:
+    #             shutil.rmtree('simics-workspace/' +
+    #                           drseus.debugger.injected_checkpoint)
+    #         except:
+    #             pass
+    #     else:
+    #         drseus.debugger.continue_dut()
+    #     drseus.exit()
 
 
 def view_logs():
@@ -253,7 +261,7 @@ parser.add_option('-a', '--arguments', action='store', type='str',
                   help='arguments for application')
 parser.add_option('-f', '--files', action='store', type='str', dest='files',
                   default='',
-                  help='additional files to copy to dut (comma-seperated list)')
+                  help='comma-seperated list of files to copy to device')
 parser.add_option('-r', '--architecture', action='store', type='str',
                   dest='architecture', default='p2020',
                   help='target architecture [default=p2020]')
@@ -275,7 +283,7 @@ parser.add_option('-n', '--num', action='store', type='int',
                   help='number of injections to perform [default=10]')
 parser.add_option('-t', '--targets', action='store', type='str',
                   dest='selected_targets', default=None,
-                  help='comma seperated list of targets for injection')
+                  help='comma-seperated list of targets for injection')
 
 # simics options
 parser.add_option('-c', '--checkpoints', action='store', type='int',
@@ -284,6 +292,9 @@ parser.add_option('-c', '--checkpoints', action='store', type='int',
 parser.add_option('-p', '--processes', action='store', type='int',
                   dest='num_processes', default=1,
                   help='number of simics injections to perform in parallel')
+parser.add_option('-q', '--all', action='store_true', dest='compare_all',
+                  default=False,
+                  help='compare all checkpoints, only last by default')
 parser.add_option('-g', '--regenerate_checkpoint', action='store', type='int',
                   dest='regenerate_checkpoint', default=-1,
                   help='regenerate an injected checkpoint and launch in Simics')
@@ -299,30 +310,31 @@ options, args = parser.parse_args()
 if options.clean:
     delete_results()
 
-if options.view_logs:
+elif options.view_logs:
     view_logs()
 
 # perform fault injections
-if options.inject:
+elif options.inject:
     campaign_data = get_campaign_data()
-    starting_injection = get_injection_number(campaign_data)
+    starting_injection = get_next_injection_number(campaign_data)
     injection_counter = multiprocessing.Value('I', starting_injection)
     if campaign_data['simics'] and options.num_processes > 1:
+        debug = False
         processes = []
         for i in xrange(options.num_processes):
             process = multiprocessing.Process(target=perform_injections,
                                               args=(campaign_data,
                                                     injection_counter,
-                                                    options))
+                                                    options, debug))
             processes.append(process)
             process.start()
-        try:
-            for process in processes:
-                process.join()
-        except KeyboardInterrupt:
-            for process in processes:
-                process.terminate()
-                process.join()
+        # try:
+        for process in processes:
+            process.join()
+        # except KeyboardInterrupt:
+        #     for process in processes:
+        #         process.terminate()
+        #         process.join()
     else:
         perform_injections(campaign_data, injection_counter, options)
 
@@ -337,17 +349,17 @@ elif options.regenerate_checkpoint >= 0:
     checkpoint = regenerate_injected_checkpoint(simics_campaign_data['board'],
                                                 injection_data)
     # launch checkpoint
-    board = 'DUT_'+simics_campaign_data['board']
+    dut_board = 'DUT_'+simics_campaign_data['board']
     if campaign_data['architecture'] == 'p2020':
         serial_port = 'serial[0]'
     else:
         serial_port = 'serial0'
     simics_commands = ('read-configuration '+checkpoint+';' +
                        'new-text-console-comp text_console0;' +
-                       'disconnect '+board+'.console0.serial ' +
-                       board+'.'+serial_port+';' +
+                       'disconnect '+dut_board+'.console0.serial ' +
+                       dut_board+'.'+serial_port+';' +
                        'connect text_console0.serial ' +
-                       board+'.'+serial_port+';' +
+                       dut_board+'.'+serial_port+';' +
                        'connect-real-network-port-in ssh ' +
                        'ethernet_switch0 target-ip=10.10.0.100')
     os.system('cd simics-workspace; ./simics-gui -e \"'+simics_commands+'\"')

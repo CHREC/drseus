@@ -20,11 +20,12 @@ class fault_injector:
                  debugger_ip_address='10.42.0.50',
                  architecture='p2020',
                  use_aux=False, new=True, debug=True,
-                 use_simics=False, num_checkpoints=50):
+                 use_simics=False, num_checkpoints=50, compare_all=False):
         if not os.path.exists('campaign-data'):
             os.mkdir('campaign-data')
         self.architecture = architecture
         self.simics = use_simics
+        self.compare_all = compare_all
         self.debug = debug
         if os.path.exists('campaign-data/private.key'):
             self.rsakey = RSAKey.from_private_key_file(
@@ -40,9 +41,6 @@ class fault_injector:
                 self.board = 'p2020rdb'
             elif architecture == 'arm':
                 self.board = 'a9x4'
-            else:
-                print('invalid architecture:', architecture)
-                sys.exit()
         else:
             if architecture == 'p2020':
                 self.debugger = bdi_p2020(debugger_ip_address,
@@ -54,9 +52,6 @@ class fault_injector:
                                         dut_ip_address, self.rsakey,
                                         dut_serial_port, '[root@ZED]#',
                                         debug)
-            else:
-                print('invalid architecture:', architecture)
-                sys.exit()
             if new:
                 self.debugger.dut.do_login()
 
@@ -132,54 +127,58 @@ class fault_injector:
 
     def monitor_execution(self, injection_number):
         outcome = None
-        if self.simics:
-            self.debugger.compare_checkpoints(
-                injection_number, self.injected_checkpoint, self.board,
-                self.cycles_between, self.num_checkpoints)
-        self.debugger.continue_dut()
         try:
-            self.debugger.dut.read_until()
+            if self.simics:
+                self.debugger.compare_checkpoints(
+                    injection_number, self.injected_checkpoint, self.board,
+                    self.cycles_between, self.num_checkpoints, self.compare_all)
+            self.debugger.continue_dut()
         except DrSEUSError as error:
-            outcome = error.type
-        if self.debug:
-            print()
-        data_diff = 0
-        data_error = False
-        # TODO: check for detected errors
-        detected_errors = 0
-        try:
-            result_folder = 'campaign-data/results/'+str(injection_number)
-            output_location = result_folder+'/'+self.output_file
-            gold_location = 'campaign-data/gold_'+self.output_file
-            self.debugger.dut.get_file(self.output_file, output_location)
-        except KeyboardInterrupt:
-            raise KeyboardInterrupt
-        except:
-            # try:
-            #     self.debugger.halt_dut()
-            # except DrSEUSError as error:
-            #     outcome = 'simics '+error.type
-            missing_output = True
-        else:
-            missing_output = False
-            with open(gold_location, 'r') as solution:
-                solutionContents = solution.read()
-            with open(output_location, 'r') as result:
-                resultContents = result.read()
-            data_diff = difflib.SequenceMatcher(
-                None, solutionContents, resultContents).quick_ratio()
-            data_error = data_diff < 1.0
-            if not data_error:
-                os.remove(output_location)
-                if not os.listdir(result_folder):
-                    os.rmdir(result_folder)
+                outcome = error.type
         if outcome is None:
-            if missing_output:
-                outcome = 'missing output'
-            elif data_error:
-                outcome = 'data error'
+            try:
+                self.debugger.dut.read_until()
+            except DrSEUSError as error:
+                outcome = error.type
+            if self.debug:
+                print()
+            data_diff = 0
+            data_error = False
+            # TODO: check for detected errors
+            detected_errors = 0
+            try:
+                result_folder = 'campaign-data/results/'+str(injection_number)
+                output_location = result_folder+'/'+self.output_file
+                gold_location = 'campaign-data/gold_'+self.output_file
+                self.debugger.dut.get_file(self.output_file, output_location)
+            # except KeyboardInterrupt:
+            #     raise KeyboardInterrupt
+            except:
+                # try:
+                #     self.debugger.halt_dut()
+                # except DrSEUSError as error:
+                #     outcome = 'simics '+error.type
+                missing_output = True
             else:
-                outcome = 'no error'
+                missing_output = False
+                with open(gold_location, 'r') as solution:
+                    solutionContents = solution.read()
+                with open(output_location, 'r') as result:
+                    resultContents = result.read()
+                data_diff = difflib.SequenceMatcher(
+                    None, solutionContents, resultContents).quick_ratio()
+                data_error = data_diff < 1.0
+                if not data_error:
+                    os.remove(output_location)
+                    if not os.listdir(result_folder):
+                        os.rmdir(result_folder)
+            if outcome is None:
+                if missing_output:
+                    outcome = 'missing output'
+                elif data_error:
+                    outcome = 'data error'
+                else:
+                    outcome = 'no error'
         # TODO: set outcome_category
         outcome_category = 'N/A'
         if self.simics:

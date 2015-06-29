@@ -13,7 +13,13 @@
                         Register Diffs
                     </h3>
                     {% load django_tables2 %}
-                    {% render_table table %}
+                    {% render_table register_table %}
+                </div>
+                <div class="section">
+                    <h3>
+                        Memory Diffs
+                    </h3>
+                    {% render_table memory_table %}
                 </div>
             </td>
             <td valign="top">

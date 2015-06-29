@@ -73,7 +73,6 @@ class bdi:
         return (time.time() - start) / iterations
 
     def inject_fault(self, injection_number, injection_time, command):
-        # TODO: log injection
         if self.debug:
             print(colored('injection time: '+injection_time, 'blue'))
         self.dut.serial.write('./'+command+'\n')

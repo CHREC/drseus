@@ -2,6 +2,17 @@ from django import forms
 import django_filters
 from .models import simics_result, simics_injection, simics_register_diff
 
+target_choices = []
+for item in sorted(
+        simics_injection.objects.values('target').distinct()):
+    target_choices.append((item['target'], item['target']))
+
+target_index_choices = []
+for item in sorted(
+        simics_injection.objects.values('target_index').distinct()):
+    target_index_choices.append(
+        (item['target_index'], item['target_index']))
+
 register_choices = []
 for item in sorted(
         simics_injection.objects.values('register').distinct()):
@@ -23,6 +34,20 @@ for item in sorted(simics_result.objects.values('outcome').distinct()):
 
 
 class simics_result_filter(django_filters.FilterSet):
+    injection__target = django_filters.MultipleChoiceFilter(
+        choices=target_choices,
+        widget=forms.SelectMultiple(attrs={
+            'size': str(len(target_choices)),
+            'style': 'width:100%;'
+        })
+    )
+    injection__target_index = django_filters.MultipleChoiceFilter(
+        choices=target_index_choices,
+        widget=forms.SelectMultiple(attrs={
+            'size': str(len(target_index_choices)),
+            'style': 'width:100%;'
+        })
+    )
     injection__register = django_filters.MultipleChoiceFilter(
         choices=register_choices,
         widget=forms.SelectMultiple(attrs={
@@ -54,7 +79,8 @@ class simics_result_filter(django_filters.FilterSet):
 
     class Meta:
         model = simics_result
-        fields = ['injection__register', 'injection__register_index',
+        fields = ['injection__target', 'injection__target_index',
+                  'injection__register', 'injection__register_index',
                   'injection__bit', 'outcome']
 
 monitored_checkpoint_number_choices = []

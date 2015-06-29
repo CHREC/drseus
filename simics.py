@@ -1,15 +1,16 @@
 from __future__ import print_function
 import subprocess
 import os
+import shutil
 import sys
 import signal
-import time
 
 from termcolor import colored
 
 from error import DrSEUSError
 from dut import dut
-from simics_checkpoints import inject_checkpoint, compare_registers
+from simics_checkpoints import (inject_checkpoint, compare_registers,
+                                compare_memory)
 
 
 class simics:
@@ -17,12 +18,6 @@ class simics:
 
     # create simics instance and boot device
     def __init__(self, architecture, rsakey, use_aux, new, debug):
-        # if 'simics-common' in subprocess.check_output('ps -a', shell=True):
-        #     if raw_input('simics is already running, '
-        #                  'killall simics-common? [Y/n]: ') not in ['n', 'no',
-        #                                                            'N', 'No,',
-        #                                                            'NO']:
-        #         subprocess.call(['killall', 'simics-common'])
         self.debug = debug
         self.architecture = architecture
         self.rsakey = rsakey
@@ -52,9 +47,6 @@ class simics:
                                                                self.use_aux
                                                                else '') +
                                         '.simics')
-                else:
-                    print('invalid architecture:', self.architecture)
-                    sys.exit()
             except IOError:
                 print('lost contact with simics')
                 if raw_input(
@@ -142,8 +134,8 @@ class simics:
         self.simics.stdin.write('run\n')
         self.output += 'run\n'
 
-    # TODO: add timeout
     def read_until(self, string=None):
+        # TODO: add timeout
         if string is None:
             string = 'simics> '
         buff = ''
@@ -188,16 +180,16 @@ class simics:
                 print()
             self.continue_dut()
             self.dut.serial.write('setenv ethaddr 00:01:af:07:9b:8a\n'
-                                  # 'setenv eth1addr 00:01:af:07:9b:8b\n'
-                                  # 'setenv eth2addr 00:01:af:07:9b:8c\n'
+                                  'setenv eth1addr 00:01:af:07:9b:8b\n'
+                                  'setenv eth2addr 00:01:af:07:9b:8c\n'
                                   'setenv consoledev ttyS0\n'
                                   'setenv bootargs root=/dev/ram rw '
                                   'console=$consoledev,$baudrate\n'
                                   'bootm ef080000 10000000 ef040000\n')
             if self.use_aux:
                 self.aux.serial.write('setenv ethaddr 00:01:af:07:9b:8d\n'
-                                      # 'setenv eth1addr 00:01:af:07:9b:8e\n'
-                                      # 'setenv eth2addr 00:01:af:07:9b:8f\n'
+                                      'setenv eth1addr 00:01:af:07:9b:8e\n'
+                                      'setenv eth2addr 00:01:af:07:9b:8f\n'
                                       'setenv consoledev ttyS0\n'
                                       'setenv bootargs root=/dev/ram rw '
                                       'console=$consoledev,$baudrate\n'
@@ -268,9 +260,20 @@ class simics:
         self.dut.serial.write('./'+command+'\n')
         for checkpoint in xrange(num_checkpoints):
             self.command('run-cycles '+str(step_cycles))
-            self.command('write-configuration gold-checkpoints/checkpoint-' +
-                         str(checkpoint)+'.ckpt')
-            # TODO: merge checkpoints
+            incremental_checkpoint = ('gold-checkpoints/incremental-' +
+                                      str(checkpoint)+'.ckpt')
+            self.command('write-configuration '+incremental_checkpoint)
+            merged_checkpoint = ('gold-checkpoints/checkpoint-' +
+                                 str(checkpoint)+'.ckpt')
+            if os.system('simics-workspace/bin/checkpoint-merge'
+                         ' simics-workspace/'+incremental_checkpoint +
+                         ' simics-workspace/'+merged_checkpoint):
+                raise Exception('simics.py:create_checkpoints(): '
+                                'Could not merge gold checkpoint: ' +
+                                incremental_checkpoint)
+        for checkpoint in xrange(num_checkpoints):
+            shutil.rmtree('simics-workspace/gold-checkpoints/incremental-' +
+                          str(checkpoint)+'.ckpt')
         if self.debug:
             print()
         self.continue_dut()
@@ -289,24 +292,29 @@ class simics:
         return injected_checkpoint
 
     def compare_checkpoints(self, injection_number, checkpoint, board,
-                            cycles_between_checkpoints, num_checkpoints):
+                            cycles_between_checkpoints, num_checkpoints,
+                            compare_all):
         if not os.path.exists('simics-workspace/'+checkpoint+'/monitored'):
             os.mkdir('simics-workspace/'+checkpoint+'/monitored')
         checkpoint_number = int(
             checkpoint.split('/')[-1][checkpoint.split('/')[-1].index(
                 '-')+1:checkpoint.split('/')[-1].index('.ckpt')])
-        for monitored_checkpoint_number in xrange(checkpoint_number+1,
-                                                  num_checkpoints):
+        for checkpoint_number in xrange(checkpoint_number+1,
+                                        num_checkpoints):
             self.command('run-cycles '+str(cycles_between_checkpoints))
-            monitor_checkpoint = (checkpoint +
-                                  '/monitored/checkpoint-' +
-                                  str(monitored_checkpoint_number)+'.ckpt')
-            self.command('write-configuration '+monitor_checkpoint)
-            monitor_checkpoint = 'simics-workspace/'+monitor_checkpoint
-            gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
-                               str(monitored_checkpoint_number)+'.ckpt')
-            compare_registers(injection_number, monitored_checkpoint_number,
-                              gold_checkpoint, monitor_checkpoint, board)
-            # TODO: compare memory
+            if (compare_all or checkpoint_number == num_checkpoints-1):
+                monitored_checkpoint = (checkpoint +
+                                        '/monitored/checkpoint-' +
+                                        str(checkpoint_number) +
+                                        '.ckpt')
+                self.command('write-configuration '+monitored_checkpoint)
+                monitored_checkpoint = 'simics-workspace/'+monitored_checkpoint
+                gold_checkpoint = ('simics-workspace/gold-checkpoints/'
+                                   'checkpoint-' +
+                                   str(checkpoint_number)+'.ckpt')
+                compare_registers(injection_number, checkpoint_number,
+                                  gold_checkpoint, monitored_checkpoint, board)
+                compare_memory(injection_number, checkpoint_number,
+                               gold_checkpoint, monitored_checkpoint, board)
         if self.debug:
             print()

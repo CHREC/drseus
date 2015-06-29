@@ -17,8 +17,8 @@ from django.conf.urls import patterns
 
 charts_and_tables = [
     (r'', 'table', 'Results Table'),
-    (r'charts/register/', 'register_chart', 'Injections By Register Chart'),
-    (r'charts/bit/', 'bit_chart', 'Injections By Bit Chart'),
+    (r'charts/register/', 'register_chart', 'Injections By Register'),
+    (r'charts/bit/', 'bit_chart', 'Injections By Bit'),
     (r'charts/outcome/', 'outcome_chart', 'Injections By Outcome')
 ]
 
