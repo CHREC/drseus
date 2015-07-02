@@ -93,7 +93,8 @@ class fault_injector:
         )
         if self.simics:
             self.cycles_between = self.debugger.create_checkpoints(
-                self.command, self.exec_time, self.num_checkpoints)
+                self.command, self.exec_time, self.num_checkpoints,
+                self.compare_all)
             sql.execute(
                 'INSERT INTO drseus_logging_simics_campaign_data ' +
                 '(board,num_checkpoints,cycles_between,dut_output,' +

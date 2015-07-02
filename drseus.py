@@ -72,11 +72,13 @@ def setup_drseus(application, options):
         if options.architecture == 'p2020':
             drseus = fault_injector(dut_ip_address='10.10.0.100',
                                     architecture=options.architecture,
-                                    use_simics=True, use_aux=options.aux)
+                                    use_simics=True, use_aux=options.aux,
+                                    compare_all=options.compare_all)
         elif options.architecture == 'arm':
             drseus = fault_injector(dut_ip_address='10.10.0.100',
                                     architecture=options.architecture,
-                                    use_simics=True, use_aux=options.aux)
+                                    use_simics=True, use_aux=options.aux,
+                                    compare_all=options.compare_all)
         else:
             print('invalid architecture:', options.architecture)
             sys.exit()

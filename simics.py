@@ -1,7 +1,6 @@
 from __future__ import print_function
 import subprocess
 import os
-import shutil
 import sys
 import signal
 
@@ -253,7 +252,7 @@ class simics:
         self.continue_dut()
         return int(end_cycles) - int(start_cycles)
 
-    def create_checkpoints(self, command, cycles, num_checkpoints):
+    def create_checkpoints(self, command, cycles, num_checkpoints, merge_all):
         os.mkdir('simics-workspace/gold-checkpoints')
         step_cycles = cycles / num_checkpoints
         self.halt_dut()
@@ -265,15 +264,13 @@ class simics:
             self.command('write-configuration '+incremental_checkpoint)
             merged_checkpoint = ('gold-checkpoints/checkpoint-' +
                                  str(checkpoint)+'.ckpt')
-            if os.system('simics-workspace/bin/checkpoint-merge'
-                         ' simics-workspace/'+incremental_checkpoint +
-                         ' simics-workspace/'+merged_checkpoint):
-                raise Exception('simics.py:create_checkpoints(): '
-                                'Could not merge gold checkpoint: ' +
-                                incremental_checkpoint)
-        for checkpoint in xrange(num_checkpoints):
-            shutil.rmtree('simics-workspace/gold-checkpoints/incremental-' +
-                          str(checkpoint)+'.ckpt')
+            if merge_all or checkpoint == num_checkpoints-1:
+                if os.system('simics-workspace/bin/checkpoint-merge'
+                             ' simics-workspace/'+incremental_checkpoint +
+                             ' simics-workspace/'+merged_checkpoint):
+                    raise Exception('simics.py:create_checkpoints(): '
+                                    'Could not merge gold checkpoint: ' +
+                                    incremental_checkpoint)
         if self.debug:
             print()
         self.continue_dut()
@@ -312,6 +309,16 @@ class simics:
                 gold_checkpoint = ('simics-workspace/gold-checkpoints/'
                                    'checkpoint-' +
                                    str(checkpoint_number)+'.ckpt')
+                if not os.path.exists(gold_checkpoint):
+                    incremental_checkpoint = ('simics-workspace/'
+                                              'gold-checkpoints/incremental-' +
+                                              str(checkpoint_number)+'.ckpt')
+                    if os.system('simics-workspace/bin/checkpoint-merge'
+                                 ' simics-workspace/'+incremental_checkpoint +
+                                 ' simics-workspace/'+gold_checkpoint):
+                        raise Exception('simics.py:compare_checkpoints(): '
+                                        'Could not merge gold checkpoint: ' +
+                                        incremental_checkpoint)
                 compare_registers(injection_number, checkpoint_number,
                                   gold_checkpoint, monitored_checkpoint, board)
                 compare_memory(injection_number, checkpoint_number,
