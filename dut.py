@@ -23,7 +23,6 @@ class dut:
             self.serial = serial.Serial(port=serial_port, baudrate=baud_rate,
                                         timeout=timeout, rtscts=True)
         except:
-            # TODO: make this automatic
             print('error opening serial port, are you a member of dialout?')
             sys.exit()
         self.prompt = prompt+' '
