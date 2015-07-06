@@ -15,8 +15,8 @@ from simics import simics
 
 
 class fault_injector:
-    def __init__(self, dut_ip_address='10.42.0.20',
-                 dut_serial_port='/dev/ttyUSB0',
+    def __init__(self, dut_ip_address='10.42.0.21',
+                 dut_serial_port='/dev/ttyUSB1',
                  debugger_ip_address='10.42.0.50',
                  architecture='p2020',
                  use_aux=False, new=True, debug=True,
@@ -53,6 +53,7 @@ class fault_injector:
                                         dut_serial_port, '[root@ZED]#',
                                         debug)
             if new:
+                self.debugger.reset_dut()
                 self.debugger.dut.do_login()
 
     def exit(self):
@@ -108,20 +109,27 @@ class fault_injector:
             )
         sql_db.commit()
         sql_db.close()
+        if not self.simics:
+            os.mkdir('campaign-data/dut-files')
+            for item in files:
+                shutil.copy(item, 'campaign-data/dut-files/')
 
     def time_application(self, iterations):
         return self.debugger.time_application(self.command, iterations)
 
     def inject_fault(self, injection_number, selected_targets):
-        if not os.path.exists('campaign-data/results'):
-            os.mkdir('campaign-data/results')
-        os.mkdir('campaign-data/results/'+str(injection_number))
         if self.simics:
             checkpoint_number = random.randrange(self.num_checkpoints-1)
             self.injected_checkpoint = \
                 self.debugger.inject_fault(injection_number, checkpoint_number,
                                            self.board, selected_targets)
         else:
+            self.debugger.reset_dut()
+            self.dut.do_login()
+            files = []
+            for item in os.listdir('campaign-data/dut-files'):
+                files.append('campaign-data/dut-files/'+item)
+            self.dut.send_files(files)
             injection_time = random.uniform(0, self.exec_time)
             self.debugger.inject_fault(injection_number, injection_time,
                                        self.command)
@@ -147,10 +155,13 @@ class fault_injector:
             data_error = False
             # TODO: check for detected errors
             detected_errors = 0
+            if not os.path.exists('campaign-data/results'):
+                os.mkdir('campaign-data/results')
+            os.mkdir('campaign-data/results/'+str(injection_number))
+            result_folder = 'campaign-data/results/'+str(injection_number)
+            output_location = result_folder+'/'+self.output_file
+            gold_location = 'campaign-data/gold_'+self.output_file
             try:
-                result_folder = 'campaign-data/results/'+str(injection_number)
-                output_location = result_folder+'/'+self.output_file
-                gold_location = 'campaign-data/gold_'+self.output_file
                 self.debugger.dut.get_file(self.output_file, output_location)
             # except KeyboardInterrupt:
             #     raise KeyboardInterrupt
@@ -160,6 +171,8 @@ class fault_injector:
                 # except DrSEUSError as error:
                 #     outcome = 'simics '+error.type
                 missing_output = True
+                if not os.listdir(result_folder):
+                    os.rmdir(result_folder)
             else:
                 missing_output = False
                 with open(gold_location, 'r') as solution:

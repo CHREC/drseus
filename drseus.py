@@ -14,7 +14,6 @@ from fault_injector import fault_injector
 from supervisor import supervisor
 from simics_checkpoints import regenerate_injected_checkpoint
 
-# TODO: re-transfer files (and ssh key) if using initramfs
 # TODO: add support for multiple boards (ethernet tests)
 # TODO: isolate injections on real device
 # TODO: add telnet setup for bdi (firmware, configs, etc.)

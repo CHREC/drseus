@@ -8,7 +8,6 @@ import sqlite3
 from termcolor import colored
 
 from dut import dut
-from error import DrSEUSError
 
 
 class bdi:
@@ -41,14 +40,6 @@ class bdi:
             return True
 
     def reset_dut(self):
-        try:
-            if self.dut.is_logged_in():
-                self.dut.command('sync')
-        except DrSEUSError as error:
-            if error.type == DrSEUSError.dut_hanging:
-                pass
-            else:
-                raise DrSEUSError(error.type, error.console_buffer)
         self.telnet.write('reset\r\n')
         if self.telnet.expect(['- TARGET: processing target startup passed'],
                               timeout=10) < 0:
@@ -69,7 +60,7 @@ class bdi:
     def time_application(self, command, iterations):
         start = time.time()
         for i in xrange(iterations):
-            self.debugger.dut.command('./'+command)
+            self.dut.command('./'+command)
         return (time.time() - start) / iterations
 
     def inject_fault(self, injection_number, injection_time, command):
