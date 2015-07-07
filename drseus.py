@@ -337,7 +337,7 @@ elif options.inject:
         #         process.terminate()
         #         process.join()
     else:
-        perform_injections(campaign_data, injection_counter, options)
+        perform_injections(campaign_data, injection_counter, options, True)
 
 elif options.regenerate_checkpoint >= 0:
     campaign_data = get_campaign_data()

@@ -15,6 +15,7 @@ class bdi:
     def __init__(self, ip_address, dut_ip_address, rsakey,
                  dut_serial_port, dut_prompt, debug):
         self.debug = debug
+        # TODO: populate output
         self.output = ''
         try:
             self.telnet = telnetlib.Telnet(ip_address)
@@ -65,7 +66,7 @@ class bdi:
 
     def inject_fault(self, injection_number, injection_time, command):
         if self.debug:
-            print(colored('injection time: '+injection_time, 'blue'))
+            print(colored('injection time: '+str(injection_time), 'blue'))
         self.dut.serial.write('./'+command+'\n')
         time.sleep(injection_time)
         if not self.halt_dut():
@@ -74,17 +75,19 @@ class bdi:
         regs = self.get_dut_regs()
         core = random.randrange(2)
         register = random.choice(regs[core].keys())
-        gold_value = int(regs[core][register], base=16)
-        # TODO: are all registers 64 bits?
-        bit = random.randrange(64)
-        injected_value = gold_value ^ (1 << bit)
+        gold_value = regs[core][register]
+        num_bits = len(gold_value.replace('0x', '')) * 4
+        bit = random.randrange(num_bits)
+        injected_value = '0x%X' % (int(gold_value, base=16) ^ (1 << bit))
         if self.debug:
-            print(colored('core: '+core, 'blue'))
+            print()
+            print(colored('core: '+str(core), 'blue'))
             print(colored('register: '+register, 'blue'))
-            print(colored('gold value: '+hex(gold_value), 'blue'))
-            print(colored('injected value: '+hex(injected_value), 'blue'))
+            print(colored('bit: '+str(bit), 'blue'))
+            print(colored('gold value: '+gold_value, 'blue'))
+            print(colored('injected value: '+injected_value, 'blue'))
         self.command('select '+str(core))
-        self.command('rm '+register+' '+hex(injected_value))
+        self.command('rm '+register+' '+injected_value)
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(

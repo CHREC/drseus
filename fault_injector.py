@@ -125,11 +125,11 @@ class fault_injector:
                                            self.board, selected_targets)
         else:
             self.debugger.reset_dut()
-            self.dut.do_login()
+            self.debugger.dut.do_login()
             files = []
             for item in os.listdir('campaign-data/dut-files'):
                 files.append('campaign-data/dut-files/'+item)
-            self.dut.send_files(files)
+            self.debugger.dut.send_files(files)
             injection_time = random.uniform(0, self.exec_time)
             self.debugger.inject_fault(injection_number, injection_time,
                                        self.command)
@@ -204,13 +204,14 @@ class fault_injector:
         sql = sql_db.cursor()
         sql.execute(
             'INSERT INTO drseus_logging_' +
-            ('simics_result ' if self.simics else 'hw_reset ') +
+            ('simics_result ' if self.simics else 'hw_result ') +
             '(injection_id,outcome,outcome_category,data_diff,' +
             'detected_errors,qty,dut_output,debugger_output) ' +
             'VALUES (?,?,?,?,?,?,?,?)', (
                 injection_number, outcome, outcome_category, data_diff,
-                detected_errors, 1, self.debugger.dut.output,
-                self.debugger.output
+                detected_errors, 1,
+                self.debugger.dut.output.decode('utf-8', 'ignore'),
+                self.debugger.output.decode('utf-8', 'ignore')
             )
         )
         sql_db.commit()
