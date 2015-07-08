@@ -4,6 +4,7 @@ import telnetlib
 import time
 import random
 import sqlite3
+import multiprocessing
 
 from termcolor import colored
 
@@ -12,9 +13,10 @@ from dut import dut
 
 class bdi:
     # check debugger is ready and boot device
-    def __init__(self, ip_address, dut_ip_address, rsakey,
-                 dut_serial_port, dut_prompt, debug):
+    def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
+                 aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug):
         self.debug = debug
+        self.use_aux = use_aux
         # TODO: populate output
         self.output = ''
         try:
@@ -25,6 +27,9 @@ class bdi:
             sys.exit()
         self.dut = dut(dut_ip_address, rsakey,
                        dut_serial_port, dut_prompt, debug)
+        if self.use_aux:
+            self.aux = dut(aux_ip_address, self.rsakey, aux_serial_port,
+                           'root@p2020rdb:~#', debug, color='cyan')
         if not self.ready():
             print('debugger not ready')
             sys.exit()
@@ -33,6 +38,8 @@ class bdi:
         self.command('quit')
         self.telnet.close()
         self.dut.close()
+        if self.use_aux:
+            self.aux.close()
 
     def ready(self):
         if self.telnet.expect(self.prompts, timeout=10)[0] < 0:
@@ -58,11 +65,18 @@ class bdi:
         else:
             return text
 
-    def time_application(self, command, iterations):
+    def time_application(self, command, aux_command, iterations):
         start = time.time()
         for i in xrange(iterations):
+            if self.use_aux:
+                aux_process = multiprocessing.Process(target=self.aux.command,
+                                                      args=('./'+aux_command, ))
+                aux_process.start()
             self.dut.command('./'+command)
-        return (time.time() - start) / iterations
+            end = time.time()
+            if self.use_aux:
+                aux_process.join()
+        return (end - start) / iterations
 
     def inject_fault(self, injection_number, injection_time, command,
                      selected_targets):
@@ -106,10 +120,11 @@ class bdi:
 
 class bdi_arm(bdi):
     def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                 dut_prompt, debug):
+                 aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug):
         self.prompts = ['A9#0>', 'A9#1>']
         bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                     dut_prompt, debug)
+                     aux_ip_address, aux_serial_port, use_aux, dut_prompt,
+                     debug)
 
     def halt_dut(self):
         self.telnet.write('halt 3\r\n')
@@ -162,10 +177,11 @@ class bdi_arm(bdi):
 
 class bdi_p2020(bdi):
     def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                 dut_prompt, debug):
+                 aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug):
         self.prompts = ['P2020>']
         bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                     dut_prompt, debug)
+                     aux_ip_address, aux_serial_port, use_aux, dut_prompt,
+                     debug)
 
     def halt_dut(self):
         self.telnet.write('halt 0 1\r\n')

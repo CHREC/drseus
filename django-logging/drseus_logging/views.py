@@ -18,7 +18,7 @@ def fix_sort(string):
 
 def result_table(request, title, sidebar_items):
     campaign_data_info = campaign_data.objects.get()
-    if campaign_data_info.simics:
+    if campaign_data_info.use_simics:
         simics_campaign_data_info = simics_campaign_data.objects.get()
         queryset = simics_result.objects.all().annotate(
             register_errors=Count('simics_register_diff'),
@@ -44,7 +44,7 @@ def result_table(request, title, sidebar_items):
 
 def injection_result(request, injection_number, title, sidebar_items):
     campaign_data_info = campaign_data.objects.get()
-    if campaign_data_info.simics:
+    if campaign_data_info.use_simics:
         result = simics_result.objects.get(injection_id=injection_number)
         register_queryset = simics_register_diff.objects.filter(
             injection=injection_number)
@@ -75,7 +75,7 @@ def injection_result(request, injection_number, title, sidebar_items):
 
 def register_chart(request, title, sidebar_items):
     campaign_data_info = campaign_data.objects.get()
-    if campaign_data_info.simics:
+    if campaign_data_info.use_simics:
         queryset = simics_result.objects.all()
         fltr = simics_result_filter(request.GET, queryset=queryset)
         datasource = PivotDataPool(
@@ -121,7 +121,7 @@ def register_chart(request, title, sidebar_items):
 
 def bit_chart(request, title, sidebar_items):
     campaign_data_info = campaign_data.objects.get()
-    if campaign_data_info.simics:
+    if campaign_data_info.use_simics:
         queryset = simics_result.objects.all()
         fltr = simics_result_filter(request.GET, queryset=queryset)
     else:
@@ -149,7 +149,7 @@ def bit_chart(request, title, sidebar_items):
 
 def time_chart(request, title, sidebar_items):
     campaign_data_info = campaign_data.objects.get()
-    if campaign_data_info.simics:
+    if campaign_data_info.use_simics:
         queryset = simics_result.objects.all()
         fltr = simics_result_filter(request.GET, queryset=queryset)
         datasource = PivotDataPool(
@@ -193,7 +193,7 @@ def time_chart(request, title, sidebar_items):
 
 def outcome_chart(request, title, sidebar_items):
     campaign_data_info = campaign_data.objects.get()
-    if campaign_data_info.simics:
+    if campaign_data_info.use_simics:
         queryset = simics_result.objects.values('outcome').\
             annotate(qty=Count('outcome'))
         fltr = simics_result_filter(request.GET, queryset=queryset)

@@ -11,7 +11,6 @@ import sqlite3
 import multiprocessing
 
 from fault_injector import fault_injector
-from supervisor import supervisor
 from simics_checkpoints import regenerate_injected_checkpoint
 
 # TODO: add support for multiple boards (ethernet tests)
@@ -40,16 +39,31 @@ def delete_results():
     sys.exit()
 
 
-def setup_drseus(application, options):
+def setup_campaign(application, options):
     if options.architecture == 'p2020':
+        dut_ip_address = '10.42.0.21'
+        dut_serial_port = '/dev/ttyUSB1'
         application = 'ppc_fi_'+application
+        if options.aux_app is None:
+            aux_application = 'ppc_fi_'+application
+        else:
+            aux_application = 'ppc_fi_'+options.aux_app
     elif options.architecture == 'arm':
+        dut_ip_address = '10.42.0.30'
+        dut_serial_port = '/dev/ttyACM0'
         application = 'arm_fi_'+application
+        if options.aux_app is None:
+            aux_application = 'arm_fi_'+application
+        else:
+            aux_application = 'arm_fi_'+options.aux_app
+    else:
+        print('invalid architecture:', options.architecture)
+        sys.exit()
     if not os.path.exists('fiapps'):
         os.system('./setup_apps.sh')
     if not os.path.exists('fiapps/'+application):
         os.system('cd fiapps/; make '+application)
-    if options.simics and not os.path.exists('simics-workspace'):
+    if options.use_simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics.sh')
     if os.path.exists('campaign-data') and os.listdir('campaign-data'):
         print('previous campaign data exists, continuing will delete it')
@@ -66,43 +80,16 @@ def setup_drseus(application, options):
                 print('deleted gold checkpoints')
             if os.path.exists('simics-workspace/injected-checkpoints'):
                 shutil.rmtree('simics-workspace/injected-checkpoints')
-                print('deleted injected checkpoints')
-    if options.simics:
-        if options.architecture == 'p2020':
-            drseus = fault_injector(dut_ip_address='10.10.0.100',
-                                    architecture=options.architecture,
-                                    use_simics=True, use_aux=options.aux,
-                                    compare_all=options.compare_all)
-        elif options.architecture == 'arm':
-            drseus = fault_injector(dut_ip_address='10.10.0.100',
-                                    architecture=options.architecture,
-                                    use_simics=True, use_aux=options.aux,
-                                    compare_all=options.compare_all)
-        else:
-            print('invalid architecture:', options.architecture)
-            sys.exit()
-    else:
-        if options.architecture == 'p2020':
-            drseus = fault_injector(num_checkpoints=options.num_checkpoints,
-                                    use_aux=options.aux)
-        elif options.architecture == 'arm':
-            drseus = fault_injector(dut_ip_address='10.42.0.30',
-                                    dut_serial_port='/dev/ttyACM0',
-                                    architecture=options.architecture,
-                                    num_checkpoints=options.num_checkpoints,
-                                    use_aux=options.aux)
-        else:
-            print('invalid architecture:', options.architecture)
-            sys.exit()
+    drseus = fault_injector(dut_ip_address, '10.42.0.20', dut_serial_port,
+                            '/dev/ttyUSB0', '10.42.0.50', options.architecture,
+                            options.use_aux, True, options.debug,
+                            options.use_simics, options.num_checkpoints,
+                            options.compare_all)
     drseus.setup_campaign('fiapps', application, options.arguments,
                           options.output_file, options.files,
-                          options.iterations)
-    print('\nsuccessfully setup fault injection campaign:')
-    print('\tcopied target application to dut')
-    print('\ttimed target application')
-    print('\tgot gold output')
-    if options.simics:
-        print('\tcreated gold checkpoints')
+                          options.iterations, aux_application, options.aux_args,
+                          options.use_aux_output)
+    print('\nsuccessfully setup campaign')
 
 
 def get_campaign_data():
@@ -138,7 +125,7 @@ def get_next_injection_number(campaign_data):
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    if campaign_data['simics']:
+    if campaign_data['use_simics']:
         sql.execute('SELECT * FROM drseus_logging_simics_injection ORDER BY ' +
                     'injection_number DESC LIMIT 1')
         injection_data = sql.fetchone()
@@ -161,7 +148,7 @@ def get_injection_data(campaign_data, injection_number):
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    if campaign_data['simics']:
+    if campaign_data['use_simics']:
         sql.execute('SELECT * FROM drseus_logging_simics_injection WHERE ' +
                     'injection_number = (?)', (injection_number, ))
         injection_data = sql.fetchone()
@@ -173,50 +160,53 @@ def get_injection_data(campaign_data, injection_number):
     return injection_data
 
 
-def perform_injections(campaign_data, injection_counter, options, debug):
-    # TODO: check state of dut
-    if len(args) > 0:
-        if args[0] != campaign_data['application']:
-            print('campaign created with different application:',
-                  campaign_data['application'])
-            sys.exit()
-    if options.selected_targets is not None:
-        selected_targets = options.selected_targets.split(',')
-    else:
-        selected_targets = None
-    if options.simics and not campaign_data['simics']:
-        print('previous campaign was not created with simics')
-        sys.exit()
-    if campaign_data['architecture'] == 'p2020':
-        drseus = fault_injector(use_simics=campaign_data['simics'],
-                                new=False, debug=debug)
-    elif campaign_data['architecture'] == 'arm':
-        drseus = fault_injector(dut_ip_address='10.42.0.30',
-                                dut_serial_port='/dev/ttyACM0',
-                                architecture='arm',
-                                use_simics=campaign_data['simics'],
-                                new=False, debug=debug)
-    else:
-        print('invalid architecture:', campaign_data['architecture'])
-        sys.exit()
-    drseus.command = campaign_data['command']
-    drseus.output_file = campaign_data['output_file']
-    if campaign_data['simics']:
+def load_campaign(campaign_data, options):
+    if campaign_data['use_simics']:
         if not os.path.exists('simics-workspace/injected-checkpoints'):
             os.mkdir('simics-workspace/injected-checkpoints')
         simics_campaign_data = get_simics_campaign_data()
-        drseus.num_checkpoints = simics_campaign_data['num_checkpoints']
+    if options.use_simics and not campaign_data['use_simics']:
+        print('previous campaign was not created with simics')
+        sys.exit()
+    if options.architecture == 'p2020':
+        dut_ip_address = '10.42.0.21'
+        dut_serial_port = '/dev/ttyUSB1'
+    elif options.architecture == 'arm':
+        dut_ip_address = '10.42.0.30'
+        dut_serial_port = '/dev/ttyACM0'
+    else:
+        print('invalid architecture:', options.architecture)
+        sys.exit()
+    drseus = fault_injector(dut_ip_address, '10.42.0.20', dut_serial_port,
+                            '/dev/ttyUSB0', '10.42.0.50',
+                            campaign_data['architecture'],
+                            campaign_data['use_aux'], False, options.debug,
+                            campaign_data['use_simics'],
+                            simics_campaign_data['num_checkpoints'],
+                            options.compare_all)
+    drseus.command = campaign_data['command']
+    drseus.aux_command = campaign_data['aux_command']
+    if campaign_data['use_simics']:
         drseus.cycles_between = simics_campaign_data['cycles_between']
         drseus.board = simics_campaign_data['board']
     else:
         drseus.exec_time = campaign_data['exec_time']
+    return drseus
+
+
+def perform_injections(campaign_data, injection_counter, options):
+    drseus = load_campaign(campaign_data, options)
+    if options.selected_targets is not None:
+        selected_targets = options.selected_targets.split(',')
+    else:
+        selected_targets = None
     # try:
     for i in xrange(options.num_injections):
         with injection_counter.get_lock():
             injection_number = injection_counter.value
             injection_counter.value += 1
         drseus.inject_fault(injection_number, selected_targets)
-        drseus.monitor_execution(injection_number)
+        drseus.monitor_execution(injection_number, campaign_data['output_file'])
     drseus.exit()
     # except KeyboardInterrupt:
     #     shutil.rmtree('campaign-data/results/'+str(injection_number))
@@ -245,9 +235,15 @@ parser = optparse.OptionParser('drseus.py {application} {options}')
 parser.add_option('-d', '--delete', action='store_true', dest='clean',
                   default=False,
                   help='delete results and/or injected checkpoints')
+parser.add_option('-D', '--debug', action='store_true', dest='debug',
+                  default=True,
+                  help='display device output')
 parser.add_option('-i', '--inject', action='store_true', dest='inject',
                   default=False,
                   help='perform fault injections on an existing campaign')
+parser.add_option('-v', '--supervise', action='store_true', dest='supervise',
+                  default=False,
+                  help='do not inject faults, only supervise devices')
 
 # new campaign options
 parser.add_option('-m', '--timing', action='store', type='int',
@@ -266,17 +262,20 @@ parser.add_option('-f', '--files', action='store', type='str', dest='files',
 parser.add_option('-r', '--architecture', action='store', type='str',
                   dest='architecture', default='p2020',
                   help='target architecture [default=p2020]')
-parser.add_option('-s', '--simics', action='store_true', dest='simics',
+parser.add_option('-s', '--simics', action='store_true', dest='use_simics',
                   default=False, help='use simics simulator')
-parser.add_option('-x', '--auxiliary', action='store_true', dest='aux',
+parser.add_option('-x', '--auxiliary', action='store_true', dest='use_aux',
                   default=False, help='use second device during testing')
 parser.add_option('-y', '--auxiliary_application', action='store', type='str',
-                  dest='aux_app', default=None,
+                  dest='aux_app', default='',
                   help='target application for auxiliary device ' +
                   '[default={application}]')
 parser.add_option('-z', '--auxiliary_arguments', action='store', type='str',
-                  dest='aux_args', default=None,
+                  dest='aux_args', default='',
                   help='arguments for auxiliary application')
+parser.add_option('-O', '--aux_output', action='store_true',
+                  dest='use_aux_output', default=False,
+                  help='check output data from aux instead of dut')
 
 # injection options
 parser.add_option('-n', '--num', action='store', type='int',
@@ -319,14 +318,14 @@ elif options.inject:
     campaign_data = get_campaign_data()
     starting_injection = get_next_injection_number(campaign_data)
     injection_counter = multiprocessing.Value('I', starting_injection)
-    if campaign_data['simics'] and options.num_processes > 1:
-        debug = False
+    if campaign_data['use_simics'] and options.num_processes > 1:
+        options.debug = False
         processes = []
         for i in xrange(options.num_processes):
             process = multiprocessing.Process(target=perform_injections,
                                               args=(campaign_data,
                                                     injection_counter,
-                                                    options, debug))
+                                                    options))
             processes.append(process)
             process.start()
         # try:
@@ -337,11 +336,17 @@ elif options.inject:
         #         process.terminate()
         #         process.join()
     else:
-        perform_injections(campaign_data, injection_counter, options, True)
+        perform_injections(campaign_data, injection_counter, options)
+
+elif options.supervise:
+    campaign_data = get_campaign_data()
+    drseus = load_campaign(campaign_data, options)
+    drseus.supervise()
+    drseus.exit()
 
 elif options.regenerate_checkpoint >= 0:
     campaign_data = get_campaign_data()
-    if not campaign_data['simics']:
+    if not campaign_data['use_simics']:
         print('This feature is only available for Simics campaigns')
         sys.exit()
     simics_campaign_data = get_simics_campaign_data()
@@ -368,39 +373,8 @@ elif options.regenerate_checkpoint >= 0:
     if not os.listdir('simics-workspace/temp'):
         os.rmdir('simics-workspace/temp')
 
-
-# setup supervisor
-elif options.aux:
-    if len(args) < 1:
-        parser.error('please specify an application')
-    if options.architecture == 'p2020':
-        application = 'ppc_fi_'+args[0]
-        if options.aux_app is None:
-            aux_application = 'ppc_fi_'+args[0]
-        else:
-            aux_application = 'ppc_fi_'+options.aux_app
-    elif options.architecture == 'arm':
-        application = 'arm_fi_'+args[0]
-        if options.aux_app is None:
-            aux_application = 'arm_fi_'+args[0]
-        else:
-            aux_application = 'arm_fi_'+options.aux_app
-    if not os.path.exists('fiapps'):
-        os.system('./setup_apps.sh')
-    if not os.path.exists('fiapps/'+application):
-        os.system('cd fiapps/; make '+application)
-    drseus = supervisor(architecture=options.architecture,
-                        use_simics=options.simics)
-    drseus.setup_campaign(application, options.arguments,
-                          aux_application, options.arguments if
-                          options.aux_args is None else options.aux_args)
-    drseus.monitor_execution()
-    drseus.exit()
-# ./drseus.py socket_echo -a "65222" -s \
-#             -x -y socket_send_recv -z "10.10.0.100 65222 -i 10"
-
 # setup fault injection campaign
 else:
     if len(args) < 1:
         parser.error('please specify an application')
-    setup_drseus(args[0], options)
+    setup_campaign(args[0], options)

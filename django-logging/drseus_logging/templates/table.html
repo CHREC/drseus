@@ -17,7 +17,7 @@
                                         <th>
                                             Architecture
                                         </th>
-                                        {% if campaign_data.simics %}
+                                        {% if campaign_data.use_simics %}
                                         <th>
                                             Checkpoints
                                         </th>
@@ -36,7 +36,7 @@
                                         <td>
                                             {{ campaign_data.architecture }}
                                         </td>
-                                        {% if campaign_data.simics %}
+                                        {% if campaign_data.use_simics %}
                                         <td>
                                             {{ simics_campaign_data.num_checkpoints }}
                                         </td>

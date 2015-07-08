@@ -241,22 +241,33 @@ class simics:
                 self.aux.read_until('##')
                 self.aux.read_until('##')
 
-    def time_application(self, command, iterations):
+    def time_application(self, command, aux_command, iterations):
         for i in xrange(iterations-1):
+            if self.use_aux:
+                aux_process = multiprocessing.Process(target=self.aux.command,
+                                                      args=('./'+aux_command, ))
+                aux_process.start()
             self.dut.command('./'+command)
-        self.dut.read_until()
-        if self.debug:
-            print()
+            if self.use_aux:
+                aux_process.join()
+        # self.dut.read_until()  # TODO: why is this here?
+        # if self.debug:
+        #     print()
         self.halt_dut()
         start_cycles = self.command(
             'print-time').split('\n')[-2].split()[2]
         if self.debug:
             print()
+        if self.use_aux:
+            aux_process = multiprocessing.Process(target=self.aux.command,
+                                                  args=('./'+aux_command, ))
+            aux_process.start()
         self.continue_dut()
         self.dut.command('./'+command)
+        self.halt_dut()
+        aux_process.join()
         if self.debug:
             print()
-        self.halt_dut()
         end_cycles = self.command(
             'print-time').split('\n')[-2].split()[2]
         if self.debug:
@@ -264,11 +275,14 @@ class simics:
         self.continue_dut()
         return int(end_cycles) - int(start_cycles)
 
-    def create_checkpoints(self, command, cycles, num_checkpoints, merge_all):
+    def create_checkpoints(self, command, aux_command, cycles, num_checkpoints,
+                           merge_all):
         os.mkdir('simics-workspace/gold-checkpoints')
         step_cycles = cycles / num_checkpoints
         self.halt_dut()
         self.dut.serial.write('./'+command+'\n')
+        if self.use_aux:
+            self.aux.serial.write('./'+aux_command+'\n')
         for checkpoint in xrange(num_checkpoints):
             self.command('run-cycles '+str(step_cycles))
             incremental_checkpoint = ('gold-checkpoints/incremental-' +
@@ -286,7 +300,12 @@ class simics:
         if self.debug:
             print()
         self.continue_dut()
+        if self.use_aux:
+            aux_process = multiprocessing.Process(target=self.aux.read_until)
+            aux_process.start()
         self.dut.read_until()
+        if self.use_aux:
+            aux_process.join()
         if self.debug:
             print()
         self.close()

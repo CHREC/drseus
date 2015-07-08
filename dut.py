@@ -137,7 +137,7 @@ class dut:
             self.serial.write('export PS1=\"DrSEUS# \"\n')
             self.prompt = 'DrSEUS# '
             self.read_until()
-        self.command('mkdir .ssh')
-        self.command('touch .ssh/authorized_keys')
+        self.command('mkdir ~/.ssh')
+        self.command('touch ~/.ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
-                     '\" > .ssh/authorized_keys')
+                     '\" > ~/.ssh/authorized_keys')

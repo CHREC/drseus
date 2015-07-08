@@ -5,9 +5,11 @@ class campaign_data(models.Model):
     application = models.TextField()
     output_file = models.TextField()
     command = models.TextField()
+    aux_command = models.TextField()
     exec_time = models.FloatField()
     architecture = models.TextField()
-    simics = models.BooleanField()
+    use_simics = models.BooleanField()
+    use_aux = models.BooleanField()
 
 
 class hw_injection(models.Model):
