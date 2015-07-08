@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import sys
+import multiprocessing
 
 from paramiko import RSAKey
 
@@ -37,8 +38,10 @@ class supervisor:
             self.aux = dut(aux_ip_address, self.rsakey, aux_serial_port,
                            'root@p2020rdb:~#', debug, color='cyan')
             if new:
+                aux_process = multiprocessing.Process(target=self.aux.do_login)
+                aux_process.start()
                 self.dut.do_login()
-                self.aux.do_login()
+                aux_process.join()
 
     def exit(self):
         if self.use_simics:
@@ -64,23 +67,22 @@ class supervisor:
         files.append('fiapps/'+application)
         aux_files = []
         aux_files.append('fiapps/'+aux_application)
+        aux_process = multiprocessing.Process(target=self.aux.send_files,
+                                              args=(aux_files, ))
         try:
+            aux_process.start()
             self.dut.send_files(files)
+            aux_process.join()
         except:
-            print('could not send files to dut')
-            sys.exit()
-        try:
-            self.aux.send_files(aux_files)
-        except:
-            print('could not send files to aux')
+            print('could not send files to devices')
             sys.exit()
 
     def monitor_execution(self):
-        self.dut.serial.write('./'+self.command+'\n')
-        self.aux.serial.write('./'+self.aux_command+'\n')
-        self.aux.read_until()
-        if self.debug:
+        def aux_command_debug():
+            self.aux.command('./'+self.aux_command)
             print()
-        self.dut.read_until()
-        if self.debug:
-            print()
+        aux_process = multiprocessing.Process(target=aux_command_debug)
+        aux_process.start()
+        self.dut.command('./'+self.command)
+        print()
+        aux_process.join()

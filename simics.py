@@ -1,5 +1,6 @@
 from __future__ import print_function
 import subprocess
+import multiprocessing
 import os
 import sys
 import signal
@@ -102,6 +103,16 @@ class simics:
         if checkpoint is None:
             self.continue_dut()
             self.do_uboot()
+            if self.use_aux:
+                def aux_login():
+                    self.aux.do_login(change_prompt=True)
+                    self.aux.command('ifconfig eth0 10.10.0.104 '
+                                     'netmask 255.255.255.0 up')
+                    self.aux.read_until()
+                    if self.debug:
+                        print()
+                aux_process = multiprocessing.Process(target=aux_login)
+                aux_process.start()
             self.dut.do_login(change_prompt=True)
             self.dut.command('ifconfig eth0 10.10.0.100 '
                              'netmask 255.255.255.0 up')
@@ -109,12 +120,12 @@ class simics:
                 self.dut.read_until()
                 if self.debug:
                     print()
-                self.aux.do_login(change_prompt=True)
-                self.aux.command('ifconfig eth0 10.10.0.104 '
-                                 'netmask 255.255.255.0 up')
-                self.aux.read_until()
+                aux_process.join()
+                self.aux.prompt = 'DrSEUS# '
         else:
             self.dut.prompt = 'DrSEUS# '
+            if self.use_aux:
+                self.aux.prompt = 'DrSEUS# '
 
     def close(self):
         self.halt_dut()
@@ -161,15 +172,21 @@ class simics:
         return self.read_until()
 
     def do_uboot(self):
-        if self.architecture == 'p2020':
-            self.dut.read_until('autoboot: ')
-            self.dut.serial.write('\n')
-            if self.use_aux:
+        if self.use_aux:
+            def stop_aux_boot():
                 self.aux.read_until('autoboot: ')
                 self.aux.serial.write('\n')
-            if self.debug:
-                print()
-            self.halt_dut()
+                if self.debug:
+                    print()
+            aux_process = multiprocessing.Process(target=stop_aux_boot)
+            aux_process.start()
+        self.dut.read_until('autoboot: ')
+        self.dut.serial.write('\n')
+        if self.debug:
+            print()
+        aux_process.join()
+        self.halt_dut()
+        if self.architecture == 'p2020':
             self.command('DUT_p2020rdb.soc.phys_mem.load-file '
                          '$initrd_image $initrd_addr')
             if self.use_aux:
@@ -194,11 +211,6 @@ class simics:
                                       'console=$consoledev,$baudrate\n'
                                       'bootm ef080000 10000000 ef040000\n')
         elif self.architecture == 'arm':
-            self.dut.read_until('autoboot: ')
-            self.dut.serial.write('\n')
-            if self.debug:
-                print()
-            self.halt_dut()
             self.command('DUT_a9x4.coretile.mpcore.phys_mem.load-file '
                          '$kernel_image $kernel_addr')
             self.command('DUT_a9x4.coretile.mpcore.phys_mem.load-file '

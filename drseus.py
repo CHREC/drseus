@@ -373,22 +373,31 @@ elif options.regenerate_checkpoint >= 0:
 elif options.aux:
     if len(args) < 1:
         parser.error('please specify an application')
-    application = 'ppc_fi_'+args[0]
-    if options.aux_app is None:
-        aux_application = 'ppc_fi_'+args[0]
-    else:
-        aux_application = 'ppc_fi_'+options.aux_app
+    if options.architecture == 'p2020':
+        application = 'ppc_fi_'+args[0]
+        if options.aux_app is None:
+            aux_application = 'ppc_fi_'+args[0]
+        else:
+            aux_application = 'ppc_fi_'+options.aux_app
+    elif options.architecture == 'arm':
+        application = 'arm_fi_'+args[0]
+        if options.aux_app is None:
+            aux_application = 'arm_fi_'+args[0]
+        else:
+            aux_application = 'arm_fi_'+options.aux_app
+    if not os.path.exists('fiapps'):
+        os.system('./setup_apps.sh')
     if not os.path.exists('fiapps/'+application):
         os.system('cd fiapps/; make '+application)
     drseus = supervisor(architecture=options.architecture,
                         use_simics=options.simics)
-    drseus.setup_campaign('ppc_fi_'+args[0], options.arguments,
+    drseus.setup_campaign(application, options.arguments,
                           aux_application, options.arguments if
                           options.aux_args is None else options.aux_args)
     drseus.monitor_execution()
     drseus.exit()
 # ./drseus.py socket_echo -a "65222" -s \
-#             -x -y socket_send_recv -z "10.10.0.100 65222 -i 10" -s
+#             -x -y socket_send_recv -z "10.10.0.100 65222 -i 10"
 
 # setup fault injection campaign
 else:
