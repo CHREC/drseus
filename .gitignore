@@ -3,4 +3,4 @@ campaign-data/
 fiapps/
 simics-workspace/
 campaign-data/db.sqlite3
-paramiko.log
+paramiko_*.log

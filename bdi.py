@@ -28,14 +28,14 @@ class bdi:
         self.dut = dut(dut_ip_address, rsakey,
                        dut_serial_port, dut_prompt, debug)
         if self.use_aux:
-            self.aux = dut(aux_ip_address, self.rsakey, aux_serial_port,
+            self.aux = dut(aux_ip_address, rsakey, aux_serial_port,
                            'root@p2020rdb:~#', debug, color='cyan')
         if not self.ready():
             print('debugger not ready')
             sys.exit()
 
     def close(self):
-        self.command('quit')
+        self.telnet.write('quit\r\n')
         self.telnet.close()
         self.dut.close()
         if self.use_aux:
@@ -81,7 +81,6 @@ class bdi:
     def inject_fault(self, injection_number, injection_time, command,
                      selected_targets):
         if self.debug:
-            print()
             print(colored('injection time: '+str(injection_time), 'blue'))
         self.dut.serial.write('./'+command+'\n')
         time.sleep(injection_time)

@@ -13,9 +13,10 @@ import multiprocessing
 from fault_injector import fault_injector
 from simics_checkpoints import regenerate_injected_checkpoint
 
-# TODO: add support for multiple boards (ethernet tests)
-# TODO: isolate injections on real device
+# TODO: add support for checking console for data error
+#       append to dut.error_messages
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
+# TODO: add flag for directory for files
 
 
 def delete_results():
@@ -86,7 +87,7 @@ def setup_campaign(application, options):
                             options.use_simics, options.num_checkpoints,
                             options.compare_all)
     drseus.setup_campaign('fiapps', application, options.arguments,
-                          options.output_file, options.files,
+                          options.output_file, options.files, options.aux_files,
                           options.iterations, aux_application, options.aux_args,
                           options.use_aux_output)
     print('\nsuccessfully setup campaign')
@@ -165,6 +166,9 @@ def load_campaign(campaign_data, options):
         if not os.path.exists('simics-workspace/injected-checkpoints'):
             os.mkdir('simics-workspace/injected-checkpoints')
         simics_campaign_data = get_simics_campaign_data()
+        num_checkpoints = simics_campaign_data['num_checkpoints']
+    else:
+        num_checkpoints = options.num_checkpoints
     if options.use_simics and not campaign_data['use_simics']:
         print('previous campaign was not created with simics')
         sys.exit()
@@ -181,8 +185,7 @@ def load_campaign(campaign_data, options):
                             '/dev/ttyUSB0', '10.42.0.50',
                             campaign_data['architecture'],
                             campaign_data['use_aux'], False, options.debug,
-                            campaign_data['use_simics'],
-                            simics_campaign_data['num_checkpoints'],
+                            campaign_data['use_simics'], num_checkpoints,
                             options.compare_all)
     drseus.command = campaign_data['command']
     drseus.aux_command = campaign_data['aux_command']
@@ -258,7 +261,10 @@ parser.add_option('-a', '--arguments', action='store', type='str',
                   help='arguments for application')
 parser.add_option('-f', '--files', action='store', type='str', dest='files',
                   default='',
-                  help='comma-seperated list of files to copy to device')
+                  help='comma-separated list of files to copy to device')
+parser.add_option('-F', '--aux_files', action='store', type='str',
+                  dest='aux_files', default='',
+                  help='comma-separated list of files to copy to aux device')
 parser.add_option('-r', '--architecture', action='store', type='str',
                   dest='architecture', default='p2020',
                   help='target architecture [default=p2020]')

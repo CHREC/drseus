@@ -49,26 +49,30 @@ class simics:
                                         '.simics')
             except IOError:
                 print('lost contact with simics')
-                if raw_input(
-                    'launch simics_license.sh? [Y/n]: ') not in ['n', 'no',
-                                                                 'N', 'No',
-                                                                 'NO']:
-                    subprocess.call(['gnome-terminal', '-x',
-                                     os.getcwd()+'/simics_license.sh'])
-                    raw_input('press enter to restart')
-                    os.execv('drseus.py', sys.argv)
                 sys.exit()
         else:
             self.injected_checkpoint = checkpoint
             buff = self.command('read-configuration '+checkpoint)
             buff += self.command('connect-real-network-port-in ssh '
                                  'ethernet_switch0 target-ip=10.10.0.100')
+            if self.use_aux:
+                buff += self.command('connect-real-network-port-in ssh '
+                                     'ethernet_switch0 target-ip=10.10.0.104')
         found_settings = 0
-        serial_ports = []
+        if checkpoint is None:
+            serial_ports = []
+        else:
+            serial_ports = [0, 0]
         ssh_ports = []
         for line in buff.split('\n'):
             if 'pseudo device opened: /dev/pts/' in line:
-                serial_ports.append(line.split(':')[1].strip())
+                if checkpoint is None:
+                    serial_ports.append(line.split(':')[1].strip())
+                else:
+                    if 'AUX_' in line:
+                        serial_ports[1] = line.split(':')[1].strip()
+                    else:
+                        serial_ports[0] = line.split(':')[1].strip()
                 found_settings += 1
             elif 'Host TCP port' in line:
                 ssh_ports.append(int(line.split('->')[0].split(' ')[-2]))
@@ -79,13 +83,6 @@ class simics:
                 break
         else:
             print('could not find port or pseudoterminal to attach to')
-            if raw_input('launch simics_license.sh? [Y/n]: ') not in ['n', 'no',
-                                                                      'N', 'No',
-                                                                      'NO']:
-                subprocess.call(['gnome-terminal', '-x',
-                                 os.getcwd()+'/simics_license.sh'])
-                raw_input('press enter to restart')
-                os.execv('drseus.py', sys.argv)
             sys.exit()
         if self.architecture == 'p2020':
             self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
@@ -109,8 +106,6 @@ class simics:
                     self.aux.command('ifconfig eth0 10.10.0.104 '
                                      'netmask 255.255.255.0 up')
                     self.aux.read_until()
-                    if self.debug:
-                        print()
                 aux_process = multiprocessing.Process(target=aux_login)
                 aux_process.start()
             self.dut.do_login(change_prompt=True)
@@ -118,8 +113,6 @@ class simics:
                              'netmask 255.255.255.0 up')
             if self.use_aux:
                 self.dut.read_until()
-                if self.debug:
-                    print()
                 aux_process.join()
                 self.aux.prompt = 'DrSEUS# '
         else:
@@ -143,6 +136,8 @@ class simics:
     def continue_dut(self):
         self.simics.stdin.write('run\n')
         self.output += 'run\n'
+        if self.debug:
+            print(colored('run\n', 'yellow'), end='')
 
     def read_until(self, string=None):
         # TODO: add timeout
@@ -176,15 +171,12 @@ class simics:
             def stop_aux_boot():
                 self.aux.read_until('autoboot: ')
                 self.aux.serial.write('\n')
-                if self.debug:
-                    print()
             aux_process = multiprocessing.Process(target=stop_aux_boot)
             aux_process.start()
         self.dut.read_until('autoboot: ')
         self.dut.serial.write('\n')
-        if self.debug:
-            print()
-        aux_process.join()
+        if self.use_aux:
+            aux_process.join()
         self.halt_dut()
         if self.architecture == 'p2020':
             self.command('DUT_p2020rdb.soc.phys_mem.load-file '
@@ -192,8 +184,6 @@ class simics:
             if self.use_aux:
                 self.command('AUX_p2020rdb1.soc.phys_mem.load-file '
                              '$initrd_image $initrd_addr')
-            if self.debug:
-                print()
             self.continue_dut()
             self.dut.serial.write('setenv ethaddr 00:01:af:07:9b:8a\n'
                                   'setenv eth1addr 00:01:af:07:9b:8b\n'
@@ -220,8 +210,6 @@ class simics:
                              '$kernel_image $kernel_addr')
                 self.command('AUX_a9x41.coretile.mpcore.phys_mem.load-file '
                              '$initrd_image $initrd_addr')
-            if self.debug:
-                print()
             self.continue_dut()
             self.dut.read_until('VExpress# ')
             self.dut.serial.write('setenv bootargs console=ttyAMA0 '
@@ -250,14 +238,11 @@ class simics:
             self.dut.command('./'+command)
             if self.use_aux:
                 aux_process.join()
-        # self.dut.read_until()  # TODO: why is this here?
-        # if self.debug:
-        #     print()
+        if not self.use_aux:
+            self.dut.read_until()  # TODO: why is this needed?
         self.halt_dut()
         start_cycles = self.command(
             'print-time').split('\n')[-2].split()[2]
-        if self.debug:
-            print()
         if self.use_aux:
             aux_process = multiprocessing.Process(target=self.aux.command,
                                                   args=('./'+aux_command, ))
@@ -265,13 +250,10 @@ class simics:
         self.continue_dut()
         self.dut.command('./'+command)
         self.halt_dut()
-        aux_process.join()
-        if self.debug:
-            print()
+        if self.use_aux:
+            aux_process.join()
         end_cycles = self.command(
             'print-time').split('\n')[-2].split()[2]
-        if self.debug:
-            print()
         self.continue_dut()
         return int(end_cycles) - int(start_cycles)
 
@@ -297,8 +279,6 @@ class simics:
                     raise Exception('simics.py:create_checkpoints(): '
                                     'Could not merge gold checkpoint: ' +
                                     incremental_checkpoint)
-        if self.debug:
-            print()
         self.continue_dut()
         if self.use_aux:
             aux_process = multiprocessing.Process(target=self.aux.read_until)
@@ -306,8 +286,6 @@ class simics:
         self.dut.read_until()
         if self.use_aux:
             aux_process.join()
-        if self.debug:
-            print()
         self.close()
         return step_cycles
 
@@ -354,5 +332,3 @@ class simics:
                                   gold_checkpoint, monitored_checkpoint, board)
                 compare_memory(injection_number, checkpoint_number,
                                gold_checkpoint, monitored_checkpoint, board)
-        if self.debug:
-            print()

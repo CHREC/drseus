@@ -3,7 +3,6 @@ import serial
 import sys
 
 import paramiko
-paramiko.util.log_to_file('paramiko.log')
 import scp
 from termcolor import colored
 
@@ -18,12 +17,15 @@ class dut:
     # TODO: should timeout be increased?
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug,
                  baud_rate=115200, ssh_port=22, color='green', timeout=120):
+        if debug:
+            paramiko.util.log_to_file('paramiko_'+ip_address+'.log')
         self.output = ''
         try:
             self.serial = serial.Serial(port=serial_port, baudrate=baud_rate,
                                         timeout=timeout, rtscts=True)
         except:
-            print('error opening serial port, are you a member of dialout?')
+            print('error opening serial port', serial_port,
+                  ', are you a member of dialout?')
             sys.exit()
         self.prompt = prompt+' '
         self.ip_address = ip_address
@@ -89,6 +91,8 @@ class dut:
             buff += char
             if buff[-len(string):] == string:
                 break
+        if self.debug:
+            print()
         caught_signal = False
         error = False
         if 'drseus_sighandler:' in buff:

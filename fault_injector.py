@@ -68,7 +68,7 @@ class fault_injector:
         sys.exit()
 
     def setup_campaign(self, directory, application, arguments, output_file,
-                       additional_files, iterations, aux_application,
+                       dut_files, aux_files, iterations, aux_application,
                        aux_arguments, use_aux_output):
         os.system('./django-logging/manage.py migrate')
         if arguments:
@@ -83,22 +83,25 @@ class fault_injector:
                     self.aux_command = aux_application
             else:
                 self.aux_command = self.command
+        else:
+            self.aux_command = ''
         files = []
         files.append(directory+'/'+application)
         if self.use_aux:
-            aux_files = []
-            aux_files.append('fiapps/'+aux_application)
-            files.append(directory+'/'+aux_application)
-        if additional_files:
-            for item in additional_files.split(','):
+            files_aux = []
+            files_aux.append(directory+'/'+aux_application)
+        if dut_files:
+            for item in dut_files.split(','):
                 files.append(directory+'/'+item.lstrip().rstrip())
-                if self.use_aux:
-                    aux_files.append(directory+'/'+item.lstrip().rstrip())
+        if self.use_aux:
+                if aux_files:
+                    for item in aux_files.split(','):
+                        files_aux.append(directory+'/'+item.lstrip().rstrip())
         if self.debug:
             print(colored('sending files...', 'blue'), end='')
         if self.use_aux:
             aux_process = multiprocessing.Process(
-                target=self.debugger.aux.send_files, args=(aux_files, ))
+                target=self.debugger.aux.send_files, args=(files_aux, ))
             aux_process.start()
         self.debugger.dut.send_files(files)
         if self.use_aux:
@@ -113,8 +116,6 @@ class fault_injector:
         else:
             self.debugger.dut.get_file(output_file,
                                        'campaign-data/gold_'+output_file)
-        if self.debug:
-            print()
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
@@ -147,22 +148,35 @@ class fault_injector:
             os.mkdir('campaign-data/dut-files')
             for item in files:
                 shutil.copy(item, 'campaign-data/dut-files/')
+            if self.use_aux:
+                os.mkdir('campaign-data/aux-files')
+                for item in files_aux:
+                    shutil.copy(item, 'campaign-data/aux-files/')
 
     def inject_fault(self, injection_number, selected_targets):
-        if self.use_aux:
-            self.debugger.aux.serial.write('./'+self.aux_command+'\n')
         if self.use_simics:
             checkpoint_number = random.randrange(self.num_checkpoints-1)
             self.injected_checkpoint = \
                 self.debugger.inject_fault(injection_number, checkpoint_number,
                                            self.board, selected_targets)
         else:
+            if self.use_aux:
+                def prepare_aux():
+                    files_aux = []
+                    for item in os.listdir('campaign-data/aux-files'):
+                        files_aux.append('campaign-data/aux-files/'+item)
+                    self.debugger.aux.send_files(files_aux)
+                    self.debugger.aux.serial.write('./'+self.aux_command+'\n')
+                aux_process = multiprocessing.Process(target=prepare_aux)
+                aux_process.start()
             self.debugger.reset_dut()
             self.debugger.dut.do_login()
             files = []
             for item in os.listdir('campaign-data/dut-files'):
                 files.append('campaign-data/dut-files/'+item)
             self.debugger.dut.send_files(files)
+            if self.use_aux:
+                aux_process.join()
             injection_time = random.uniform(0, self.exec_time)
             self.debugger.inject_fault(injection_number, injection_time,
                                        self.command, selected_targets)
@@ -232,11 +246,9 @@ class fault_injector:
         if self.use_simics:
             self.debugger.close()
             shutil.rmtree('simics-workspace/'+self.injected_checkpoint)
-        if self.debug:
-            print()
-            print(colored('outcome: '+outcome+'\n', 'blue'))
+            print(colored('outcome: '+outcome, 'blue'))
             if data_error:
-                print(colored('data diff: '+str(data_diff)+'\n', 'blue'))
+                print(colored('data diff: '+str(data_diff), 'blue'))
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
@@ -255,9 +267,13 @@ class fault_injector:
         sql_db.close()
 
     def supervise(self):
+        # TODO: add logging
+        if self.use_simics:
+            self.debugger.launch_simics('gold-checkpoints/checkpoint-' +
+                                        str(self.num_checkpoints-1)+'.ckpt')
+            self.debugger.continue_dut()
         aux_process = multiprocessing.Process(target=self.debugger.aux.command,
                                               args=('./'+self.aux_command,))
         aux_process.start()
         self.debugger.dut.command('./'+self.command)
-        print()
         aux_process.join()

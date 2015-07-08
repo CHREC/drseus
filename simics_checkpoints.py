@@ -391,6 +391,13 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
                                 ' invalid injection target: '+target)
     gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
                        str(checkpoint_number)+'.ckpt')
+    gold_checkpoint = ('simics-workspace/gold-checkpoints/'
+                       'checkpoint-' +
+                       str(checkpoint_number)+'.ckpt')
+    if not os.path.exists(gold_checkpoint):
+        gold_checkpoint = ('simics-workspace/'
+                           'gold-checkpoints/incremental-' +
+                           str(checkpoint_number)+'.ckpt')
     checkpoint_number = int(
         gold_checkpoint.split('/')[-1][
             gold_checkpoint.split('/')[-1].index('-')+1:
