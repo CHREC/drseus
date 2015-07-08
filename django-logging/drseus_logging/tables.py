@@ -1,5 +1,22 @@
 import django_tables2 as tables
-from .models import simics_result, simics_register_diff, simics_memory_diff
+from .models import (hw_result, simics_result, simics_register_diff,
+                     simics_memory_diff)
+
+
+class hw_result_table(tables.Table):
+    injection_number = tables.Column(accessor='injection.injection_number')
+    time = tables.Column(accessor='injection.time')
+    core = tables.Column(accessor='injection.core')
+    register = tables.Column(accessor='injection.register')
+    bit = tables.Column(accessor='injection.bit')
+    outcome = tables.TemplateColumn(
+        '<a href="/injection/{{record.injection.injection_number}}">'
+        '{{record.outcome}}</a>')
+
+    class Meta:
+        model = hw_result
+        attrs = {"class": "paleblue"}
+        exclude = ('injection', 'debugger_output', 'dut_output', 'qty')
 
 
 class simics_result_table(tables.Table):

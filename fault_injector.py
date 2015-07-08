@@ -132,10 +132,11 @@ class fault_injector:
             self.debugger.dut.send_files(files)
             injection_time = random.uniform(0, self.exec_time)
             self.debugger.inject_fault(injection_number, injection_time,
-                                       self.command)
+                                       self.command, selected_targets)
 
     def monitor_execution(self, injection_number):
         outcome = None
+        data_diff = -1
         try:
             if self.simics:
                 self.debugger.compare_checkpoints(
@@ -149,9 +150,7 @@ class fault_injector:
                 self.debugger.dut.read_until()
             except DrSEUSError as error:
                 outcome = error.type
-            if self.debug:
-                print()
-            data_diff = 0
+            data_diff = -1
             data_error = False
             # TODO: check for detected errors
             detected_errors = 0
@@ -166,10 +165,6 @@ class fault_injector:
             # except KeyboardInterrupt:
             #     raise KeyboardInterrupt
             except:
-                # try:
-                #     self.debugger.halt_dut()
-                # except DrSEUSError as error:
-                #     outcome = 'simics '+error.type
                 missing_output = True
                 if not os.listdir(result_folder):
                     os.rmdir(result_folder)
@@ -199,7 +194,10 @@ class fault_injector:
             self.debugger.close()
             shutil.rmtree('simics-workspace/'+self.injected_checkpoint)
         if self.debug:
+            print()
             print(colored('outcome: '+outcome+'\n', 'blue'))
+            if data_error:
+                print(colored('data diff: '+str(data_diff)+'\n', 'blue'))
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(

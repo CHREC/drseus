@@ -10,6 +10,31 @@ class campaign_data(models.Model):
     simics = models.BooleanField()
 
 
+class hw_injection(models.Model):
+    # commond fields
+    injection_number = models.IntegerField(primary_key=True)
+    register = models.TextField()
+    bit = models.IntegerField()
+    gold_value = models.TextField()
+    injected_value = models.TextField()
+    # hw fields
+    time = models.FloatField()
+    time_rounded = models.FloatField()
+    core = models.IntegerField()
+
+
+class hw_result(models.Model):
+    # common fields
+    injection = models.OneToOneField(hw_injection, primary_key=True)
+    outcome = models.TextField()
+    outcome_category = models.TextField()
+    data_diff = models.FloatField()
+    detected_errors = models.IntegerField()
+    qty = models.IntegerField()
+    dut_output = models.TextField()
+    debugger_output = models.TextField()
+
+
 class simics_campaign_data(models.Model):
     board = models.TextField()
     num_checkpoints = models.IntegerField()
@@ -34,18 +59,6 @@ class simics_injection(models.Model):
     register_index = models.TextField()
     field = models.TextField()
     # gold_debug_info = models.TextField()
-
-
-class hw_injection(models.Model):
-    # commond fields
-    injection_number = models.IntegerField(primary_key=True)
-    register = models.TextField()
-    bit = models.IntegerField()
-    gold_value = models.TextField()
-    injected_value = models.TextField()
-    # hw fields
-    time = models.FloatField()
-    core = models.IntegerField()
 
 
 class simics_result(models.Model):
@@ -74,15 +87,3 @@ class simics_memory_diff(models.Model):
     monitored_checkpoint_number = models.IntegerField()
     image_index = models.IntegerField()
     block = models.TextField()
-
-
-class hw_result(models.Model):
-    # common fields
-    injection = models.OneToOneField(hw_injection, primary_key=True)
-    outcome = models.TextField()
-    outcome_category = models.TextField()
-    data_diff = models.FloatField()
-    detected_errors = models.IntegerField()
-    qty = models.IntegerField()
-    dut_output = models.TextField()
-    debugger_output = models.TextField()

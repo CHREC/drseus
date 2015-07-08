@@ -17,12 +17,14 @@
                                         <th>
                                             Architecture
                                         </th>
+                                        {% if campaign_data.simics %}
                                         <th>
                                             Checkpoints
                                         </th>
                                         <th>
                                             Cycles Between
                                         </th>
+                                        {% endif %}
                                     </tr>
                                     <tr>
                                         <td>
@@ -34,12 +36,14 @@
                                         <td>
                                             {{ campaign_data.architecture }}
                                         </td>
+                                        {% if campaign_data.simics %}
                                         <td>
                                             {{ simics_campaign_data.num_checkpoints }}
                                         </td>
                                         <td>
                                             {{ simics_campaign_data.cycles_between }}
                                         </td>
+                                        {% endif %}
                                     </tr>
                                 </table>
                                 <h2>

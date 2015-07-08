@@ -64,23 +64,24 @@ class bdi:
             self.dut.command('./'+command)
         return (time.time() - start) / iterations
 
-    def inject_fault(self, injection_number, injection_time, command):
+    def inject_fault(self, injection_number, injection_time, command,
+                     selected_targets):
         if self.debug:
+            print()
             print(colored('injection time: '+str(injection_time), 'blue'))
         self.dut.serial.write('./'+command+'\n')
         time.sleep(injection_time)
         if not self.halt_dut():
             print('error halting dut')
             sys.exit()
-        regs = self.get_dut_regs()
+        regs = self.get_dut_regs(selected_targets)
         core = random.randrange(2)
         register = random.choice(regs[core].keys())
         gold_value = regs[core][register]
         num_bits = len(gold_value.replace('0x', '')) * 4
         bit = random.randrange(num_bits)
-        injected_value = '0x%X' % (int(gold_value, base=16) ^ (1 << bit))
+        injected_value = '0x%x' % (int(gold_value, base=16) ^ (1 << bit))
         if self.debug:
-            print()
             print(colored('core: '+str(core), 'blue'))
             print(colored('register: '+register, 'blue'))
             print(colored('bit: '+str(bit), 'blue'))
@@ -93,10 +94,10 @@ class bdi:
         sql.execute(
             'INSERT INTO drseus_logging_hw_injection ' +
             '(injection_number,register,bit,gold_value,injected_value,' +
-            'time,core) VALUES (?,?,?,?,?,?,?)',
+            'time,time_rounded,core) VALUES (?,?,?,?,?,?,?,?)',
             (
                 injection_number, register, bit, gold_value, injected_value,
-                injection_time, core
+                injection_time, round(injection_time, 1), core
             )
         )
         sql_db.commit()
@@ -137,7 +138,7 @@ class bdi_arm(bdi):
         self.telnet.read_very_eager()
         return True
 
-    def get_dut_regs(self):
+    def get_dut_regs(self, selected_targets):
         # TODO: get GPRs
         # TODO: check for unused registers ttbc? iaucfsr?
         regs = [{}, {}]
@@ -147,8 +148,15 @@ class bdi_arm(bdi):
             for line in debug_reglist.split('\r\n')[:-1]:
                 line = line.split(': ')
                 register = line[0].strip()
-                value = line[1].split(' ')[0].strip()
-                regs[core][register] = value
+                if selected_targets is None:
+                    value = line[1].split(' ')[0].strip()
+                    regs[core][register] = value
+                else:
+                    for target in selected_targets:
+                        if target in register:
+                            value = line[1].split(' ')[0].strip()
+                            regs[core][register] = value
+                            break
         return regs
 
 
@@ -186,7 +194,7 @@ class bdi_p2020(bdi):
         self.telnet.read_very_eager()
         return True
 
-    def get_dut_regs(self):
+    def get_dut_regs(self, selected_targets):
         regs = [{}, {}]
         for core in xrange(2):
             self.select_core(core)
@@ -194,6 +202,13 @@ class bdi_p2020(bdi):
             for line in debug_reglist.split('\r\n')[:-1]:
                 line = line.split(': ')
                 register = line[0].strip()
-                value = line[1].split(' ')[0].strip()
-                regs[core][register] = value
+                if selected_targets is None:
+                    value = line[1].split(' ')[0].strip()
+                    regs[core][register] = value
+                else:
+                    for target in selected_targets:
+                        if target in register:
+                            value = line[1].split(' ')[0].strip()
+                            regs[core][register] = value
+                            break
         return regs
