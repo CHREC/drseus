@@ -379,10 +379,7 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
     selected_targets if provided) and return the path of the injected
     checkpoint.
     """
-    if board == 'p2020rdb':
-        targets = devices['P2020']
-    elif board == 'a9x4':
-        targets = devices['A9']
+    targets = devices[board]
     # verify selected targets exist
     if selected_targets is not None:
         for target in selected_targets:
@@ -478,10 +475,7 @@ def regenerate_injected_checkpoint(board, injection_data):
         shutil.copyfile(gold_checkpoint+'/'+checkpoint_file,
                         injected_checkpoint+'/'+checkpoint_file)
     # perform fault injection
-    if board == 'p2020rdb':
-        targets = devices['P2020']
-    elif board == 'a9x4':
-        targets = devices['A9']
+    targets = devices[board]
     inject_register(gold_checkpoint, injected_checkpoint,
                     injection_data['register'], injection_data['target'],
                     board, targets, injection_data)
@@ -595,10 +589,7 @@ def compare_registers(injection_number, monitored_checkpoint_number,
     Compares the register values of the monitored_checkpoint to the
     gold_checkpoint and adds the differences to the database.
     """
-    if board == 'p2020rdb':
-        targets = devices['P2020']
-    elif board == 'a9x4':
-        targets = devices['A9']
+    targets = devices[board]
     gold_registers = parse_registers(gold_checkpoint+'/config', board, targets)
     monitored_registers = parse_registers(monitored_checkpoint+'/config', board,
                                           targets)
@@ -759,7 +750,7 @@ def compare_memory(injection_number, monitored_checkpoint_number,
         monitored_rams = [merged_checkpoint+'/DUT_'+board +
                           '.soc.ram_image['+str(index)+'].craff'
                           for index in xrange(1)]
-    elif board == 'a9x4':
+    elif board == 'a9x2':
         gold_rams = [gold_checkpoint+'/DUT_'+board +
                      '.coretile.ddr_image['+str(index)+'].craff'
                      for index in xrange(2)]

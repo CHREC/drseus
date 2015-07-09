@@ -31,7 +31,10 @@ sidebar_groups = [("Navigation", sidebar_group1)]
 
 charts_and_tables.append(
     (r'injection/(?P<injection_number>[0-9]+)/', 'injection_result',
-     'Injection Result')
+     'Injection Result'))
+charts_and_tables.append(
+    (r'iteration/(?P<iteration>[0-9]+)/', 'iteration_result',
+     'Iteration Result')
 )
 
 chart_pattern_tuples = [

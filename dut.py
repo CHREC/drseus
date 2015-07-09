@@ -97,10 +97,15 @@ class dut:
         error = False
         if 'drseus_sighandler:' in buff:
             for message in self.sighandler_messages:
-                if message in buff:
+                if 'drseus_sighandler: '+message in buff:
                     signal_message = message
                     caught_signal = True
                     break
+        # elif 'drseus_monitor:' in buff:
+        #     for line in buff:
+        #         if 'drseus_monitor:' in line:
+        #             error_message = line.replace('drseus_monitor:', '')
+        #             error = True
         else:
             for message in self.error_messages:
                 if message in buff:

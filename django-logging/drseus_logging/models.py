@@ -6,10 +6,16 @@ class campaign_data(models.Model):
     output_file = models.TextField()
     command = models.TextField()
     aux_command = models.TextField()
+    use_aux_output = models.BooleanField()
     exec_time = models.FloatField()
     architecture = models.TextField()
     use_simics = models.BooleanField()
     use_aux = models.BooleanField()
+    dut_output = models.TextField()
+    aux_output = models.TextField()
+    debugger_output = models.TextField()
+    num_checkpoints = models.IntegerField()
+    cycles_between = models.IntegerField()
 
 
 class hw_injection(models.Model):
@@ -34,14 +40,7 @@ class hw_result(models.Model):
     detected_errors = models.IntegerField()
     qty = models.IntegerField()
     dut_output = models.TextField()
-    debugger_output = models.TextField()
-
-
-class simics_campaign_data(models.Model):
-    board = models.TextField()
-    num_checkpoints = models.IntegerField()
-    cycles_between = models.IntegerField()
-    dut_output = models.TextField()
+    aux_output = models.TextField()
     debugger_output = models.TextField()
 
 
@@ -72,6 +71,7 @@ class simics_result(models.Model):
     detected_errors = models.IntegerField()
     qty = models.IntegerField()
     dut_output = models.TextField()
+    aux_output = models.TextField()
     debugger_output = models.TextField()
 
 
@@ -89,3 +89,15 @@ class simics_memory_diff(models.Model):
     monitored_checkpoint_number = models.IntegerField()
     image_index = models.IntegerField()
     block = models.TextField()
+
+
+class supervisor_result(models.Model):
+    # TODO: add times
+    iteration = models.IntegerField(primary_key=True)
+    outcome = models.TextField()
+    outcome_category = models.TextField()
+    data_diff = models.FloatField()
+    detected_errors = models.IntegerField()
+    qty = models.IntegerField()
+    dut_output = models.TextField()
+    aux_output = models.TextField()

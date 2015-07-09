@@ -38,10 +38,7 @@
                                         </td>
                                         {% if campaign_data.use_simics %}
                                         <td>
-                                            {{ simics_campaign_data.num_checkpoints }}
-                                        </td>
-                                        <td>
-                                            {{ simics_campaign_data.cycles_between }}
+                                            {{ campaign_data.num_checkpoints }}
                                         </td>
                                         {% endif %}
                                     </tr>
@@ -50,7 +47,12 @@
                                     {{ title }}
                                 </h2>
                                 {% load django_tables2 %}
-                                {% render_table table %}
+                                {% if injections %}
+                                    {% render_table table %}
+                                {% endif %}
+                                {% if iterations %}
+                                    {% render_table supervisor_table %}
+                                {% endif %}
                             </div>
                         </div>
 {% endblock %}

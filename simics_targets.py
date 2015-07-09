@@ -3,7 +3,7 @@
 # bits are listed as MSB:0 LSB:31 hence 31-i in bit ranges
 # 32-bit CPU register bits are listed as MSB:32 LSB:63 hence 63-i in bit ranges
 devices = {
-    'A9': {
+    'a9x2': {
         'CPU': {
             'count': 2,
             'OBJECT': '.coretile.mpcore.core',
@@ -26,7 +26,7 @@ devices = {
             }
         }
     },
-    'P2020': {
+    'p2020rdb': {
         'CCSR': {
             # LIMITATIONS: ALTCBAR and ALTCAR registers are unsupported.
             #              Interleaved SDRAM mappings are instead mapped

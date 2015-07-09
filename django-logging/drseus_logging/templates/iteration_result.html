@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="source" align="center">
+    <h2>
+        {{ title }}
+    </h2>
+    <div class="section">
+        <h3>
+            Iteration Summary
+        </h3>
+        <table>
+            <tr>
+                <th>
+                    Iteration Number
+                </th>
+                <td>
+                    {{ result.iteration }}
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    Outcome Category
+                </th>
+                <td>
+                    {{ result.outcome_category }}
+                </td>
+                <th>
+                    Outcome
+                </th>
+                <td>
+                    {{ result.outcome }}
+                </td>
+            </tr>
+            <tr>
+                <th>
+                    Data Diff
+                </th>
+                <td>
+                    {{ result.data_diff }}
+                </td>
+                <th>
+                    Detected Errors
+                </th>
+                <td>
+                    {{ result.detected_errors }}
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <br>
+                </td>
+            </tr>
+            <tr>
+                <th colspan="4">
+                    DUT Output
+                </th>
+            </tr>
+            <tr>
+
+                <td colspan="4">
+                    {{ result.dut_output|linebreaks }}
+                </td>
+            </tr>
+            <tr>
+                <th colspan="4">
+                    AUX Output
+                </th>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    {{ result.aux_output|linebreaks }}
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

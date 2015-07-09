@@ -10,7 +10,7 @@ from termcolor import colored
 from error import DrSEUSError
 from dut import dut
 from simics_checkpoints import (inject_checkpoint, compare_registers,
-                                compare_memory)
+                                compare_memory, regenerate_injected_checkpoint)
 
 
 class simics:
@@ -19,7 +19,10 @@ class simics:
     # create simics instance and boot device
     def __init__(self, architecture, rsakey, use_aux, new, debug):
         self.debug = debug
-        self.architecture = architecture
+        if architecture == 'p2020':
+            self.board = 'p2020rdb'
+        elif architecture == 'arm':
+            self.board = 'a9x2'
         self.rsakey = rsakey
         self.use_aux = use_aux
         if new:
@@ -35,18 +38,12 @@ class simics:
         self.read_until()
         if checkpoint is None:
             try:
-                if self.architecture == 'p2020':
-                    buff = self.command('run-command-file simics-p2020rdb/'
-                                        'p2020rdb-linux'+('-ethernet' if
-                                                          self.use_aux
-                                                          else '') +
-                                        '.simics')
-                elif self.architecture == 'arm':
-                    buff = self.command('run-command-file simics-vexpress-a9x4/'
-                                        'vexpress-a9x4-linux'+('-ethernet' if
-                                                               self.use_aux
-                                                               else '') +
-                                        '.simics')
+                self.command('$drseus=TRUE')
+                buff = self.command('run-command-file simics-'+self.board+'/' +
+                                    self.board+'-linux'+('-ethernet' if
+                                                         self.use_aux
+                                                         else '') +
+                                    '.simics')
             except IOError:
                 print('lost contact with simics')
                 sys.exit()
@@ -84,14 +81,14 @@ class simics:
         else:
             print('could not find port or pseudoterminal to attach to')
             sys.exit()
-        if self.architecture == 'p2020':
+        if self.board == 'p2020rdb':
             self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
                            'root@p2020rdb:~#', self.debug, 38400, ssh_ports[0])
             if self.use_aux:
                 self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
                                'root@p2020rdb:~#', self.debug, 38400,
                                ssh_ports[1], 'cyan')
-        elif self.architecture == 'arm':
+        elif self.board == 'a9x2':
             self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
                            '#', self.debug, 38400, ssh_ports[0])
             if self.use_aux:
@@ -119,6 +116,31 @@ class simics:
             self.dut.prompt = 'DrSEUS# '
             if self.use_aux:
                 self.aux.prompt = 'DrSEUS# '
+
+    def launch_simics_gui(self, checkpoint):
+        dut_board = 'DUT_'+self.board
+        if self.board == 'p2020rdb':
+            serial_port = 'serial[0]'
+        elif self.board == 'a9x2':
+            serial_port = 'serial0'
+        simics_commands = ('read-configuration '+checkpoint+';'
+                           'new-text-console-comp text_console0;'
+                           'disconnect '+dut_board+'.console0.serial'
+                           ' '+dut_board+'.'+serial_port+';'
+                           'connect text_console0.serial'
+                           ' '+dut_board+'.'+serial_port+';'
+                           'connect-real-network-port-in ssh '
+                           'ethernet_switch0 target-ip=10.10.0.100')
+        if self.use_aux:
+            aux_board = 'AUX_'+self.board+'_1'
+            simics_commands += ('disconnect '+aux_board+'.console0.serial'
+                                ' '+aux_board+'.'+serial_port+';'
+                                'connect text_console0.serial'
+                                ' '+aux_board+'.'+serial_port+';'
+                                ';connect-real-network-port-in ssh '
+                                'ethernet_switch0 target-ip=10.10.0.104')
+        os.system('cd simics-workspace; '
+                  './simics-gui -e \"'+simics_commands+'\"')
 
     def close(self):
         self.halt_dut()
@@ -178,11 +200,11 @@ class simics:
         if self.use_aux:
             aux_process.join()
         self.halt_dut()
-        if self.architecture == 'p2020':
+        if self.board == 'p2020rdb':
             self.command('DUT_p2020rdb.soc.phys_mem.load-file '
                          '$initrd_image $initrd_addr')
             if self.use_aux:
-                self.command('AUX_p2020rdb1.soc.phys_mem.load-file '
+                self.command('AUX_p2020rdb_1.soc.phys_mem.load-file '
                              '$initrd_image $initrd_addr')
             self.continue_dut()
             self.dut.serial.write('setenv ethaddr 00:01:af:07:9b:8a\n'
@@ -200,15 +222,15 @@ class simics:
                                       'setenv bootargs root=/dev/ram rw '
                                       'console=$consoledev,$baudrate\n'
                                       'bootm ef080000 10000000 ef040000\n')
-        elif self.architecture == 'arm':
-            self.command('DUT_a9x4.coretile.mpcore.phys_mem.load-file '
+        elif self.board == 'a9x2':
+            self.command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
                          '$kernel_image $kernel_addr')
-            self.command('DUT_a9x4.coretile.mpcore.phys_mem.load-file '
+            self.command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
                          '$initrd_image $initrd_addr')
             if self.use_aux:
-                self.command('AUX_a9x41.coretile.mpcore.phys_mem.load-file '
+                self.command('AUX_a9x2_1.coretile.mpcore.phys_mem.load-file '
                              '$kernel_image $kernel_addr')
-                self.command('AUX_a9x41.coretile.mpcore.phys_mem.load-file '
+                self.command('AUX_a9x2_1.coretile.mpcore.phys_mem.load-file '
                              '$initrd_image $initrd_addr')
             self.continue_dut()
             self.dut.read_until('VExpress# ')
@@ -257,8 +279,7 @@ class simics:
         self.continue_dut()
         return int(end_cycles) - int(start_cycles)
 
-    def create_checkpoints(self, command, aux_command, cycles, num_checkpoints,
-                           merge_all):
+    def create_checkpoints(self, command, aux_command, cycles, num_checkpoints):
         os.mkdir('simics-workspace/gold-checkpoints')
         step_cycles = cycles / num_checkpoints
         self.halt_dut()
@@ -272,7 +293,7 @@ class simics:
             self.command('write-configuration '+incremental_checkpoint)
             merged_checkpoint = ('gold-checkpoints/checkpoint-' +
                                  str(checkpoint)+'.ckpt')
-            if merge_all or checkpoint == num_checkpoints-1:
+            if checkpoint == num_checkpoints-1:
                 if os.system('simics-workspace/bin/checkpoint-merge'
                              ' simics-workspace/'+incremental_checkpoint +
                              ' simics-workspace/'+merged_checkpoint):
@@ -289,15 +310,18 @@ class simics:
         self.close()
         return step_cycles
 
-    def inject_fault(self, injection_number, checkpoint_number, board,
+    def inject_fault(self, injection_number, checkpoint_number,
                      selected_targets):
         injected_checkpoint = inject_checkpoint(injection_number,
-                                                checkpoint_number, board,
+                                                checkpoint_number, self.board,
                                                 selected_targets, self.debug)
         self.launch_simics(checkpoint=injected_checkpoint)
         return injected_checkpoint
 
-    def compare_checkpoints(self, injection_number, checkpoint, board,
+    def regenerate_injected_checkpoint(self, injection_data):
+        return regenerate_injected_checkpoint(self.board, injection_data)
+
+    def compare_checkpoints(self, injection_number, checkpoint,
                             cycles_between_checkpoints, num_checkpoints,
                             compare_all):
         if not os.path.exists('simics-workspace/'+checkpoint+'/monitored'):
@@ -308,7 +332,7 @@ class simics:
         for checkpoint_number in xrange(checkpoint_number+1,
                                         num_checkpoints):
             self.command('run-cycles '+str(cycles_between_checkpoints))
-            if (compare_all or checkpoint_number == num_checkpoints-1):
+            if compare_all or checkpoint_number == num_checkpoints-1:
                 monitored_checkpoint = (checkpoint +
                                         '/monitored/checkpoint-' +
                                         str(checkpoint_number) +
@@ -329,6 +353,8 @@ class simics:
                                         'Could not merge gold checkpoint: ' +
                                         incremental_checkpoint)
                 compare_registers(injection_number, checkpoint_number,
-                                  gold_checkpoint, monitored_checkpoint, board)
+                                  gold_checkpoint, monitored_checkpoint,
+                                  self.board)
                 compare_memory(injection_number, checkpoint_number,
-                               gold_checkpoint, monitored_checkpoint, board)
+                               gold_checkpoint, monitored_checkpoint,
+                               self.board)

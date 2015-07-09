@@ -11,12 +11,11 @@ import sqlite3
 import multiprocessing
 
 from fault_injector import fault_injector
-from simics_checkpoints import regenerate_injected_checkpoint
 
 # TODO: add support for checking console for data error
 #       append to dut.error_messages
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
-# TODO: add flag for directory for files
+# TODO: add multirpocessing queue to aux_process to get output
 
 
 def delete_results():
@@ -31,6 +30,7 @@ def delete_results():
         sql.execute('DELETE FROM drseus_logging_simics_injection')
         sql.execute('DELETE FROM drseus_logging_simics_register_diff')
         sql.execute('DELETE FROM drseus_logging_simics_result')
+        sql.execute('DELETE FROM drseus_logging_supervisor_result')
         sql_db.commit()
         sql_db.close()
         print('flushed database')
@@ -60,10 +60,15 @@ def setup_campaign(application, options):
     else:
         print('invalid architecture:', options.architecture)
         sys.exit()
-    if not os.path.exists('fiapps'):
-        os.system('./setup_apps.sh')
-    if not os.path.exists('fiapps/'+application):
-        os.system('cd fiapps/; make '+application)
+    if options.file_location == 'fiapps':
+        if not os.path.exists('fiapps'):
+            os.system('./setup_apps.sh')
+        if not os.path.exists('fiapps/'+application):
+            os.system('cd fiapps/; make '+application)
+    else:
+        if not os.path.exits(options.file_location):
+            print('cannot find', options.file_location)
+            sys.exit()
     if options.use_simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics.sh')
     if os.path.exists('campaign-data') and os.listdir('campaign-data'):
@@ -84,12 +89,12 @@ def setup_campaign(application, options):
     drseus = fault_injector(dut_ip_address, '10.42.0.20', dut_serial_port,
                             '/dev/ttyUSB0', '10.42.0.50', options.architecture,
                             options.use_aux, True, options.debug,
-                            options.use_simics, options.num_checkpoints,
-                            options.compare_all)
-    drseus.setup_campaign('fiapps', application, options.arguments,
-                          options.output_file, options.files, options.aux_files,
-                          options.iterations, aux_application, options.aux_args,
-                          options.use_aux_output)
+                            options.use_simics)
+    drseus.setup_campaign(options.file_location, options.architecture,
+                          application, options.arguments, options.output_file,
+                          options.files, options.aux_files, options.iterations,
+                          aux_application, options.aux_args,
+                          options.use_aux_output, options.num_checkpoints)
     print('\nsuccessfully setup campaign')
 
 
@@ -104,19 +109,6 @@ def get_campaign_data():
     campaign_data = sql.fetchone()
     sql_db.close()
     return campaign_data
-
-
-def get_simics_campaign_data():
-    if not os.path.exists('campaign-data/db.sqlite3'):
-        print('could not find campaign data')
-        sys.exit()
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
-    sql_db.row_factory = sqlite3.Row
-    sql = sql_db.cursor()
-    sql.execute('SELECT * FROM drseus_logging_simics_campaign_data')
-    simics_campaign_data = sql.fetchone()
-    sql_db.close()
-    return simics_campaign_data
 
 
 def get_next_injection_number(campaign_data):
@@ -142,6 +134,24 @@ def get_next_injection_number(campaign_data):
     return injection_number
 
 
+def get_next_iteration():
+    if not os.path.exists('campaign-data/db.sqlite3'):
+        print('could not find campaign data')
+        sys.exit()
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db.row_factory = sqlite3.Row
+    sql = sql_db.cursor()
+    sql.execute('SELECT * FROM drseus_logging_supervisor_result ORDER BY ' +
+                'iteration DESC LIMIT 1')
+    supervisor_data = sql.fetchone()
+    if supervisor_data is None:
+        iteration = 0
+    else:
+        iteration = supervisor_data['iteration'] + 1
+    sql_db.close()
+    return iteration
+
+
 def get_injection_data(campaign_data, injection_number):
     if not os.path.exists('campaign-data/db.sqlite3'):
         print('could not find campaign data')
@@ -162,16 +172,6 @@ def get_injection_data(campaign_data, injection_number):
 
 
 def load_campaign(campaign_data, options):
-    if campaign_data['use_simics']:
-        if not os.path.exists('simics-workspace/injected-checkpoints'):
-            os.mkdir('simics-workspace/injected-checkpoints')
-        simics_campaign_data = get_simics_campaign_data()
-        num_checkpoints = simics_campaign_data['num_checkpoints']
-    else:
-        num_checkpoints = options.num_checkpoints
-    if options.use_simics and not campaign_data['use_simics']:
-        print('previous campaign was not created with simics')
-        sys.exit()
     if options.architecture == 'p2020':
         dut_ip_address = '10.42.0.21'
         dut_serial_port = '/dev/ttyUSB1'
@@ -185,15 +185,12 @@ def load_campaign(campaign_data, options):
                             '/dev/ttyUSB0', '10.42.0.50',
                             campaign_data['architecture'],
                             campaign_data['use_aux'], False, options.debug,
-                            campaign_data['use_simics'], num_checkpoints,
-                            options.compare_all)
+                            campaign_data['use_simics'])
     drseus.command = campaign_data['command']
     drseus.aux_command = campaign_data['aux_command']
-    if campaign_data['use_simics']:
-        drseus.cycles_between = simics_campaign_data['cycles_between']
-        drseus.board = simics_campaign_data['board']
-    else:
-        drseus.exec_time = campaign_data['exec_time']
+    drseus.num_checkpoints = campaign_data['num_checkpoints']
+    drseus.cycles_between = campaign_data['cycles_between']
+    drseus.exec_time = campaign_data['exec_time']
     return drseus
 
 
@@ -209,7 +206,9 @@ def perform_injections(campaign_data, injection_counter, options):
             injection_number = injection_counter.value
             injection_counter.value += 1
         drseus.inject_fault(injection_number, selected_targets)
-        drseus.monitor_execution(injection_number, campaign_data['output_file'])
+        drseus.monitor_execution(injection_number, campaign_data['output_file'],
+                                 campaign_data['use_aux_output'],
+                                 options.compare_all)
     drseus.exit()
     # except KeyboardInterrupt:
     #     shutil.rmtree('campaign-data/results/'+str(injection_number))
@@ -228,28 +227,36 @@ def view_logs():
     server = subprocess.Popen([os.getcwd()+'/django-logging/manage.py',
                                'runserver'],
                               cwd=os.getcwd()+'/django-logging/')
-    os.system('google-chrome http://localhost:8000')
-    os.killpg(os.getpgid(server.pid), signal.SIGKILL)
-    sys.exit()
+    try:
+        os.system('google-chrome http://localhost:8000')
+    except:
+        os.system('firefox http://localhost:8000')
+    try:
+        os.killpg(os.getpgid(server.pid), signal.SIGINT)
+    except KeyboardInterrupt:
+        sys.exit()
 
 parser = optparse.OptionParser('drseus.py {application} {options}')
 
 # general options
+parser.add_option('-D', '--debug', action='store_false', dest='debug',
+                  default=True,
+                  help='display device output')
 parser.add_option('-d', '--delete', action='store_true', dest='clean',
                   default=False,
                   help='delete results and/or injected checkpoints')
-parser.add_option('-D', '--debug', action='store_true', dest='debug',
-                  default=True,
-                  help='display device output')
 parser.add_option('-i', '--inject', action='store_true', dest='inject',
                   default=False,
                   help='perform fault injections on an existing campaign')
-parser.add_option('-v', '--supervise', action='store_true', dest='supervise',
+parser.add_option('-S', '--supervise', action='store_true', dest='supervise',
                   default=False,
                   help='do not inject faults, only supervise devices')
+parser.add_option('-l', '--view_logs', action='store_true',
+                  dest='view_logs', default=False,
+                  help='open logs in browser')
 
 # new campaign options
-parser.add_option('-m', '--timing', action='store', type='int',
+parser.add_option('-I', '--iterations', action='store', type='int',
                   dest='iterations', default=5,
                   help='number of timing iterations of application ' +
                        'to run [default=5]')
@@ -259,13 +266,16 @@ parser.add_option('-o', '--output', action='store', type='str',
 parser.add_option('-a', '--arguments', action='store', type='str',
                   dest='arguments', default='',
                   help='arguments for application')
+parser.add_option('-L', '--location', action='store', type='str',
+                  dest='file_location', default='fiapps',
+                  help='location to look for files [default=fiapps]')
 parser.add_option('-f', '--files', action='store', type='str', dest='files',
                   default='',
                   help='comma-separated list of files to copy to device')
 parser.add_option('-F', '--aux_files', action='store', type='str',
                   dest='aux_files', default='',
                   help='comma-separated list of files to copy to aux device')
-parser.add_option('-r', '--architecture', action='store', type='str',
+parser.add_option('-A', '--architecture', action='store', type='str',
                   dest='architecture', default='p2020',
                   help='target architecture [default=p2020]')
 parser.add_option('-s', '--simics', action='store_true', dest='use_simics',
@@ -298,30 +308,26 @@ parser.add_option('-c', '--checkpoints', action='store', type='int',
 parser.add_option('-p', '--processes', action='store', type='int',
                   dest='num_processes', default=1,
                   help='number of simics injections to perform in parallel')
-parser.add_option('-q', '--all', action='store_true', dest='compare_all',
+parser.add_option('-C', '--all', action='store_true', dest='compare_all',
                   default=False,
                   help='compare all checkpoints, only last by default')
-parser.add_option('-g', '--regenerate_checkpoint', action='store', type='int',
+parser.add_option('-r', '--regenerate_checkpoint', action='store', type='int',
                   dest='regenerate_checkpoint', default=-1,
                   help='regenerate an injected checkpoint and launch in Simics')
 
-# log options
-parser.add_option('-l', '--view_logs', action='store_true',
-                  dest='view_logs', default=False,
-                  help='open logs in browser')
-
 options, args = parser.parse_args()
 
-# clean campaign (results and injected checkpoints)
 if options.clean:
     delete_results()
 
 elif options.view_logs:
     view_logs()
 
-# perform fault injections
 elif options.inject:
     campaign_data = get_campaign_data()
+    if campaign_data['use_simics']:
+        if not os.path.exists('simics-workspace/injected-checkpoints'):
+            os.mkdir('simics-workspace/injected-checkpoints')
     starting_injection = get_next_injection_number(campaign_data)
     injection_counter = multiprocessing.Value('I', starting_injection)
     if campaign_data['use_simics'] and options.num_processes > 1:
@@ -346,8 +352,10 @@ elif options.inject:
 
 elif options.supervise:
     campaign_data = get_campaign_data()
+    iteration = get_next_iteration()
     drseus = load_campaign(campaign_data, options)
-    drseus.supervise()
+    drseus.supervise(iteration, campaign_data['output_file'],
+                     campaign_data['use_aux_output'])
     drseus.exit()
 
 elif options.regenerate_checkpoint >= 0:
@@ -355,26 +363,11 @@ elif options.regenerate_checkpoint >= 0:
     if not campaign_data['use_simics']:
         print('This feature is only available for Simics campaigns')
         sys.exit()
-    simics_campaign_data = get_simics_campaign_data()
+    drseus = load_campaign(campaign_data, options)
     injection_data = get_injection_data(campaign_data,
                                         options.regenerate_checkpoint)
-    checkpoint = regenerate_injected_checkpoint(simics_campaign_data['board'],
-                                                injection_data)
-    # launch checkpoint
-    dut_board = 'DUT_'+simics_campaign_data['board']
-    if campaign_data['architecture'] == 'p2020':
-        serial_port = 'serial[0]'
-    else:
-        serial_port = 'serial0'
-    simics_commands = ('read-configuration '+checkpoint+';' +
-                       'new-text-console-comp text_console0;' +
-                       'disconnect '+dut_board+'.console0.serial ' +
-                       dut_board+'.'+serial_port+';' +
-                       'connect text_console0.serial ' +
-                       dut_board+'.'+serial_port+';' +
-                       'connect-real-network-port-in ssh ' +
-                       'ethernet_switch0 target-ip=10.10.0.100')
-    os.system('cd simics-workspace; ./simics-gui -e \"'+simics_commands+'\"')
+    checkpoint = drseus.debugger.regenerate_injected_checkpoint(injection_data)
+    drseus.debugger.launch_simics_gui(checkpoint)
     shutil.rmtree('simics-workspace/'+checkpoint)
     if not os.listdir('simics-workspace/temp'):
         os.rmdir('simics-workspace/temp')

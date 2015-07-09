@@ -3,10 +3,12 @@ from django.shortcuts import render_to_response, render
 from django.db.models import Sum, Count
 from chartit import DataPool, Chart, PivotChart, PivotDataPool
 from django_tables2 import RequestConfig
-from .models import (campaign_data, hw_result, simics_campaign_data,
-                     simics_result, simics_register_diff, simics_memory_diff)
+from .models import (campaign_data, hw_result, simics_result,
+                     simics_register_diff, simics_memory_diff,
+                     supervisor_result)
 from .tables import (hw_result_table, simics_result_table,
-                     simics_register_diff_table, simics_memory_diff_table)
+                     simics_register_diff_table, simics_memory_diff_table,
+                     supervisor_result_table)
 from .filters import (hw_result_filter, simics_result_filter,
                       simics_register_diff_filter)
 
@@ -19,26 +21,28 @@ def fix_sort(string):
 def result_table(request, title, sidebar_items):
     campaign_data_info = campaign_data.objects.get()
     if campaign_data_info.use_simics:
-        simics_campaign_data_info = simics_campaign_data.objects.get()
         queryset = simics_result.objects.all().annotate(
             register_errors=Count('simics_register_diff'),
             memory_errors=Count('simics_memory_diff')
         )
         fltr = simics_result_filter(request.GET, queryset=queryset)
         table = simics_result_table(fltr.qs)
+        injections = simics_result.objects.count()
     else:
-        simics_campaign_data_info = None
         queryset = hw_result.objects.all()
         fltr = hw_result_filter(request.GET, queryset=queryset)
         table = hw_result_table(fltr.qs)
+        injections = hw_result.objects.count() > 0
+    supervisor_qs = supervisor_result.objects.all()
+    supervisor_table = supervisor_result_table(supervisor_qs)
+    iterations = supervisor_result.objects.count() > 0
 
     RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return render(request, 'table.html',
-                  {'campaign_data': campaign_data_info,
-                   'simics_campaign_data': simics_campaign_data_info,
-                   'filter': fltr,
-                   'table': table,
-                   'title': title,
+                  {'campaign_data': campaign_data_info, 'filter': fltr,
+                   'table': table, 'injections': injections,
+                   'supervisor_table': supervisor_table,
+                   'iterations': iterations, 'title': title,
                    'sidebar_items': sidebar_items})
 
 
@@ -58,19 +62,24 @@ def injection_result(request, injection_number, title, sidebar_items):
         config.configure(register_table)
         config.configure(memory_table)
         return render(request, 'simics_injection_result.html',
-                      {'result': result,
-                       'filter': register_filter,
+                      {'result': result, 'filter': register_filter,
                        'register_table': register_table,
-                       'memory_table': memory_table,
-                       'title': title,
+                       'memory_table': memory_table, 'title': title,
                        'sidebar_items': sidebar_items})
     else:
         result = hw_result.objects.get(injection_id=injection_number)
         # RequestConfig(request)
         return render(request, 'hw_injection_result.html',
-                      {'result': result,
-                       'title': title,
+                      {'result': result, 'title': title,
                        'sidebar_items': sidebar_items})
+
+
+def iteration_result(request, iteration, title, sidebar_items):
+    campaign_data_info = campaign_data.objects.get()
+    result = supervisor_result.objects.get(iteration=iteration)
+    return render(request, 'iteration_result.html',
+                  {'result': result, 'campaign_data': campaign_data_info,
+                   'title': title, 'sidebar_items': sidebar_items})
 
 
 def register_chart(request, title, sidebar_items):
