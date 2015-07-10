@@ -42,18 +42,18 @@ def setup_campaign(application, options):
         dut_ip_address = '10.42.0.21'
         dut_serial_port = '/dev/ttyUSB1'
         application = 'ppc_fi_'+application
-        if options.aux_app is None:
-            aux_application = 'ppc_fi_'+application
-        else:
+        if options.aux_app:
             aux_application = 'ppc_fi_'+options.aux_app
+        else:
+            aux_application = application
     elif options.architecture == 'a9':
         dut_ip_address = '10.42.0.30'
         dut_serial_port = '/dev/ttyACM0'
         application = 'arm_fi_'+application
-        if options.aux_app is None:
-            aux_application = 'arm_fi_'+application
-        else:
+        if options.aux_app:
             aux_application = 'arm_fi_'+options.aux_app
+        else:
+            aux_application = application
     else:
         print('invalid architecture:', options.architecture)
         sys.exit()
@@ -225,9 +225,11 @@ def view_logs():
                                'runserver'],
                               cwd=os.getcwd()+'/django-logging/')
     try:
-        os.system('google-chrome http://localhost:8000')
+        os.system('which google-chrome')
     except:
         os.system('firefox http://localhost:8000')
+    else:
+        os.system('google-chrome http://localhost:8000')
     try:
         os.killpg(os.getpgid(server.pid), signal.SIGINT)
     except KeyboardInterrupt:

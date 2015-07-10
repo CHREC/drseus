@@ -70,13 +70,10 @@ class fault_injector:
         else:
             self.command = application
         if self.use_aux:
-            if aux_application:
-                if aux_arguments:
-                    self.aux_command = aux_application+' '+aux_arguments
-                else:
-                    self.aux_command = aux_application
+            if aux_arguments:
+                self.aux_command = aux_application+' '+aux_arguments
             else:
-                self.aux_command = self.command
+                self.aux_command = aux_application
         else:
             self.aux_command = ''
         files = []
