@@ -224,9 +224,7 @@ def view_logs():
     server = subprocess.Popen([os.getcwd()+'/django-logging/manage.py',
                                'runserver'],
                               cwd=os.getcwd()+'/django-logging/')
-    try:
-        os.system('which google-chrome')
-    except:
+    if os.system('which google-chrome'):
         os.system('firefox http://localhost:8000')
     else:
         os.system('google-chrome http://localhost:8000')
