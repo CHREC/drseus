@@ -9,22 +9,26 @@
         <tr>
             <td valign="top">
                 <div class="section">
-                    <h3>
+                    <h3 align="center">
                         Register Diffs
                     </h3>
-                    {% load django_tables2 %}
-                    {% render_table register_table %}
+                    <div align="center">
+                        {% load django_tables2 %}
+                        {% render_table register_table %}
+                    </div>
                 </div>
                 <div class="section">
-                    <h3>
+                    <h3 align="center">
                         Memory Diffs
                     </h3>
-                    {% render_table memory_table %}
+                    <div align="center">
+                        {% render_table memory_table %}
+                    </div>
                 </div>
             </td>
             <td valign="top">
                 <div class="section">
-                    <h3>
+                    <h3 align="center">
                         Injection Summary
                     </h3>
                     <table>
@@ -134,33 +138,21 @@
                                 {{ result.injection.field }}
                             </td>
                         </tr>
-                        <tr>
-                            <td>
-                                <br>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th colspan="4">
-                                DUT Output
-                            </th>
-                        </tr>
-                        <tr>
-
-                            <td colspan="4">
-                                {{ result.dut_output|linebreaks }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <th colspan="4">
-                                Debugger Output
-                            </th>
-                        </tr>
-                        <tr>
-                            <td colspan="4">
-                                {{ result.debugger_output|linebreaks }}
-                            </td>
-                        </tr>
                     </table>
+                    <h3 align="center">
+                        DUT Output
+                    </h3>
+                    {{ result.dut_output|linebreaksbr }}
+                    {% if campaign_data.use_aux %}
+                    <h3 align="center">
+                        AUX Output
+                    </h3>
+                    {{ result.aux_output|linebreaksbr }}
+                    {% endif %}
+                    <h3 align="center">
+                        Simics Output
+                    </h3>
+                    {{ result.aux_output|linebreaksbr }}
                 </div>
             </td>
         </tr>

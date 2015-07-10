@@ -4,46 +4,6 @@
                         <div class="source" align="center">
                             <div class="section">
                                 <h2>
-                                    Campaign Data
-                                </h2>
-                                <table>
-                                    <tr>
-                                        <th>
-                                            Application
-                                        </th>
-                                        <th>
-                                            Ouput File
-                                        </th>
-                                        <th>
-                                            Architecture
-                                        </th>
-                                        {% if campaign_data.use_simics %}
-                                        <th>
-                                            Checkpoints
-                                        </th>
-                                        <th>
-                                            Cycles Between
-                                        </th>
-                                        {% endif %}
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            {{ campaign_data.application }}
-                                        </td>
-                                        <td>
-                                            {{ campaign_data.output_file }}
-                                        </td>
-                                        <td>
-                                            {{ campaign_data.architecture }}
-                                        </td>
-                                        {% if campaign_data.use_simics %}
-                                        <td>
-                                            {{ campaign_data.num_checkpoints }}
-                                        </td>
-                                        {% endif %}
-                                    </tr>
-                                </table>
-                                <h2>
                                     {{ title }}
                                 </h2>
                                 {% load django_tables2 %}

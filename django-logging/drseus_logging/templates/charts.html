@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{%block chart_loader_header %}
+        {% load chartit %}
+        {{ chart_list|load_charts:"register_chart, bit_chart, time_chart, outcome_chart" }}
+{% endblock %}
+
+{% block body %}
+                        <div class="source" align="center">
+                            <div class="section">
+                                <div id="outcome_chart">
+                                </div>
+                                <h6>
+                                </h6>
+                                <div id="register_chart">
+                                </div>
+                                <h6>
+                                </h6>
+                                <div id="bit_chart">
+                                </div>
+                                <h6>
+                                </h6>
+                                <div id="time_chart">
+                                </div>
+                            </div>
+                        </div>
+{% endblock %}

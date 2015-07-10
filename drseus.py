@@ -12,10 +12,7 @@ import multiprocessing
 
 from fault_injector import fault_injector
 
-# TODO: add support for checking console for data error
-#       append to dut.error_messages
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
-# TODO: add multirpocessing queue to aux_process to get output
 
 
 def delete_results():
@@ -49,7 +46,7 @@ def setup_campaign(application, options):
             aux_application = 'ppc_fi_'+application
         else:
             aux_application = 'ppc_fi_'+options.aux_app
-    elif options.architecture == 'arm':
+    elif options.architecture == 'a9':
         dut_ip_address = '10.42.0.30'
         dut_serial_port = '/dev/ttyACM0'
         application = 'arm_fi_'+application
@@ -60,14 +57,14 @@ def setup_campaign(application, options):
     else:
         print('invalid architecture:', options.architecture)
         sys.exit()
-    if options.file_location == 'fiapps':
+    if options.directory == 'fiapps':
         if not os.path.exists('fiapps'):
             os.system('./setup_apps.sh')
         if not os.path.exists('fiapps/'+application):
             os.system('cd fiapps/; make '+application)
     else:
-        if not os.path.exits(options.file_location):
-            print('cannot find', options.file_location)
+        if not os.path.exits(options.directory):
+            print('cannot find', options.directory)
             sys.exit()
     if options.use_simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics.sh')
@@ -89,9 +86,9 @@ def setup_campaign(application, options):
     drseus = fault_injector(dut_ip_address, '10.42.0.20', dut_serial_port,
                             '/dev/ttyUSB0', '10.42.0.50', options.architecture,
                             options.use_aux, True, options.debug,
-                            options.use_simics)
-    drseus.setup_campaign(options.file_location, options.architecture,
-                          application, options.arguments, options.output_file,
+                            options.use_simics, options.seconds)
+    drseus.setup_campaign(options.directory, options.architecture,
+                          application, options.arguments, options.file,
                           options.files, options.aux_files, options.iterations,
                           aux_application, options.aux_args,
                           options.use_aux_output, options.num_checkpoints)
@@ -175,7 +172,7 @@ def load_campaign(campaign_data, options):
     if options.architecture == 'p2020':
         dut_ip_address = '10.42.0.21'
         dut_serial_port = '/dev/ttyUSB1'
-    elif options.architecture == 'arm':
+    elif options.architecture == 'a9':
         dut_ip_address = '10.42.0.30'
         dut_serial_port = '/dev/ttyACM0'
     else:
@@ -185,7 +182,7 @@ def load_campaign(campaign_data, options):
                             '/dev/ttyUSB0', '10.42.0.50',
                             campaign_data['architecture'],
                             campaign_data['use_aux'], False, options.debug,
-                            campaign_data['use_simics'])
+                            campaign_data['use_simics'], options.seconds)
     drseus.command = campaign_data['command']
     drseus.aux_command = campaign_data['aux_command']
     drseus.num_checkpoints = campaign_data['num_checkpoints']
@@ -238,91 +235,127 @@ def view_logs():
 
 parser = optparse.OptionParser('drseus.py {application} {options}')
 
-# general options
 parser.add_option('-D', '--debug', action='store_false', dest='debug',
                   default=True,
                   help='display device output')
-parser.add_option('-d', '--delete', action='store_true', dest='clean',
-                  default=False,
-                  help='delete results and/or injected checkpoints')
-parser.add_option('-i', '--inject', action='store_true', dest='inject',
-                  default=False,
-                  help='perform fault injections on an existing campaign')
-parser.add_option('-S', '--supervise', action='store_true', dest='supervise',
-                  default=False,
-                  help='do not inject faults, only supervise devices')
-parser.add_option('-l', '--view_logs', action='store_true',
-                  dest='view_logs', default=False,
-                  help='open logs in browser')
+parser.add_option('-T', '--timeout', action='store', type='int',
+                  dest='seconds', default=120,
+                  help='device read timeout in seconds [default=120]')
 
-# new campaign options
-parser.add_option('-I', '--iterations', action='store', type='int',
-                  dest='iterations', default=5,
-                  help='number of timing iterations of application ' +
-                       'to run [default=5]')
-parser.add_option('-o', '--output', action='store', type='str',
-                  dest='output_file', default='result.dat',
-                  help='target application output file [default=result.dat]')
-parser.add_option('-a', '--arguments', action='store', type='str',
-                  dest='arguments', default='',
-                  help='arguments for application')
-parser.add_option('-L', '--location', action='store', type='str',
-                  dest='file_location', default='fiapps',
-                  help='location to look for files [default=fiapps]')
-parser.add_option('-f', '--files', action='store', type='str', dest='files',
-                  default='',
-                  help='comma-separated list of files to copy to device')
-parser.add_option('-F', '--aux_files', action='store', type='str',
-                  dest='aux_files', default='',
-                  help='comma-separated list of files to copy to aux device')
-parser.add_option('-A', '--architecture', action='store', type='str',
-                  dest='architecture', default='p2020',
-                  help='target architecture [default=p2020]')
-parser.add_option('-s', '--simics', action='store_true', dest='use_simics',
-                  default=False, help='use simics simulator')
-parser.add_option('-x', '--auxiliary', action='store_true', dest='use_aux',
-                  default=False, help='use second device during testing')
-parser.add_option('-y', '--auxiliary_application', action='store', type='str',
-                  dest='aux_app', default='',
-                  help='target application for auxiliary device ' +
-                  '[default={application}]')
-parser.add_option('-z', '--auxiliary_arguments', action='store', type='str',
-                  dest='aux_args', default='',
-                  help='arguments for auxiliary application')
-parser.add_option('-O', '--aux_output', action='store_true',
-                  dest='use_aux_output', default=False,
-                  help='check output data from aux instead of dut')
+mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes', 'Not specifying one '
+                                  'of these will create a new campaign')
+mode_group.add_option('-d', '--delete', action='store_true', dest='clean',
+                      default=False,
+                      help='delete results and/or injected checkpoints')
+mode_group.add_option('-i', '--inject', action='store_true', dest='inject',
+                      default=False,
+                      help='perform fault injections on an existing campaign')
+mode_group.add_option('-S', '--supervise', action='store_true',
+                      dest='supervise', default=False,
+                      help='do not inject faults, only supervise devices')
 
-# injection options
-parser.add_option('-n', '--num', action='store', type='int',
-                  dest='num_injections', default=10,
-                  help='number of injections to perform [default=10]')
-parser.add_option('-t', '--targets', action='store', type='str',
-                  dest='selected_targets', default=None,
-                  help='comma-seperated list of targets for injection')
+mode_group.add_option('-l', '--log', action='store_true',
+                      dest='view_logs', default=False,
+                      help='open logs in browser')
+parser.add_option_group(mode_group)
 
-# simics options
-parser.add_option('-c', '--checkpoints', action='store', type='int',
-                  dest='num_checkpoints', default=50,
-                  help='number of gold checkpoints to create [default=50]')
-parser.add_option('-p', '--processes', action='store', type='int',
-                  dest='num_processes', default=1,
-                  help='number of simics injections to perform in parallel')
-parser.add_option('-C', '--all', action='store_true', dest='compare_all',
-                  default=False,
-                  help='compare all checkpoints, only last by default')
-parser.add_option('-r', '--regenerate_checkpoint', action='store', type='int',
-                  dest='regenerate_checkpoint', default=-1,
-                  help='regenerate an injected checkpoint and launch in Simics')
+simics_mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes (Simics only)',
+                                         'These modes are only available for '
+                                         'Simics campaigns')
+simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
+                             dest='injection', default=-1,
+                             help='regenerate an injected checkpoint and launch'
+                             ' in Simics')
+parser.add_option_group(simics_mode_group)
 
+new_group = optparse.OptionGroup(parser, 'New Campaign Options',
+                                 'Use these to create a new campaign, they will'
+                                 ' be saved')
+new_group.add_option('-I', '--timing', action='store', type='int',
+                     dest='iterations', default=5,
+                     help='number of timing iterations to run [default=5]')
+new_group.add_option('-o', '--output', action='store', type='str',
+                     dest='file', default='result.dat',
+                     help='target application output file [default=result.dat]')
+new_group.add_option('-a', '--args', action='store', type='str',
+                     dest='arguments', default='',
+                     help='arguments for application')
+new_group.add_option('-L', '--location', action='store', type='str',
+                     dest='directory', default='fiapps',
+                     help='location to look for files [default=fiapps]')
+new_group.add_option('-f', '--files', action='store', type='str', dest='files',
+                     default='',
+                     help='comma-separated list of files to copy to device')
+new_group.add_option('-F', '--aux_files', action='store', type='str',
+                     dest='aux_files', default='',
+                     help='comma-separated list of files to copy to aux device')
+new_group.add_option('-A', '--arch', action='store', type='str',
+                     dest='architecture', default='p2020',
+                     help='target architecture [default=p2020]')
+new_group.add_option('-s', '--simics', action='store_true', dest='use_simics',
+                     default=False, help='use simics simulator')
+new_group.add_option('-x', '--aux', action='store_true', dest='use_aux',
+                     default=False, help='use second device during testing')
+new_group.add_option('-y', '--aux_app', action='store',
+                     type='str', dest='aux_app', default='',
+                     help='target application for auxiliary device')
+new_group.add_option('-z', '--aux_args', action='store', type='str',
+                     dest='aux_args', default='',
+                     help='arguments for auxiliary application')
+new_group.add_option('-O', '--aux_output', action='store_true',
+                     dest='use_aux_output', default=False,
+                     help='check output data from aux instead of dut')
+parser.add_option_group(new_group)
+
+new_simics_group = optparse.OptionGroup(parser, 'New Campaign Options '
+                                        '(Simics only)', 'Use these for new '
+                                        'Simics campaigns')
+new_simics_group.add_option('-c', '--checkpoints', action='store', type='int',
+                            dest='num_checkpoints', default=50,
+                            help='number of gold checkpoints to create '
+                                 '[default=50]')
+parser.add_option_group(new_simics_group)
+
+injection_group = optparse.OptionGroup(parser, 'Injection Options', 'Use these '
+                                       'when performing injections '
+                                       '(-i or --inject)')
+injection_group.add_option('-n', '--injections', action='store', type='int',
+                           dest='num_injections', default=10,
+                           help='number of injections to perform [default=10]')
+injection_group.add_option('-t', '--targets', action='store', type='str',
+                           dest='selected_targets', default=None,
+                           help='comma-seperated list of targets for injection')
+parser.add_option_group(injection_group)
+
+simics_injection_group = optparse.OptionGroup(parser, 'Injection Options '
+                                              '(Simics only)', 'Use these when '
+                                              'performing injections with '
+                                              'Simics')
+simics_injection_group.add_option('-p', '--procs', action='store',
+                                  type='int', dest='num_processes', default=1,
+                                  help='number of simics injections to perform '
+                                       'in parallel (each instance performs '
+                                        'NUM_INJECTION injections)')
+simics_injection_group.add_option('-C', '--all', action='store_true',
+                                  dest='compare_all', default=False,
+                                  help='compare all checkpoints, only last by '
+                                       'default')
+parser.add_option_group(simics_injection_group)
+
+supervise_group = optparse.OptionGroup(parser, 'Supervisor Options', 'Use these'
+                                       ' options for supervising '
+                                       '(-S or --supervise)')
+supervise_group.add_option('-R', '--runtime', action='store', type='int',
+                           dest='target_seconds', default=30,
+                           help='Desired time in seconds to run (calculates '
+                                'number of iterations to run) [default=30]')
+parser.add_option_group(supervise_group)
 options, args = parser.parse_args()
 
 if options.clean:
     delete_results()
-
 elif options.view_logs:
     view_logs()
-
 elif options.inject:
     campaign_data = get_campaign_data()
     if campaign_data['use_simics']:
@@ -349,30 +382,27 @@ elif options.inject:
         #         process.join()
     else:
         perform_injections(campaign_data, injection_counter, options)
-
 elif options.supervise:
     campaign_data = get_campaign_data()
     iteration = get_next_iteration()
     drseus = load_campaign(campaign_data, options)
-    drseus.supervise(iteration, campaign_data['output_file'],
+    drseus.supervise(iteration, options.target_seconds,
+                     campaign_data['output_file'],
                      campaign_data['use_aux_output'])
     drseus.exit()
-
-elif options.regenerate_checkpoint >= 0:
+elif options.injection >= 0:
     campaign_data = get_campaign_data()
     if not campaign_data['use_simics']:
         print('This feature is only available for Simics campaigns')
         sys.exit()
     drseus = load_campaign(campaign_data, options)
     injection_data = get_injection_data(campaign_data,
-                                        options.regenerate_checkpoint)
+                                        options.injection)
     checkpoint = drseus.debugger.regenerate_injected_checkpoint(injection_data)
     drseus.debugger.launch_simics_gui(checkpoint)
     shutil.rmtree('simics-workspace/'+checkpoint)
     if not os.listdir('simics-workspace/temp'):
         os.rmdir('simics-workspace/temp')
-
-# setup fault injection campaign
 else:
     if len(args) < 1:
         parser.error('please specify an application')

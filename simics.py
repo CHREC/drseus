@@ -1,9 +1,10 @@
 from __future__ import print_function
 import subprocess
-import multiprocessing
+import threading
 import os
 import sys
 import signal
+import time
 
 from termcolor import colored
 
@@ -14,14 +15,16 @@ from simics_checkpoints import (inject_checkpoint, compare_registers,
 
 
 class simics:
+    # TODO: improve this error detection
     error_messages = ['where nothing is mapped', 'Error']
 
     # create simics instance and boot device
-    def __init__(self, architecture, rsakey, use_aux, new, debug):
+    def __init__(self, architecture, rsakey, use_aux, new, debug, timeout):
         self.debug = debug
+        self.timeout = timeout
         if architecture == 'p2020':
             self.board = 'p2020rdb'
-        elif architecture == 'arm':
+        elif architecture == 'a9':
             self.board = 'a9x2'
         self.rsakey = rsakey
         self.use_aux = use_aux
@@ -83,17 +86,19 @@ class simics:
             sys.exit()
         if self.board == 'p2020rdb':
             self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
-                           'root@p2020rdb:~#', self.debug, 38400, ssh_ports[0])
+                           'root@p2020rdb:~#', self.debug, self.timeout, 38400,
+                           ssh_ports[0])
             if self.use_aux:
                 self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
-                               'root@p2020rdb:~#', self.debug, 38400,
-                               ssh_ports[1], 'cyan')
+                               'root@p2020rdb:~#', self.debug, self.timeout,
+                               38400, ssh_ports[1], 'cyan')
         elif self.board == 'a9x2':
             self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
-                           '#', self.debug, 38400, ssh_ports[0])
+                           '#', self.debug, self.timeout, 38400, ssh_ports[0])
             if self.use_aux:
                 self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
-                               '#', self.debug, 38400, ssh_ports[1], 'cyan')
+                               '#', self.debug, self.timeout, 38400,
+                               ssh_ports[1], 'cyan')
         if checkpoint is None:
             self.continue_dut()
             self.do_uboot()
@@ -103,7 +108,7 @@ class simics:
                     self.aux.command('ifconfig eth0 10.10.0.104 '
                                      'netmask 255.255.255.0 up')
                     self.aux.read_until()
-                aux_process = multiprocessing.Process(target=aux_login)
+                aux_process = threading.Thread(target=aux_login)
                 aux_process.start()
             self.dut.do_login(change_prompt=True)
             self.dut.command('ifconfig eth0 10.10.0.100 '
@@ -193,7 +198,7 @@ class simics:
             def stop_aux_boot():
                 self.aux.read_until('autoboot: ')
                 self.aux.serial.write('\n')
-            aux_process = multiprocessing.Process(target=stop_aux_boot)
+            aux_process = threading.Thread(target=stop_aux_boot)
             aux_process.start()
         self.dut.read_until('autoboot: ')
         self.dut.serial.write('\n')
@@ -251,23 +256,13 @@ class simics:
                 self.aux.read_until('##')
                 self.aux.read_until('##')
 
-    def time_application(self, command, aux_command, iterations):
-        for i in xrange(iterations-1):
-            if self.use_aux:
-                aux_process = multiprocessing.Process(target=self.aux.command,
-                                                      args=('./'+aux_command, ))
-                aux_process.start()
-            self.dut.command('./'+command)
-            if self.use_aux:
-                aux_process.join()
-        if not self.use_aux:
-            self.dut.read_until()  # TODO: why is this needed?
+    def calculate_cycles(self, command, aux_command):
         self.halt_dut()
         start_cycles = self.command(
             'print-time').split('\n')[-2].split()[2]
         if self.use_aux:
-            aux_process = multiprocessing.Process(target=self.aux.command,
-                                                  args=('./'+aux_command, ))
+            aux_process = threading.Thread(target=self.aux.command,
+                                           args=('./'+aux_command, ))
             aux_process.start()
         self.continue_dut()
         self.dut.command('./'+command)
@@ -278,6 +273,19 @@ class simics:
             'print-time').split('\n')[-2].split()[2]
         self.continue_dut()
         return int(end_cycles) - int(start_cycles)
+
+    def time_application(self, command, aux_command, iterations):
+        start = time.time()
+        for i in xrange(iterations):
+            if self.use_aux:
+                aux_process = threading.Thread(target=self.aux.command,
+                                               args=('./'+aux_command, ))
+                aux_process.start()
+            self.dut.command('./'+command)
+            end = time.time()
+            if self.use_aux:
+                aux_process.join()
+        return (end - start) / iterations
 
     def create_checkpoints(self, command, aux_command, cycles, num_checkpoints):
         os.mkdir('simics-workspace/gold-checkpoints')
@@ -302,7 +310,7 @@ class simics:
                                     incremental_checkpoint)
         self.continue_dut()
         if self.use_aux:
-            aux_process = multiprocessing.Process(target=self.aux.read_until)
+            aux_process = threading.Thread(target=self.aux.read_until)
             aux_process.start()
         self.dut.read_until()
         if self.use_aux:

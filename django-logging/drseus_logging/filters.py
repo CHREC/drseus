@@ -99,8 +99,8 @@ class simics_result_filter(django_filters.FilterSet):
         choices=simics_injection_choices('register_index'),
         widget=forms.SelectMultiple(attrs={
             'size': str(len(simics_injection_choices('register_index')) if
-                        len(simics_injection_choices('register_index')) < 10
-                        else '10'),
+                        len(simics_injection_choices('register_index')) < 20
+                        else '20'),
             'style': 'width:100%;'
         })
     )
@@ -108,7 +108,7 @@ class simics_result_filter(django_filters.FilterSet):
         choices=simics_injection_choices('bit'),
         widget=forms.SelectMultiple(attrs={
             'size': str(len(simics_injection_choices('bit')) if
-                        len(simics_injection_choices('bit')) < 10 else '10'),
+                        len(simics_injection_choices('bit')) < 20 else '20'),
             'style': 'width:100%;'
         })
     )

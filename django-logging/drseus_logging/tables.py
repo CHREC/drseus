@@ -22,6 +22,7 @@ class hw_result_table(tables.Table):
 
 class simics_result_table(tables.Table):
     injection_number = tables.Column(accessor='injection.injection_number')
+    checkpoint_number = tables.Column(accessor='injection.checkpoint_number')
     target = tables.Column(accessor='injection.target')
     target_index = tables.Column(accessor='injection.target_index')
     register = tables.Column(accessor='injection.register')

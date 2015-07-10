@@ -16,11 +16,9 @@ Including another URLconf
 from django.conf.urls import patterns
 
 charts_and_tables = [
-    (r'', 'result_table', 'Results Table'),
-    (r'charts/register/', 'register_chart', 'Injections By Register'),
-    (r'charts/bit/', 'bit_chart', 'Injections By Bit'),
-    (r'charts/time/', 'time_chart', 'Injections By Time'),
-    (r'charts/outcome/', 'outcome_chart', 'Injections By Outcome')
+    (r'', 'campaign_info', 'Campaign Information'),
+    (r'charts/', 'charts', 'Injection Charts'),
+    (r'table/', 'tables', 'Results Table'),
 ]
 
 sidebar_group1 = [

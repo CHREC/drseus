@@ -10,15 +10,14 @@ from error import DrSEUSError
 
 
 class dut:
-    error_messages = ['panic', 'Oops', 'Segmentation fault']
-    sighandler_messages = ['SIGSEGV', 'SIGILL', 'SIGBUS', 'SIGFPE', 'SIGABRT',
-                           'SIGIOT', 'SIGTRAP', 'SIGSYS', 'SIGEMT']
+    error_messages = ['panic', 'Oops', 'Segmentation fault',
+                      'Illegal instruction']
 
-    # TODO: should timeout be increased?
-    def __init__(self, ip_address, rsakey, serial_port, prompt, debug,
-                 baud_rate=115200, ssh_port=22, color='green', timeout=120):
+    def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
+                 baud_rate=115200, ssh_port=22, color='green'):
         if debug:
-            paramiko.util.log_to_file('paramiko_'+ip_address+'.log')
+            paramiko.util.log_to_file('paramiko_'+ip_address+'_'+str(ssh_port) +
+                                      '.log')
         self.output = ''
         try:
             self.serial = serial.Serial(port=serial_port, baudrate=baud_rate,
@@ -93,28 +92,24 @@ class dut:
                 break
         if self.debug:
             print()
-        caught_signal = False
         error = False
         if 'drseus_sighandler:' in buff:
             for message in self.sighandler_messages:
+                for line in buff:
+                    if 'drseus_sighandler:' in line:
+                        error_message = line.replace('drseus_sighandler:', '')
+                        error = True
                 if 'drseus_sighandler: '+message in buff:
-                    signal_message = message
-                    caught_signal = True
+                    error_message = message
+                    error = True
                     break
-        # elif 'drseus_monitor:' in buff:
-        #     for line in buff:
-        #         if 'drseus_monitor:' in line:
-        #             error_message = line.replace('drseus_monitor:', '')
-        #             error = True
         else:
             for message in self.error_messages:
                 if message in buff:
                     error_message = message
                     error = True
                     break
-        if caught_signal:
-            raise DrSEUSError(signal_message, buff)
-        elif error:
+        if error:
             raise DrSEUSError(error_message, buff)
         elif hanging:
             raise DrSEUSError(DrSEUSError.dut_hanging, buff)
