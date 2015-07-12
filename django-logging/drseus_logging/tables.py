@@ -17,7 +17,7 @@ class hw_result_table(tables.Table):
         model = hw_result
         attrs = {"class": "paleblue"}
         exclude = ('injection', 'debugger_output', 'dut_output', 'aux_output',
-                   'qty')
+                   'paramiko_output', 'aux_paramiko_output', 'qty')
 
 
 class simics_result_table(tables.Table):
@@ -38,7 +38,7 @@ class simics_result_table(tables.Table):
         model = simics_result
         attrs = {"class": "paleblue"}
         exclude = ('injection', 'debugger_output', 'dut_output', 'aux_output',
-                   'qty')
+                   'paramiko_output', 'aux_paramiko_output', 'qty')
 
 
 class simics_register_diff_table(tables.Table):
@@ -63,4 +63,5 @@ class supervisor_result_table(tables.Table):
     class Meta:
         model = supervisor_result
         attrs = {"class": "paleblue"}
-        exclude = ('dut_output', 'aux_output', 'qty')
+        exclude = ('dut_output', 'aux_output', 'paramiko_output',
+                   'aux_paramiko_output', 'qty')

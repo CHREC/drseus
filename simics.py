@@ -15,8 +15,11 @@ from simics_checkpoints import (inject_checkpoint, compare_registers,
 
 
 class simics:
-    # TODO: improve this error detection
-    error_messages = ['where nothing is mapped', 'Error']
+    error_messages = ['Address not mapped', 'Illegal Instruction',
+                      'Illegal instruction', 'Illegal memory mapping',
+                      'Illegal Memory Mapping',
+                      'dropping memop (peer attribute not set)',
+                      'where nothing is mapped', 'Error']
 
     # create simics instance and boot device
     def __init__(self, architecture, rsakey, use_aux, new, debug, timeout):
@@ -148,12 +151,16 @@ class simics:
                   './simics-gui -e \"'+simics_commands+'\"')
 
     def close(self):
-        self.halt_dut()
-        self.command('quit')
-        self.simics.wait()
         self.dut.close()
         if self.use_aux:
             self.aux.close()
+        self.simics.send_signal(signal.SIGINT)
+        self.simics.stdin.write('quit\n')
+        self.read_until()
+        self.output += 'quit'+'\n'
+        if self.debug:
+            print(colored('quit'+'\n', 'yellow'), end='')
+        self.simics.wait()
 
     def halt_dut(self):
         self.simics.send_signal(signal.SIGINT)
@@ -302,6 +309,7 @@ class simics:
             merged_checkpoint = ('gold-checkpoints/checkpoint-' +
                                  str(checkpoint)+'.ckpt')
             if checkpoint == num_checkpoints-1:
+                # TODO: hide this output
                 if os.system('simics-workspace/bin/checkpoint-merge'
                              ' simics-workspace/'+incremental_checkpoint +
                              ' simics-workspace/'+merged_checkpoint):
@@ -354,6 +362,7 @@ class simics:
                     incremental_checkpoint = ('simics-workspace/'
                                               'gold-checkpoints/incremental-' +
                                               str(checkpoint_number)+'.ckpt')
+                    # TODO: hide this output
                     if os.system('simics-workspace/bin/checkpoint-merge'
                                  ' simics-workspace/'+incremental_checkpoint +
                                  ' simics-workspace/'+gold_checkpoint):

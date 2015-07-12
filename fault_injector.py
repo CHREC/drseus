@@ -19,8 +19,8 @@ class fault_injector:
     def __init__(self, dut_ip_address, aux_ip_address, dut_serial_port,
                  aux_serial_port, debugger_ip_address, architecture,
                  use_aux, new, debug, use_simics, timeout):
-        if not os.path.exists('campaign-data'):
-            os.mkdir('campaign-data')
+        if not os.path.exists('campaign-data/results'):
+            os.makedirs('campaign-data/results')
         self.use_simics = use_simics
         self.use_aux = use_aux
         self.debug = debug
@@ -125,8 +125,9 @@ class fault_injector:
             'INSERT INTO drseus_logging_campaign_data '
             '(application,output_file,command,aux_command,use_aux,'
             'use_aux_output,exec_time,architecture,use_simics,dut_output,'
-            'aux_output,debugger_output,num_cycles,num_checkpoints,'
-            'cycles_between)VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            'aux_output,debugger_output,paramiko_output,aux_paramiko_output,'
+            'num_cycles,num_checkpoints,cycles_between) VALUES '
+            '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
             (
                 application, output_file, self.command, self.aux_command,
                 self.use_aux, use_aux_output, exec_time, architecture,
@@ -134,7 +135,9 @@ class fault_injector:
                 self.debugger.dut.output.decode('utf-8', 'ignore'),
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
                 self.use_aux else '',
-                self.debugger.output.decode('utf-8', 'ignore'),
+                self.debugger.output,  # .decode('utf-8', 'ignore'),
+                self.debugger.dut.paramiko_output,
+                self.debugger.aux.paramiko_output if self.use_aux else '',
                 num_cycles, num_checkpoints, cycles_between
             )
         )
@@ -179,43 +182,41 @@ class fault_injector:
 
     def check_output(self, number, output_file, use_aux_output):
         data_diff = -1.0
-        missing_output = False
-        if not os.path.exists('campaign-data/results'):
-            os.mkdir('campaign-data/results')
         os.mkdir('campaign-data/results/'+str(number))
         result_folder = 'campaign-data/results/'+str(number)
         output_location = result_folder+'/'+output_file
         gold_location = 'campaign-data/gold_'+output_file
-        try:
-            if use_aux_output:
-                self.debugger.aux.get_file(output_file, output_location)
-            else:
-                self.debugger.dut.get_file(output_file, output_location)
+        # try:
+        if use_aux_output:
+            self.debugger.aux.get_file(output_file, output_location)
+        else:
+            self.debugger.dut.get_file(output_file, output_location)
         # except KeyboardInterrupt:
         #     raise KeyboardInterrupt
-        except:
-            missing_output = True
+        # except:
+        #     if not os.listdir(result_folder):
+        #         os.rmdir(result_folder)
+        #     raise DrSEUSError(DrSEUSError.missing_output)
+        # else:
+        with open(gold_location, 'r') as solution:
+            solutionContents = solution.read()
+        with open(output_location, 'r') as result:
+            resultContents = result.read()
+        data_diff = difflib.SequenceMatcher(
+            None, solutionContents, resultContents).quick_ratio()
+        if data_diff == 1.0:
+            os.remove(output_location)
             if not os.listdir(result_folder):
                 os.rmdir(result_folder)
-        else:
-            with open(gold_location, 'r') as solution:
-                solutionContents = solution.read()
-            with open(output_location, 'r') as result:
-                resultContents = result.read()
-            data_diff = difflib.SequenceMatcher(
-                None, solutionContents, resultContents).quick_ratio()
-            if data_diff == 1.0:
-                os.remove(output_location)
-                if not os.listdir(result_folder):
-                    os.rmdir(result_folder)
-        return missing_output, data_diff
+        return data_diff
 
     def monitor_execution(self, injection_number, output_file, use_aux_output,
                           compare_all):
         if self.use_aux:
             aux_process = threading.Thread(target=self.debugger.aux.read_until)
             aux_process.start()
-        outcome = None
+        outcome = ''
+        outcome_category = ''
         data_diff = -1.0
         detected_errors = 0
         try:
@@ -227,54 +228,72 @@ class fault_injector:
             self.debugger.continue_dut()
         except DrSEUSError as error:
                 outcome = error.type
-        if outcome is None:
+                if self.use_simics:
+                    outcome_category = 'Simics error'
+                else:
+                    outcome_category = 'Debugger error'
+        if not outcome:
             try:
                 buff = self.debugger.dut.read_until()
+            except DrSEUSError as error:
+                outcome = error.type
+                outcome_category = 'Execution error'
+            else:
                 for line in buff:
                     if 'drseus_detected_errors:' in line:
                         detected_errors = int(line.replace(
                                               'drseus_detected_errors:', ''))
                         break
-            except DrSEUSError as error:
-                outcome = error.type
-            missing_output = False
             if output_file:
-                missing_output, data_diff = self.check_output(
-                    injection_number, output_file, use_aux_output)
-            if outcome is None:
-                if missing_output:
-                    outcome = 'missing output'
-                elif detected_errors > 0:
-                    outcome = 'detected data error'
+                try:
+                    data_diff = self.check_output(injection_number, output_file,
+                                                  use_aux_output)
+                except DrSEUSError as error:
+                    outcome = error.type
+                    outcome_category = 'SCP error'
+            if not outcome:
+                if detected_errors > 0:
+                    outcome = 'Detected data error'
+                    outcome_category = 'Data error'
                 elif data_diff < 1.0 and data_diff != -1.0:
-                    outcome = 'data error'
-                else:
-                    outcome = 'no error'
-        # TODO: set outcome_category
+                    outcome = 'Silent data error'
+                    outcome_category = 'Data error'
         if self.use_aux:
             # TODO: in simics aux may be done before checkpoint was loaded
             aux_process.join()
-        outcome_category = 'N/A'
         if self.use_simics:
-            self.debugger.close()
+            try:
+                self.debugger.close()
+            except DrSEUSError as error:
+                outcome = error.type
+                outcome_category = 'Simics error'
             shutil.rmtree('simics-workspace/'+self.injected_checkpoint)
-            print(colored('outcome: '+outcome, 'blue'))
-            if data_diff < 1.0 and data_diff != -1.0:
-                print(colored('data diff: '+str(data_diff), 'blue'))
+        if not outcome:
+            outcome = 'No error'
+            outcome_category = 'No error'
+        print(colored('outcome: '+outcome_category+' - '+outcome, 'blue'),
+              end='')
+        if data_diff < 1.0 and data_diff != -1.0:
+            print(colored(', data diff: '+str(data_diff), 'blue'))
+        else:
+            print()
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
             'INSERT INTO drseus_logging_' +
             ('simics_result ' if self.use_simics else 'hw_result ') +
             '(injection_id,outcome,outcome_category,data_diff,'
-            'detected_errors,qty,dut_output,aux_output,debugger_output) '
-            'VALUES (?,?,?,?,?,?,?,?,?)', (
+            'detected_errors,qty,dut_output,aux_output,debugger_output,'
+            'paramiko_output,aux_paramiko_output) VALUES '
+            '(?,?,?,?,?,?,?,?,?,?,?)', (
                 injection_number, outcome, outcome_category, data_diff,
                 detected_errors, 1,
                 self.debugger.dut.output.decode('utf-8', 'ignore'),
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
                 self.use_aux else '',
-                self.debugger.output.decode('utf-8', 'ignore')
+                self.debugger.output,  # .decode('utf-8', 'ignore'),
+                self.debugger.dut.paramiko_output,
+                self.debugger.aux.paramiko_output if self.use_aux else ''
             )
         )
         if not self.use_simics:
@@ -297,7 +316,8 @@ class fault_injector:
                 aux_process = threading.Thread(target=self.debugger.aux.command,
                                                args=('./'+self.aux_command,))
                 aux_process.start()
-            outcome = None
+            outcome = ''
+            outcome_category = ''
             data_diff = -1.0
             try:
                 buff = self.debugger.dut.command('./'+self.command)
@@ -305,45 +325,53 @@ class fault_injector:
                     aux_process.join()
             except DrSEUSError as error:
                 outcome = error.type
+                outcome_category = 'Execution error'
             detected_errors = 0
             for line in buff:
                 if 'drseus_detected_errors:' in line:
                     detected_errors = int(line.replace(
                                           'drseus_detected_errors:', ''))
                     break
-            missing_output = False
             if output_file:
-                missing_output, data_diff = self.check_output(
-                    iteration, output_file, use_aux_output)
-            if outcome is None:
-                if missing_output:
-                    outcome = 'missing output'
-                elif detected_errors > 0:
-                    outcome = 'detected data error'
+                try:
+                    data_diff = self.check_output(iteration, output_file,
+                                                  use_aux_output)
+                except DrSEUSError as error:
+                    outcome = error.type
+                    outcome_category = 'SCP error'
+            if not outcome:
+                if detected_errors > 0:
+                    outcome = 'Detected data error'
+                    outcome_category = 'Data error'
                 elif data_diff < 1.0 and data_diff != -1.0:
-                    outcome = 'undetected data error'
+                    outcome = 'Silent data error'
+                    outcome_category = 'Data error'
                 else:
-                    outcome = 'no error'
+                    outcome = 'No error'
+                    outcome_category = 'No error'
             # TODO: set outcome_category
             if self.use_aux:
                 aux_process.join()
-            outcome_category = 'N/A'
             if self.use_simics:
-                print(colored('outcome: '+outcome, 'blue'))
+                print(colored('outcome: '+outcome, 'blue'), end='')
                 if data_diff < 1.0 and data_diff != -1.0:
-                    print(colored('data diff: '+str(data_diff), 'blue'))
+                    print(colored(', data diff: '+str(data_diff), 'blue'))
+                else:
+                    print()
             sql_db = sqlite3.connect('campaign-data/db.sqlite3')
             sql = sql_db.cursor()
             sql.execute(
                 'INSERT INTO drseus_logging_supervisor_result '
                 '(iteration,outcome,outcome_category,data_diff,'
-                'detected_errors,qty,dut_output,aux_output) ' +
-                'VALUES (?,?,?,?,?,?,?,?)', (
+                'detected_errors,qty,dut_output,aux_output,paramiko_output,'
+                'aux_paramiko_output) VALUES (?,?,?,?,?,?,?,?,?,?)', (
                     iteration, outcome, outcome_category,
                     data_diff, detected_errors, 1,
                     self.debugger.dut.output.decode('utf-8', 'ignore'),
                     self.debugger.aux.output.decode('utf-8', 'ignore') if
                     self.use_aux else '',
+                    self.debugger.dut.paramiko_output,
+                    self.debugger.aux.paramiko_output if self.use_aux else ''
                 )
             )
             self.debugger.dut.output = ''

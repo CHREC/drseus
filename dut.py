@@ -1,6 +1,7 @@
 from __future__ import print_function
 import serial
 import sys
+import os
 
 import paramiko
 import scp
@@ -19,6 +20,7 @@ class dut:
             paramiko.util.log_to_file('paramiko_'+ip_address+'_'+str(ssh_port) +
                                       '.log')
         self.output = ''
+        self.paramiko_output = ''
         try:
             self.serial = serial.Serial(port=serial_port, baudrate=baud_rate,
                                         timeout=timeout, rtscts=True)
@@ -40,21 +42,33 @@ class dut:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(self.ip_address, port=self.ssh_port, username='root',
-                    pkey=self.rsakey)
+                    pkey=self.rsakey, look_for_keys=False)
         dut_scp = scp.SCPClient(ssh.get_transport())
         dut_scp.put(files)
         dut_scp.close()
         ssh.close()
+        paramiko_log = ('paramiko_'+self.ip_address+'_' +
+                        str(self.ssh_port)+'.log')
+        if os.path.exists(paramiko_log):
+            with open(paramiko_log) as log_file:
+                self.paramiko_output += log_file.read()
+            os.remove(paramiko_log)
 
     def get_file(self, file, local_path='', delete_file=True):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(self.ip_address, port=self.ssh_port, username='root',
-                    pkey=self.rsakey)
+                    pkey=self.rsakey, look_for_keys=False)
         dut_scp = scp.SCPClient(ssh.get_transport())
         dut_scp.get(file, local_path=local_path)
         dut_scp.close()
         ssh.close()
+        paramiko_log = ('paramiko_'+self.ip_address+'_' +
+                        str(self.ssh_port)+'.log')
+        if os.path.exists(paramiko_log):
+            with open(paramiko_log) as log_file:
+                self.paramiko_output += log_file.read()
+            os.remove(paramiko_log)
         if delete_file:
             self.command('rm '+file)
 
@@ -94,15 +108,12 @@ class dut:
             print()
         error = False
         if 'drseus_sighandler:' in buff:
-            for message in self.sighandler_messages:
-                for line in buff:
-                    if 'drseus_sighandler:' in line:
-                        error_message = line.replace('drseus_sighandler:', '')
-                        error = True
-                if 'drseus_sighandler: '+message in buff:
-                    error_message = message
+            for line in buff:
+                if 'drseus_sighandler:' in line:
+                    error_message = line.replace('drseus_sighandler:',
+                                                 '').strip()
                     error = True
-                    break
+
         else:
             for message in self.error_messages:
                 if message in buff:

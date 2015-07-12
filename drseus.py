@@ -68,21 +68,24 @@ def setup_campaign(application, options):
             sys.exit()
     if options.use_simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics.sh')
-    if os.path.exists('campaign-data') and os.listdir('campaign-data'):
-        print('previous campaign data exists, continuing will delete it')
-        if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
-            sys.exit()
-        else:
-            shutil.rmtree('campaign-data')
-            print('deleted campaign data')
-            if os.path.exists('campaign-data/db.sqlite3'):
-                os.remove('campaign-data/db.sqlite3')
-                print('deleted database')
-            if os.path.exists('simics-workspace/gold-checkpoints'):
-                shutil.rmtree('simics-workspace/gold-checkpoints')
-                print('deleted gold checkpoints')
-            if os.path.exists('simics-workspace/injected-checkpoints'):
-                shutil.rmtree('simics-workspace/injected-checkpoints')
+    if os.path.exists('campaign-data'):
+        campaign_files = os.listdir('campaign-data')
+        campaign_files.remove('results')
+        if campaign_files:
+            print('previous campaign data exists, continuing will delete it')
+            if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
+                sys.exit()
+            else:
+                shutil.rmtree('campaign-data')
+                print('deleted campaign data')
+                if os.path.exists('campaign-data/db.sqlite3'):
+                    os.remove('campaign-data/db.sqlite3')
+                    print('deleted database')
+                if os.path.exists('simics-workspace/gold-checkpoints'):
+                    shutil.rmtree('simics-workspace/gold-checkpoints')
+                    print('deleted gold checkpoints')
+                if os.path.exists('simics-workspace/injected-checkpoints'):
+                    shutil.rmtree('simics-workspace/injected-checkpoints')
     drseus = fault_injector(dut_ip_address, '10.42.0.20', dut_serial_port,
                             '/dev/ttyUSB0', '10.42.0.50', options.architecture,
                             options.use_aux, True, options.debug,

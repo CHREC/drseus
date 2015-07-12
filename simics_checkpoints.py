@@ -388,9 +388,6 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
                                 ' invalid injection target: '+target)
     gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
                        str(checkpoint_number)+'.ckpt')
-    gold_checkpoint = ('simics-workspace/gold-checkpoints/'
-                       'checkpoint-' +
-                       str(checkpoint_number)+'.ckpt')
     if not os.path.exists(gold_checkpoint):
         gold_checkpoint = ('simics-workspace/'
                            'gold-checkpoints/incremental-' +
@@ -460,6 +457,9 @@ def regenerate_injected_checkpoint(board, injection_data):
     """
     gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
                        str(injection_data['checkpoint_number'])+'.ckpt')
+    if not os.path.exists(gold_checkpoint):
+        gold_checkpoint = ('simics-workspace/gold-checkpoints/incremental-' +
+                           str(injection_data['checkpoint_number'])+'.ckpt')
     # create temporary directory
     if not os.path.exists('simics-workspace/temp'):
         os.mkdir('simics-workspace/temp')

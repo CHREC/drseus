@@ -14,6 +14,8 @@ class campaign_data(models.Model):
     dut_output = models.TextField()
     aux_output = models.TextField()
     debugger_output = models.TextField()
+    paramiko_output = models.TextField()
+    aux_paramiko_output = models.TextField()
     num_cycles = models.IntegerField()
     num_checkpoints = models.IntegerField()
     cycles_between = models.IntegerField()
@@ -42,6 +44,8 @@ class hw_result(models.Model):
     dut_output = models.TextField()
     aux_output = models.TextField()
     debugger_output = models.TextField()
+    paramiko_output = models.TextField()
+    aux_paramiko_output = models.TextField()
 
 
 class simics_injection(models.Model):
@@ -73,6 +77,8 @@ class simics_result(models.Model):
     dut_output = models.TextField()
     aux_output = models.TextField()
     debugger_output = models.TextField()
+    paramiko_output = models.TextField()
+    aux_paramiko_output = models.TextField()
 
 
 class simics_register_diff(models.Model):
@@ -100,3 +106,5 @@ class supervisor_result(models.Model):
     detected_errors = models.IntegerField()
     dut_output = models.TextField()
     aux_output = models.TextField()
+    paramiko_output = models.TextField()
+    aux_paramiko_output = models.TextField()

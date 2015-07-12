@@ -63,6 +63,16 @@
         </h3>
         {{ result.debugger_output|linebreaksbr }}
         {% endif %}
+        <h3 align="center">
+            Paramiko Log
+        </h3>
+        {{ result.paramiko_output|linebreaksbr }}
+        {% if campaign_data.use_aux %}
+        <h3 align="center">
+            AUX Paramiko Log
+        </h3>
+        {{ result.aux_paramiko_output|linebreaksbr }}
+        {% endif %}
     </div>
 </div>
 {% endblock %}
