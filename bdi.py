@@ -79,43 +79,51 @@ class bdi:
                 aux_process.join()
         return (end - start) / iterations
 
-    def inject_fault(self, injection_number, injection_time, command,
+    def inject_fault(self, iteration, injection_times, command,
                      selected_targets):
-        if self.debug:
-            print(colored('injection time: '+str(injection_time), 'blue'))
-        self.dut.serial.write('./'+command+'\n')
-        time.sleep(injection_time)
-        if not self.halt_dut():
-            print('error halting dut')
-            sys.exit()
-        regs = self.get_dut_regs(selected_targets)
-        core = random.randrange(2)
-        register = random.choice(regs[core].keys())
-        gold_value = regs[core][register]
-        num_bits = len(gold_value.replace('0x', '')) * 4
-        bit = random.randrange(num_bits)
-        injected_value = '0x%x' % (int(gold_value, base=16) ^ (1 << bit))
-        if self.debug:
-            print(colored('core: '+str(core), 'blue'))
-            print(colored('register: '+register, 'blue'))
-            print(colored('bit: '+str(bit), 'blue'))
-            print(colored('gold value: '+gold_value, 'blue'))
-            print(colored('injected value: '+injected_value, 'blue'))
-        self.command('select '+str(core))
-        self.command('rm '+register+' '+injected_value)
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
-        sql = sql_db.cursor()
-        sql.execute(
-            'INSERT INTO drseus_logging_hw_injection ' +
-            '(injection_number,register,bit,gold_value,injected_value,' +
-            'time,time_rounded,core) VALUES (?,?,?,?,?,?,?,?)',
-            (
-                injection_number, register, bit, gold_value, injected_value,
-                injection_time, round(injection_time, 1), core
+        for injection in xrange(len(injection_times)):
+            injection_time = injection_times[injection]
+            if self.debug:
+                print(colored('injection time: '+str(injection_time),
+                              'magenta'))
+            if injection == 0:
+                self.dut.serial.write('./'+command+'\n')
+            else:
+                self.continue_dut()
+            time.sleep(injection_time)
+            if not self.halt_dut():
+                print('error halting dut')
+                sys.exit()
+            regs = self.get_dut_regs(selected_targets)
+            core = random.randrange(2)
+            register = random.choice(regs[core].keys())
+            gold_value = regs[core][register]
+            num_bits = len(gold_value.replace('0x', '')) * 4
+            bit = random.randrange(num_bits)
+            injected_value = '0x%x' % (int(gold_value, base=16) ^ (1 << bit))
+            if self.debug:
+                print(colored('core: '+str(core), 'magenta'))
+                print(colored('register: '+register, 'magenta'))
+                print(colored('bit: '+str(bit), 'magenta'))
+                print(colored('gold value: '+gold_value, 'magenta'))
+                print(colored('injected value: '+injected_value, 'magenta'))
+            self.command('select '+str(core))
+            self.command('rm '+register+' '+injected_value)
+            sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+            sql = sql_db.cursor()
+            sql.execute(
+                'INSERT INTO drseus_logging_hw_injection '
+                '(result_id,injection_number,register,bit,gold_value,'
+                'injected_value,time,time_rounded,core) VALUES '
+                '(?,?,?,?,?,?,?,?,?)',
+                (
+                    iteration, injection, register, bit, gold_value,
+                    injected_value, injection_time, round(injection_time, 1),
+                    core
+                )
             )
-        )
-        sql_db.commit()
-        sql_db.close()
+            sql_db.commit()
+            sql_db.close()
 
 
 class bdi_arm(bdi):

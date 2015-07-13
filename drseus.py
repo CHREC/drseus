@@ -23,11 +23,9 @@ def delete_results():
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute('DELETE FROM drseus_logging_hw_injection')
-        sql.execute('DELETE FROM drseus_logging_hw_result')
+        sql.execute('DELETE FROM drseus_logging_result')
         sql.execute('DELETE FROM drseus_logging_simics_injection')
         sql.execute('DELETE FROM drseus_logging_simics_register_diff')
-        sql.execute('DELETE FROM drseus_logging_simics_result')
-        sql.execute('DELETE FROM drseus_logging_supervisor_result')
         sql_db.commit()
         sql_db.close()
         print('flushed database')
@@ -111,29 +109,6 @@ def get_campaign_data():
     return campaign_data
 
 
-def get_next_injection_number(campaign_data):
-    if not os.path.exists('campaign-data/db.sqlite3'):
-        print('could not find campaign data')
-        sys.exit()
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
-    sql_db.row_factory = sqlite3.Row
-    sql = sql_db.cursor()
-    if campaign_data['use_simics']:
-        sql.execute('SELECT * FROM drseus_logging_simics_injection ORDER BY ' +
-                    'injection_number DESC LIMIT 1')
-        injection_data = sql.fetchone()
-    else:
-        sql.execute('SELECT * FROM drseus_logging_hw_injection ORDER BY ' +
-                    'injection_number DESC LIMIT 1')
-        injection_data = sql.fetchone()
-    if injection_data is None:
-        injection_number = 0
-    else:
-        injection_number = injection_data['injection_number'] + 1
-    sql_db.close()
-    return injection_number
-
-
 def get_next_iteration():
     if not os.path.exists('campaign-data/db.sqlite3'):
         print('could not find campaign data')
@@ -141,7 +116,7 @@ def get_next_iteration():
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    sql.execute('SELECT * FROM drseus_logging_supervisor_result ORDER BY ' +
+    sql.execute('SELECT * FROM drseus_logging_result ORDER BY ' +
                 'iteration DESC LIMIT 1')
     supervisor_data = sql.fetchone()
     if supervisor_data is None:
@@ -152,23 +127,23 @@ def get_next_iteration():
     return iteration
 
 
-def get_injection_data(campaign_data, injection_number):
-    if not os.path.exists('campaign-data/db.sqlite3'):
-        print('could not find campaign data')
-        sys.exit()
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
-    sql_db.row_factory = sqlite3.Row
-    sql = sql_db.cursor()
-    if campaign_data['use_simics']:
-        sql.execute('SELECT * FROM drseus_logging_simics_injection WHERE ' +
-                    'injection_number = (?)', (injection_number, ))
-        injection_data = sql.fetchone()
-    else:
-        sql.execute('SELECT * FROM drseus_logging_hw_injection WHERE ' +
-                    'injection_number = (?)', (injection_number, ))
-        injection_data = sql.fetchone()
-    sql_db.close()
-    return injection_data
+# def get_injection_data(campaign_data, injection_number):
+#     if not os.path.exists('campaign-data/db.sqlite3'):
+#         print('could not find campaign data')
+#         sys.exit()
+#     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+#     sql_db.row_factory = sqlite3.Row
+#     sql = sql_db.cursor()
+#     if campaign_data['use_simics']:
+#         sql.execute('SELECT * FROM drseus_logging_simics_injection WHERE ' +
+#                     'injection_number = (?)', (injection_number, ))
+#         injection_data = sql.fetchone()
+#     else:
+#         sql.execute('SELECT * FROM drseus_logging_hw_injection WHERE ' +
+#                     'injection_number = (?)', (injection_number, ))
+#         injection_data = sql.fetchone()
+#     sql_db.close()
+#     return injection_data
 
 
 def load_campaign(campaign_data, options):
@@ -194,24 +169,25 @@ def load_campaign(campaign_data, options):
     return drseus
 
 
-def perform_injections(campaign_data, injection_counter, options):
+def perform_injections(campaign_data, iteration_counter, options):
     drseus = load_campaign(campaign_data, options)
     if options.selected_targets is not None:
         selected_targets = options.selected_targets.split(',')
     else:
         selected_targets = None
     # try:
-    for i in xrange(options.num_injections):
-        with injection_counter.get_lock():
-            injection_number = injection_counter.value
-            injection_counter.value += 1
-        drseus.inject_fault(injection_number, selected_targets)
-        drseus.monitor_execution(injection_number, campaign_data['output_file'],
-                                 campaign_data['use_aux_output'],
-                                 options.compare_all)
+    for i in xrange(options.num_iterations):
+        with iteration_counter.get_lock():
+            iteration = iteration_counter.value
+            iteration_counter.value += 1
+        drseus.inject_and_monitor(iteration, options.num_injections,
+                                  selected_targets,
+                                  campaign_data['output_file'],
+                                  campaign_data['use_aux_output'],
+                                  options.compare_all)
     drseus.exit()
     # except KeyboardInterrupt:
-    #     shutil.rmtree('campaign-data/results/'+str(injection_number))
+    #     shutil.rmtree('campaign-data/results/'+str(iteration))
     #     if drseus.simics:
     #         try:
     #             shutil.rmtree('simics-workspace/' +
@@ -262,19 +238,19 @@ mode_group.add_option('-l', '--log', action='store_true',
                       help='open logs in browser')
 parser.add_option_group(mode_group)
 
-simics_mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes (Simics only)',
-                                         'These modes are only available for '
-                                         'Simics campaigns')
-simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
-                             dest='injection', default=-1,
-                             help='regenerate an injected checkpoint and launch'
-                             ' in Simics')
-parser.add_option_group(simics_mode_group)
+# simics_mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes (Simics only)',
+#                                          'These modes are only available for '
+#                                          'Simics campaigns')
+# simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
+#                              dest='injection', default=-1,
+#                              help='regenerate an injected checkpoint and launch'
+#                              ' in Simics')
+# parser.add_option_group(simics_mode_group)
 
 new_group = optparse.OptionGroup(parser, 'New Campaign Options',
                                  'Use these to create a new campaign, they will'
                                  ' be saved')
-new_group.add_option('-I', '--timing', action='store', type='int',
+new_group.add_option('-m', '--timing', action='store', type='int',
                      dest='iterations', default=5,
                      help='number of timing iterations to run [default=5]')
 new_group.add_option('-o', '--output', action='store', type='str',
@@ -322,9 +298,13 @@ parser.add_option_group(new_simics_group)
 injection_group = optparse.OptionGroup(parser, 'Injection Options', 'Use these '
                                        'when performing injections '
                                        '(-i or --inject)')
-injection_group.add_option('-n', '--injections', action='store', type='int',
-                           dest='num_injections', default=10,
-                           help='number of injections to perform [default=10]')
+injection_group.add_option('-I', '--injections', action='store', type='int',
+                           dest='num_injections', default=1,
+                           help='number of injections per execution run '
+                                '[default=1]')
+injection_group.add_option('-n', '--iterations', action='store', type='int',
+                           dest='num_iterations', default=10,
+                           help='number of iterations to perform [default=10]')
 injection_group.add_option('-t', '--targets', action='store', type='str',
                            dest='selected_targets', default=None,
                            help='comma-seperated list of targets for injection')
@@ -338,7 +318,7 @@ simics_injection_group.add_option('-p', '--procs', action='store',
                                   type='int', dest='num_processes', default=1,
                                   help='number of simics injections to perform '
                                        'in parallel (each instance performs '
-                                        'NUM_INJECTION injections)')
+                                        'NUM_ITERATIONS)')
 simics_injection_group.add_option('-C', '--all', action='store_true',
                                   dest='compare_all', default=False,
                                   help='compare all checkpoints, only last by '
@@ -364,15 +344,15 @@ elif options.inject:
     if campaign_data['use_simics']:
         if not os.path.exists('simics-workspace/injected-checkpoints'):
             os.mkdir('simics-workspace/injected-checkpoints')
-    starting_injection = get_next_injection_number(campaign_data)
-    injection_counter = multiprocessing.Value('I', starting_injection)
+    starting_iteration = get_next_iteration()
+    iteration_counter = multiprocessing.Value('I', starting_iteration)
     if campaign_data['use_simics'] and options.num_processes > 1:
         options.debug = False
         processes = []
         for i in xrange(options.num_processes):
             process = multiprocessing.Process(target=perform_injections,
                                               args=(campaign_data,
-                                                    injection_counter,
+                                                    iteration_counter,
                                                     options))
             processes.append(process)
             process.start()
@@ -384,7 +364,7 @@ elif options.inject:
         #         process.terminate()
         #         process.join()
     else:
-        perform_injections(campaign_data, injection_counter, options)
+        perform_injections(campaign_data, iteration_counter, options)
 elif options.supervise:
     campaign_data = get_campaign_data()
     iteration = get_next_iteration()
@@ -393,19 +373,19 @@ elif options.supervise:
                      campaign_data['output_file'],
                      campaign_data['use_aux_output'])
     drseus.exit()
-elif options.injection >= 0:
-    campaign_data = get_campaign_data()
-    if not campaign_data['use_simics']:
-        print('This feature is only available for Simics campaigns')
-        sys.exit()
-    drseus = load_campaign(campaign_data, options)
-    injection_data = get_injection_data(campaign_data,
-                                        options.injection)
-    checkpoint = drseus.debugger.regenerate_injected_checkpoint(injection_data)
-    drseus.debugger.launch_simics_gui(checkpoint)
-    shutil.rmtree('simics-workspace/'+checkpoint)
-    if not os.listdir('simics-workspace/temp'):
-        os.rmdir('simics-workspace/temp')
+# elif options.injection >= 0:
+#     campaign_data = get_campaign_data()
+#     if not campaign_data['use_simics']:
+#         print('This feature is only available for Simics campaigns')
+#         sys.exit()
+#     drseus = load_campaign(campaign_data, options)
+#     injection_data = get_injection_data(campaign_data,
+#                                         options.injection)
+#     checkpoint = drseus.debugger.regenerate_injected_checkpoint(injection_data)
+#     drseus.debugger.launch_simics_gui(checkpoint)
+#     shutil.rmtree('simics-workspace/'+checkpoint)
+#     if not os.listdir('simics-workspace/temp'):
+#         os.rmdir('simics-workspace/temp')
 else:
     if len(args) < 1:
         parser.error('please specify an application')

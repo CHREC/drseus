@@ -21,22 +21,8 @@ class campaign_data(models.Model):
     cycles_between = models.IntegerField()
 
 
-class hw_injection(models.Model):
-    # commond fields
-    injection_number = models.IntegerField(primary_key=True)
-    register = models.TextField()
-    bit = models.IntegerField()
-    gold_value = models.TextField()
-    injected_value = models.TextField()
-    # hw fields
-    time = models.FloatField()
-    time_rounded = models.FloatField()
-    core = models.IntegerField()
-
-
-class hw_result(models.Model):
-    # common fields
-    injection = models.OneToOneField(hw_injection, primary_key=True)
+class result(models.Model):
+    iteration = models.IntegerField(primary_key=True)
     outcome = models.TextField()
     outcome_category = models.TextField()
     data_diff = models.FloatField()
@@ -48,9 +34,24 @@ class hw_result(models.Model):
     aux_paramiko_output = models.TextField()
 
 
+class hw_injection(models.Model):
+    # commond fields
+    result = models.ForeignKey(result)
+    injection_number = models.IntegerField()
+    register = models.TextField()
+    bit = models.IntegerField()
+    gold_value = models.TextField()
+    injected_value = models.TextField()
+    # hw fields
+    time = models.FloatField()
+    time_rounded = models.FloatField()
+    core = models.IntegerField()
+
+
 class simics_injection(models.Model):
     # commond fields
-    injection_number = models.IntegerField(primary_key=True)
+    result = models.ForeignKey(result)
+    injection_number = models.IntegerField()
     register = models.TextField()
     bit = models.IntegerField()
     gold_value = models.TextField()
@@ -66,24 +67,9 @@ class simics_injection(models.Model):
     # gold_debug_info = models.TextField()
 
 
-class simics_result(models.Model):
-    # common fields
-    injection = models.OneToOneField(simics_injection, primary_key=True)
-    outcome = models.TextField()
-    outcome_category = models.TextField()
-    data_diff = models.FloatField()
-    detected_errors = models.IntegerField()
-    qty = models.IntegerField()
-    dut_output = models.TextField()
-    aux_output = models.TextField()
-    debugger_output = models.TextField()
-    paramiko_output = models.TextField()
-    aux_paramiko_output = models.TextField()
-
-
 class simics_register_diff(models.Model):
-    injection = models.ForeignKey(simics_result)
-    monitored_checkpoint_number = models.IntegerField()
+    result = models.ForeignKey(result)
+    checkpoint_number = models.IntegerField()
     config_object = models.TextField()
     register = models.TextField()
     gold_value = models.TextField()
@@ -91,20 +77,7 @@ class simics_register_diff(models.Model):
 
 
 class simics_memory_diff(models.Model):
-    injection = models.ForeignKey(simics_result)
-    monitored_checkpoint_number = models.IntegerField()
+    result = models.ForeignKey(result)
+    checkpoint_number = models.IntegerField()
     image_index = models.IntegerField()
     block = models.TextField()
-
-
-class supervisor_result(models.Model):
-    # TODO: add times
-    iteration = models.IntegerField(primary_key=True)
-    outcome = models.TextField()
-    outcome_category = models.TextField()
-    data_diff = models.FloatField()
-    detected_errors = models.IntegerField()
-    dut_output = models.TextField()
-    aux_output = models.TextField()
-    paramiko_output = models.TextField()
-    aux_paramiko_output = models.TextField()

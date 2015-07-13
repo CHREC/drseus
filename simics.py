@@ -11,7 +11,8 @@ from termcolor import colored
 from error import DrSEUSError
 from dut import dut
 from simics_checkpoints import (inject_checkpoint, compare_registers,
-                                compare_memory, regenerate_injected_checkpoint)
+                                # regenerate_injected_checkpoint,
+                                compare_memory)
 
 
 class simics:
@@ -298,24 +299,17 @@ class simics:
         os.mkdir('simics-workspace/gold-checkpoints')
         step_cycles = cycles / num_checkpoints
         self.halt_dut()
-        self.dut.serial.write('./'+command+'\n')
         if self.use_aux:
             self.aux.serial.write('./'+aux_command+'\n')
+        self.dut.serial.write('./'+command+'\n')
         for checkpoint in xrange(num_checkpoints):
             self.command('run-cycles '+str(step_cycles))
-            incremental_checkpoint = ('gold-checkpoints/incremental-' +
-                                      str(checkpoint)+'.ckpt')
+            incremental_checkpoint = ('gold-checkpoints/'+str(checkpoint))
             self.command('write-configuration '+incremental_checkpoint)
-            merged_checkpoint = ('gold-checkpoints/checkpoint-' +
-                                 str(checkpoint)+'.ckpt')
+            merged_checkpoint = incremental_checkpoint+'_merged'
             if checkpoint == num_checkpoints-1:
-                # TODO: hide this output
-                if os.system('simics-workspace/bin/checkpoint-merge'
-                             ' simics-workspace/'+incremental_checkpoint +
-                             ' simics-workspace/'+merged_checkpoint):
-                    raise Exception('simics.py:create_checkpoints(): '
-                                    'Could not merge gold checkpoint: ' +
-                                    incremental_checkpoint)
+                self.command('!bin/checkpoint-merge '+incremental_checkpoint +
+                             ' '+merged_checkpoint)
         self.continue_dut()
         if self.use_aux:
             aux_process = threading.Thread(target=self.aux.read_until)
@@ -326,52 +320,90 @@ class simics:
         self.close()
         return step_cycles
 
-    def inject_fault(self, injection_number, checkpoint_number,
-                     selected_targets):
-        injected_checkpoint = inject_checkpoint(injection_number,
-                                                checkpoint_number, self.board,
-                                                selected_targets, self.debug)
-        self.launch_simics(checkpoint=injected_checkpoint)
-        return injected_checkpoint
+    def inject_fault(self, iteration, checkpoints_to_inject, selected_targets,
+                     cycles_between_checkpoints, num_checkpoints, compare_all):
+        simics_output = ''
+        dut_output = ''
+        paramiko_output = ''
+        if self.use_aux:
+            aux_output = ''
+            aux_paramiko_output = ''
+        latent_faults = 0
+        for injection_number in xrange(len(checkpoints_to_inject)):
+            checkpoint_number = checkpoints_to_inject[injection_number]
+            injected_checkpoint = inject_checkpoint(iteration,
+                                                    injection_number,
+                                                    checkpoint_number,
+                                                    self.board,
+                                                    selected_targets,
+                                                    self.debug)
+            self.launch_simics(checkpoint=injected_checkpoint)
+            injections_remaining = (injection_number + 1 <
+                                    len(checkpoints_to_inject))
+            if injections_remaining:
+                next_checkpoint = checkpoints_to_inject[injection_number + 1]
+            else:
+                next_checkpoint = num_checkpoints
+            errors = self.compare_checkpoints(iteration, checkpoint_number,
+                                              next_checkpoint,
+                                              cycles_between_checkpoints,
+                                              num_checkpoints, compare_all)
+            if errors > latent_faults:
+                latent_faults = errors
+            if injections_remaining:
+                self.close()
+            simics_output += self.output
+            dut_output += self.dut.output
+            paramiko_output += self.dut.paramiko_output
+            if self.use_aux:
+                aux_output += self.aux.output
+                aux_paramiko_output += self.aux.paramiko_output
+        self.output = simics_output
+        self.dut.output = dut_output
+        self.dut.paramiko_output = paramiko_output
+        if self.use_aux:
+            self.aux.output = aux_output
+            self.aux.paramiko_output = aux_paramiko_output
+        return latent_faults
 
-    def regenerate_injected_checkpoint(self, injection_data):
-        return regenerate_injected_checkpoint(self.board, injection_data)
+    # def regenerate_injected_checkpoint(self, injection_data):
+    #     return regenerate_injected_checkpoint(self.board, injection_data)
 
-    def compare_checkpoints(self, injection_number, checkpoint,
+    def compare_checkpoints(self, iteration, checkpoint_number, last_checkpoint,
                             cycles_between_checkpoints, num_checkpoints,
                             compare_all):
-        if not os.path.exists('simics-workspace/'+checkpoint+'/monitored'):
-            os.mkdir('simics-workspace/'+checkpoint+'/monitored')
-        checkpoint_number = int(
-            checkpoint.split('/')[-1][checkpoint.split('/')[-1].index(
-                '-')+1:checkpoint.split('/')[-1].index('.ckpt')])
-        for checkpoint_number in xrange(checkpoint_number+1,
-                                        num_checkpoints):
+        reg_errors = 0
+        mem_errors = 0
+        for checkpoint_number in xrange(checkpoint_number + 1,
+                                        last_checkpoint + 1):
             self.command('run-cycles '+str(cycles_between_checkpoints))
-            if compare_all or checkpoint_number == num_checkpoints-1:
-                monitored_checkpoint = (checkpoint +
-                                        '/monitored/checkpoint-' +
-                                        str(checkpoint_number) +
-                                        '.ckpt')
-                self.command('write-configuration '+monitored_checkpoint)
+            incremental_checkpoint = ('injected-checkpoints/'+str(iteration) +
+                                      '/'+str(checkpoint_number))
+            monitor = compare_all or checkpoint_number == num_checkpoints - 1
+            if monitor or checkpoint_number == last_checkpoint:
+                self.command('write-configuration '+incremental_checkpoint)
+            if monitor:
+                monitored_checkpoint = incremental_checkpoint+'_merged'
+                self.command('!bin/checkpoint-merge '+incremental_checkpoint +
+                             ' '+monitored_checkpoint)
+                gold_incremental_checkpoint = ('gold-checkpoints/' +
+                                               str(checkpoint_number))
+                gold_checkpoint = ('gold-checkpoints/'+str(checkpoint_number) +
+                                   '_merged')
+                if not os.path.exists('simics-workspace/'+gold_checkpoint):
+                    self.command('!bin/checkpoint-merge ' +
+                                 gold_incremental_checkpoint+' ' +
+                                 gold_checkpoint)
+                gold_checkpoint = 'simics-workspace/'+gold_checkpoint
                 monitored_checkpoint = 'simics-workspace/'+monitored_checkpoint
-                gold_checkpoint = ('simics-workspace/gold-checkpoints/'
-                                   'checkpoint-' +
-                                   str(checkpoint_number)+'.ckpt')
-                if not os.path.exists(gold_checkpoint):
-                    incremental_checkpoint = ('simics-workspace/'
-                                              'gold-checkpoints/incremental-' +
-                                              str(checkpoint_number)+'.ckpt')
-                    # TODO: hide this output
-                    if os.system('simics-workspace/bin/checkpoint-merge'
-                                 ' simics-workspace/'+incremental_checkpoint +
-                                 ' simics-workspace/'+gold_checkpoint):
-                        raise Exception('simics.py:compare_checkpoints(): '
-                                        'Could not merge gold checkpoint: ' +
-                                        incremental_checkpoint)
-                compare_registers(injection_number, checkpoint_number,
-                                  gold_checkpoint, monitored_checkpoint,
-                                  self.board)
-                compare_memory(injection_number, checkpoint_number,
-                               gold_checkpoint, monitored_checkpoint,
-                               self.board)
+                errors = compare_registers(iteration, checkpoint_number,
+                                           gold_checkpoint,
+                                           monitored_checkpoint, self.board)
+                if errors > reg_errors:
+                    reg_errors = errors
+                errors = compare_memory(iteration, checkpoint_number,
+                                        gold_checkpoint, monitored_checkpoint,
+                                        self.board)
+                if errors > reg_errors:
+                    mem_errors = errors
+        return reg_errors + mem_errors

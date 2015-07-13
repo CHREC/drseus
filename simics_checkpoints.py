@@ -372,8 +372,8 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
     return injection_data
 
 
-def inject_checkpoint(injection_number, checkpoint_number, board,
-                      selected_targets, debug):
+def inject_checkpoint(iteration, injection_number, checkpoint_number,
+                      board, selected_targets, debug):
     """
     Create a new injected checkpoint (only performing injection on the
     selected_targets if provided) and return the path of the injected
@@ -386,22 +386,17 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
             if target not in targets:
                 raise Exception('simics_checkpoints.py:inject_checkpoint():'
                                 ' invalid injection target: '+target)
-    gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
-                       str(checkpoint_number)+'.ckpt')
-    if not os.path.exists(gold_checkpoint):
-        gold_checkpoint = ('simics-workspace/'
-                           'gold-checkpoints/incremental-' +
-                           str(checkpoint_number)+'.ckpt')
-    checkpoint_number = int(
-        gold_checkpoint.split('/')[-1][
-            gold_checkpoint.split('/')[-1].index('-')+1:
-            gold_checkpoint.split('/')[-1].index('.ckpt')
-        ]
-    )
-    injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
-                           str(injection_number)+'_'+'checkpoint-' +
-                           str(checkpoint_number)+'.ckpt')
-    os.mkdir(injected_checkpoint)
+    if injection_number == 0:
+        gold_checkpoint = ('simics-workspace/gold-checkpoints/' +
+                           str(checkpoint_number))
+        injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
+                               str(iteration)+'/'+str(checkpoint_number) +
+                               '_injected')
+    else:
+        gold_checkpoint = ('simics-workspace/injected-checkpoints/' +
+                           str(iteration)+'/'+str(checkpoint_number))
+        injected_checkpoint = gold_checkpoint+'_injected'
+    os.makedirs(injected_checkpoint)
     # copy gold checkpoint files
     checkpoint_files = os.listdir(gold_checkpoint)
     checkpoint_files.remove('config')
@@ -427,11 +422,11 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
         register_index = injection_data['register_index']
     sql.execute(
         'INSERT INTO drseus_logging_simics_injection '
-        '(injection_number,register,bit,gold_value,injected_value,'
-        'checkpoint_number,target_index,target,config_object,config_type,'
-        'register_index,field) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+        '(result_id,injection_number,register,bit,gold_value,'
+        'injected_value,checkpoint_number,target_index,target,config_object,'
+        'config_type,register_index,field) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
         (
-            injection_number, injection_data['register'],
+            iteration, injection_number, injection_data['register'],
             injection_data['bit'], injection_data['gold_value'],
             injection_data['injected_value'],
             checkpoint_number, injection_data['target_index'],
@@ -443,43 +438,45 @@ def inject_checkpoint(injection_number, checkpoint_number, board,
     sql_db.commit()
     sql_db.close()
     if debug:
-        print(colored('target: '+injection_data['target'], 'blue'))
-        print(colored('register: '+register, 'blue'))
-        print(colored('gold value: '+injection_data['gold_value'], 'blue'))
+        print(colored('iteration: '+str(iteration), 'magenta'))
+        print(colored('injection number: '+str(injection_number), 'magenta'))
+        print(colored('target: '+injection_data['target'], 'magenta'))
+        print(colored('register: '+register, 'magenta'))
+        print(colored('gold value: '+injection_data['gold_value'], 'magenta'))
         print(colored('injected value: ' +
-                      injection_data['injected_value'], 'blue'))
+                      injection_data['injected_value'], 'magenta'))
     return injected_checkpoint.replace('simics-workspace/', '')
 
 
-def regenerate_injected_checkpoint(board, injection_data):
-    """
-    Regenerate a previously created injected checkpoint using injection_data.
-    """
-    gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
-                       str(injection_data['checkpoint_number'])+'.ckpt')
-    if not os.path.exists(gold_checkpoint):
-        gold_checkpoint = ('simics-workspace/gold-checkpoints/incremental-' +
-                           str(injection_data['checkpoint_number'])+'.ckpt')
-    # create temporary directory
-    if not os.path.exists('simics-workspace/temp'):
-        os.mkdir('simics-workspace/temp')
-    injected_checkpoint = ('simics-workspace/temp/' +
-                           str(injection_data['injection_number'])+'_'
-                           'checkpoint-' +
-                           str(injection_data['checkpoint_number'])+'.ckpt')
-    os.mkdir(injected_checkpoint)
-    # copy gold checkpoint files
-    checkpoint_files = os.listdir(gold_checkpoint)
-    checkpoint_files.remove('config')
-    for checkpoint_file in checkpoint_files:
-        shutil.copyfile(gold_checkpoint+'/'+checkpoint_file,
-                        injected_checkpoint+'/'+checkpoint_file)
-    # perform fault injection
-    targets = devices[board]
-    inject_register(gold_checkpoint, injected_checkpoint,
-                    injection_data['register'], injection_data['target'],
-                    board, targets, injection_data)
-    return injected_checkpoint.replace('simics-workspace/', '')
+# def regenerate_injected_checkpoint(board, injection_data):
+#     """
+#     Regenerate a previously created injected checkpoint using injection_data.
+#     """
+#     gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
+#                        str(injection_data['checkpoint_number'])+'.ckpt')
+#     if not os.path.exists(gold_checkpoint):
+#         gold_checkpoint = ('simics-workspace/gold-checkpoints/incremental-' +
+#                            str(injection_data['checkpoint_number'])+'.ckpt')
+#     # create temporary directory
+#     if not os.path.exists('simics-workspace/temp'):
+#         os.mkdir('simics-workspace/temp')
+#     injected_checkpoint = ('simics-workspace/temp/' +
+#                            str(injection_data['injection_number'])+'_'
+#                            'checkpoint-' +
+#                            str(injection_data['checkpoint_number'])+'.ckpt')
+#     os.mkdir(injected_checkpoint)
+#     # copy gold checkpoint files
+#     checkpoint_files = os.listdir(gold_checkpoint)
+#     checkpoint_files.remove('config')
+#     for checkpoint_file in checkpoint_files:
+#         shutil.copyfile(gold_checkpoint+'/'+checkpoint_file,
+#                         injected_checkpoint+'/'+checkpoint_file)
+#     # perform fault injection
+#     targets = devices[board]
+#     inject_register(gold_checkpoint, injected_checkpoint,
+#                     injection_data['register'], injection_data['target'],
+#                     board, targets, injection_data)
+#     return injected_checkpoint.replace('simics-workspace/', '')
 
 
 def parse_registers(config_file, board, targets):
@@ -583,11 +580,11 @@ def parse_registers(config_file, board, targets):
     return registers
 
 
-def compare_registers(injection_number, monitored_checkpoint_number,
-                      gold_checkpoint, monitored_checkpoint, board):
+def compare_registers(iteration, checkpoint_number, gold_checkpoint,
+                      monitored_checkpoint, board):
     """
-    Compares the register values of the monitored_checkpoint to the
-    gold_checkpoint and adds the differences to the database.
+    Compares the register values of the checkpoint_number for iteration
+    to the gold_checkpoint and adds the differences to the database.
     """
     targets = devices[board]
     gold_registers = parse_registers(gold_checkpoint+'/config', board, targets)
@@ -595,6 +592,7 @@ def compare_registers(injection_number, monitored_checkpoint_number,
                                           targets)
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql = sql_db.cursor()
+    errors = 0
     for target in targets:
         if target != 'TLB':
             if 'count' in targets[target]:
@@ -618,15 +616,15 @@ def compare_registers(injection_number, monitored_checkpoint_number,
                     if len(register_count) == 0:
                         if (monitored_registers[target_key][register] !=
                                 gold_registers[target_key][register]):
+                            errors += 1
                             sql.execute(
                                 'INSERT INTO ' +
                                 'drseus_logging_simics_register_diff '
-                                '(injection_id,monitored_checkpoint_number,'
+                                '(result_id,checkpoint_number,'
                                 'config_object,register,gold_value,'
                                 'monitored_value) VALUES (?,?,?,?,?,?)', (
-                                    injection_number,
-                                    monitored_checkpoint_number, target_key,
-                                    register,
+                                    iteration, checkpoint_number,
+                                    target_key, register,
                                     gold_registers[target_key][register],
                                     monitored_registers[target_key][register]
                                 )
@@ -637,15 +635,15 @@ def compare_registers(injection_number, monitored_checkpoint_number,
                                                    [register][index1] !=
                                 gold_registers[target_key]
                                               [register][index1]):
+                                errors += 1
                                 sql.execute(
                                     'INSERT INTO '
                                     'drseus_logging_simics_register_diff '
-                                    '(injection_id,monitored_checkpoint_number,'
+                                    '(result_id,checkpoint_number,'
                                     'config_object,register,gold_value,'
                                     'monitored_value) VALUES (?,?,?,?,?,?)', (
-                                        injection_number,
-                                        monitored_checkpoint_number, target_key,
-                                        register+':'+str(index1),
+                                        iteration, checkpoint_number,
+                                        target_key, register+':'+str(index1),
                                         gold_registers[target_key]
                                                       [register][index1],
                                         monitored_registers[target_key]
@@ -659,16 +657,15 @@ def compare_registers(injection_number, monitored_checkpoint_number,
                                                        [index1][index2] !=
                                     gold_registers[target_key][register]
                                                   [index1][index2]):
+                                    errors += 1
                                     sql.execute(
                                         'INSERT INTO '
                                         'drseus_logging_simics_register_diff '
-                                        '(injection_id,'
-                                        'monitored_checkpoint_number,'
+                                        '(result_id,checkpoint_number,'
                                         'config_object,register,gold_value,'
                                         'monitored_value) VALUES (?,?,?,?,?,?)',
                                         (
-                                            injection_number,
-                                            monitored_checkpoint_number,
+                                            iteration, checkpoint_number,
                                             target_key, register+':' +
                                             str(index1)+':'+str(index2),
                                             gold_registers[target_key][register]
@@ -685,6 +682,7 @@ def compare_registers(injection_number, monitored_checkpoint_number,
                                         register+' in target: '+target)
     sql_db.commit()
     sql_db.close()
+    return errors
 
 
 def parse_content_map(content_map, block_size):
@@ -728,39 +726,33 @@ def extract_diff_blocks(gold_ram, monitored_ram, incremental_checkpoint,
                       ' --output='+monitored_block)
 
 
-def compare_memory(injection_number, monitored_checkpoint_number,
-                   gold_checkpoint, monitored_checkpoint, board,
-                   extract_blocks=False):
+def compare_memory(iteration, checkpoint_number, gold_checkpoint,
+                   monitored_checkpoint, board, extract_blocks=False):
     """
-    Compare the memory contents of gold_checkpoint with merged_checkpoint
+    Compare the memory contents of gold_checkpoint with monitored_checkpoint
     and return the list of blocks that do not match. If extract_blocks is
     true then extract any blocks that do not match to
     incremental_checkpoint/memory-blocks/.
     """
-    merged_checkpoint = monitored_checkpoint+'/merged.ckpt'
-    if os.system('simics-workspace/bin/checkpoint-merge ' +
-                 monitored_checkpoint+' '+merged_checkpoint):
-        raise Exception('simics_checkpoints.py:compare_memory_contents(): '
-                        'Could not merge monitored checkpoint: ' +
-                        monitored_checkpoint)
     if board == 'p2020rdb':
         gold_rams = [gold_checkpoint+'/DUT_'+board +
                      '.soc.ram_image['+str(index)+'].craff'
                      for index in xrange(1)]
-        monitored_rams = [merged_checkpoint+'/DUT_'+board +
+        monitored_rams = [monitored_checkpoint+'/DUT_'+board +
                           '.soc.ram_image['+str(index)+'].craff'
                           for index in xrange(1)]
     elif board == 'a9x2':
         gold_rams = [gold_checkpoint+'/DUT_'+board +
                      '.coretile.ddr_image['+str(index)+'].craff'
                      for index in xrange(2)]
-        monitored_rams = [merged_checkpoint+'/DUT_'+board +
+        monitored_rams = [monitored_checkpoint+'/DUT_'+board +
                           '.coretile.ddr_image['+str(index)+'].craff'
                           for index in xrange(2)]
     ram_diffs = [ram+'.diff' for ram in monitored_rams]
     diff_content_maps = [diff+'.content_map' for diff in ram_diffs]
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql = sql_db.cursor()
+    errors = 0
     for image_index, gold_ram, monitored_ram, ram_diff, diff_content_map in \
             zip(range(len(monitored_rams)), gold_rams, monitored_rams,
                 ram_diffs, diff_content_maps):
@@ -772,18 +764,15 @@ def compare_memory(injection_number, monitored_checkpoint_number,
                                               '--info '+ram_diff, shell=True)
         block_size = int(re.findall(r'\d+', craffOutput.split('\n')[2])[1])
         changed_blocks = parse_content_map(diff_content_map, block_size)
+        errors += len(changed_blocks)
         if extract_blocks:
             extract_diff_blocks(gold_ram, monitored_ram, monitored_checkpoint,
                                 changed_blocks, block_size)
         for block in changed_blocks:
-            sql.execute(
-                'INSERT INTO drseus_logging_simics_memory_diff '
-                '(injection_id,monitored_checkpoint_number,image_index,block) '
-                'VALUES (?,?,?,?)',
-                (
-                    injection_number, monitored_checkpoint_number, image_index,
-                    hex(block)
-                )
-            )
+            sql.execute('INSERT INTO drseus_logging_simics_memory_diff '
+                        '(result_id,checkpoint_number,image_index,block) '
+                        'VALUES (?,?,?,?)', (iteration, checkpoint_number,
+                                             image_index, hex(block)))
     sql_db.commit()
     sql_db.close()
+    return errors

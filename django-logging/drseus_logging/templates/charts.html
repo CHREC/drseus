@@ -2,7 +2,7 @@
 
 {%block chart_loader_header %}
         {% load chartit %}
-        {{ chart_list|load_charts:"register_chart, bit_chart, time_chart, outcome_chart" }}
+        {{ chart_list|load_charts:"outcome_chart, register_chart, bit_chart, time_chart" }}
 {% endblock %}
 
 {% block body %}

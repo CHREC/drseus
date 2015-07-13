@@ -7,12 +7,7 @@
                                     {{ title }}
                                 </h2>
                                 {% load django_tables2 %}
-                                {% if injections %}
-                                    {% render_table table %}
-                                {% endif %}
-                                {% if iterations %}
-                                    {% render_table supervisor_table %}
-                                {% endif %}
+                                {% render_table table %}
                             </div>
                         </div>
 {% endblock %}

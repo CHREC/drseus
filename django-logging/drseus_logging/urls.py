@@ -16,9 +16,9 @@ Including another URLconf
 from django.conf.urls import patterns
 
 charts_and_tables = [
-    (r'', 'campaign_info', 'Campaign Information'),
-    (r'charts/', 'charts', 'Injection Charts'),
-    (r'table/', 'tables', 'Results Table'),
+    (r'', 'campaign_info_page', 'Campaign Information'),
+    (r'charts/', 'charts_page', 'Injection Charts'),
+    (r'table/', 'table_page', 'Results Table'),
 ]
 
 sidebar_group1 = [
@@ -28,12 +28,7 @@ sidebar_group1 = [
 sidebar_groups = [("Navigation", sidebar_group1)]
 
 charts_and_tables.append(
-    (r'injection/(?P<injection_number>[0-9]+)/', 'injection_result',
-     'Injection Result'))
-charts_and_tables.append(
-    (r'iteration/(?P<iteration>[0-9]+)/', 'iteration_result',
-     'Iteration Result')
-)
+    (r'result/(?P<iteration>[0-9]+)/', 'result_page', 'Result'))
 
 chart_pattern_tuples = [
     (
