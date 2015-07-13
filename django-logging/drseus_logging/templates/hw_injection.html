@@ -1,86 +1,17 @@
 {% extends "base.html" %}
-
+{% load django_tables2 %}
 {% block body %}
 <div class="source">
-    <h2>
+    <h2 align="center">
         {{ title }}
     </h2>
-    <h3>
-        Injections
-    </h3>
-    <div align="center">
-        {% render_table injection_table %}
-    </div>
     <div class="section">
         <h3 align="center">
-            Injection Summary
+            Injections
         </h3>
-        <table align="center">
-            <tr>
-                <th>
-                    Injection Number
-                </th>
-                <td>
-                    {{ result.injection.injection_number }}
-                </td>
-                <th>
-                    Register
-                </th>
-                <td>
-                    {{ result.injection.register }}
-                </td>
-            </tr>
-            <tr>
-                <th>
-                    Outcome Category
-                </th>
-                <td>
-                    {{ result.outcome_category }}
-                </td>
-                <th>
-                    Outcome
-                </th>
-                <td>
-                    {{ result.outcome }}
-                </td>
-            </tr>
-            <tr>
-                <th>
-                    Data Diff
-                </th>
-                <td>
-                    {{ result.data_diff }}
-                </td>
-                <th>
-                    Detected Errors
-                </th>
-                <td>
-                    {{ result.detected_errors }}
-                </td>
-            </tr>
-            <tr>
-                <th>
-                    Gold Value
-                </th>
-                <td>
-                    {{ result.injection.gold_value }}
-                </td>
-                <th>
-                    Inected Value
-                </th>
-                <td>
-                    {{ result.injection.injected_value }}
-                </td>
-            </tr>
-            <tr>
-                <th>
-                    Bit
-                </th>
-                <td>
-                    {{ result.injection.bit }}
-                </td>
-            </tr>
-        </table>
+        <div align="center">
+            {% render_table injection_table %}
+        </div>
         <h3 align="center">
             DUT Output
         </h3>

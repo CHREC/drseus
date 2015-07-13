@@ -53,7 +53,8 @@ class fault_injector:
                         target=self.debugger.aux.do_login)
                     aux_process.start()
                 self.debugger.dut.do_login()
-                aux_process.join()
+                if self.use_aux:
+                    aux_process.join()
 
     def exit(self):
         if not self.use_simics:
@@ -178,7 +179,7 @@ class fault_injector:
             # if self.use_aux:
             #     aux_process.join()
             injection_times = []
-            for i in num_injections:
+            for i in xrange(num_injections):
                 injection_times.append(random.uniform(0, self.exec_time))
             injection_times = sorted(injection_times)
             self.debugger.inject_fault(iteration, injection_times,
@@ -249,19 +250,18 @@ class fault_injector:
                 outcome = error.type
                 outcome_category = 'Execution error'
             else:
-                for line in buff:
+                for line in buff.split('\n'):
                     if 'drseus_detected_errors:' in line:
                         detected_errors = int(line.replace(
                                               'drseus_detected_errors:', ''))
                         break
-            if output_file:
+            if output_file and not outcome:
                 try:
                     data_diff = self.check_output(iteration, output_file,
                                                   use_aux_output)
                 except DrSEUSError as error:
-                    if not outcome:
-                        outcome = error.type
-                        outcome_category = 'SCP error'
+                    outcome = error.type
+                    outcome_category = 'SCP error'
             if not outcome:
                 if detected_errors > 0:
                     outcome = 'Detected data error'
@@ -286,6 +286,7 @@ class fault_injector:
             else:
                 outcome = 'No error'
             outcome_category = 'No error'
+        print(colored('iteration: '+str(iteration), 'blue'))
         print(colored('outcome: '+outcome_category+' - '+outcome, 'blue'),
               end='')
         if data_diff < 1.0 and data_diff != -1.0:
@@ -310,8 +311,10 @@ class fault_injector:
             )
         )
         if not self.use_simics:
+            self.debugger.output = ''
             self.debugger.dut.output = ''
-            self.debugger.aux.output = ''
+            if self.use_aux:
+                self.debugger.aux.output = ''
         sql_db.commit()
         sql_db.close()
 
@@ -340,12 +343,12 @@ class fault_injector:
                 outcome = error.type
                 outcome_category = 'Execution error'
             detected_errors = 0
-            for line in buff:
+            for line in buff.split('\n'):
                 if 'drseus_detected_errors:' in line:
                     detected_errors = int(line.replace(
                                           'drseus_detected_errors:', ''))
                     break
-            if output_file:
+            if output_file and not outcome:
                 try:
                     data_diff = self.check_output(iteration, output_file,
                                                   use_aux_output)

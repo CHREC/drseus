@@ -16,7 +16,8 @@ def outcome_chart(queryset):
     datasource = DataPool(series=[{'options': {'source': queryset},
                                    'terms': ['result__outcome', 'bit']}])
     chart = Chart(datasource=datasource,
-                  series_options=[{'options': {'type': 'pie'},
+                  series_options=[{'options': {'type': 'pie',
+                                               'showInLegend': True},
                                    'terms': {'result__outcome': ['bit']}}],
                   chart_options={'title': {'text': 'Outcomes'}})
     return chart

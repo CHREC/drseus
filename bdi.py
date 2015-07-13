@@ -9,6 +9,7 @@ import threading
 from termcolor import colored
 
 from dut import dut
+from error import DrSEUSError
 
 
 class bdi:
@@ -42,6 +43,23 @@ class bdi:
         if self.use_aux:
             self.aux.close()
 
+    def remove_prompts(self, string):
+        for prompt in self.prompts:
+            string = string.replace(prompt, '')
+        string.replace('\r', '')
+        return string
+
+    def read_until(self, string):
+        buff = self.telnet.read_until(string, timeout=30)
+        if buff[-len(string):] == string:
+            buff += self.telnet.read_until(self.prompts[0], timeout=30)
+            self.output += self.remove_prompts(buff)
+            return True
+        else:
+            print(buff)
+            self.output += self.remove_prompts(buff)
+            return False
+
     def ready(self):
         if self.telnet.expect(self.prompts, timeout=10)[0] < 0:
             return False
@@ -50,21 +68,14 @@ class bdi:
 
     def reset_dut(self):
         self.telnet.write('reset\r\n')
-        if self.telnet.expect(['- TARGET: processing target startup passed'],
-                              timeout=10) < 0:
-            return False
-        else:
-            return True
+        if not self.read_until('- TARGET: processing target startup passed'):
+            raise DrSEUSError('Error resetting DUT', self.output)
 
     def command(self, command):
         # TODO: make robust
         # self.debugger.read_very_eager()  # clear telnet buffer
         self.telnet.write(command+'\r\n')
-        index, match, text = self.telnet.expect(self.prompts, timeout=10)
-        if index < 0:
-            return False
-        else:
-            return text
+        self.read_until(self.prompts[0])
 
     def time_application(self, command, aux_command, iterations):
         start = time.time()

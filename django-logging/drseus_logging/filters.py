@@ -11,121 +11,196 @@ def fix_sort(string):
 
 
 class hw_result_filter(django_filters.FilterSet):
-    def hw_injection_choices(attribute):
+    def __init__(self, *args, **kwargs):
+        super(hw_result_filter, self).__init__(*args, **kwargs)
+
+        outcome_category_choices = self.result_choices(
+            'outcome_category')
+        self.filters['outcome_category'].extra.update(
+            choices=outcome_category_choices)
+        self.filters['outcome_category'].widget.attrs['size'] = min(
+            len(outcome_category_choices), 10)
+
+        outcome_choices = self.result_choices('outcome')
+        self.filters['outcome'].extra.update(choices=outcome_choices)
+        self.filters['outcome'].widget.attrs['size'] = min(
+            len(outcome_choices), 10)
+
+        core_choices = self.hw_injection_choices('core')
+        self.filters['hw_injection__core'].extra.update(choices=core_choices)
+        self.filters['hw_injection__core'].widget.attrs['size'] = min(
+            len(core_choices), 10)
+
+        register_choices = self.hw_injection_choices('register')
+        self.filters['hw_injection__register'].extra.update(
+            choices=register_choices)
+        self.filters['hw_injection__register'].widget.attrs['size'] = min(
+            len(register_choices), 10)
+
+        bit_choices = self.hw_injection_choices('bit')
+        self.filters['hw_injection__bit'].extra.update(choices=bit_choices)
+        self.filters['hw_injection__bit'].widget.attrs['size'] = min(
+            len(bit_choices), 10)
+
+    def hw_injection_choices(self, attribute):
         choices = []
         for item in sorted(hw_injection.objects.values(attribute).distinct()):
             choices.append((item[attribute], item[attribute]))
         return sorted(choices, key=fix_sort)
 
-    def hw_result_choices(attribute):
-        choices = []
-        for item in sorted(result.objects.values(attribute).distinct()):
-            choices.append((item[attribute], item[attribute]))
-        return sorted(choices, key=fix_sort)
-
-    injection__core = django_filters.MultipleChoiceFilter(
-        choices=hw_injection_choices('core'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(hw_injection_choices('core'))),
-            'style': 'width:100%;'
-        })
-    )
-    injection__register = django_filters.MultipleChoiceFilter(
-        choices=hw_injection_choices('register'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(hw_injection_choices('register')) if
-                        len(hw_injection_choices('register')) < 20 else '20'),
-            'style': 'width:100%;'
-        })
-    )
-    injection__bit = django_filters.MultipleChoiceFilter(
-        choices=hw_injection_choices('bit'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(hw_injection_choices('bit')) if
-                        len(hw_injection_choices('bit')) < 20 else '20'),
-            'style': 'width:100%;'
-        })
-    )
-    outcome = django_filters.MultipleChoiceFilter(
-        choices=hw_result_choices('outcome'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(hw_result_choices('outcome'))),
-            'style': 'width:100%;'
-        })
-    )
-
-    class Meta:
-        model = result
-        fields = ['injection__core', 'injection__register', 'injection__bit',
-                  'outcome']
-
-
-class simics_result_filter(django_filters.FilterSet):
-    def simics_injection_choices(attribute):
-        choices = []
-        for item in sorted(
-                simics_injection.objects.values(attribute).distinct()):
-            choices.append((item[attribute], item[attribute]))
-        return sorted(choices, key=fix_sort)
-
-    def simics_result_choices(attribute):
+    def result_choices(self, attribute):
         choices = []
         for item in sorted(result.objects.values(attribute).distinct()):
             choices.append((item[attribute], item[attribute]))
         return sorted(choices, key=fix_sort)
 
     outcome_category = django_filters.MultipleChoiceFilter(
-        choices=simics_result_choices('outcome_category'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_result_choices('outcome_category'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     outcome = django_filters.MultipleChoiceFilter(
-        choices=simics_result_choices('outcome'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_result_choices('outcome'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    hw_injection__core = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    hw_injection__register = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    hw_injection__bit = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+
+    class Meta:
+        model = result
+        fields = ['hw_injection__core', 'hw_injection__register',
+                  'hw_injection__bit', 'outcome']
+
+
+class hw_injection_filter(django_filters.FilterSet):
+    def __init__(self, *args, **kwargs):
+        super(hw_injection_filter, self).__init__(*args, **kwargs)
+
+        outcome_category_choices = self.result_choices(
+            'outcome_category')
+        self.filters['result__outcome_category'].extra.update(
+            choices=outcome_category_choices)
+        self.filters['result__outcome_category'].widget.attrs['size'] = min(
+            len(outcome_category_choices), 10)
+
+        outcome_choices = self.result_choices('outcome')
+        self.filters['result__outcome'].extra.update(choices=outcome_choices)
+        self.filters['result__outcome'].widget.attrs['size'] = min(
+            len(outcome_choices), 10)
+
+        core_choices = self.hw_injection_choices('core')
+        self.filters['core'].extra.update(choices=core_choices)
+        self.filters['core'].widget.attrs['size'] = min(len(core_choices), 10)
+
+        register_choices = self.hw_injection_choices('register')
+        self.filters['register'].extra.update(choices=register_choices)
+        self.filters['register'].widget.attrs['size'] = min(
+            len(register_choices), 10)
+
+        bit_choices = self.hw_injection_choices('bit')
+        self.filters['bit'].extra.update(choices=bit_choices)
+        self.filters['bit'].widget.attrs['size'] = min(len(bit_choices), 10)
+
+    def hw_injection_choices(self, attribute):
+        choices = []
+        for item in sorted(hw_injection.objects.values(attribute).distinct()):
+            choices.append((item[attribute], item[attribute]))
+        return sorted(choices, key=fix_sort)
+
+    def result_choices(self, attribute):
+        choices = []
+        for item in sorted(result.objects.values(attribute).distinct()):
+            choices.append((item[attribute], item[attribute]))
+        return sorted(choices, key=fix_sort)
+
+    result__outcome_category = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    result__outcome = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    core = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    register = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    bit = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+
+    class Meta:
+        model = result
+        fields = ['result__outcome_category', 'result__outcome', 'core',
+                  'register', 'bit']
+
+
+class simics_result_filter(django_filters.FilterSet):
+    def __init__(self, *args, **kwargs):
+        super(simics_result_filter, self).__init__(*args, **kwargs)
+
+        outcome_category_choices = self.result_choices(
+            'outcome_category')
+        self.filters['outcome_category'].extra.update(
+            choices=outcome_category_choices)
+        self.filters['outcome_category'].widget.attrs['size'] = min(
+            len(outcome_category_choices), 10)
+
+        outcome_choices = self.result_choices('outcome')
+        self.filters['outcome'].extra.update(choices=outcome_choices)
+        self.filters['outcome'].widget.attrs['size'] = min(
+            len(outcome_choices), 10)
+
+        target_choices = self.simics_injection_choices('target')
+        self.filters['simics_injection__target'].extra.update(
+            choices=target_choices)
+        self.filters['simics_injection__target'].widget.attrs['size'] = min(
+            len(target_choices), 10)
+
+        target_index_choices = self.simics_injection_choices('target_index')
+        self.filters['simics_injection__target_index'].extra.update(
+            choices=target_index_choices)
+        self.filters['simics_injection__target_index'].widget.attrs['size'] = \
+            min(len(target_index_choices), 10)
+
+        register_choices = self.simics_injection_choices('register')
+        self.filters['simics_injection__register'].extra.update(
+            choices=register_choices)
+        self.filters['simics_injection__register'].widget.attrs['size'] = \
+            min(len(register_choices), 10)
+
+        register_index_choices = self.simics_injection_choices('register_index')
+        self.filters['simics_injection__register_index'].extra.update(
+            choices=register_index_choices)
+        self.filters['simics_injection__register_index'].widget.attrs[
+            'size'] = min(len(register_index_choices), 10)
+
+        bit_choices = self.simics_injection_choices('bit')
+        self.filters['simics_injection__bit'].extra.update(choices=bit_choices)
+        self.filters['simics_injection__bit'].widget.attrs['size'] = \
+            min(len(bit_choices), 10)
+
+    def simics_injection_choices(self, attribute):
+        choices = []
+        for item in sorted(
+                simics_injection.objects.values(attribute).distinct()):
+            choices.append((item[attribute], item[attribute]))
+        return sorted(choices, key=fix_sort)
+
+    def result_choices(self, attribute):
+        choices = []
+        for item in sorted(result.objects.values(attribute).distinct()):
+            choices.append((item[attribute], item[attribute]))
+        return sorted(choices, key=fix_sort)
+
+    outcome_category = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    outcome = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     simics_injection__target = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('target'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('target'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     simics_injection__target_index = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('target_index'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('target_index'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     simics_injection__register = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('register'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('register'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     simics_injection__register_index = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('register_index'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('register_index')) if
-                        len(simics_injection_choices('register_index')) < 20
-                        else '20'),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     simics_injection__bit = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('bit'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('bit')) if
-                        len(simics_injection_choices('bit')) < 20 else '20'),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
 
     class Meta:
         model = result
@@ -135,71 +210,73 @@ class simics_result_filter(django_filters.FilterSet):
 
 
 class simics_injection_filter(django_filters.FilterSet):
-    def simics_injection_choices(attribute):
+    def __init__(self, *args, **kwargs):
+        super(simics_injection_filter, self).__init__(*args, **kwargs)
+
+        outcome_category_choices = self.result_choices(
+            'outcome_category')
+        self.filters['result__outcome_category'].extra.update(
+            choices=outcome_category_choices)
+        self.filters['result__outcome_category'].widget.attrs['size'] = min(
+            len(outcome_category_choices), 10)
+
+        outcome_choices = self.result_choices('outcome')
+        self.filters['result__outcome'].extra.update(choices=outcome_choices)
+        self.filters['result__outcome'].widget.attrs['size'] = min(
+            len(outcome_choices), 10)
+
+        target_choices = self.simics_injection_choices('target')
+        self.filters['target'].extra.update(choices=target_choices)
+        self.filters['target'].widget.attrs['size'] = min(
+            len(target_choices), 10)
+
+        target_index_choices = self.simics_injection_choices('target_index')
+        self.filters['target_index'].extra.update(choices=target_index_choices)
+        self.filters['target_index'].widget.attrs['size'] = min(
+            len(target_index_choices), 10)
+
+        register_choices = self.simics_injection_choices('register')
+        self.filters['register'].extra.update(choices=register_choices)
+        self.filters['register'].widget.attrs['size'] = min(
+            len(register_choices), 10)
+
+        register_index_choices = self.simics_injection_choices('register_index')
+        self.filters['register_index'].extra.update(
+            choices=register_index_choices)
+        self.filters['register_index'].widget.attrs['size'] = min(
+            len(register_index_choices), 10)
+
+        bit_choices = self.simics_injection_choices('bit')
+        self.filters['bit'].extra.update(choices=bit_choices)
+        self.filters['bit'].widget.attrs['size'] = min(len(bit_choices), 10)
+
+    def simics_injection_choices(self, attribute):
         choices = []
         for item in sorted(
                 simics_injection.objects.values(attribute).distinct()):
             choices.append((item[attribute], item[attribute]))
         return sorted(choices, key=fix_sort)
 
-    def simics_result_choices(attribute):
+    def result_choices(self, attribute):
         choices = []
         for item in sorted(result.objects.values(attribute).distinct()):
             choices.append((item[attribute], item[attribute]))
         return sorted(choices, key=fix_sort)
 
     result__outcome_category = django_filters.MultipleChoiceFilter(
-        choices=simics_result_choices('outcome_category'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_result_choices('outcome_category'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     result__outcome = django_filters.MultipleChoiceFilter(
-        choices=simics_result_choices('outcome'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_result_choices('outcome'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     target = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('target'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('target'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     target_index = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('target_index'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('target_index'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     register = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('register'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('register'))),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     register_index = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('register_index'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('register_index')) if
-                        len(simics_injection_choices('register_index')) < 20
-                        else '20'),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     bit = django_filters.MultipleChoiceFilter(
-        choices=simics_injection_choices('bit'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_injection_choices('bit')) if
-                        len(simics_injection_choices('bit')) < 20 else '20'),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
 
     class Meta:
         model = simics_injection
@@ -208,32 +285,32 @@ class simics_injection_filter(django_filters.FilterSet):
 
 
 class simics_register_diff_filter(django_filters.FilterSet):
-    def simics_register_diff_choices(attribute):
+    def __init__(self, *args, **kwargs):
+        super(simics_register_diff_filter, self).__init__(*args, **kwargs)
+        self.queryset = kwargs['queryset']
+        checkpoint_number_choices = self.simics_register_diff_choices(
+            'checkpoint_number')
+        self.filters['checkpoint_number'].extra.update(
+            choices=checkpoint_number_choices)
+        self.filters['checkpoint_number'].widget.attrs['size'] = min(
+            len(checkpoint_number_choices), 10)
+        register_choices = self.simics_register_diff_choices('register')
+        self.filters['register'].extra.update(choices=register_choices)
+        self.filters['register'].widget.attrs['size'] = min(
+            len(register_choices), 10)
+
+    def simics_register_diff_choices(self, attribute):
         choices = []
         for item in sorted(
-                simics_register_diff.objects.values(attribute).distinct()):
+                self.queryset.values(attribute).distinct()):
             choices.append((item[attribute], item[attribute]))
         return sorted(choices, key=fix_sort)
 
     checkpoint_number = django_filters.MultipleChoiceFilter(
-        choices=simics_register_diff_choices('checkpoint_number'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_register_diff_choices(
-                            'checkpoint_number')) if
-                        len(simics_register_diff_choices(
-                            'checkpoint_number')) < 30 else '30'),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+
     register = django_filters.MultipleChoiceFilter(
-        choices=simics_register_diff_choices('register'),
-        widget=forms.SelectMultiple(attrs={
-            'size': str(len(simics_register_diff_choices('register')) if
-                        len(simics_register_diff_choices('register')) < 30
-                        else '30'),
-            'style': 'width:100%;'
-        })
-    )
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
 
     class Meta:
         model = simics_register_diff

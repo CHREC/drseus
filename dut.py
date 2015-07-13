@@ -106,23 +106,18 @@ class dut:
                 break
         if self.debug:
             print()
-        error = False
         if 'drseus_sighandler:' in buff:
-            for line in buff:
+            signal = 'Signal received'
+            for line in buff.split('\n'):
                 if 'drseus_sighandler:' in line:
-                    error_message = line.replace('drseus_sighandler:',
-                                                 '').strip()
-                    error = True
-
+                    signal = line.replace('drseus_sighandler:', '').strip()
+                    break
+            raise DrSEUSError('Signal '+signal, buff)
         else:
             for message in self.error_messages:
                 if message in buff:
-                    error_message = message
-                    error = True
-                    break
-        if error:
-            raise DrSEUSError(error_message, buff)
-        elif hanging:
+                    raise DrSEUSError(message, buff)
+        if hanging:
             raise DrSEUSError(DrSEUSError.dut_hanging, buff)
         else:
             return buff

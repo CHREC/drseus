@@ -3,8 +3,9 @@
 {% block body %}
 <div class="source" align="center">
     <h2>
-        Iteration {{ result.iteration }}
+        {{ title }}
     </h2>
+    {% render_table result_table %}
     <h3>
         Injections
     </h3>
@@ -13,24 +14,6 @@
     </div>
     <table>
         <tr>
-            <td valign="top">
-                <div class="section">
-                    <h3 align="center">
-                        Register Diffs
-                    </h3>
-                    <div align="center">
-                        {% render_table register_table %}
-                    </div>
-                </div>
-                <div class="section">
-                    <h3 align="center">
-                        Memory Diffs
-                    </h3>
-                    <div align="center">
-                        {% render_table memory_table %}
-                    </div>
-                </div>
-            </td>
             <td valign="top">
                 <div class="section">
                     <h3 align="center">
@@ -57,6 +40,24 @@
                     </h3>
                     {{ result.aux_paramiko_output|linebreaksbr }}
                     {% endif %}
+                </div>
+            </td>
+            <td valign="top">
+                <div class="section">
+                    <h3 align="center">
+                        Register Diffs
+                    </h3>
+                    <div align="center">
+                        {% render_table register_table %}
+                    </div>
+                </div>
+                <div class="section">
+                    <h3 align="center">
+                        Memory Diffs
+                    </h3>
+                    <div align="center">
+                        {% render_table memory_table %}
+                    </div>
                 </div>
             </td>
         </tr>
