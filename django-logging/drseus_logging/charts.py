@@ -11,8 +11,8 @@ def fix_sort(string):
 def outcome_chart(queryset):
     # using bit in annotate since it is a valid field for both injection models
     # otherwise chartit will fail model validation (used in terms)
-    queryset = queryset.values('result__outcome').filter(
-        injection_number=0).annotate(bit=Count('result__outcome'))
+    queryset = queryset.values('result__outcome').annotate(
+        bit=Count('result__outcome'))
     datasource = DataPool(series=[{'options': {'source': queryset},
                                    'terms': ['result__outcome', 'bit']}])
     chart = Chart(datasource=datasource,

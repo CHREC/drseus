@@ -17,12 +17,14 @@ class bdi:
     def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
                  aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug,
                  timeout):
+        self.timeout = 30
         self.debug = debug
         self.use_aux = use_aux
         # TODO: populate output
         self.output = ''
         try:
-            self.telnet = telnetlib.Telnet(ip_address)
+            self.telnet = telnetlib.Telnet(ip_address, timeout=self.timeout)
+            self.command('', error_message='Debugger not ready')
         except:
             print('could not connect to debugger')
             # TODO: killall telnet
@@ -32,50 +34,52 @@ class bdi:
         if self.use_aux:
             self.aux = dut(aux_ip_address, rsakey, aux_serial_port,
                            'root@p2020rdb:~#', debug, timeout, color='cyan')
-        if not self.ready():
-            print('debugger not ready')
-            sys.exit()
 
     def close(self):
-        self.telnet.write('quit\r\n')
+        self.telnet.write('quit\r')
         self.telnet.close()
         self.dut.close()
         if self.use_aux:
             self.aux.close()
 
-    def remove_prompts(self, string):
-        for prompt in self.prompts:
-            string = string.replace(prompt, '')
-        string.replace('\r', '')
-        return string
-
-    def read_until(self, string):
-        buff = self.telnet.read_until(string, timeout=30)
-        if buff[-len(string):] == string:
-            buff += self.telnet.read_until(self.prompts[0], timeout=30)
-            self.output += self.remove_prompts(buff)
-            return True
-        else:
-            print(buff)
-            self.output += self.remove_prompts(buff)
-            return False
-
-    def ready(self):
-        if self.telnet.expect(self.prompts, timeout=10)[0] < 0:
-            return False
-        else:
-            return True
-
     def reset_dut(self):
-        self.telnet.write('reset\r\n')
-        if not self.read_until('- TARGET: processing target startup passed'):
-            raise DrSEUSError('Error resetting DUT', self.output)
+        self.command('reset', ['- TARGET: processing target startup passed'],
+                     'Error resetting DUT')
 
-    def command(self, command):
-        # TODO: make robust
-        # self.debugger.read_very_eager()  # clear telnet buffer
-        self.telnet.write(command+'\r\n')
-        self.read_until(self.prompts[0])
+    def command(self, command, expected_output=[], error_message=None):
+        return_buffer = ''
+        if error_message is None:
+            error_message = command
+        buff = self.telnet.read_very_lazy()
+        self.output += buff
+        if self.debug:
+            print(colored(buff, 'yellow'))
+        if command:
+            command = command+'\r'
+            # for i in xrange(2):
+            self.telnet.write(command)
+            self.telnet.write('\r')
+            self.output += command
+            if self.debug:
+                print(colored(command, 'yellow'))
+        for i in xrange(len(expected_output)):
+            index, match, buff = self.telnet.expect(expected_output,
+                                                    timeout=self.timeout)
+            self.output += buff
+            return_buffer += buff
+            print (colored(buff, 'yellow'), end='')
+            if index < 0:
+                raise DrSEUSError(error_message)
+        else:
+            print()
+        index, match, buff = self.telnet.expect(self.prompts,
+                                                timeout=self.timeout)
+        self.output += buff
+        return_buffer += buff
+        print(colored(buff, 'yellow'))
+        if index < 0:
+            raise DrSEUSError(error_message)
+        return return_buffer
 
     def time_application(self, command, aux_command, iterations):
         start = time.time()
@@ -102,9 +106,7 @@ class bdi:
             else:
                 self.continue_dut()
             time.sleep(injection_time)
-            if not self.halt_dut():
-                print('error halting dut')
-                sys.exit()
+            self.halt_dut()
             regs = self.get_dut_regs(selected_targets)
             core = random.randrange(2)
             register = random.choice(regs[core].keys())
@@ -118,8 +120,9 @@ class bdi:
                 print(colored('bit: '+str(bit), 'magenta'))
                 print(colored('gold value: '+gold_value, 'magenta'))
                 print(colored('injected value: '+injected_value, 'magenta'))
-            self.command('select '+str(core))
+            self.select_core(core)
             self.command('rm '+register+' '+injected_value)
+            self.command('rd '+register)
             sql_db = sqlite3.connect('campaign-data/db.sqlite3')
             sql = sql_db.cursor()
             sql.execute(
@@ -147,31 +150,19 @@ class bdi_arm(bdi):
                      debug, timeout)
 
     def halt_dut(self):
-        self.telnet.write('halt 3\r\n')
-        for i in xrange(2):
-            if self.telnet.expect(['- TARGET: core #0 has entered debug mode',
-                                   '- TARGET: core #1 has entered debug mode'],
-                                  timeout=10)[0] < 0:
-                return False
-        return True
+        self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
+                                '- TARGET: core #1 has entered debug mode'],
+                     'Error halting DUT')
 
     def continue_dut(self):
-        self.telnet.write('cont 3\r\n')
-        # TODO: check for prompt
+        self.command('cont 3', error_message='Error continuing DUT')
 
     def select_core(self, core):
         # TODO: check if cores are running (not in debug mode)
-        self.telnet.write('select '+str(core)+'\r\n')
-        for i in xrange(6):
-            if self.telnet.expect(['Core number', 'Core state',
-                                   'Debug entry cause', 'Current PC',
-                                   'Current CPSR', 'Current SPSR'],
-                                  timeout=10)[0] < 0:
-                return False
-        # TODO: replace this with regular expressions for
-        #       getting hexadecimals for above categories
-        self.telnet.read_very_eager()
-        return True
+        self.command('select '+str(core), ['Core number', 'Core state',
+                                           'Debug entry cause', 'Current PC',
+                                           'Current CPSR', 'Current SPSR'],
+                     'Error selecting core')
 
     def get_dut_regs(self, selected_targets):
         # TODO: get GPRs
@@ -180,7 +171,7 @@ class bdi_arm(bdi):
         for core in xrange(2):
             self.select_core(core)
             debug_reglist = self.command('rdump')
-            for line in debug_reglist.split('\r\n')[:-1]:
+            for line in debug_reglist.split('\r')[:-1]:
                 line = line.split(': ')
                 register = line[0].strip()
                 if selected_targets is None:
@@ -205,42 +196,38 @@ class bdi_p2020(bdi):
                      debug, timeout)
 
     def halt_dut(self):
-        self.telnet.write('halt 0 1\r\n')
-        for i in xrange(2):
-            if self.telnet.expect(['- TARGET: core #0 has entered debug mode',
-                                   '- TARGET: core #1 has entered debug mode'],
-                                  timeout=10)[0] < 0:
-                return False
-        return True
+        self.command('halt 0; halt 1', ['Target CPU', 'Core state',
+                                        'Debug entry cause', 'Current PC',
+                                        'Current CR', 'Current MSR',
+                                        'Current LR']*2,
+                     'Error halting DUT')
 
     def continue_dut(self):
-        self.telnet.write('go 0 1\r\n')
-        # TODO: check for prompt
+        self.command('go 0 1', error_message='Error continuing DUT')
 
     def select_core(self, core):
         # TODO: check if cores are running (not in debug mode)
-        self.telnet.write('select '+str(core)+'\r\n')
-        for i in xrange(8):
-            if self.telnet.expect(['Target CPU', 'Core state',
-                                   'Debug entry cause', 'Current PC',
-                                   'Current CR', 'Current MSR', 'Current LR',
-                                   'Current CCSRBAR'], timeout=10)[0] < 0:
-                return False
-        # TODO: replace this with regular expressions for
-        #       getting hexadecimals for above categories
-        self.telnet.read_very_eager()
-        return True
+        self.command('select '+str(core), ['Target CPU', 'Core state',
+                                           'Debug entry cause', 'Current PC',
+                                           'Current CR', 'Current MSR',
+                                           'Current LR', 'Current CCSRBAR'],
+                     'Error selecting core')
 
     def get_dut_regs(self, selected_targets):
         regs = [{}, {}]
         for core in xrange(2):
             self.select_core(core)
-            debug_reglist = self.command('rdump')
-            for line in debug_reglist.split('\r\n')[:-1]:
+            debug_reglist = self.command('rdump',
+                                         error_message='Error getting register '
+                                                       'values')
+            for line in debug_reglist.split('\r')[:-2]:
                 line = line.split(': ')
                 register = line[0].strip()
                 if selected_targets is None:
-                    value = line[1].split(' ')[0].strip()
+                    try:
+                        value = line[1].split(' ')[0].strip()
+                    except:
+                        print(line)
                     regs[core][register] = value
                 else:
                     for target in selected_targets:

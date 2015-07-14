@@ -120,7 +120,6 @@ class simics:
             if self.use_aux:
                 self.dut.read_until()
                 aux_process.join()
-                self.aux.prompt = 'DrSEUS# '
         else:
             self.dut.prompt = 'DrSEUS# '
             if self.use_aux:
@@ -196,7 +195,7 @@ class simics:
                 break
         for message in self.error_messages:
             if message in buff:
-                raise DrSEUSError(message, buff)
+                raise DrSEUSError(message)
         return buff
 
     def command(self, command):

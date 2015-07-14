@@ -9,9 +9,7 @@
     <h3>
         Injections
     </h3>
-    <div align="center">
-        {% render_table injection_table %}
-    </div>
+    {% render_table injection_table %}
     <table>
         <tr>
             <td valign="top">
@@ -42,22 +40,18 @@
                     {% endif %}
                 </div>
             </td>
-            <td valign="top">
+            <td valign="top" align="center">
                 <div class="section">
-                    <h3 align="center">
+                    <h3>
                         Register Diffs
                     </h3>
-                    <div align="center">
-                        {% render_table register_table %}
-                    </div>
+                    {% render_table register_table %}
                 </div>
                 <div class="section">
-                    <h3 align="center">
+                    <h3>
                         Memory Diffs
                     </h3>
-                    <div align="center">
-                        {% render_table memory_table %}
-                    </div>
+                    {% render_table memory_table %}
                 </div>
             </td>
         </tr>

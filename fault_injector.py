@@ -199,6 +199,8 @@ class fault_injector:
                 self.debugger.dut.get_file(output_file, output_location)
         # except KeyboardInterrupt:
         #     raise KeyboardInterrupt
+        except DrSEUSError as error:
+            raise DrSEUSError(error.type)
         except:
             if not os.listdir(result_folder):
                 os.rmdir(result_folder)
@@ -260,8 +262,12 @@ class fault_injector:
                     data_diff = self.check_output(iteration, output_file,
                                                   use_aux_output)
                 except DrSEUSError as error:
-                    outcome = error.type
-                    outcome_category = 'SCP error'
+                    if error.type == DrSEUSError.missing_output:
+                        outcome = error.type
+                        outcome_category = 'SCP error'
+                    else:
+                        outcome = error.type
+                        outcome_category = 'Execution error'
             if not outcome:
                 if detected_errors > 0:
                     outcome = 'Detected data error'

@@ -13,6 +13,11 @@ import multiprocessing
 from fault_injector import fault_injector
 
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
+# TODO: implement persistent fault detection
+# TODO: add functionality for rerunning app in latent faults
+# TODO: insert placeholder result into database while injections are performed
+# TODO: add timestamps
+# TODO: add section links to logs
 
 
 def delete_results():
@@ -68,7 +73,8 @@ def setup_campaign(application, options):
         os.system('./setup_simics.sh')
     if os.path.exists('campaign-data'):
         campaign_files = os.listdir('campaign-data')
-        campaign_files.remove('results')
+        if 'results' in campaign_files:
+            campaign_files.remove('results')
         if campaign_files:
             print('previous campaign data exists, continuing will delete it')
             if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
@@ -218,8 +224,8 @@ parser.add_option('-D', '--debug', action='store_false', dest='debug',
                   default=True,
                   help='display device output')
 parser.add_option('-T', '--timeout', action='store', type='int',
-                  dest='seconds', default=120,
-                  help='device read timeout in seconds [default=120]')
+                  dest='seconds', default=300,
+                  help='device read timeout in seconds [default=300]')
 
 mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes', 'Not specifying one '
                                   'of these will create a new campaign')

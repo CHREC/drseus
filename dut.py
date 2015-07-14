@@ -11,7 +11,7 @@ from error import DrSEUSError
 
 
 class dut:
-    error_messages = ['panic', 'Oops', 'Segmentation fault',
+    error_messages = ['Kernel panic', 'panic', 'Oops', 'Segmentation fault',
                       'Illegal instruction']
 
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
@@ -82,7 +82,7 @@ class dut:
                 print(colored(char, self.color), end='')
             buff += char
             if not char:
-                raise DrSEUSError(DrSEUSError.dut_hanging, buff)
+                raise DrSEUSError(DrSEUSError.dut_hanging)
             elif buff[-len(self.prompt):] == self.prompt:
                 return True
             elif buff[-len('login: '):] == 'login: ':
@@ -112,13 +112,13 @@ class dut:
                 if 'drseus_sighandler:' in line:
                     signal = line.replace('drseus_sighandler:', '').strip()
                     break
-            raise DrSEUSError('Signal '+signal, buff)
+            raise DrSEUSError('Signal '+signal)
         else:
             for message in self.error_messages:
                 if message in buff:
-                    raise DrSEUSError(message, buff)
+                    raise DrSEUSError(message)
         if hanging:
-            raise DrSEUSError(DrSEUSError.dut_hanging, buff)
+            raise DrSEUSError(DrSEUSError.dut_hanging)
         else:
             return buff
 
@@ -137,7 +137,7 @@ class dut:
                     print(colored(char, self.color), end='')
                 buff += char
                 if not char:
-                    raise DrSEUSError(DrSEUSError.dut_hanging, buff)
+                    raise DrSEUSError(DrSEUSError.dut_hanging)
                 elif buff[-len(self.prompt):] == self.prompt:
                     break
                 elif buff[-len('Password: '):] == 'Password: ':

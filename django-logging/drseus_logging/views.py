@@ -101,7 +101,8 @@ def result_page(request, iteration, title, sidebar_items):
         config = RequestConfig(request, paginate={'per_page': 50})
         config.configure(injection_table)
         return render(request, 'hw_injection.html',
-                      {'campaign_data': campaign_data_info, 'result': results,
+                      {'campaign_data': campaign_data_info,
+                       'result_table': table, 'result': results,
                        'injection_table': injection_table, 'title': title,
                        'sidebar_items': sidebar_items})
 
@@ -117,12 +118,12 @@ def campaign_info_page(request, title, sidebar_items):
 def charts_page(request, title, sidebar_items):
     campaign_data_info = campaign_data.objects.get()
     if campaign_data_info.use_simics:
-        queryset = simics_injection.objects.all()
+        queryset = simics_injection.objects.order_by('result__outcome')
         fltr = simics_injection_filter(request.GET, queryset=queryset)
     else:
-        queryset = hw_injection.objects.all()
+        queryset = hw_injection.objects.order_by('result__outcome')
         fltr = hw_injection_filter(request.GET, queryset=queryset)
-    chart_list = (outcome_chart(fltr.qs),
+    chart_list = (outcome_chart(fltr.qs.filter(injection_number=0)),
                   register_chart(campaign_data_info, fltr.qs),
                   bit_chart(fltr.qs),
                   time_chart(campaign_data_info, fltr.qs))
