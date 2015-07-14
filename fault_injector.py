@@ -187,6 +187,7 @@ class fault_injector:
             return 0
 
     def check_output(self, number, output_file, use_aux_output):
+        missing_output = False
         data_diff = -1.0
         os.mkdir('campaign-data/results/'+str(number))
         result_folder = 'campaign-data/results/'+str(number)
@@ -194,17 +195,15 @@ class fault_injector:
         gold_location = 'campaign-data/gold_'+output_file
         try:
             if use_aux_output:
-                self.debugger.aux.get_file(output_file, output_location)
+                self.debugger.aux.get_file(output_file, output_location,
+                                           delete_file=False)
             else:
-                self.debugger.dut.get_file(output_file, output_location)
-        # except KeyboardInterrupt:
-        #     raise KeyboardInterrupt
-        except DrSEUSError as error:
-            raise DrSEUSError(error.type)
+                self.debugger.dut.get_file(output_file, output_location,
+                                           delete_file=False)
         except:
             if not os.listdir(result_folder):
                 os.rmdir(result_folder)
-            raise DrSEUSError(DrSEUSError.missing_output)
+            missing_output = True
         else:
             with open(gold_location, 'r') as solution:
                 solutionContents = solution.read()
@@ -216,6 +215,16 @@ class fault_injector:
                 os.remove(output_location)
                 if not os.listdir(result_folder):
                     os.rmdir(result_folder)
+        try:
+            if use_aux_output:
+                self.debugger.aux.command('rm '+output_file)
+            else:
+                self.debugger.dut.command('rm '+output_file)
+        except DrSEUSError as error:
+            raise DrSEUSError(error.type)
+        else:
+            if missing_output:
+                raise DrSEUSError(DrSEUSError.missing_output)
         return data_diff
 
     def inject_and_monitor(self, iteration, num_injections,
@@ -267,7 +276,7 @@ class fault_injector:
                         outcome_category = 'SCP error'
                     else:
                         outcome = error.type
-                        outcome_category = 'Execution error'
+                        outcome_category = 'Post execution error'
             if not outcome:
                 if detected_errors > 0:
                     outcome = 'Detected data error'
