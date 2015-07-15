@@ -1,8 +1,16 @@
 {% extends "base.html" %}
 
 {%block chart_loader_header %}
-        {% load chartit %}
-        {{ chart_list|load_charts:"outcome_chart, register_chart, bit_chart, time_chart" }}
+        <script type="text/javascript">
+            {% autoescape off %}
+            chart_array = {{ chart_array }}
+            $(document).ready(function() {
+                $.each(chart_array, function(index, chartoptions) {
+                    chart = new Highcharts.Chart(chartoptions);
+                });
+            });
+            {% endautoescape %}
+        </script>
 {% endblock %}
 
 {% block body %}

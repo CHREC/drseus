@@ -12,7 +12,7 @@ from error import DrSEUSError
 
 class dut:
     error_messages = ['Kernel panic', 'panic', 'Oops', 'Segmentation fault',
-                      'Illegal instruction']
+                      'Illegal instruction', 'Call Trace:']
 
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
                  baud_rate=115200, ssh_port=22, color='green'):
@@ -93,6 +93,7 @@ class dut:
             string = self.prompt
         buff = ''
         hanging = False
+        errors = 0
         while True:
             char = self.serial.read()
             if not char:
@@ -103,6 +104,11 @@ class dut:
                 print(colored(char, self.color), end='')
             buff += char
             if buff[-len(string):] == string:
+                break
+            for message in self.error_messages:
+                if buff[-len(message):] == message:
+                    errors += 1
+            if errors > 5:
                 break
         if self.debug:
             print()
