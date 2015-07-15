@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 from __future__ import print_function
-import sys
 import optparse
 import shutil
 import os
@@ -14,10 +13,12 @@ from fault_injector import fault_injector
 
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: implement persistent fault detection
-# TODO: add functionality for rerunning app in latent faults
+# TODO: add option for number of times to rerun app for latent fault case
 # TODO: insert placeholder result into database while injections are performed
 # TODO: add timestamps
 # TODO: add section links to logs
+# TODO: add Manager to models to result to get result and injection counts
+# TODO: reimplement checkpoing regeneration with multiple injections
 
 
 def delete_results():
@@ -37,10 +38,9 @@ def delete_results():
     if os.path.exists('simics-workspace/injected-checkpoints'):
         shutil.rmtree('simics-workspace/injected-checkpoints')
         print('deleted injected checkpoints')
-    sys.exit()
 
 
-def setup_campaign(application, options):
+def new_campaign(application, options):
     if options.architecture == 'p2020':
         dut_ip_address = '10.42.0.21'
         dut_serial_port = '/dev/ttyUSB1'
@@ -58,8 +58,7 @@ def setup_campaign(application, options):
         else:
             aux_application = application
     else:
-        print('invalid architecture:', options.architecture)
-        sys.exit()
+        raise Exception('invalid architecture: '+options.architecture)
     if options.directory == 'fiapps':
         if not os.path.exists('fiapps'):
             os.system('./setup_apps.sh')
@@ -67,8 +66,7 @@ def setup_campaign(application, options):
             os.system('cd fiapps/; make '+application)
     else:
         if not os.path.exits(options.directory):
-            print('cannot find', options.directory)
-            sys.exit()
+            raise Exception('cannot find directory '+options.directory)
     if options.use_simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics.sh')
     if os.path.exists('campaign-data'):
@@ -78,7 +76,7 @@ def setup_campaign(application, options):
         if campaign_files:
             print('previous campaign data exists, continuing will delete it')
             if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
-                sys.exit()
+                return
             else:
                 shutil.rmtree('campaign-data')
                 print('deleted campaign data')
@@ -104,8 +102,7 @@ def setup_campaign(application, options):
 
 def get_campaign_data():
     if not os.path.exists('campaign-data/db.sqlite3'):
-        print('could not find campaign data')
-        sys.exit()
+        raise Exception('could not find campaign data')
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
@@ -117,8 +114,7 @@ def get_campaign_data():
 
 def get_next_iteration():
     if not os.path.exists('campaign-data/db.sqlite3'):
-        print('could not find campaign data')
-        sys.exit()
+        raise Exception('could not find campaign data')
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
@@ -135,8 +131,7 @@ def get_next_iteration():
 
 # def get_injection_data(campaign_data, injection_number):
 #     if not os.path.exists('campaign-data/db.sqlite3'):
-#         print('could not find campaign data')
-#         sys.exit()
+#         raise Exception('could not find campaign data')
 #     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
 #     sql_db.row_factory = sqlite3.Row
 #     sql = sql_db.cursor()
@@ -153,15 +148,12 @@ def get_next_iteration():
 
 
 def load_campaign(campaign_data, options):
-    if options.architecture == 'p2020':
+    if campaign_data['architecture'] == 'p2020':
         dut_ip_address = '10.42.0.21'
         dut_serial_port = '/dev/ttyUSB1'
-    elif options.architecture == 'a9':
+    elif campaign_data['architecture'] == 'a9':
         dut_ip_address = '10.42.0.30'
         dut_serial_port = '/dev/ttyACM0'
-    else:
-        print('invalid architecture:', options.architecture)
-        sys.exit()
     drseus = fault_injector(dut_ip_address, '10.42.0.20', dut_serial_port,
                             '/dev/ttyUSB0', '10.42.0.50',
                             campaign_data['architecture'],
@@ -182,16 +174,11 @@ def perform_injections(campaign_data, iteration_counter, options):
     else:
         selected_targets = None
     # try:
-    for i in xrange(options.num_iterations):
-        with iteration_counter.get_lock():
-            iteration = iteration_counter.value
-            iteration_counter.value += 1
-        drseus.inject_and_monitor(iteration, options.num_injections,
-                                  selected_targets,
-                                  campaign_data['output_file'],
-                                  campaign_data['use_aux_output'],
-                                  options.compare_all)
-    drseus.exit()
+    drseus.inject_and_monitor(iteration_counter, options.num_iterations,
+                              options.num_injections, selected_targets,
+                              campaign_data['output_file'],
+                              campaign_data['use_aux_output'],
+                              options.compare_all)
     # except KeyboardInterrupt:
     #     shutil.rmtree('campaign-data/results/'+str(iteration))
     #     if drseus.simics:
@@ -202,7 +189,7 @@ def perform_injections(campaign_data, iteration_counter, options):
     #             pass
     #     else:
     #         drseus.debugger.continue_dut()
-    #     drseus.exit()
+    #     drseus.close()
 
 
 def view_logs():
@@ -216,7 +203,7 @@ def view_logs():
     try:
         os.killpg(os.getpgid(server.pid), signal.SIGINT)
     except KeyboardInterrupt:
-        sys.exit()
+        pass
 
 parser = optparse.OptionParser('drseus.py {application} {options}')
 
@@ -362,13 +349,13 @@ elif options.inject:
                                                     options))
             processes.append(process)
             process.start()
-        # try:
-        for process in processes:
-            process.join()
-        # except KeyboardInterrupt:
-        #     for process in processes:
-        #         process.terminate()
-        #         process.join()
+        try:
+            for process in processes:
+                process.join()
+        except KeyboardInterrupt:
+            for process in processes:
+                process.terminate()
+                process.join()
     else:
         perform_injections(campaign_data, iteration_counter, options)
 elif options.supervise:
@@ -378,12 +365,11 @@ elif options.supervise:
     drseus.supervise(iteration, options.target_seconds,
                      campaign_data['output_file'],
                      campaign_data['use_aux_output'])
-    drseus.exit()
 # elif options.injection >= 0:
 #     campaign_data = get_campaign_data()
 #     if not campaign_data['use_simics']:
 #         print('This feature is only available for Simics campaigns')
-#         sys.exit()
+#         return -1
 #     drseus = load_campaign(campaign_data, options)
 #     injection_data = get_injection_data(campaign_data,
 #                                         options.injection)
@@ -394,5 +380,5 @@ elif options.supervise:
 #         os.rmdir('simics-workspace/temp')
 else:
     if len(args) < 1:
-        parser.error('please specify an application')
-    setup_campaign(args[0], options)
+        parser.error('please specify a target application')
+    new_campaign(args[0], options)

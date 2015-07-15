@@ -1,5 +1,3 @@
-# TODO: add Manager to result to get result counts
-
 from django.db import models
 
 

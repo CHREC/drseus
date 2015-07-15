@@ -117,8 +117,8 @@ class simics:
             self.dut.do_login(change_prompt=True)
             self.dut.command('ifconfig eth0 10.10.0.100 '
                              'netmask 255.255.255.0 up')
+            self.dut.read_until()
             if self.use_aux:
-                self.dut.read_until()
                 aux_process.join()
         else:
             self.dut.prompt = 'DrSEUS# '
