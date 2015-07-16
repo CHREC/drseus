@@ -104,7 +104,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
             config_object = ('DUT_'+board+targets[target]['OBJECT'] +
                              '['+target_index+']')
         else:
-            target_index = 'N/A'
+            target_index = None
             config_object = 'DUT_'+board+targets[target]['OBJECT']
         injection_data['target_index'] = target_index
         config_type = targets[target]['TYPE']
@@ -118,12 +118,12 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
             injection_data['register_index'] = register_index
         else:
             register_index = None
-            injection_data['register_index'] = 'N/A'
+            injection_data['register_index'] = None
         # choose bit_to_inject and TLB field_to_inject
         if ('is_tlb' in targets[target]['registers'][register] and
                 targets[target]['registers'][register]['is_tlb']):
             fields = targets[target]['registers'][register]['fields']
-            field_to_inject = 'N/A'
+            field_to_inject = None
             fields_list = []
             total_bits = 0
             for field in fields:
@@ -191,16 +191,14 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                                     'Error finding register field name')
                 injection_data['field'] = field_to_inject
             else:
-                injection_data['field'] = 'N/A'
+                injection_data['field'] = None
         injection_data['bit'] = bit_to_inject
     else:
         # use previous injection data
         config_object = previous_injection_data['config_object']
         config_type = previous_injection_data['config_type']
         register_index = previous_injection_data['register_index']
-        if register_index == 'N/A':
-            register_index = None
-        else:
+        if register_index is not None:
             register_index = [int(index) for index in register_index.split(':')]
         injection_data = {}
         injected_value = previous_injection_data['injected_value']
@@ -413,18 +411,18 @@ def inject_checkpoint(iteration, injection_number, checkpoint_number,
     # log injection data
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql = sql_db.cursor()
-    if injection_data['register_index'] != 'N/A':
+    if injection_data['register_index'] is not None:
         register_index = ''
         for index in injection_data['register_index']:
-            register_index += str(index).zfill(3)+':'
+            register_index += str(index)+':'
         register_index = register_index[:-1]
     else:
         register_index = injection_data['register_index']
     sql.execute(
-        'INSERT INTO drseus_logging_simics_injection '
-        '(result_id,injection_number,register,bit,gold_value,'
-        'injected_value,checkpoint_number,target_index,target,config_object,'
-        'config_type,register_index,field) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        'INSERT INTO drseus_logging_injection (result_id,injection_number,'
+        'register,bit,gold_value,injected_value,checkpoint_number,target_index,'
+        'target,config_object,config_type,register_index,field) VALUES '
+        '(?,?,?,?,?,?,?,?,?,?,?,?,?)',
         (
             iteration, injection_number, injection_data['register'],
             injection_data['bit'], injection_data['gold_value'],

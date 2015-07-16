@@ -7,143 +7,301 @@ def fix_sort(string):
                     text in re.split('([0-9]+)', str(string))])
 
 
+def fix_reg_sort(register):
+    return fix_sort(register[0]+register[1])
+
+
+def outcome_category_chart(queryset):
+    outcome_categories = list(queryset.filter(injection_number=0).values_list(
+        'result__outcome_category').annotate(
+        count=Count('result__outcome_category')))
+    chart = {
+        'chart': {
+            'renderTo': 'outcome_category_chart',
+            'type': 'pie'
+        },
+        'exporting': {
+            'filename': 'DrSEUS Outcome Categories',
+            'scale': 3,
+            'sourceHeight': 480,
+            'sourceWidth': 640
+        },
+        'plotOptions': {
+            'pie': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                }
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'outcome_category_chart_click'
+                    }
+                }
+            }
+        },
+        'series': [
+            {
+                'data': outcome_categories,
+                'dataLabels': {
+                    'formatter': 'outcome_category_percentage_formatter'
+                },
+                'name': 'Outcome Categories'
+            }
+        ],
+        'title': {
+            'text': 'Outcome Categories'
+        }
+    }
+    return chart, zip(*outcome_categories)[0]
+
+
 def outcome_chart(queryset):
-    # outcome_categories = list(queryset.filter(injection_number=0).values_list(
-    #     'result__outcome_category').annotate(
-    #     count=Count('result__outcome_category')))
-    outcomes = list(queryset.filter(injection_number=0).order_by(
-        'result__outcome').values_list('result__outcome').annotate(
-        outcome_count=Count('result__outcome')))
-    chart = {'chart': {'renderTo': 'outcome_chart', 'type': 'pie'},
-             'title': {'text': 'Outcomes'},
-             'plotOptions': {'pie': {
-                 'dataLabels': {'style': {'textShadow': False}}}},
-             'series': [{'name': 'Outcomes', 'size': '80%', 'data': outcomes,
-                         'dataLabels': {'format': '{point.name} {point.y}'}},
-                        # {'name': 'Categories', 'size': '60%',
-                        #  'data': outcome_categories,
-                        #  'dataLabels': {'distance': -30}},
-                        ]}
-    return chart
+    outcomes = list(queryset.filter(injection_number=0).values_list(
+        'result__outcome').annotate(count=Count('result__outcome')))
+    chart = {
+        'chart': {
+            'renderTo': 'outcome_chart',
+            'type': 'pie'
+        },
+        'exporting': {
+            'filename': 'DrSEUS Outcomes',
+            'scale': 3,
+            'sourceHeight': 480,
+            'sourceWidth': 640
+        },
+        'plotOptions': {
+            'pie': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                }
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'outcome_chart_click'
+                    }
+                }
+            }
+        },
+        'series': [
+            {
+                'data': outcomes,
+                'dataLabels': {
+                    'formatter': 'outcome_percentage_formatter'
+                },
+                'name': 'Outcomes'
+            }
+        ],
+        'title': {
+            'text': 'Outcomes'
+        }
+
+    }
+    return chart, zip(*outcomes)[0]
 
 
-def register_chart(use_simics, queryset):
-    registers = sorted(queryset.values_list('register').distinct(),
-                       key=fix_sort)
-    registers = zip(*registers)[0]
-    print(registers)
+def register_chart(queryset):
+    registers = sorted(queryset.values_list('register',
+                                            'register_index').distinct(),
+                       key=fix_reg_sort)
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
     outcomes = zip(*outcomes)[0]
-    print(outcomes)
-    chart = {'chart': {'renderTo': 'register_chart', 'type': 'column'},
-             'title': {'text': 'Registers'},
-             'plotOptions': {'column': {
-                 'dataLabels': {'style': {'textShadow': False}}}},
-             'xAxis': {'labels': {'x': 5, 'y': 10, 'align': 'right',
-                                  'rotation': -60},
-                       'categories': registers},
-             'yAxis': {'title': {'text': 'Injections'}}}
+    chart = {
+        'chart': {
+            'renderTo': 'register_chart',
+            'type': 'column'
+        },
+        'exporting': {
+            'filename': 'DrSEUS Outcomes By Register',
+            'scale': 3,
+            'sourceHeight': 576,
+            'sourceWidth': 1024
+        },
+        'title': {
+            'text': 'Outcomes By Register'
+        },
+        'plotOptions': {
+            'column': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                }
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'register_chart_click'
+                    }
+                }
+            }
+        },
+        'xAxis': {
+            'categories': [
+                reg[0]+(':'+reg[1]) if reg[1] else ''for reg in registers
+            ],
+            'labels': {
+                'align': 'right',
+                'rotation': -60,
+                'step': 1,
+                'x': 5,
+                'y': 10
+            },
+            'title': {
+                'text': 'Register'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Injections'
+            }
+        }
+    }
     chart['series'] = []
     for outcome in outcomes:
         data = []
         for register in registers:
             data.append(queryset.filter(result__outcome=outcome,
-                                        register=register).count())
+                                        register=register[0],
+                                        register_index=register[1]).count())
         chart['series'].append({
             'data': data, 'name': outcome, 'stacking': True
         })
     return chart
-#     if campaign_data_info.use_simics:
-#         datasource = PivotDataPool(
-#             series=[{
-#                 'options': {
-#                     'source': queryset,
-#                     'categories': ['register',
-#                                    'register_index'],
-#                     'legend_by': 'result__outcome'
-#                 },
-#                 'terms': {'injections': Count('result__outcome')}
-#             }],
-#             sortf_mapf_mts=(fix_sort, None, False))
-#     else:
-#         datasource = PivotDataPool(
-#             series=[{
-#                 'options': {
-#                     'source': queryset,
-#                     'categories': ['register'],
-#                     'legend_by': 'result__outcome'
-#                 },
-#                 'terms': {'injections': Count('result__outcome')}
-#             }],
-#             sortf_mapf_mts=(fix_sort, None, False))
-#     chart = PivotChart(datasource=datasource,
-#                        series_options=[{'options': {'type': 'column',
-#                                                     'stacking': True},
-#                                         'terms': ['injections']}],
-#                        chart_options={
-#                            'title': {'text': 'Injections By Register'},
-#                            'xAxis': {'title': {'text': 'Registers'},
-#                                      'labels': {'align': 'right', 'x': 5,
-#                                                 'y': 10, 'rotation': '-60'}},
-#                            'yAxis': {'title': {
-#                                'text': 'Number of Injections'}}})
-#     return chart
 
 
 def bit_chart(queryset):
-    pass
-#     datasource = PivotDataPool(series=[{'options': {'source': queryset,
-#                                                     'categories': ['bit'],
-#                                                     'legend_by':
-#                                                         'result__outcome'},
-#                                         'terms': {'injections':
-#                                                   Count('result__outcome')}}],
-#                                sortf_mapf_mts=(fix_sort, None, False))
-#     chart = PivotChart(datasource=datasource,
-#                        series_options=[{'options': {'type': 'column',
-#                                                     'stacking': True},
-#                                         'terms': ['injections']}],
-#                        chart_options={'title': {'text': 'Injections By Bit'},
-#                                       'xAxis': {'title': {'text': 'Bits'}},
-#                                       'yAxis': {'title': {
-#                                           'text': 'Number of Injections'}}})
-#     return chart
+    bits = sorted(queryset.values_list('bit').distinct(), key=fix_sort)
+    bits = zip(*bits)[0]
+    outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
+        'result__outcome'))
+    outcomes = zip(*outcomes)[0]
+    chart = {
+        'chart': {
+            'renderTo': 'bit_chart',
+            'type': 'column'
+        },
+        'exporting': {
+            'sourceWidth': 1024,
+            'sourceHeight': 576,
+            'scale': 3,
+            'filename': 'DrSEUS Outcomes By Bit'
+        },
+        'plotOptions': {
+            'column': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                }
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'bit_chart_click'
+                    }
+                }
+            }
+        },
+        'title': {
+            'text': 'Outcomes By Bit'
+        },
+        'xAxis': {
+            'categories': bits,
+            'title': {
+                'text': 'Bit Index'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Injections'
+            }
+        }
+    }
+    chart['series'] = []
+    for outcome in outcomes:
+        data = []
+        for bit in bits:
+            data.append(queryset.filter(result__outcome=outcome,
+                                        bit=bit).count())
+        chart['series'].append({
+            'data': data, 'name': outcome, 'stacking': True
+        })
+    return chart
 
 
-def time_chart(campaign_data_info, queryset):
-    pass
-#     if campaign_data_info.use_simics:
-#         datasource = PivotDataPool(
-#             series=[{
-#                 'options': {'source': queryset,
-#                             'categories': ['checkpoint_number'],
-#                             'legend_by': 'result__outcome'},
-#                 'terms': {'injections': Count('result__outcome')}}],
-#             sortf_mapf_mts=(fix_sort, None, False))
-#         chart = PivotChart(datasource=datasource,
-#                            series_options=[{'options': {'type': 'area',
-#                                                         'stacking': 'normal'},
-#                                             'terms': ['injections']}],
-#                            chart_options={
-#                                'title': {'text': 'Injections Over Time'},
-#                                'xAxis': {'title': {'text': 'Checkpoints'}},
-#                                'yAxis': {'title': {
-#                                    'text': 'Number of Injections'}}})
-#     else:
-#         datasource = PivotDataPool(
-#             series=[{
-#                 'options': {'source': queryset,
-#                             'categories': ['time_rounded'],
-#                             'legend_by': 'result__outcome'},
-#                 'terms': {'injections': Count('result__outcome')}}])
-#         chart = PivotChart(datasource=datasource,
-#                            series_options=[{'options': {'type': 'area',
-#                                                         'stacking': 'normal'},
-#                                             'terms': ['injections']}],
-#                            chart_options={
-#                                'title': {'text': 'Injections Over Time'},
-#                                'xAxis': {'title': {'text': 'Seconds'}},
-#                                'yAxis': {'title': {
-#                                    'text': 'Number of Injections'}}})
-#     return chart
+def time_chart(use_simics, queryset):
+    if use_simics:
+        times = sorted(queryset.values_list('checkpoint_number').distinct(),
+                       key=fix_sort)
+    else:
+        times = sorted(queryset.values_list('time').distinct(), key=fix_sort)
+    times = zip(*times)[0]
+    outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
+        'result__outcome'))
+    outcomes = zip(*outcomes)[0]
+    chart = {
+        'chart': {
+            'renderTo': 'time_chart',
+            'type': 'column'
+        },
+        'exporting': {
+            'filename': 'DrSEUS Outcomes Over Time',
+            'scale': 3,
+            'sourceHeight': 576,
+            'sourceWidth': 1024
+        },
+        'plotOptions': {
+            'column': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                },
+                'marker': {
+                    'enabled': False
+                }
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'time_chart_click'
+                    }
+                }
+            }
+        },
+        'title': {
+            'text': 'Outcomes Over Time'
+        },
+        'xAxis': {
+            'categories': times,
+            'title': {
+                'text': 'Checkpoint' if use_simics else 'Bit Index'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Injections'
+            }
+        }
+    }
+    chart['series'] = []
+    for outcome in outcomes:
+        data = []
+        for time in times:
+            if use_simics:
+                data.append(queryset.filter(result__outcome=outcome,
+                                            checkpoint_number=time).count())
+            else:
+                data.append(queryset.filter(result__outcome=outcome,
+                                            time=time).count())
+        chart['series'].append({
+            'data': data, 'name': outcome, 'stacking': True
+        })
+    return chart

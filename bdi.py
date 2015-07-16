@@ -126,7 +126,7 @@ class bdi:
             sql_db = sqlite3.connect('campaign-data/db.sqlite3')
             sql = sql_db.cursor()
             sql.execute(
-                'INSERT INTO drseus_logging_hw_injection '
+                'INSERT INTO drseus_logging_injection '
                 '(result_id,injection_number,register,bit,gold_value,'
                 'injected_value,time,time_rounded,core) VALUES '
                 '(?,?,?,?,?,?,?,?,?)',

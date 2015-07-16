@@ -17,8 +17,7 @@ from fault_injector import fault_injector
 # TODO: insert placeholder result into database while injections are performed
 # TODO: add timestamps
 # TODO: add section links to logs
-# TODO: add Manager to models to result to get result and injection counts
-# TODO: reimplement checkpoing regeneration with multiple injections
+# TODO: reimplement checkpoint regeneration with multiple injections
 
 
 def delete_results():
@@ -28,9 +27,8 @@ def delete_results():
     if os.path.exists('campaign-data/db.sqlite3'):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
-        sql.execute('DELETE FROM drseus_logging_hw_injection')
+        sql.execute('DELETE FROM drseus_logging_injection')
         sql.execute('DELETE FROM drseus_logging_result')
-        sql.execute('DELETE FROM drseus_logging_simics_injection')
         sql.execute('DELETE FROM drseus_logging_simics_register_diff')
         sql_db.commit()
         sql_db.close()
@@ -124,9 +122,11 @@ def get_next_iteration():
     if supervisor_data is None:
         iteration = 0
     else:
-        iteration = supervisor_data['iteration'] + 1
+        iteration = supervisor_data['iteration']
+    sql.execute('DELETE FROM drseus_logging_injection WHERE result_id > ' +
+                str(iteration))
     sql_db.close()
-    return iteration
+    return iteration + 1
 
 
 # def get_injection_data(campaign_data, injection_number):
@@ -135,14 +135,9 @@ def get_next_iteration():
 #     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
 #     sql_db.row_factory = sqlite3.Row
 #     sql = sql_db.cursor()
-#     if campaign_data['use_simics']:
-#         sql.execute('SELECT * FROM drseus_logging_simics_injection WHERE ' +
-#                     'injection_number = (?)', (injection_number, ))
-#         injection_data = sql.fetchone()
-#     else:
-#         sql.execute('SELECT * FROM drseus_logging_hw_injection WHERE ' +
-#                     'injection_number = (?)', (injection_number, ))
-#         injection_data = sql.fetchone()
+#     sql.execute('SELECT * FROM drseus_logging_injection WHERE ' +
+#                 'injection_number = (?)', (injection_number, ))
+#     injection_data = sql.fetchone()
 #     sql_db.close()
 #     return injection_data
 
@@ -335,8 +330,9 @@ elif options.view_logs:
 elif options.inject:
     campaign_data = get_campaign_data()
     if campaign_data['use_simics']:
-        if not os.path.exists('simics-workspace/injected-checkpoints'):
-            os.mkdir('simics-workspace/injected-checkpoints')
+        if os.path.exists('simics-workspace/injected-checkpoints'):
+            shutil.rmtree('simics-workspace/injected-checkpoints')
+        os.mkdir('simics-workspace/injected-checkpoints')
     starting_iteration = get_next_iteration()
     iteration_counter = multiprocessing.Value('I', starting_iteration)
     if campaign_data['use_simics'] and options.num_processes > 1:

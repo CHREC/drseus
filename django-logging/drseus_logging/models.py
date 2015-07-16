@@ -21,6 +21,12 @@ class campaign_data(models.Model):
     cycles_between = models.IntegerField()
 
 
+class result_manager(models.Manager):
+    def get_queryset(self):
+        return super(result_manager, self).get_queryset().annotate(
+            injections=models.Count('injection'))
+
+
 class result(models.Model):
     iteration = models.IntegerField(primary_key=True)
     outcome = models.TextField()
@@ -32,9 +38,10 @@ class result(models.Model):
     debugger_output = models.TextField()
     paramiko_output = models.TextField()
     aux_paramiko_output = models.TextField()
+    objects = result_manager()
 
 
-class hw_injection(models.Model):
+class injection(models.Model):
     # commond fields
     result = models.ForeignKey(result)
     injection_number = models.IntegerField()
@@ -43,28 +50,18 @@ class hw_injection(models.Model):
     gold_value = models.TextField()
     injected_value = models.TextField()
     # hw fields
-    time = models.FloatField()
-    time_rounded = models.FloatField()
-    core = models.IntegerField()
-
-
-class simics_injection(models.Model):
-    # commond fields
-    result = models.ForeignKey(result)
-    injection_number = models.IntegerField()
-    register = models.TextField()
-    bit = models.IntegerField()
-    gold_value = models.TextField()
-    injected_value = models.TextField()
+    time = models.FloatField(null=True)
+    time_rounded = models.FloatField(null=True)
+    core = models.IntegerField(null=True)
     # simics fields
-    checkpoint_number = models.IntegerField()
-    target_index = models.TextField()
-    target = models.TextField()
-    config_object = models.TextField()
-    config_type = models.TextField()
-    register_index = models.TextField()
-    field = models.TextField()
-    # gold_debug_info = models.TextField()
+    checkpoint_number = models.IntegerField(null=True)
+    target_index = models.TextField(null=True)
+    target = models.TextField(null=True)
+    config_object = models.TextField(null=True)
+    config_type = models.TextField(null=True)
+    register_index = models.TextField(null=True)
+    field = models.TextField(null=True)
+    # gold_debug_info = models.TextField(null=True)
 
 
 class simics_register_diff(models.Model):
