@@ -111,22 +111,22 @@ def campaign_info_page(request, title, sidebar_items):
 def charts_page(request, title, sidebar_items):
     outcome_category_chart_click = """
     function(event) {
-        var outcome_categories=__outcome_category_list__;
+        var outcome_categories = __outcome_category_list__;
         window.location.assign('../table/?outcome_category='+
                                outcome_categories[this.x]);
     }
     """
     outcome_chart_click = """
     function(event) {
-        var outcomes=__outcome_list__;
+        var outcomes = __outcome_list__;
         window.location.assign('../table/?outcome='+outcomes[this.x]);
     }
     """
     register_chart_click = """
     function(event) {
-        var reg=this.category.split(':');
-        var register=reg[0];
-        var index=reg[1];
+        var reg = this.category.split(':');
+        var register = reg[0];
+        var index = reg[1];
         window.location.assign('../table/?outcome='+this.series.name+
                                '&injection__register='+register+
                                '&injection__register_index='+index);
@@ -146,20 +146,21 @@ def charts_page(request, title, sidebar_items):
     """
     hw_time_chart_click = """
     function(event) {
+        var time = parseFloat(this.category)
         window.location.assign('../table/?outcome='+this.series.name+
-                               '&injection__time_rounded='+this.category);
+                               '&injection__time_rounded='+time.toFixed(1));
     }
     """
     outcome_category_percentage_formatter = """
     function() {
-        var outcome_categories=__outcome_category_list__;
+        var outcome_categories = __outcome_category_list__;
         return ''+outcome_categories[parseInt(this.point.x)]+' '+
         Highcharts.numberFormat(this.percentage, 1)+'%';
     }
     """
     outcome_percentage_formatter = """
     function() {
-        var outcomes=__outcome_list__;
+        var outcomes = __outcome_list__;
         return ''+outcomes[parseInt(this.point.x)]+' '+
         Highcharts.numberFormat(this.percentage, 1)+'%';
     }

@@ -54,6 +54,12 @@ class hw_result_filter(django_filters.FilterSet):
         self.filters['injection__bit'].widget.attrs['size'] = min(
             len(bit_choices), 10)
 
+        time_rounded_choices = injection_choices('time_rounded')
+        self.filters['injection__time_rounded'].extra.update(
+            choices=time_rounded_choices)
+        self.filters['injection__time_rounded'].widget.attrs['size'] = min(
+            len(time_rounded_choices), 10)
+
     outcome_category = django_filters.MultipleChoiceFilter(
         widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     outcome = django_filters.MultipleChoiceFilter(
@@ -63,6 +69,8 @@ class hw_result_filter(django_filters.FilterSet):
     injection__register = django_filters.MultipleChoiceFilter(
         widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     injection__bit = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    injection__time_rounded = django_filters.MultipleChoiceFilter(
         widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
 
     class Meta:
@@ -99,6 +107,11 @@ class hw_injection_filter(django_filters.FilterSet):
         self.filters['bit'].extra.update(choices=bit_choices)
         self.filters['bit'].widget.attrs['size'] = min(len(bit_choices), 10)
 
+        time_rounded_choices = injection_choices('time_rounded')
+        self.filters['time_rounded'].extra.update(choices=time_rounded_choices)
+        self.filters['time_rounded'].widget.attrs['size'] = min(
+            len(time_rounded_choices), 10)
+
     result__outcome_category = django_filters.MultipleChoiceFilter(
         widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     result__outcome = django_filters.MultipleChoiceFilter(
@@ -108,6 +121,8 @@ class hw_injection_filter(django_filters.FilterSet):
     register = django_filters.MultipleChoiceFilter(
         widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
     bit = django_filters.MultipleChoiceFilter(
+        widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
+    time_rounded = django_filters.MultipleChoiceFilter(
         widget=forms.SelectMultiple(attrs={'style': 'width:100%;'}))
 
     class Meta:

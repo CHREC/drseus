@@ -1,5 +1,4 @@
 from __future__ import print_function
-import sys
 import telnetlib
 import time
 import random
@@ -13,22 +12,21 @@ from error import DrSEUSError
 
 
 class bdi:
-    # check debugger is ready and boot device
+    error_messages = ['timeout while waiting for halt',
+                      'wrong state for requested command']
+
     def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
                  aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug,
                  timeout):
         self.timeout = 30
         self.debug = debug
         self.use_aux = use_aux
-        # TODO: populate output
         self.output = ''
         try:
             self.telnet = telnetlib.Telnet(ip_address, timeout=self.timeout)
             self.command('', error_message='Debugger not ready')
         except:
-            print('could not connect to debugger')
-            # TODO: killall telnet
-            sys.exit()
+            raise Exception('could not connect to debugger')
         self.dut = dut(dut_ip_address, rsakey,
                        dut_serial_port, dut_prompt, debug, timeout)
         if self.use_aux:
@@ -79,6 +77,9 @@ class bdi:
         print(colored(buff, 'yellow'))
         if index < 0:
             raise DrSEUSError(error_message)
+        for message in self.error_messages:
+            if message in buff:
+                raise DrSEUSError(error_message)
         return return_buffer
 
     def time_application(self, command, aux_command, iterations):

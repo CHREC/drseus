@@ -8,7 +8,10 @@ def fix_sort(string):
 
 
 def fix_reg_sort(register):
-    return fix_sort(register[0]+register[1])
+    if register[1]:
+        return fix_sort(register[0]+register[1])
+    else:
+        return fix_sort(register[0])
 
 
 def outcome_category_chart(queryset):
@@ -44,9 +47,15 @@ def outcome_category_chart(queryset):
         },
         'series': [
             {
+                'colors': ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c',
+                           '#8085e9', '#f15c80', '#e4d354', '#2b908f',
+                           '#f45b5b', '#91e8e1'],
                 'data': outcome_categories,
                 'dataLabels': {
-                    'formatter': 'outcome_category_percentage_formatter'
+                    'formatter': 'outcome_category_percentage_formatter',
+                    'style': {
+                        'width': 125
+                    }
                 },
                 'name': 'Outcome Categories'
             }
@@ -92,7 +101,10 @@ def outcome_chart(queryset):
             {
                 'data': outcomes,
                 'dataLabels': {
-                    'formatter': 'outcome_percentage_formatter'
+                    'formatter': 'outcome_percentage_formatter',
+                    'style': {
+                        'width': 125
+                    }
                 },
                 'name': 'Outcomes'
             }
@@ -241,7 +253,8 @@ def time_chart(use_simics, queryset):
         times = sorted(queryset.values_list('checkpoint_number').distinct(),
                        key=fix_sort)
     else:
-        times = sorted(queryset.values_list('time').distinct(), key=fix_sort)
+        times = sorted(queryset.values_list('time_rounded').distinct(),
+                       key=fix_sort)
     times = zip(*times)[0]
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
@@ -300,7 +313,7 @@ def time_chart(use_simics, queryset):
                                             checkpoint_number=time).count())
             else:
                 data.append(queryset.filter(result__outcome=outcome,
-                                            time=time).count())
+                                            time_rounded=time).count())
         chart['series'].append({
             'data': data, 'name': outcome, 'stacking': True
         })
