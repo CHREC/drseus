@@ -92,6 +92,15 @@ class bdi:
 
     def inject_fault(self, iteration, injection_times, command,
                      selected_targets):
+        if selected_targets is None:
+            registers = self.registers
+        else:
+            registers = []
+            for register in self.registers:
+                for target in selected_targets:
+                    if target in register:
+                        registers.append(register)
+                        break
         for injection in xrange(len(injection_times)):
             injection_time = injection_times[injection]
             if self.debug:
@@ -117,9 +126,6 @@ class bdi:
                 print(colored('gold value: '+gold_value, 'magenta'))
                 print(colored('injected value: '+injected_value, 'magenta'))
             self.set_register_value(register, injected_value)
-            if int(injected_value, base=16) != int(
-                    self.get_register_value(register), base=16):
-                raise DrSEUSError('Error injecting fault')
             sql_db = sqlite3.connect('campaign-data/db.sqlite3')
             sql = sql_db.cursor()
             sql.execute(
@@ -135,6 +141,9 @@ class bdi:
             )
             sql_db.commit()
             sql_db.close()
+            if int(injected_value, base=16) != int(
+                    self.get_register_value(register), base=16):
+                raise DrSEUSError('Error injecting fault')
 
 
 class bdi_arm(bdi):
@@ -194,7 +203,8 @@ class bdi_p2020(bdi):
                  timeout):
         self.prompts = ['P2020>']
         # TODO: add pmr, spr, L2 TLB
-        # TODO: check for read-only registers (esr)
+        # TODO: check for read-only registers (altcar, esr, l2ctl, altcbar,
+        #                                      lteir, eedr, lsdmr, porpllsr)
         self.registers = ['altcar', 'altcbar', 'autorstsr', 'bbear', 'bbtar',
                           'bptr', 'br0', 'br1', 'br2', 'br3', 'br4', 'br5',
                           'br6', 'br7', 'bucsr', 'cap_addr', 'cap_attr',
@@ -308,23 +318,23 @@ class bdi_p2020(bdi):
         self.command('rm '+register+' '+value, error_message='Error setting '
                                                              'register value')
 
-    def get_registers(self, selected_targets):
-        regs = [{}, {}]
-        for core in xrange(2):
-            self.select_core(core)
-            debug_reglist = self.command('rdump',
-                                         error_message='Error getting register '
-                                                       'list')
-            for line in debug_reglist.split('\r')[:-2]:
-                line = line.split(':')
-                register = line[0].strip()
-                if selected_targets is None:
-                    value = line[1].split(' ')[0].strip()
-                    regs[core][register] = value
-                else:
-                    for target in selected_targets:
-                        if target in register:
-                            value = line[1].split(' ')[0].strip()
-                            regs[core][register] = value
-                            break
-        return regs
+    # def get_registers(self, selected_targets):
+    #     regs = [{}, {}]
+    #     for core in xrange(2):
+    #         self.select_core(core)
+    #         debug_reglist = self.command('rdump',
+    #                                      error_message='Error getting '
+    #                                                    'register list')
+    #         for line in debug_reglist.split('\r')[:-2]:
+    #             line = line.split(':')
+    #             register = line[0].strip()
+    #             if selected_targets is None:
+    #                 value = line[1].split(' ')[0].strip()
+    #                 regs[core][register] = value
+    #             else:
+    #                 for target in selected_targets:
+    #                     if target in register:
+    #                         value = line[1].split(' ')[0].strip()
+    #                         regs[core][register] = value
+    #                         break
+    #     return regs

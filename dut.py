@@ -36,6 +36,8 @@ class dut:
         self.serial.close()
 
     def send_files(self, files):
+        if self.debug:
+            print(colored('sending files...', 'blue'), end='')
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(self.ip_address, port=self.ssh_port, username='root',
@@ -44,6 +46,8 @@ class dut:
         dut_scp.put(files)
         dut_scp.close()
         ssh.close()
+        if self.debug:
+            print(colored('files sent', 'blue'))
         paramiko_log = ('paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
         if os.path.exists(paramiko_log):

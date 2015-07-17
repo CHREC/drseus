@@ -83,8 +83,6 @@ class fault_injector:
             if aux_files:
                 for item in aux_files.split(','):
                     files_aux.append(directory+'/'+item.lstrip().rstrip())
-        if self.debug:
-            print(colored('sending files...', 'blue'), end='')
         if self.use_aux:
             aux_process = Thread(target=self.debugger.aux.send_files,
                                  args=(files_aux, ))
@@ -92,8 +90,6 @@ class fault_injector:
         self.debugger.dut.send_files(files)
         if self.use_aux:
             aux_process.join()
-        if self.debug:
-            print(colored('files sent', 'blue'))
         if self.use_aux:
             aux_process = Thread(target=self.debugger.aux.command)
             aux_process.start()
