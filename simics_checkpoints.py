@@ -1,10 +1,10 @@
-import random
+from datetime import datetime
 import os
-import shutil
-import subprocess
-import re
+from random import randrange
+from re import findall
+from shutil import copyfile
+from subprocess import check_output
 import sqlite3
-
 from termcolor import colored
 
 from simics_targets import devices
@@ -42,7 +42,7 @@ def choose_target(selected_targets, targets):
             bits = targets[target]['total_bits']
             target_list.append((target, bits))
             total_bits += bits
-    random_bit = random.randrange(total_bits)
+    random_bit = randrange(total_bits)
     bit_sum = 0
     for target in target_list:
         bit_sum += target[1]
@@ -53,7 +53,7 @@ def choose_target(selected_targets, targets):
         raise Exception('simics_checkpoints.py:choose_target(): '
                         'Error choosing injection target')
     if 'count' in targets[target_to_inject]:
-        target_index = random.randrange(targets[target_to_inject]['count'])
+        target_index = randrange(targets[target_to_inject]['count'])
         target_to_inject += ':'+str(target_index)
     return target_to_inject
 
@@ -74,7 +74,7 @@ def choose_register(target, targets):
         bits = registers[register]['total_bits']
         register_list.append((register, bits))
         total_bits += bits
-    random_bit = random.randrange(total_bits)
+    random_bit = randrange(total_bits)
     bit_sum = 0
     for register in register_list:
         bit_sum += register[1]
@@ -114,7 +114,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
         if 'count' in targets[target]['registers'][register]:
             register_index = []
             for dimension in targets[target]['registers'][register]['count']:
-                register_index.append(random.randrange(dimension))
+                register_index.append(randrange(dimension))
             injection_data['register_index'] = register_index
         else:
             register_index = None
@@ -130,7 +130,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                 bits = fields[field]['bits']
                 fields_list.append((field, bits))
                 total_bits += bits
-            random_bit = random.randrange(total_bits)
+            random_bit = randrange(total_bits)
             bit_sum = 0
             for field in fields_list:
                 bit_sum += field[1]
@@ -145,7 +145,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                     fields[field_to_inject]['split']):
                 total_bits = (fields[field_to_inject]['bits_h'] +
                               fields[field_to_inject]['bits_l'])
-                random_bit = random.randrange(total_bits)
+                random_bit = randrange(total_bits)
                 if random_bit < fields[field_to_inject]['bits_l']:
                     register_index[-1] = fields[field_to_inject]['index_l']
                     start_bit_index = \
@@ -161,14 +161,14 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                 start_bit_index = fields[field_to_inject]['bit_indicies'][0]
                 end_bit_index = fields[field_to_inject]['bit_indicies'][1]
             num_bits_to_inject = 32
-            bit_to_inject = random.randrange(start_bit_index, end_bit_index+1)
+            bit_to_inject = randrange(start_bit_index, end_bit_index+1)
         else:
             if 'bits' in targets[target]['registers'][register]:
                 num_bits_to_inject = \
                     targets[target]['registers'][register]['bits']
             else:
                 num_bits_to_inject = 32
-            bit_to_inject = random.randrange(num_bits_to_inject)
+            bit_to_inject = randrange(num_bits_to_inject)
             if 'adjustBit' in targets[target]['registers'][register]:
                 bit_to_inject = (
                     targets[target]['registers'][register]
@@ -400,8 +400,8 @@ def inject_checkpoint(iteration, injection_number, checkpoint_number,
     checkpoint_files.remove('config')
     # checkpoint_files.remove('DebugInfo.txt')
     for checkpoint_file in checkpoint_files:
-        shutil.copyfile(gold_checkpoint+'/'+checkpoint_file,
-                        injected_checkpoint+'/'+checkpoint_file)
+        copyfile(gold_checkpoint+'/'+checkpoint_file,
+                 injected_checkpoint+'/'+checkpoint_file)
     # choose injection target
     target = choose_target(selected_targets, targets)
     register = choose_register(target, targets)
@@ -421,8 +421,8 @@ def inject_checkpoint(iteration, injection_number, checkpoint_number,
     sql.execute(
         'INSERT INTO drseus_logging_injection (result_id,injection_number,'
         'register,bit,gold_value,injected_value,checkpoint_number,target_index,'
-        'target,config_object,config_type,register_index,field) VALUES '
-        '(?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        'target,config_object,config_type,register_index,field,timestamp) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         (
             iteration, injection_number, injection_data['register'],
             injection_data['bit'], injection_data['gold_value'],
@@ -430,7 +430,7 @@ def inject_checkpoint(iteration, injection_number, checkpoint_number,
             checkpoint_number, injection_data['target_index'],
             injection_data['target'], injection_data['config_object'],
             injection_data['config_type'], register_index,
-            injection_data['field']
+            injection_data['field'], datetime.now()
         )
     )
     sql_db.commit()
@@ -467,8 +467,8 @@ def inject_checkpoint(iteration, injection_number, checkpoint_number,
 #     checkpoint_files = os.listdir(gold_checkpoint)
 #     checkpoint_files.remove('config')
 #     for checkpoint_file in checkpoint_files:
-#         shutil.copyfile(gold_checkpoint+'/'+checkpoint_file,
-#                         injected_checkpoint+'/'+checkpoint_file)
+#         copyfile(gold_checkpoint+'/'+checkpoint_file,
+#                  injected_checkpoint+'/'+checkpoint_file)
 #     # perform fault injection
 #     targets = devices[board]
 #     inject_register(gold_checkpoint, injected_checkpoint,
@@ -758,9 +758,9 @@ def compare_memory(iteration, checkpoint_number, gold_checkpoint,
                   monitored_ram+' --output='+ram_diff)
         os.system('simics-workspace/bin/craff --content-map '+ram_diff +
                   ' --output='+diff_content_map)
-        craffOutput = subprocess.check_output('simics-workspace/bin/craff '
-                                              '--info '+ram_diff, shell=True)
-        block_size = int(re.findall(r'\d+', craffOutput.split('\n')[2])[1])
+        craffOutput = check_output('simics-workspace/bin/craff --info ' +
+                                   ram_diff, shell=True)
+        block_size = int(findall(r'\d+', craffOutput.split('\n')[2])[1])
         changed_blocks = parse_content_map(diff_content_map, block_size)
         errors += len(changed_blocks)
         if extract_blocks:

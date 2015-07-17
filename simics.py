@@ -1,15 +1,13 @@
 from __future__ import print_function
-import subprocess
-import threading
 import os
-import sys
-import signal
-import time
-
+from signal import SIGINT
+import subprocess
 from termcolor import colored
+from threading import Thread
+from time import time
 
-from error import DrSEUSError
 from dut import dut
+from error import DrSEUSError
 from simics_checkpoints import (inject_checkpoint, compare_registers,
                                 # regenerate_injected_checkpoint,
                                 compare_memory)
@@ -52,8 +50,7 @@ class simics:
                                                          else '') +
                                     '.simics')
             except IOError:
-                print('lost contact with simics')
-                sys.exit()
+                raise Exception('lost contact with simics')
         else:
             self.injected_checkpoint = checkpoint
             buff = self.command('read-configuration '+checkpoint)
@@ -86,8 +83,7 @@ class simics:
             elif self.use_aux and found_settings == 4:
                 break
         else:
-            print('could not find port or pseudoterminal to attach to')
-            sys.exit()
+            raise Exception('could not find port or pseudoterminal to attach')
         if self.board == 'p2020rdb':
             self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
                            'root@p2020rdb:~#', self.debug, self.timeout, 38400,
@@ -112,7 +108,7 @@ class simics:
                     self.aux.command('ifconfig eth0 10.10.0.104 '
                                      'netmask 255.255.255.0 up')
                     self.aux.read_until()
-                aux_process = threading.Thread(target=aux_login)
+                aux_process = Thread(target=aux_login)
                 aux_process.start()
             self.dut.do_login(change_prompt=True)
             self.dut.command('ifconfig eth0 10.10.0.100 '
@@ -154,7 +150,7 @@ class simics:
         self.dut.close()
         if self.use_aux:
             self.aux.close()
-        self.simics.send_signal(signal.SIGINT)
+        self.simics.send_signal(SIGINT)
         self.simics.stdin.write('quit\n')
         try:
             self.read_until()
@@ -168,7 +164,7 @@ class simics:
         self.simics.wait()
 
     def halt_dut(self):
-        self.simics.send_signal(signal.SIGINT)
+        self.simics.send_signal(SIGINT)
         self.read_until()
         return True
 
@@ -210,7 +206,7 @@ class simics:
             def stop_aux_boot():
                 self.aux.read_until('autoboot: ')
                 self.aux.serial.write('\n')
-            aux_process = threading.Thread(target=stop_aux_boot)
+            aux_process = Thread(target=stop_aux_boot)
             aux_process.start()
         self.dut.read_until('autoboot: ')
         self.dut.serial.write('\n')
@@ -273,8 +269,8 @@ class simics:
         start_cycles = self.command(
             'print-time').split('\n')[-2].split()[2]
         if self.use_aux:
-            aux_process = threading.Thread(target=self.aux.command,
-                                           args=('./'+aux_command, ))
+            aux_process = Thread(target=self.aux.command,
+                                 args=('./'+aux_command, ))
             aux_process.start()
         self.continue_dut()
         self.dut.command('./'+command)
@@ -287,14 +283,14 @@ class simics:
         return int(end_cycles) - int(start_cycles)
 
     def time_application(self, command, aux_command, iterations):
-        start = time.time()
+        start = time()
         for i in xrange(iterations):
             if self.use_aux:
-                aux_process = threading.Thread(target=self.aux.command,
-                                               args=('./'+aux_command, ))
+                aux_process = Thread(target=self.aux.command,
+                                     args=('./'+aux_command, ))
                 aux_process.start()
             self.dut.command('./'+command)
-            end = time.time()
+            end = time()
             if self.use_aux:
                 aux_process.join()
         return (end - start) / iterations
@@ -316,7 +312,7 @@ class simics:
                              ' '+merged_checkpoint)
         self.continue_dut()
         if self.use_aux:
-            aux_process = threading.Thread(target=self.aux.read_until)
+            aux_process = Thread(target=self.aux.read_until)
             aux_process.start()
         self.dut.read_until()
         if self.use_aux:

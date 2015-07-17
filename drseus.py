@@ -1,23 +1,21 @@
 #!/usr/bin/python
 
 from __future__ import print_function
-import optparse
-import shutil
-import os
-import subprocess
-import signal
-import sqlite3
 import multiprocessing
+import optparse
+import os
+import shutil
+from signal import SIGINT
+from subprocess import Popen
+import sqlite3
 
 from fault_injector import fault_injector
 
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: implement persistent fault detection
 # TODO: add option for number of times to rerun app for latent fault case
-# TODO: insert placeholder result into database while injections are performed
-# TODO: add timestamps
-# TODO: add section links to logs
 # TODO: reimplement checkpoint regeneration with multiple injections
+# TODO: add support for multiple campaigns
 
 
 def delete_results():
@@ -86,6 +84,9 @@ def new_campaign(application, options):
                     print('deleted gold checkpoints')
                 if os.path.exists('simics-workspace/injected-checkpoints'):
                     shutil.rmtree('simics-workspace/injected-checkpoints')
+    if not os.path.exists('campaign-data'):
+        os.mkdir('campaign-data')
+    os.system('./django-logging/manage.py migrate')
     drseus = fault_injector(dut_ip_address, '10.42.0.20', dut_serial_port,
                             '/dev/ttyUSB0', '10.42.0.50', options.architecture,
                             options.use_aux, True, options.debug,
@@ -188,15 +189,14 @@ def perform_injections(campaign_data, iteration_counter, options):
 
 
 def view_logs():
-    server = subprocess.Popen([os.getcwd()+'/django-logging/manage.py',
-                               'runserver'],
-                              cwd=os.getcwd()+'/django-logging/')
+    server = Popen([os.getcwd()+'/django-logging/manage.py', 'runserver'],
+                   cwd=os.getcwd()+'/django-logging/')
     if os.system('which google-chrome'):
         os.system('firefox http://localhost:8000')
     else:
         os.system('google-chrome http://localhost:8000')
     try:
-        os.killpg(os.getpgid(server.pid), signal.SIGINT)
+        os.killpg(os.getpgid(server.pid), SIGINT)
     except KeyboardInterrupt:
         pass
 
@@ -333,6 +333,8 @@ elif options.inject:
         if os.path.exists('simics-workspace/injected-checkpoints'):
             shutil.rmtree('simics-workspace/injected-checkpoints')
         os.mkdir('simics-workspace/injected-checkpoints')
+    if not os.path.exists('campaign-data/results'):
+        os.mkdir('campaign-data/results')
     starting_iteration = get_next_iteration()
     iteration_counter = multiprocessing.Value('I', starting_iteration)
     if campaign_data['use_simics'] and options.num_processes > 1:

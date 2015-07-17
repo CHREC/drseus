@@ -1,10 +1,8 @@
 from __future__ import print_function
-import serial
-import sys
 import os
-
 import paramiko
-import scp
+from scp import SCPClient
+from serial import Serial
 from termcolor import colored
 
 from error import DrSEUSError
@@ -22,12 +20,11 @@ class dut:
         self.output = ''
         self.paramiko_output = ''
         try:
-            self.serial = serial.Serial(port=serial_port, baudrate=baud_rate,
-                                        timeout=timeout, rtscts=True)
+            self.serial = Serial(port=serial_port, baudrate=baud_rate,
+                                 timeout=timeout, rtscts=True)
         except:
-            print('error opening serial port', serial_port,
-                  ', are you a member of dialout?')
-            sys.exit()
+            raise Exception('error opening serial port', serial_port,
+                            ', are you a member of dialout?')
         self.prompt = prompt+' '
         self.ip_address = ip_address
         self.ssh_port = ssh_port
@@ -43,7 +40,7 @@ class dut:
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(self.ip_address, port=self.ssh_port, username='root',
                     pkey=self.rsakey, look_for_keys=False)
-        dut_scp = scp.SCPClient(ssh.get_transport())
+        dut_scp = SCPClient(ssh.get_transport())
         dut_scp.put(files)
         dut_scp.close()
         ssh.close()
@@ -59,7 +56,7 @@ class dut:
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(self.ip_address, port=self.ssh_port, username='root',
                     pkey=self.rsakey, look_for_keys=False)
-        dut_scp = scp.SCPClient(ssh.get_transport())
+        dut_scp = SCPClient(ssh.get_transport())
         dut_scp.get(file, local_path=local_path)
         dut_scp.close()
         ssh.close()

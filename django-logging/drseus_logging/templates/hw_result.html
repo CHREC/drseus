@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block page_links %}
+                    <h3>
+                        Page Items
+                    </h3>
+                    <ul>
+                        <li>
+                            <a class="reference internal" href="#result">
+                                Result
+                            </a>
+                        </li>
+                        <li>
+                            <a class="reference internal" href="#injections">
+                                Injections
+                            </a>
+                        </li>
+                        <li>
+                            <a class="reference internal" href="#dut_output">
+                                DUT Output
+                            </a>
+                        </li>
+                        {% if campaign.use_aux %}
+                        <li>
+                            <a class="reference internal" href="#aux_output">
+                                AUX Output
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li>
+                            <a class="reference internal" href="#debugger_output">
+                                Debugger Output
+                            </a>
+                        </li>
+                        <li>
+                            <a class="reference internal" href="#paramiko_log">
+                                SCP Log
+                            </a>
+                        </li>
+                        {% if campaign.use_aux %}
+                        <li>
+                            <a class="reference internal" href="#aux_paramiko_log">
+                                AUX SCP Log
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+{% endblock %}
+{% load django_tables2 %}
+{% block body %}
+<div class="source">
+    <h2 align="center">
+        <a name="result">
+        </a>
+        {{ title }}
+    </h2>
+    <div align="center">
+        {% render_table table %}
+    </div>
+    <div class="section">
+        <h3 align="center">
+            <a name="injections">
+            </a>
+            Injections
+        </h3>
+        <div align="center">
+            {% render_table injection_table %}
+        </div>
+        <h3 align="center">
+            <a name="dut_output">
+            </a>
+            DUT Output
+        </h3>
+        {{ result.dut_output|linebreaksbr }}
+        {% if campaign.use_aux %}
+        <h3 align="center">
+            <a name="aux_output">
+            </a>
+            AUX Output
+        </h3>
+        {{ result.aux_output|linebreaksbr }}
+        {% endif %}
+        <h3 align="center">
+            <a name="debugger_output">
+            </a>
+            Debugger Output
+        </h3>
+        {{ result.debugger_output|linebreaksbr }}
+        <h3 align="center">
+            <a name="paramiko_log">
+            </a>
+            SCP Log
+        </h3>
+        {{ campaign.paramiko_output|linebreaksbr }}
+        {% if campaign.use_aux %}
+        <h3 align="center">
+            <a name="aux_paramiko_log">
+            </a>
+            AUX SCP Log
+        </h3>
+        {{ campaign.aux_paramiko_output|linebreaksbr }}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

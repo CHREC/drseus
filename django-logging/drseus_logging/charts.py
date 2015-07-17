@@ -1,10 +1,12 @@
-import re
+from collections import OrderedDict
 from django.db.models import Count
+from re import split
+from simplejson import dumps
 
 
 def fix_sort(string):
     return ''.join([text.zfill(5) if text.isdigit() else text.lower() for
-                    text in re.split('([0-9]+)', str(string))])
+                    text in split('([0-9]+)', str(string))])
 
 
 def fix_reg_sort(register):
@@ -15,9 +17,18 @@ def fix_reg_sort(register):
 
 
 def outcome_category_chart(queryset):
-    outcome_categories = list(queryset.filter(injection_number=0).values_list(
-        'result__outcome_category').annotate(
-        count=Count('result__outcome_category')))
+    outcomes = sorted(queryset.filter(injection_number=0).values_list(
+        'result__outcome_category', 'result__outcome').annotate(
+        count=Count('result__outcome_category')), key=lambda x: x[1])
+    print outcomes
+    outcome_categories = OrderedDict()
+    for outcome in outcomes:
+        if outcome[0] in outcome_categories:
+            outcome_categories[outcome[0]] += outcome[2]
+        else:
+            outcome_categories[outcome[0]] = outcome[2]
+    outcome_categories = outcome_categories.items()
+    print outcome_categories
     chart = {
         'chart': {
             'renderTo': 'outcome_category_chart',
@@ -47,14 +58,14 @@ def outcome_category_chart(queryset):
         },
         'series': [
             {
-                'colors': ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c',
-                           '#8085e9', '#f15c80', '#e4d354', '#2b908f',
-                           '#f45b5b', '#91e8e1'],
+                'colors': ['#f45b5b', '#8085e9', '#8d4654', '#7798BF',
+                           '#aaeeee', '#ff0066', '#eeaaee', '#55BF3B',
+                           '#DF5353', '#7798BF', '#aaeeee'],
                 'data': outcome_categories,
                 'dataLabels': {
                     'formatter': 'outcome_category_percentage_formatter',
                     'style': {
-                        'width': 125
+                        'width': 120
                     }
                 },
                 'name': 'Outcome Categories'
@@ -103,7 +114,7 @@ def outcome_chart(queryset):
                 'dataLabels': {
                     'formatter': 'outcome_percentage_formatter',
                     'style': {
-                        'width': 125
+                        'width': 120
                     }
                 },
                 'name': 'Outcomes'
@@ -156,14 +167,14 @@ def register_chart(queryset):
         },
         'xAxis': {
             'categories': [
-                reg[0]+(':'+reg[1]) if reg[1] else ''for reg in registers
+                reg[0]+(':'+reg[1] if reg[1] else '')for reg in registers
             ],
             'labels': {
                 'align': 'right',
                 'rotation': -60,
                 'step': 1,
                 'x': 5,
-                'y': 10
+                'y': 15
             },
             'title': {
                 'text': 'Register'
@@ -295,7 +306,7 @@ def time_chart(use_simics, queryset):
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Checkpoint' if use_simics else 'Bit Index'
+                'text': 'Checkpoint' if use_simics else 'Seconds'
             }
         },
         'yAxis': {
@@ -318,3 +329,87 @@ def time_chart(use_simics, queryset):
             'data': data, 'name': outcome, 'stacking': True
         })
     return chart
+
+
+def json_charts(queryset, use_simics):
+    outcome_categories, outcome_category_list = \
+        outcome_category_chart(queryset)
+    outcome_category_list = dumps(outcome_category_list)
+    outcomes, outcome_list = outcome_chart(queryset)
+    outcome_list = dumps(outcome_list)
+    registers = register_chart(queryset)
+    bits = bit_chart(queryset)
+    times = time_chart(use_simics, queryset)
+    outcome_category_chart_click = """
+    function(event) {
+        var outcome_categories = outcome_category_list;
+        window.location.assign('../results/?outcome_category='+
+                               outcome_categories[this.x]);
+    }
+    """.replace('outcome_category_list', outcome_category_list)
+    outcome_category_percentage_formatter = """
+    function() {
+        var outcome_categories = outcome_category_list;
+        return ''+outcome_categories[parseInt(this.point.x)]+' '+
+        Highcharts.numberFormat(this.percentage, 1)+'%';
+    }
+    """.replace('outcome_category_list', outcome_category_list)
+    outcome_chart_click = """
+    function(event) {
+        var outcomes = outcome_list;
+        window.location.assign('../results/?outcome='+outcomes[this.x]);
+    }
+    """.replace('outcome_list', outcome_list)
+    outcome_percentage_formatter = """
+    function() {
+        var outcomes = outcome_list;
+        return ''+outcomes[parseInt(this.point.x)]+' '+
+        Highcharts.numberFormat(this.percentage, 1)+'%';
+    }
+    """.replace('outcome_list', outcome_list)
+    register_chart_click = """
+    function(event) {
+        var reg = this.category.split(':');
+        var register = reg[0];
+        var index = reg[1];
+        window.location.assign('../results/?outcome='+this.series.name+
+                               '&injection__register='+register+
+                               '&injection__register_index='+index);
+    }
+    """
+    bit_chart_click = """
+    function(event) {
+        window.location.assign('../results/?outcome='+this.series.name+
+                               '&injection__bit='+this.category);
+    }
+    """
+    simics_time_chart_click = """
+    function(event) {
+        window.location.assign('../results/?outcome='+this.series.name+
+                               '&injection__checkpoint_number='+this.category);
+    }
+    """
+    hw_time_chart_click = """
+    function(event) {
+        var time = parseFloat(this.category)
+        window.location.assign('../results/?outcome='+this.series.name+
+                               '&injection__time_rounded='+time.toFixed(1));
+    }
+    """
+    chart_array = dumps([outcome_categories, outcomes, registers, bits, times],
+                        indent=4)
+    replacements = [('\"outcome_category_chart_click\"',
+                     outcome_category_chart_click),
+                    ('\"outcome_category_percentage_formatter\"',
+                     outcome_category_percentage_formatter),
+                    ('\"outcome_chart_click\"', outcome_chart_click),
+                    ('\"outcome_percentage_formatter\"',
+                     outcome_percentage_formatter),
+                    ('\"register_chart_click\"', register_chart_click),
+                    ('\"bit_chart_click\"', bit_chart_click),
+                    ('\"time_chart_click\"',
+                     (simics_time_chart_click if use_simics
+                      else hw_time_chart_click))]
+    for replacement in replacements:
+        chart_array = chart_array.replace(replacement[0], replacement[1])
+    return chart_array

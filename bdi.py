@@ -1,11 +1,11 @@
 from __future__ import print_function
-import telnetlib
+from datetime import datetime
+from telnetlib import Telnet
+from termcolor import colored
+from threading import Thread
 import time
 import random
 import sqlite3
-import threading
-
-from termcolor import colored
 
 from dut import dut
 from error import DrSEUSError
@@ -23,7 +23,7 @@ class bdi:
         self.use_aux = use_aux
         self.output = ''
         try:
-            self.telnet = telnetlib.Telnet(ip_address, timeout=self.timeout)
+            self.telnet = Telnet(ip_address, timeout=self.timeout)
             self.command('', error_message='Debugger not ready')
         except:
             raise Exception('could not connect to debugger')
@@ -41,6 +41,7 @@ class bdi:
             self.aux.close()
 
     def reset_dut(self):
+        # TODO: add additional expected messages
         self.command('reset', ['- TARGET: processing target startup passed'],
                      'Error resetting DUT')
 
@@ -86,8 +87,8 @@ class bdi:
         start = time.time()
         for i in xrange(iterations):
             if self.use_aux:
-                aux_process = threading.Thread(target=self.aux.command,
-                                               args=('./'+aux_command, ))
+                aux_process = Thread(target=self.aux.command,
+                                     args=('./'+aux_command, ))
                 aux_process.start()
             self.dut.command('./'+command)
             end = time.time()
@@ -129,12 +130,12 @@ class bdi:
             sql.execute(
                 'INSERT INTO drseus_logging_injection '
                 '(result_id,injection_number,register,bit,gold_value,'
-                'injected_value,time,time_rounded,core) VALUES '
-                '(?,?,?,?,?,?,?,?,?)',
+                'injected_value,time,time_rounded,core,timestamp) VALUES '
+                '(?,?,?,?,?,?,?,?,?,?)',
                 (
                     iteration, injection, register, bit, gold_value,
                     injected_value, injection_time, round(injection_time, 1),
-                    core
+                    core, datetime.now()
                 )
             )
             sql_db.commit()

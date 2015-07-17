@@ -1,6 +1,12 @@
 from django.db import models
 
 
+class campaign_data_manager(models.Manager):
+    def get_queryset(self):
+        return super(campaign_data_manager, self).get_queryset().annotate(
+            results=models.Count('result'))
+
+
 class campaign_data(models.Model):
     application = models.TextField()
     output_file = models.TextField()
@@ -19,6 +25,8 @@ class campaign_data(models.Model):
     num_cycles = models.IntegerField()
     num_checkpoints = models.IntegerField()
     cycles_between = models.IntegerField()
+    timestamp = models.DateTimeField()
+    objects = campaign_data_manager()
 
 
 class result_manager(models.Manager):
@@ -28,6 +36,7 @@ class result_manager(models.Manager):
 
 
 class result(models.Model):
+    campaign_data = models.ForeignKey(campaign_data)
     iteration = models.IntegerField(primary_key=True)
     outcome = models.TextField()
     outcome_category = models.TextField()
@@ -38,7 +47,14 @@ class result(models.Model):
     debugger_output = models.TextField()
     paramiko_output = models.TextField()
     aux_paramiko_output = models.TextField()
+    timestamp = models.DateTimeField()
     objects = result_manager()
+
+
+class injection_manager(models.Manager):
+    def get_queryset(self):
+        return super(injection_manager, self).get_queryset().filter(
+            result__campaign_data_id__gt=0)
 
 
 class injection(models.Model):
@@ -49,6 +65,7 @@ class injection(models.Model):
     bit = models.IntegerField()
     gold_value = models.TextField()
     injected_value = models.TextField()
+    timestamp = models.DateTimeField()
     # hw fields
     time = models.FloatField(null=True)
     time_rounded = models.FloatField(null=True)
@@ -62,6 +79,7 @@ class injection(models.Model):
     register_index = models.TextField(null=True)
     field = models.TextField(null=True)
     # gold_debug_info = models.TextField(null=True)
+    objects = injection_manager()
 
 
 class simics_register_diff(models.Model):

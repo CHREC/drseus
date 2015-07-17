@@ -5,7 +5,7 @@
     <h2>
         {{ title }}
     </h2>
-    {% render_table result_table %}
+    {% render_table table %}
     <h3>
         Injections
     </h3>
@@ -18,7 +18,7 @@
                         DUT Output
                     </h3>
                     {{ result.dut_output|linebreaksbr }}
-                    {% if campaign_data.use_aux %}
+                    {% if campaign.use_aux %}
                     <h3 align="center">
                         AUX Output
                     </h3>
@@ -32,7 +32,7 @@
                     Paramiko Log
                     </h3>
                     {{ result.paramiko_output|linebreaksbr }}
-                    {% if campaign_data.use_aux %}
+                    {% if campaign.use_aux %}
                     <h3 align="center">
                         AUX Paramiko Log
                     </h3>

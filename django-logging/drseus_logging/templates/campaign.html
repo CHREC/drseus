@@ -1,94 +1,37 @@
 {% extends "base.html" %}
-
 {% block body %}
                         <div class="source">
                             <div class="section">
                                 <h2 align="center">
                                     Campaign Data
                                 </h2>
-                                <table align="center">
-                                    <tr>
-                                        <th>
-                                            Architecture
-                                        </th>
-                                        <th>
-                                            DUT Command
-                                        </th>
-                                        {% if campaign_data.use_aux %}
-                                        <th>
-                                            AUX Command
-                                        </th>
-                                        {% endif %}
-                                        <th>
-                                            Output File
-                                        </th>
-                                        {% if not campaign_data.use_simics %}
-                                        <th>
-                                            Execution Time
-                                        </th>
-                                        {% else %}
-                                        <th>
-                                            Execution Cycles
-                                        </th>
-                                        <th>
-                                            Checkpoints
-                                        </th>
-                                        <th>
-                                            Cycles Between
-                                        </th>
-                                        {% endif %}
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            {{ campaign_data.architecture }}
-                                        </td>
-                                        <td>
-                                            {{ campaign_data.command }}
-                                        </td>
-                                        {% if campaign_data.use_aux %}
-                                        <td>
-                                            {{ campaign_data.aux_command }}
-                                        </td>
-                                        {% endif %}
-                                        <td>
-                                            {{ campaign_data.output_file }}
-                                        </td>
-                                        <td>
-                                            {{ campaign_data.exec_time }}
-                                        </td>
-                                        {% if campaign_data.use_simics %}
-                                        <td>
-                                            {{ campaign_data.num_checkpoints }}
-                                        </td>
-                                        <td>
-                                            {{ campaign_data.cycles_between }}
-                                        </td>
-                                        {% endif %}
-                                    </tr>
-                                </table>
+                                <div align="center">
+                                    {% load django_tables2 %}
+                                    {% render_table table %}
+                                </div>
                                 <h2 align="center">
                                     DUT Output
                                 </h2>
-                                {{ campaign_data.dut_output|linebreaksbr }}
-                                {% if campaign_data.use_aux %}
+                                {{ campaign.dut_output|linebreaksbr }}
+                                {% if campaign.use_aux %}
                                 <h2 align="center">
                                     AUX Output
                                 </h2>
-                                {{ campaign_data.aux_output|linebreaksbr }}
+                                {{ campaign.aux_output|linebreaksbr }}
                                 {% endif %}
                                 <h2 align="center">
                                     Debugger Output
                                 </h2>
-                                {{ campaign_data.debugger_output|linebreaksbr }}
+                                {{ campaign.debugger_output|linebreaksbr }}
                                 <h2 align="center">
                                     Paramiko Log
                                 </h2>
-                                {{ campaign_data.paramiko_output|linebreaksbr }}
-                                {% if campaign_data.use_aux %}
+                                {{ campaign.paramiko_output|linebreaksbr }}
+                                {% if campaign.use_aux %}
                                 <h2 align="center">
                                     AUX Paramiko Log
                                 </h2>
-                                {{ campaign_data.aux_paramiko_output|linebreaksbr }}
+                                {{ campaign.aux_paramiko_output|linebreaksbr }}
                                 {% endif %}
                             </div>
                         </div>

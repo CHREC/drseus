@@ -1,16 +1,16 @@
 from __future__ import print_function
+from datetime import datetime
+from difflib import SequenceMatcher
 import os
-import shutil
-import difflib
-import random
-import sqlite3
-import threading
-
-from termcolor import colored
 from paramiko import RSAKey
+import random
+import shutil
+import sqlite3
+from termcolor import colored
+from threading import Thread
 
-from error import DrSEUSError
 from bdi import bdi_p2020, bdi_arm
+from error import DrSEUSError
 from simics import simics
 
 
@@ -18,10 +18,6 @@ class fault_injector:
     def __init__(self, dut_ip_address, aux_ip_address, dut_serial_port,
                  aux_serial_port, debugger_ip_address, architecture,
                  use_aux, new, debug, use_simics, timeout):
-        if not os.path.exists('campaign-data/results'):
-            os.makedirs('campaign-data/results')
-        if new:
-            os.system('./django-logging/manage.py migrate')
         self.use_simics = use_simics
         self.use_aux = use_aux
         self.debug = debug
@@ -50,8 +46,7 @@ class fault_injector:
             if new:
                 self.debugger.reset_dut()
                 if self.use_aux:
-                    aux_process = threading.Thread(
-                        target=self.debugger.aux.do_login)
+                    aux_process = Thread(target=self.debugger.aux.do_login)
                     aux_process.start()
                 self.debugger.dut.do_login()
                 if self.use_aux:
@@ -91,8 +86,8 @@ class fault_injector:
         if self.debug:
             print(colored('sending files...', 'blue'), end='')
         if self.use_aux:
-            aux_process = threading.Thread(target=self.debugger.aux.send_files,
-                                           args=(files_aux, ))
+            aux_process = Thread(target=self.debugger.aux.send_files,
+                                 args=(files_aux, ))
             aux_process.start()
         self.debugger.dut.send_files(files)
         if self.use_aux:
@@ -100,7 +95,7 @@ class fault_injector:
         if self.debug:
             print(colored('files sent', 'blue'))
         if self.use_aux:
-            aux_process = threading.Thread(target=self.debugger.aux.command)
+            aux_process = Thread(target=self.debugger.aux.command)
             aux_process.start()
         self.debugger.dut.command()
         if self.use_aux:
@@ -132,8 +127,8 @@ class fault_injector:
             '(application,output_file,command,aux_command,use_aux,'
             'use_aux_output,exec_time,architecture,use_simics,dut_output,'
             'aux_output,debugger_output,paramiko_output,aux_paramiko_output,'
-            'num_cycles,num_checkpoints,cycles_between) VALUES '
-            '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            'num_cycles,num_checkpoints,cycles_between,timestamp) VALUES '
+            '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
             (
                 application, output_file, self.command, self.aux_command,
                 self.use_aux, use_aux_output, exec_time, architecture,
@@ -144,7 +139,7 @@ class fault_injector:
                 self.debugger.output,  # .decode('utf-8', 'ignore'),
                 self.debugger.dut.paramiko_output,
                 self.debugger.aux.paramiko_output if self.use_aux else '',
-                num_cycles, num_checkpoints, cycles_between
+                num_cycles, num_checkpoints, cycles_between, datetime.now()
             )
         )
         sql_db.commit()
@@ -222,8 +217,8 @@ class fault_injector:
                 solutionContents = solution.read()
             with open(output_location, 'r') as result:
                 resultContents = result.read()
-            data_diff = difflib.SequenceMatcher(
-                None, solutionContents, resultContents).quick_ratio()
+            data_diff = SequenceMatcher(None, solutionContents,
+                                        resultContents).quick_ratio()
             if data_diff == 1.0:
                 os.remove(output_location)
                 if not os.listdir(result_folder):
@@ -287,7 +282,7 @@ class fault_injector:
         if not outcome:
             if latent_faults:
                 outcome = 'Latent faults'
-                outcome_category = 'Latent faults'
+                outcome_category = 'No error'
             else:
                 outcome = 'No error'
                 outcome_category = 'No error'
@@ -305,18 +300,18 @@ class fault_injector:
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
-            'INSERT INTO drseus_logging_result (iteration,outcome,'
-            'outcome_category,data_diff,detected_errors,dut_output,aux_output,'
-            'debugger_output,paramiko_output,aux_paramiko_output) VALUES '
-            '(?,?,?,?,?,?,?,?,?,?)', (
-                iteration, outcome, outcome_category, data_diff,
+            'INSERT INTO drseus_logging_result (campaign_data_id,'
+            'iteration,outcome,outcome_category,data_diff,detected_errors,'
+            'dut_output,aux_output,debugger_output,paramiko_output,'
+            'aux_paramiko_output,timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', (
+                1, iteration, outcome, outcome_category, data_diff,
                 detected_errors,
                 self.debugger.dut.output.decode('utf-8', 'ignore'),
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
-                self.use_aux else '',
-                self.debugger.output,  # .decode('utf-8', 'ignore'),
+                self.use_aux else '', self.debugger.output,
                 self.debugger.dut.paramiko_output,
-                self.debugger.aux.paramiko_output if self.use_aux else ''
+                self.debugger.aux.paramiko_output if self.use_aux else '',
+                datetime.now()
             )
         )
         sql_db.commit()
@@ -356,13 +351,12 @@ class fault_injector:
                         self.debugger.aux.serial.write('./'+self.aux_command +
                                                        '\n')
                     self.debugger.dut.serial.write('./'+self.command+'\n')
-                    outcome, outcome_category, detected_errors, data_diff = \
-                        self.monitor_execution(iteration, 0, output_file,
-                                               use_aux_output)
-                    if outcome != 'No error':
+                    next_outcome = self.monitor_execution(iteration, 0,
+                                                          output_file,
+                                                          use_aux_output)[0]
+                    if next_outcome != 'No error':
+                        outcome = next_outcome
                         outcome_category = 'Post execution error'
-                    elif latent_faults:
-                        outcome_category = 'Latent faults'
             if self.use_simics:
                 try:
                     self.debugger.close()

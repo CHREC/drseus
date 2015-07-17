@@ -1,4 +1,5 @@
-"""drseus_logging URL Configuration
+"""
+drseus_logging URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.8/topics/http/urls/
@@ -16,9 +17,9 @@ Including another URLconf
 from django.conf.urls import patterns
 
 charts_and_tables = [
-    (r'', 'campaign_info_page', 'Campaign Information'),
+    (r'', 'campaign_page', 'Campaign Information'),
     (r'charts/', 'charts_page', 'Injection Charts'),
-    (r'table/', 'table_page', 'Results Table'),
+    (r'results/', 'results_page', 'Results Table'),
 ]
 
 sidebar_group1 = [
