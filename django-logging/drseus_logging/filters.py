@@ -70,7 +70,9 @@ class hw_result_filter(django_filters.FilterSet):
 
     class Meta:
         model = result
-        exclude = []
+        exclude = ['aux_output', 'aux_paramiko_output', 'campaign_data',
+                   'data_diff', 'debugger_output', 'detected_errors',
+                   'dut_output', 'iteration', 'paramiko_output', 'timestamp']
 
 
 class hw_injection_filter(django_filters.FilterSet):
@@ -115,7 +117,10 @@ class hw_injection_filter(django_filters.FilterSet):
 
     class Meta:
         model = result
-        exclude = []
+        exclude = ['aux_output', 'aux_paramiko_output', 'campaign_data',
+                   'data_diff', 'debugger_output', 'detected_errors',
+                   'dut_output', 'iteration', 'outcome', 'outcome_category',
+                   'paramiko_output', 'timestamp']
 
 
 class simics_result_filter(django_filters.FilterSet):

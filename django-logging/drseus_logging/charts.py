@@ -20,7 +20,6 @@ def outcome_category_chart(queryset):
     outcomes = sorted(queryset.filter(injection_number=0).values_list(
         'result__outcome_category', 'result__outcome').annotate(
         count=Count('result__outcome_category')), key=lambda x: x[1])
-    print outcomes
     outcome_categories = OrderedDict()
     for outcome in outcomes:
         if outcome[0] in outcome_categories:
@@ -28,7 +27,6 @@ def outcome_category_chart(queryset):
         else:
             outcome_categories[outcome[0]] = outcome[2]
     outcome_categories = outcome_categories.items()
-    print outcome_categories
     chart = {
         'chart': {
             'renderTo': 'outcome_category_chart',
@@ -64,9 +62,6 @@ def outcome_category_chart(queryset):
                 'data': outcome_categories,
                 'dataLabels': {
                     'formatter': 'outcome_category_percentage_formatter',
-                    'style': {
-                        'width': 120
-                    }
                 },
                 'name': 'Outcome Categories'
             }
@@ -113,9 +108,6 @@ def outcome_chart(queryset):
                 'data': outcomes,
                 'dataLabels': {
                     'formatter': 'outcome_percentage_formatter',
-                    'style': {
-                        'width': 120
-                    }
                 },
                 'name': 'Outcomes'
             }
