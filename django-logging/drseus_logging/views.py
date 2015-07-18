@@ -5,16 +5,17 @@ from .charts import json_charts
 from .filters import (hw_result_filter, hw_injection_filter,
                       simics_result_filter, simics_injection_filter,
                       simics_register_diff_filter)
-from .models import (campaign_data, result, injection, simics_register_diff,
+from .models import (campaign, result, injection, simics_register_diff,
                      simics_memory_diff)
-from .tables import (campaign_data_table, result_table, hw_injection_table,
+from .tables import (campaign_table, result_table, hw_injection_table,
                      simics_injection_table, simics_register_diff_table,
                      simics_memory_diff_table)
 
 
-def charts_page(request, title, sidebar_items):
-    use_simics = campaign_data.objects.get().use_simics
-    injection_objects = injection.objects.all()
+def charts_page(request, campaign_number):
+    use_simics = campaign.objects.get(id=campaign_number).use_simics
+    injection_objects = \
+        injection.objects.filter(result__campaign__id=campaign_number)
     if use_simics:
         injection_filter = simics_injection_filter(request.GET,
                                                    queryset=injection_objects)
@@ -23,22 +24,17 @@ def charts_page(request, title, sidebar_items):
                                                queryset=injection_objects)
     chart_array = json_charts(injection_filter.qs, use_simics)
     return render(request, 'charts.html', {'chart_array': chart_array,
-                                           'filter': injection_filter,
-                                           'sidebar_items': sidebar_items,
-                                           'title': title})
+                                           'filter': injection_filter})
 
 
-def campaign_page(request, title, sidebar_items):
-    campaign = campaign_data.objects.get()
-    table = campaign_data_table(campaign_data.objects.all())
-    return render(request, 'campaign.html', {'campaign': campaign,
-                                             'sidebar_items': sidebar_items,
-                                             'table': table, 'title': title})
+def campaign_page(request):
+    table = campaign_table(campaign.objects.all())
+    return render(request, 'campaign.html', {'campaign': None, 'table': table})
 
 
-def results_page(request, title, sidebar_items):
-    use_simics = campaign_data.objects.get().use_simics
-    result_objects = result.objects.all()
+def results_page(request, campaign_number):
+    use_simics = campaign.objects.get(id=campaign_number).use_simics
+    result_objects = result.objects.filter(campaign__id=campaign_number)
     if use_simics:
         result_filter = simics_result_filter(request.GET,
                                              queryset=result_objects)
@@ -47,23 +43,27 @@ def results_page(request, title, sidebar_items):
     table = result_table(result_filter.qs)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {'filter': result_filter,
-                                            'sidebar_items': sidebar_items,
-                                            'table': table, 'title': title})
+                                            'table': table})
 
 
-def result_page(request, iteration, title, sidebar_items):
-    campaign = campaign_data.objects.get()
-    result_object = result.objects.get(iteration=iteration)
-    table = result_table(result.objects.filter(iteration=iteration))
-    injection_objects = injection.objects.filter(result_id=iteration)
-    if campaign.use_simics:
+def result_page(request, campaign_number, iteration):
+    use_simics = campaign.objects.get(id=campaign_number).use_simics
+    result_object = result.objects.get(campaign__id=campaign_number,
+                                       iteration=iteration)
+    table = result_table(result.objects.filter(campaign__id=campaign_number,
+                                               iteration=iteration))
+    injection_objects = \
+        injection.objects.filter(result__campaign__id=campaign_number,
+                                 result__iteration=iteration)
+    if use_simics:
         injection_table = simics_injection_table(injection_objects)
-        register_objects = \
-            simics_register_diff.objects.filter(result_id=iteration)
+        register_objects = simics_register_diff.objects.filter(
+            result__campaign__id=campaign_number, result__iteration=iteration)
         register_filter = \
             simics_register_diff_filter(request.GET, queryset=register_objects)
         register_table = simics_register_diff_table(register_filter.qs)
-        memory_objects = simics_memory_diff.objects.filter(result_id=iteration)
+        memory_objects = simics_memory_diff.objects.filter(
+            result__campaign__id=campaign_number, result__iteration=iteration)
         memory_table = simics_memory_diff_table(memory_objects)
         config = RequestConfig(request, paginate={'per_page': 50})
         config.configure(memory_table)
@@ -73,11 +73,9 @@ def result_page(request, iteration, title, sidebar_items):
                        'injection_table': injection_table,
                        'memory_table': memory_table,
                        'register_table': register_table,
-                       'result': result_object, 'sidebar_items': sidebar_items,
-                       'table': table, 'title': title})
+                       'result': result_object, 'table': table})
     else:
         injection_table = hw_injection_table(injection_objects)
         return render(request, 'hw_result.html',
                       {'campaign': campaign, 'injection_table': injection_table,
-                       'result': result_object, 'sidebar_items': sidebar_items,
-                       'table': table, 'title': title})
+                       'result': result_object, 'table': table})

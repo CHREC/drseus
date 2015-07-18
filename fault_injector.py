@@ -15,9 +15,10 @@ from simics import simics
 
 
 class fault_injector:
-    def __init__(self, dut_ip_address, aux_ip_address, dut_serial_port,
-                 aux_serial_port, debugger_ip_address, architecture,
-                 use_aux, new, debug, use_simics, timeout):
+    def __init__(self, campaign_number, dut_ip_address, aux_ip_address,
+                 dut_serial_port, aux_serial_port, debugger_ip_address,
+                 architecture, use_aux, new, debug, use_simics, timeout):
+        self.campaign_number = campaign_number
         self.use_simics = use_simics
         self.use_aux = use_aux
         self.debug = debug
@@ -28,21 +29,21 @@ class fault_injector:
             self.rsakey = RSAKey.generate(1024)
             self.rsakey.write_private_key_file('campaign-data/private.key')
         if self.use_simics:
-            self.debugger = simics(architecture, self.rsakey, use_aux, new,
-                                   debug, timeout)
+            self.debugger = simics(campaign_number, architecture, self.rsakey,
+                                   use_aux, new, debug, timeout)
         else:
             if architecture == 'p2020':
                 self.debugger = bdi_p2020(debugger_ip_address,
                                           dut_ip_address, self.rsakey,
                                           dut_serial_port, aux_ip_address,
-                                          aux_serial_port, self.use_aux,
+                                          aux_serial_port, use_aux,
                                           'root@p2020rdb:~#', debug, timeout)
             elif architecture == 'a9':
                 self.debugger = bdi_arm(debugger_ip_address,
                                         dut_ip_address, self.rsakey,
                                         dut_serial_port, aux_ip_address,
-                                        aux_serial_port, self.use_aux,
-                                        '[root@ZED]#', debug, timeout)
+                                        aux_serial_port, use_aux, '[root@ZED]#',
+                                        debug, timeout)
             if new:
                 self.debugger.reset_dut()
                 if self.use_aux:
@@ -105,11 +106,13 @@ class fault_injector:
                                                    self.aux_command, iterations)
         if output_file:
             if use_aux_output:
-                self.debugger.aux.get_file(output_file,
-                                           'campaign-data/gold_'+output_file)
+                self.debugger.aux.get_file(output_file, 'campaign-data/' +
+                                           str(self.campaign_number)+'/gold_' +
+                                           output_file)
             else:
-                self.debugger.dut.get_file(output_file,
-                                           'campaign-data/gold_'+output_file)
+                self.debugger.dut.get_file(output_file, 'campaign-data/' +
+                                           str(self.campaign_number)+'/gold_' +
+                                           output_file)
         if self.use_simics:
             cycles_between = self.debugger.create_checkpoints(
                 self.command, self.aux_command, num_cycles, num_checkpoints)
@@ -119,7 +122,7 @@ class fault_injector:
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
-            'INSERT INTO drseus_logging_campaign_data '
+            'INSERT INTO drseus_logging_campaign '
             '(application,output_file,command,aux_command,use_aux,'
             'use_aux_output,exec_time,architecture,use_simics,dut_output,'
             'aux_output,debugger_output,paramiko_output,aux_paramiko_output,'
@@ -141,20 +144,25 @@ class fault_injector:
         sql_db.commit()
         sql_db.close()
         if not self.use_simics:
-            os.mkdir('campaign-data/dut-files')
+            os.makedirs('campaign-data/'+str(self.campaign_number)+'/dut-files')
             for item in files:
-                shutil.copy(item, 'campaign-data/dut-files/')
+                shutil.copy(item, 'campaign-data/'+str(self.campaign_number) +
+                                  '/dut-files/')
             if self.use_aux:
-                os.mkdir('campaign-data/aux-files')
+                os.makedirs('campaign-data/'+str(self.campaign_number) +
+                            '/aux-files')
                 for item in files_aux:
-                    shutil.copy(item, 'campaign-data/aux-files/')
+                    shutil.copy(item, 'campaign-data/' +
+                                      str(self.campaign_number)+'/aux-files/')
         self.close()
 
     def prepare_aux(self):
         self.debugger.aux.do_login()
         files_aux = []
-        for item in os.listdir('campaign-data/aux-files'):
-            files_aux.append('campaign-data/aux-files/'+item)
+        for item in os.listdir('campaign-data/'+str(self.campaign_number) +
+                               '/aux-files'):
+            files_aux.append('campaign-data/'+str(self.campaign_number) +
+                             '/aux-files/'+item)
         self.debugger.aux.send_files(files_aux)
 
     def inject_faults(self, iteration, num_injections, selected_targets,
@@ -177,8 +185,10 @@ class fault_injector:
             self.debugger.reset_dut()
             self.debugger.dut.do_login()
             files = []
-            for item in os.listdir('campaign-data/dut-files'):
-                files.append('campaign-data/dut-files/'+item)
+            for item in os.listdir('campaign-data/'+str(self.campaign_number) +
+                                   '/dut-files'):
+                files.append('campaign-data/'+str(self.campaign_number) +
+                             '/dut-files/'+item)
             self.debugger.dut.send_files(files)
             # if self.use_aux:
             #     aux_process.join()
@@ -193,10 +203,13 @@ class fault_injector:
     def check_output(self, number, output_file, use_aux_output):
         missing_output = False
         data_diff = -1.0
-        os.mkdir('campaign-data/results/'+str(number))
-        result_folder = 'campaign-data/results/'+str(number)
+        os.makedirs('campaign-data/'+str(self.campaign_number)+'/results/' +
+                    str(number))
+        result_folder = ('campaign-data/'+str(self.campaign_number) +
+                         '/results/'+str(number))
         output_location = result_folder+'/'+output_file
-        gold_location = 'campaign-data/gold_'+output_file
+        gold_location = ('campaign-data/'+str(self.campaign_number)+'/gold_' +
+                         output_file)
         try:
             if use_aux_output:
                 self.debugger.aux.get_file(output_file, output_location,
@@ -296,12 +309,12 @@ class fault_injector:
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
-            'INSERT INTO drseus_logging_result (campaign_data_id,'
+            'INSERT INTO drseus_logging_result (campaign_id,'
             'iteration,outcome,outcome_category,data_diff,detected_errors,'
             'dut_output,aux_output,debugger_output,paramiko_output,'
             'aux_paramiko_output,timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', (
-                1, iteration, outcome, outcome_category, data_diff,
-                detected_errors,
+                self.campaign_number, iteration, outcome, outcome_category,
+                data_diff, detected_errors,
                 self.debugger.dut.output.decode('utf-8', 'ignore'),
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
                 self.use_aux else '', self.debugger.output,
@@ -361,7 +374,7 @@ class fault_injector:
                     outcome_category = 'Simics error'
                 finally:
                     shutil.rmtree('simics-workspace/injected-checkpoints/' +
-                                  str(iteration))
+                                  str(self.campaign_number)+'/'+str(iteration))
             self.log_result(iteration, outcome, outcome_category,
                             detected_errors, data_diff)
             if not self.use_simics:
@@ -379,6 +392,7 @@ class fault_injector:
         print(colored('performing '+str(iterations)+' iterations', 'blue'))
         if self.use_simics:
             self.debugger.launch_simics('gold-checkpoints/' +
+                                        str(self.campaign_number)+'/' +
                                         str(self.num_checkpoints-1)+'_merged')
             self.debugger.continue_dut()
         if self.use_aux and not self.use_simics:

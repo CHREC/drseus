@@ -21,7 +21,9 @@ class simics:
                       'where nothing is mapped', 'Error']
 
     # create simics instance and boot device
-    def __init__(self, architecture, rsakey, use_aux, new, debug, timeout):
+    def __init__(self, campaign_number, architecture, rsakey, use_aux, new,
+                 debug, timeout):
+        self.campaign_number = campaign_number
         self.debug = debug
         self.timeout = timeout
         if architecture == 'p2020':
@@ -296,7 +298,7 @@ class simics:
         return (end - start) / iterations
 
     def create_checkpoints(self, command, aux_command, cycles, num_checkpoints):
-        os.mkdir('simics-workspace/gold-checkpoints')
+        os.makedirs('simics-workspace/gold-checkpoints/'+str(self.campaign_number))
         step_cycles = cycles / num_checkpoints
         self.halt_dut()
         if self.use_aux:
@@ -304,7 +306,9 @@ class simics:
         self.dut.serial.write('./'+command+'\n')
         for checkpoint in xrange(num_checkpoints):
             self.command('run-cycles '+str(step_cycles))
-            incremental_checkpoint = ('gold-checkpoints/'+str(checkpoint))
+            incremental_checkpoint = ('gold-checkpoints/' +
+                                      str(self.campaign_number)+'/' +
+                                      str(checkpoint))
             self.command('write-configuration '+incremental_checkpoint)
             merged_checkpoint = incremental_checkpoint+'_merged'
             if checkpoint == num_checkpoints-1:
@@ -331,7 +335,8 @@ class simics:
         latent_faults = 0
         for injection_number in xrange(len(checkpoints_to_inject)):
             checkpoint_number = checkpoints_to_inject[injection_number]
-            injected_checkpoint = inject_checkpoint(iteration,
+            injected_checkpoint = inject_checkpoint(self.campaign_number,
+                                                    iteration,
                                                     injection_number,
                                                     checkpoint_number,
                                                     self.board,
@@ -377,8 +382,9 @@ class simics:
         for checkpoint_number in xrange(checkpoint_number + 1,
                                         last_checkpoint + 1):
             self.command('run-cycles '+str(cycles_between_checkpoints))
-            incremental_checkpoint = ('injected-checkpoints/'+str(iteration) +
-                                      '/'+str(checkpoint_number))
+            incremental_checkpoint = ('injected-checkpoints/' +
+                                      str(self.campaign_number)+'/' +
+                                      str(iteration)+'/'+str(checkpoint_number))
             monitor = compare_all or checkpoint_number == num_checkpoints - 1
             if monitor or checkpoint_number == last_checkpoint:
                 self.command('write-configuration '+incremental_checkpoint)
@@ -387,9 +393,11 @@ class simics:
                 self.command('!bin/checkpoint-merge '+incremental_checkpoint +
                              ' '+monitored_checkpoint)
                 gold_incremental_checkpoint = ('gold-checkpoints/' +
+                                               str(self.campaign_number)+'/' +
                                                str(checkpoint_number))
-                gold_checkpoint = ('gold-checkpoints/'+str(checkpoint_number) +
-                                   '_merged')
+                gold_checkpoint = ('gold-checkpoints/' +
+                                   str(self.campaign_number)+'/' +
+                                   str(checkpoint_number)+'_merged')
                 if not os.path.exists('simics-workspace/'+gold_checkpoint):
                     self.command('!bin/checkpoint-merge ' +
                                  gold_incremental_checkpoint+' ' +

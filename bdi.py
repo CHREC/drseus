@@ -90,7 +90,7 @@ class bdi:
                 aux_process.join()
         return (end - start) / iterations
 
-    def inject_fault(self, iteration, injection_times, command,
+    def inject_fault(self, campaign_number, iteration, injection_times, command,
                      selected_targets):
         if selected_targets is None:
             registers = self.registers
@@ -130,13 +130,13 @@ class bdi:
             sql = sql_db.cursor()
             sql.execute(
                 'INSERT INTO drseus_logging_injection '
-                '(result_id,injection_number,register,bit,gold_value,'
-                'injected_value,time,time_rounded,core,timestamp) VALUES '
-                '(?,?,?,?,?,?,?,?,?,?)',
+                '(campaign_id,result_id,injection_number,register,bit,'
+                'gold_value,injected_value,time,time_rounded,core,timestamp) '
+                'VALUES (?,?,?,?,?,?,?,?,?,?)',
                 (
-                    iteration, injection, register, bit, gold_value,
-                    injected_value, injection_time, round(injection_time, 1),
-                    core, datetime.now()
+                    campaign_number, iteration, injection, register, bit,
+                    gold_value, injected_value, injection_time,
+                    round(injection_time, 1), core, datetime.now()
                 )
             )
             sql_db.commit()

@@ -370,8 +370,8 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
     return injection_data
 
 
-def inject_checkpoint(iteration, injection_number, checkpoint_number,
-                      board, selected_targets, debug):
+def inject_checkpoint(campaign_number, iteration, injection_number,
+                      checkpoint_number, board, selected_targets, debug):
     """
     Create a new injected checkpoint (only performing injection on the
     selected_targets if provided) and return the path of the injected
@@ -386,13 +386,14 @@ def inject_checkpoint(iteration, injection_number, checkpoint_number,
                                 ' invalid injection target: '+target)
     if injection_number == 0:
         gold_checkpoint = ('simics-workspace/gold-checkpoints/' +
-                           str(checkpoint_number))
+                           str(campaign_number)+'/'+str(checkpoint_number))
         injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
-                               str(iteration)+'/'+str(checkpoint_number) +
-                               '_injected')
+                               str(campaign_number)+'/'+str(iteration)+'/' +
+                               str(checkpoint_number)+'_injected')
     else:
         gold_checkpoint = ('simics-workspace/injected-checkpoints/' +
-                           str(iteration)+'/'+str(checkpoint_number))
+                           str(campaign_number)+'/'+str(iteration)+'/' +
+                           str(checkpoint_number))
         injected_checkpoint = gold_checkpoint+'_injected'
     os.makedirs(injected_checkpoint)
     # copy gold checkpoint files
@@ -419,14 +420,15 @@ def inject_checkpoint(iteration, injection_number, checkpoint_number,
     else:
         register_index = injection_data['register_index']
     sql.execute(
-        'INSERT INTO drseus_logging_injection (result_id,injection_number,'
-        'register,bit,gold_value,injected_value,checkpoint_number,target_index,'
-        'target,config_object,config_type,register_index,field,timestamp) '
-        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        'INSERT INTO drseus_logging_injection (campaign_id,result_id,'
+        'injection_number,register,bit,gold_value,injected_value,'
+        'checkpoint_number,target_index,target,config_object,config_type,'
+        'register_index,field,timestamp) VALUES '
+        '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         (
-            iteration, injection_number, injection_data['register'],
-            injection_data['bit'], injection_data['gold_value'],
-            injection_data['injected_value'],
+            campaign_number, iteration, injection_number,
+            injection_data['register'], injection_data['bit'],
+            injection_data['gold_value'], injection_data['injected_value'],
             checkpoint_number, injection_data['target_index'],
             injection_data['target'], injection_data['config_object'],
             injection_data['config_type'], register_index,
@@ -462,7 +464,7 @@ def inject_checkpoint(iteration, injection_number, checkpoint_number,
 #                            str(injection_data['injection_number'])+'_'
 #                            'checkpoint-' +
 #                            str(injection_data['checkpoint_number'])+'.ckpt')
-#     os.mkdir(injected_checkpoint)
+#     os.makedirs(injected_checkpoint)
 #     # copy gold checkpoint files
 #     checkpoint_files = os.listdir(gold_checkpoint)
 #     checkpoint_files.remove('config')
@@ -768,9 +770,9 @@ def compare_memory(iteration, checkpoint_number, gold_checkpoint,
                                 changed_blocks, block_size)
         for block in changed_blocks:
             sql.execute('INSERT INTO drseus_logging_simics_memory_diff '
-                        '(result_id,checkpoint_number,image_index,block) '
-                        'VALUES (?,?,?,?)', (iteration, checkpoint_number,
-                                             image_index, hex(block)))
+                        '(campaign_id,result_id,checkpoint_number,image_index,'
+                        'block) VALUES (?,?,?,?)',
+                        (iteration, checkpoint_number, image_index, hex(block)))
     sql_db.commit()
     sql_db.close()
     return errors

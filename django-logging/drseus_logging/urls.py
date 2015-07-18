@@ -17,29 +17,14 @@ Including another URLconf
 from django.conf.urls import patterns
 
 charts_and_tables = [
-    (r'', 'campaign_page', 'Campaign Information'),
-    (r'charts/', 'charts_page', 'Injection Charts'),
-    (r'results/', 'results_page', 'Results Table'),
+    (r'', 'campaign_page'),
+    (r'(?P<campaign_number>[0-9]+)/charts/', 'charts_page',),
+    (r'(?P<campaign_number>[0-9]+)/results/', 'results_page'),
+    (r'(?P<campaign_number>[0-9]+)/result/(?P<iteration>[0-9]+)/',
+     'result_page')
 ]
 
-sidebar_group1 = [
-    (r'../' + myurl, title) for (myurl, view, title) in charts_and_tables
-]
-
-sidebar_groups = [("Navigation", sidebar_group1)]
-
-charts_and_tables.append(
-    (r'result/(?P<iteration>[0-9]+)/', 'result_page', 'Result'))
-
-chart_pattern_tuples = [
-    (
-        r'^' + myurl + r'$',
-        view,
-        {
-            'title': title,
-            'sidebar_items': sidebar_groups
-        }
-    ) for (myurl, view, title) in charts_and_tables
-]
+chart_pattern_tuples = [(r'^' + myurl + r'$', view)
+                        for (myurl, view) in charts_and_tables]
 
 urlpatterns = patterns('drseus_logging.views', *chart_pattern_tuples)

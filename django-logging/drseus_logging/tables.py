@@ -1,50 +1,51 @@
 import django_tables2 as tables
-from .models import (campaign_data, result, injection, simics_register_diff,
+from .models import (campaign, result, injection, simics_register_diff,
                      simics_memory_diff)
 
 
-class campaign_data_table(tables.Table):
+class campaign_table(tables.Table):
+    id = tables.TemplateColumn(
+        '<a href="/{{record.id}}/results">{{record.id}}</a>')
     results = tables.Column()
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
-        model = campaign_data
         attrs = {"class": "paleblue"}
-        exclude = ('dut_output', 'debugger_output', 'aux_output',
-                   'paramiko_output', 'aux_paramiko_output')
+        model = campaign
+        exclude = ('aux_output', 'aux_paramiko_output', 'debugger_output',
+                   'dut_output', 'paramiko_output')
 
 
 class result_table(tables.Table):
-    iteration = tables.TemplateColumn(
-        '<a href="/result/{{record.iteration}}">{{record.iteration}}</a>')
     injections = tables.Column()
+    iteration = tables.TemplateColumn(
+        '<a href="../result/{{record.iteration}}">{{record.iteration}}</a>')
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
-        model = result
         attrs = {"class": "paleblue"}
-        exclude = ('campaign_data', 'debugger_output', 'dut_output',
-                   'aux_output', 'paramiko_output', 'aux_paramiko_output')
+        model = result
+        exclude = ('aux_output', 'aux_paramiko_output', 'campaign',
+                   'debugger_output', 'dut_output',  'paramiko_output')
 
 
 class hw_injection_table(tables.Table):
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
-        model = injection
         attrs = {"class": "paleblue"}
-        exclude = ('id', 'result', 'checkpoint_number', 'target_index',
-                   'target', 'config_object', 'config_type', 'register_index',
-                   'field')
+        model = injection
+        exclude = ('config_object', 'config_type', 'checkpoint_number', 'field',
+                   'id', 'register_index', 'result', 'target', 'target_index')
 
 
 class simics_injection_table(tables.Table):
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
-        model = injection
         attrs = {"class": "paleblue"}
-        exclude = ('id', 'result', 'core', 'time', 'time_rounded')
+        model = injection
+        exclude = ('core', 'id', 'result', 'time', 'time_rounded')
 
 
 class simics_register_diff_table(tables.Table):
