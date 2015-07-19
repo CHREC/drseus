@@ -16,7 +16,7 @@ def fix_reg_sort(register):
         return fix_sort(register[0])
 
 
-def outcome_category_chart(queryset):
+def outcome_category_chart(queryset, campaign_data):
     outcomes = sorted(queryset.filter(injection_number=0).values_list(
         'result__outcome_category', 'result__outcome').annotate(
         count=Count('result__outcome_category')), key=lambda x: x[1])
@@ -33,7 +33,7 @@ def outcome_category_chart(queryset):
             'type': 'pie'
         },
         'exporting': {
-            'filename': 'DrSEUS Outcome Categories',
+            'filename': campaign_data.application+' outcome categories',
             'scale': 3,
             'sourceHeight': 480,
             'sourceWidth': 640
@@ -73,7 +73,7 @@ def outcome_category_chart(queryset):
     return chart, zip(*outcome_categories)[0]
 
 
-def outcome_chart(queryset):
+def outcome_chart(queryset, campaign_data):
     outcomes = list(queryset.filter(injection_number=0).values_list(
         'result__outcome').annotate(count=Count('result__outcome')))
     chart = {
@@ -82,7 +82,7 @@ def outcome_chart(queryset):
             'type': 'pie'
         },
         'exporting': {
-            'filename': 'DrSEUS Outcomes',
+            'filename': campaign_data.application+' outcomes',
             'scale': 3,
             'sourceHeight': 480,
             'sourceWidth': 640
@@ -120,7 +120,7 @@ def outcome_chart(queryset):
     return chart, zip(*outcomes)[0]
 
 
-def register_chart(queryset):
+def register_chart(queryset, campaign_data):
     registers = sorted(queryset.values_list('register',
                                             'register_index').distinct(),
                        key=fix_reg_sort)
@@ -133,7 +133,7 @@ def register_chart(queryset):
             'type': 'column'
         },
         'exporting': {
-            'filename': 'DrSEUS Outcomes By Register',
+            'filename': campaign_data.application+' outcomes by register',
             'scale': 3,
             'sourceHeight': 576,
             'sourceWidth': 1024
@@ -191,7 +191,7 @@ def register_chart(queryset):
     return chart
 
 
-def bit_chart(queryset):
+def bit_chart(queryset, campaign_data):
     bits = sorted(queryset.values_list('bit').distinct(), key=fix_sort)
     bits = zip(*bits)[0]
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
@@ -203,10 +203,10 @@ def bit_chart(queryset):
             'type': 'column'
         },
         'exporting': {
+            'filename': campaign_data.application+' outcomes by bit',
             'sourceWidth': 1024,
             'sourceHeight': 576,
             'scale': 3,
-            'filename': 'DrSEUS Outcomes By Bit'
         },
         'plotOptions': {
             'column': {
@@ -251,8 +251,8 @@ def bit_chart(queryset):
     return chart
 
 
-def time_chart(use_simics, queryset):
-    if use_simics:
+def time_chart(queryset, campaign_data):
+    if campaign_data.use_simics:
         times = sorted(queryset.values_list('checkpoint_number').distinct(),
                        key=fix_sort)
     else:
@@ -268,7 +268,7 @@ def time_chart(use_simics, queryset):
             'type': 'column'
         },
         'exporting': {
-            'filename': 'DrSEUS Outcomes Over Time',
+            'filename': campaign_data.application+' outcomes over time',
             'scale': 3,
             'sourceHeight': 576,
             'sourceWidth': 1024
@@ -298,7 +298,7 @@ def time_chart(use_simics, queryset):
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Checkpoint' if use_simics else 'Seconds'
+                'text': 'Checkpoint' if campaign_data.use_simics else 'Seconds'
             }
         },
         'yAxis': {
@@ -311,7 +311,7 @@ def time_chart(use_simics, queryset):
     for outcome in outcomes:
         data = []
         for time in times:
-            if use_simics:
+            if campaign_data.use_simics:
                 data.append(queryset.filter(result__outcome=outcome,
                                             checkpoint_number=time).count())
             else:
@@ -323,15 +323,15 @@ def time_chart(use_simics, queryset):
     return chart
 
 
-def json_charts(queryset, use_simics):
+def json_charts(queryset, campaign_data):
     outcome_categories, outcome_category_list = \
-        outcome_category_chart(queryset)
+        outcome_category_chart(queryset, campaign_data)
     outcome_category_list = dumps(outcome_category_list)
-    outcomes, outcome_list = outcome_chart(queryset)
+    outcomes, outcome_list = outcome_chart(queryset, campaign_data)
     outcome_list = dumps(outcome_list)
-    registers = register_chart(queryset)
-    bits = bit_chart(queryset)
-    times = time_chart(use_simics, queryset)
+    registers = register_chart(queryset, campaign_data)
+    bits = bit_chart(queryset, campaign_data)
+    times = time_chart(queryset, campaign_data)
     outcome_category_chart_click = """
     function(event) {
         var outcome_categories = outcome_category_list;
@@ -400,7 +400,7 @@ def json_charts(queryset, use_simics):
                     ('\"register_chart_click\"', register_chart_click),
                     ('\"bit_chart_click\"', bit_chart_click),
                     ('\"time_chart_click\"',
-                     (simics_time_chart_click if use_simics
+                     (simics_time_chart_click if campaign_data.use_simics
                       else hw_time_chart_click))]
     for replacement in replacements:
         chart_array = chart_array.replace(replacement[0], replacement[1])

@@ -34,6 +34,9 @@
         <div class="related" align="center">
             <h1 style="margin:0;padding:5px">
                 DrSEUS
+                {% if campaign_data.application %}
+                    - {{ campaign_data.application }}
+                {% endif %}
             </h1>
         </div>
         <div class="document">

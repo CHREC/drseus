@@ -30,8 +30,9 @@ def charts_page(request, campaign_number):
     else:
         injection_filter = hw_injection_filter(request.GET,
                                                queryset=injection_objects)
-    chart_array = json_charts(injection_filter.qs, campaign_data.use_simics)
-    return render(request, 'charts.html', {'chart_array': chart_array,
+    chart_array = json_charts(injection_filter.qs, campaign_data)
+    return render(request, 'charts.html', {'campaign_data': campaign_data,
+                                           'chart_array': chart_array,
                                            'filter': injection_filter,
                                            'navigation_items':
                                                navigation_items,
@@ -50,7 +51,7 @@ def campaign_page(request, campaign_number):
         page_items.append(('AUX SCP Log', 'aux_paramiko_output'))
     table = campaign_table(campaign.objects.filter(
         campaign_number=campaign_number))
-    return render(request, 'campaign.html', {'campaign': campaign_data,
+    return render(request, 'campaign.html', {'campaign_data': campaign_data,
                                              'navigation_items':
                                                  navigation_items,
                                              'page_items': page_items,
@@ -81,7 +82,8 @@ def results_page(request, campaign_number):
         result_filter = hw_result_filter(request.GET, queryset=result_objects)
     table = results_table(result_filter.qs)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
-    return render(request, 'results.html', {'filter': result_filter,
+    return render(request, 'results.html', {'campaign_data': campaign_data,
+                                            'filter': result_filter,
                                             'navigation_items':
                                                 navigation_items,
                                             'page_items': page_items,
@@ -132,7 +134,7 @@ def result_page(request, campaign_number, iteration):
         memory_table = None
         register_table = None
         injection_table = hw_injection_table(injection_objects)
-    return render(request, 'result.html', {'campaign': campaign_data,
+    return render(request, 'result.html', {'campaign_data': campaign_data,
                                            'filter': register_filter,
                                            'injection_table': injection_table,
                                            'memory_table': memory_table,

@@ -16,34 +16,34 @@
                                     </a>
                                     DUT Output
                                 </h2>
-                                {{ campaign.dut_output|linebreaksbr }}
-                                {% if campaign.use_aux %}
+                                {{ campaign_data.dut_output|linebreaksbr }}
+                                {% if campaign_data.use_aux %}
                                 <h2 align="center">
                                     <a name="aux_output">
                                     </a>
                                     AUX Output
                                 </h2>
-                                {{ campaign.aux_output|linebreaksbr }}
+                                {{ campaign_data.aux_output|linebreaksbr }}
                                 {% endif %}
                                 <h2 align="center">
                                     <a name="debugger_output">
                                     </a>
                                     Debugger Output
                                 </h2>
-                                {{ campaign.debugger_output|linebreaksbr }}
+                                {{ campaign_data.debugger_output|linebreaksbr }}
                                 <h2 align="center">
                                     <a name="paramiko_output">
                                     </a>
                                     SCP Log
                                 </h2>
-                                {{ campaign.paramiko_output|linebreaksbr }}
-                                {% if campaign.use_aux %}
+                                {{ campaign_data.paramiko_output|linebreaksbr }}
+                                {% if campaign_data.use_aux %}
                                 <h2 align="center">
                                     <a name="aux_paramiko_output">
                                     </a>
                                     AUX SCP Log
                                 </h2>
-                                {{ campaign.aux_paramiko_output|linebreaksbr }}
+                                {{ campaign_data.aux_paramiko_output|linebreaksbr }}
                                 {% endif %}
                             </div>
                         </div>

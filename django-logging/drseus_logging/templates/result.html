@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load django_tables2 %}
 {% block body %}
-{% if campaign.use_simics %}
+{% if campaign_data.use_simics %}
 <div class="source" align="center">
     <h2>
         <a name="result">
@@ -25,7 +25,7 @@
                         DUT Output
                     </h3>
                     {{ result.dut_output|linebreaksbr }}
-                    {% if campaign.use_aux %}
+                    {% if campaign_data.use_aux %}
                     <h3 align="center">
                         <a name="aux_output">
                         </a>
@@ -45,7 +45,7 @@
                         Paramiko Log
                     </h3>
                     {{ result.paramiko_output|linebreaksbr }}
-                    {% if campaign.use_aux %}
+                    {% if campaign_data.use_aux %}
                     <h3 align="center">
                         <a name="aux_paramiko_output">
                         </a>
@@ -101,7 +101,7 @@
             DUT Output
         </h3>
         {{ result.dut_output|linebreaksbr }}
-        {% if campaign.use_aux %}
+        {% if campaign_data.use_aux %}
         <h3 align="center">
             <a name="aux_output">
             </a>
@@ -120,14 +120,14 @@
             </a>
             SCP Log
         </h3>
-        {{ campaign.paramiko_output|linebreaksbr }}
-        {% if campaign.use_aux %}
+        {{ campaign_data.paramiko_output|linebreaksbr }}
+        {% if campaign_data.use_aux %}
         <h3 align="center">
             <a name="aux_paramiko_output">
             </a>
             AUX SCP Log
         </h3>
-        {{ campaign.aux_paramiko_output|linebreaksbr }}
+        {{ campaign_data.aux_paramiko_output|linebreaksbr }}
         {% endif %}
     </div>
 </div>
