@@ -24,8 +24,8 @@ def list_campaigns():
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    sql.execute('SELECT id, application, architecture, use_simics FROM '
-                'drseus_logging_campaign')
+    sql.execute('SELECT campaign_number, application, architecture, use_simics '
+                'FROM drseus_logging_campaign')
     campaign_list = sql.fetchall()
     sql_db.close()
     print('DrSEUS Campaigns:')
@@ -43,16 +43,15 @@ def get_last_campaign():
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    sql.execute('SELECT * FROM drseus_logging_campaign ORDER BY id DESC LIMIT 1'
-                )
+    sql.execute('SELECT campaign_number FROM drseus_logging_campaign ORDER BY '
+                'campaign_number DESC LIMIT 1')
     campaign_data = sql.fetchone()
     if campaign_data is None:
-        iteration = 0
+        campaign_number = 0
     else:
-        iteration = campaign_data['id']
-    sql_db.commit()
+        campaign_number = campaign_data['campaign_number']
     sql_db.close()
-    return iteration
+    return campaign_number
 
 
 def get_campaign_data(campaign_number):
@@ -61,8 +60,8 @@ def get_campaign_data(campaign_number):
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    sql.execute('SELECT * FROM drseus_logging_campaign WHERE '
-                'drseus_logging_campaign.id = '+str(campaign_number))
+    sql.execute('SELECT * FROM drseus_logging_campaign WHERE campaign_number=?',
+                (campaign_number,))
     campaign_data = sql.fetchone()
     sql_db.close()
     return campaign_data
@@ -77,16 +76,17 @@ def get_next_iteration(campaign_number):
     sql.execute('SELECT * FROM drseus_logging_result WHERE '
                 'drseus_logging_result.campaign_id = '+str(campaign_number) +
                 ' ORDER BY iteration DESC LIMIT 1')
-    supervisor_data = sql.fetchone()
-    if supervisor_data is None:
+    result_data = sql.fetchone()
+    if result_data is None:
         iteration = 0
     else:
-        iteration = supervisor_data['iteration']
+        iteration = result_data['iteration']
     # delete incomple injections
-    sql.execute('DELETE FROM drseus_logging_injection WHERE '
-                'drseus_logging_injection.id NOT IN '
-                '(SELECT iteration FROM drseus_logging_result WHERE '
-                'drseus_logging_result.campaign_id = '+str(campaign_number)+')')
+    sql.execute('DELETE FROM drseus_logging_injection WHERE result_id IN '
+                '(SELECT id FROM drseus_logging_result WHERE outcome=?)',
+                ('In progress',))
+    sql.execute('DELETE FROM drseus_logging_result WHERE outcome=?',
+                ('In progress',))
     sql_db.commit()
     sql_db.close()
     return iteration + 1
@@ -99,10 +99,14 @@ def delete_results(campaign_number):
     if os.path.exists('campaign-data/db.sqlite3'):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
-        # TODO: only delete results form campaign number
-        sql.execute('DELETE FROM drseus_logging_simics_register_diff')
-        sql.execute('DELETE FROM drseus_logging_injection')
-        sql.execute('DELETE FROM drseus_logging_result')
+        sql.execute('DELETE FROM drseus_logging_simics_register_diff WHERE '
+                    'result_id IN (SELECT id FROM drseus_logging_result WHERE '
+                    'campaign_id=?)', (campaign_number,))
+        sql.execute('DELETE FROM drseus_logging_injection WHERE '
+                    'result_id IN (SELECT id FROM drseus_logging_result WHERE '
+                    'campaign_id=?)', (campaign_number,))
+        sql.execute('DELETE FROM drseus_logging_result WHERE campaign_id=?',
+                    (campaign_number,))
         sql_db.commit()
         sql_db.close()
         print('flushed database')
@@ -111,6 +115,23 @@ def delete_results(campaign_number):
         shutil.rmtree('simics-workspace/injected-checkpoints/' +
                       str(campaign_number))
         print('deleted injected checkpoints')
+
+
+def delete_campaign(campaign_number):
+    delete_results(campaign_number)
+    if os.path.exists('campaign-data/db.sqlite3'):
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql = sql_db.cursor()
+        sql.execute('DELETE FROM drseus_logging_campaign WHERE campaign_id=?',
+                    (campaign_number,))
+        sql_db.commit()
+        sql_db.close()
+        print('deleted campaign from database')
+    if os.path.exists('simics-workspace/gold-checkpoints/' +
+                      str(campaign_number)):
+        shutil.rmtree('simics-workspace/gold-checkpoints/' +
+                      str(campaign_number))
+        print('deleted gold checkpoints')
 
 
 def new_campaign(application, options):
@@ -165,7 +186,7 @@ def new_campaign(application, options):
                                   str(campaign_number))
     if not os.path.exists('campaign-data/'+str(campaign_number)):
         os.makedirs('campaign-data/'+str(campaign_number))
-    if not os.path.exits('campaign-data/db.sqlite3'):
+    if not os.path.exists('campaign-data/db.sqlite3'):
         os.system('./django-logging/manage.py migrate')
     drseus = fault_injector(campaign_number, dut_ip_address, '10.42.0.20',
                             dut_serial_port, '/dev/ttyUSB0', '10.42.0.50',
@@ -199,9 +220,9 @@ def load_campaign(campaign_data, options):
     elif campaign_data['architecture'] == 'a9':
         dut_ip_address = '10.42.0.30'
         dut_serial_port = '/dev/ttyACM0'
-    drseus = fault_injector(campaign_data['id'], dut_ip_address, '10.42.0.20',
-                            dut_serial_port, '/dev/ttyUSB0', '10.42.0.50',
-                            campaign_data['architecture'],
+    drseus = fault_injector(campaign_data['campaign_number'], dut_ip_address,
+                            '10.42.0.20', dut_serial_port, '/dev/ttyUSB0',
+                            '10.42.0.50', campaign_data['architecture'],
                             campaign_data['use_aux'], False, options.debug,
                             campaign_data['use_simics'], options.seconds)
     drseus.command = campaign_data['command']
@@ -254,7 +275,7 @@ parser = optparse.OptionParser('drseus.py {application} {options}')
 parser.add_option('-N', '--campaign', action='store', type='int', dest='number',
                   default=0, help='campaign number to use, defaults to '
                                   'last campaign created')
-parser.add_option('-D', '--debug', action='store_false', dest='debug',
+parser.add_option('-g', '--debug', action='store_false', dest='debug',
                   default=True,
                   help='display device output')
 parser.add_option('-T', '--timeout', action='store', type='int',
@@ -265,9 +286,17 @@ mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes', 'Not specifying one '
                                   'of these will create a new campaign')
 mode_group.add_option('-b', '--list_campaigns', action='store_true',
                       dest='list', help='list campaigns')
-mode_group.add_option('-d', '--delete', action='store_true', dest='clean',
-                      default=False,
-                      help='delete results and/or injected checkpoints')
+mode_group.add_option('-d', '--delete_results', action='store_true',
+                      dest='delete_results', default=False,
+                      help='delete results and/or injected checkpoints for a '
+                           'campaign')
+mode_group.add_option('-e', '--delete_campaign', action='store_true',
+                      dest='delete_campaign', default=False,
+                      help='delete campaign (results and campaign information)')
+mode_group.add_option('-D', '--delete_all', action='store_true',
+                      dest='delete_all', default=False,
+                      help='delete results and/or injected checkpoints for all '
+                           'campaigns')
 mode_group.add_option('-i', '--inject', action='store_true', dest='inject',
                       default=False,
                       help='perform fault injections on an existing campaign')
@@ -380,7 +409,21 @@ options, args = parser.parse_args()
 
 if options.list:
     list_campaigns()
-elif options.clean:
+elif options.delete_all:
+    if os.path.exists('simics-workspace/gold-checkpoints'):
+        shutil.rmtree('simics-workspace/gold-checkpoints')
+        print('deleted gold checkpoints')
+    if os.path.exists('simics-workspace/injected-checkpoints'):
+        shutil.rmtree('simics-workspace/injected-checkpoints')
+        print('deleted injected checkpoints')
+    if os.path.exists('campaign-data'):
+        shutil.rmtree('campaign-data')
+        print('deleted campaign data')
+elif options.delete_campaign:
+    if not options.number:
+        options.number = get_last_campaign()
+    delete_campaign(options.number)
+elif options.delete_results:
     if not options.number:
         options.number = get_last_campaign()
     delete_results(options.number)

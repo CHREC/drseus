@@ -8,6 +8,7 @@
             DrSEUS
         </title>
         {% load static %}
+        <link rel="shortcut icon" type="image/png" href="{{STATIC_URL}}img/favicon.png"/>
         <link rel="stylesheet" type="text/css" href="{% get_static_prefix %}css/nature.css">
         <link rel="stylesheet" type="text/css" href="{% get_static_prefix %}css/table.css">
         <script src="{% get_static_prefix %}js/jquery-2.1.4.min.js" type="text/javascript">
@@ -32,7 +33,7 @@
     <body>
         <div class="related" align="center">
             <h1 style="margin:0;padding:5px">
-                DrSEUS Campaign Results
+                DrSEUS
             </h1>
         </div>
         <div class="document">
@@ -46,22 +47,50 @@
             </div>
             <div class="sphinxsidebar">
                 <div class="sphinxsidebarwrapper">
-                    {% for cname, clist in sidebar_items %}
                     <h3>
-                        {{ cname }}
+                        DrSEUS Navigation
                     </h3>
                     <ul>
-                        {% for link, title in clist %}
-                        <li>
-                            <a class="reference internal" href="../../{{link}}">
-                                {{ title }}
-                            </a>
-                        </li>
-                        {% endfor %}
+                        <ul>
+                            <li>
+                                <a class="reference internal" href="/">
+                                    Campaign List
+                                </a>
+                            </li>
+                        </ul>
                     </ul>
-                    {% endfor %}
-                    {% block page_links %}
-                    {% endblock %}
+                    {% if navigation_items %}
+                    <h3>
+                        Campaign Navigation
+                    </h3>
+                    <ul>
+                        <ul>
+                        {% for name, link in navigation_items %}
+                            <li>
+                                <a class="reference internal" href="{{ link }}">
+                                    {{ name }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    </ul>
+                    {% endif %}
+                    {% if page_items %}
+                    <h3>
+                        Page Navigation
+                    </h3>
+                    <ul>
+                        <ul>
+                        {% for name, link in page_items %}
+                            <li>
+                                <a class="reference internal" href="#{{ link }}">
+                                    {{ name }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    </ul>
+                    {% endif %}
                     {% if filter %}
                     <h3>
                         Filter

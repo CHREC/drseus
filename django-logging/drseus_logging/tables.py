@@ -4,8 +4,9 @@ from .models import (campaign, result, injection, simics_register_diff,
 
 
 class campaign_table(tables.Table):
-    id = tables.TemplateColumn(
-        '<a href="/{{record.id}}/results">{{record.id}}</a>')
+    campaign_number = tables.TemplateColumn(
+        '<a href="/{{record.campaign_number}}/results">'
+        '{{record.campaign_number}}</a>')
     results = tables.Column()
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
@@ -17,6 +18,17 @@ class campaign_table(tables.Table):
 
 
 class result_table(tables.Table):
+    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+
+    class Meta:
+        attrs = {"class": "paleblue"}
+        model = result
+        exclude = ('aux_output', 'aux_paramiko_output', 'campaign',
+                   'debugger_output', 'dut_output', 'id', 'iteration',
+                   'paramiko_output')
+
+
+class results_table(tables.Table):
     injections = tables.Column()
     iteration = tables.TemplateColumn(
         '<a href="../result/{{record.iteration}}">{{record.iteration}}</a>')
@@ -26,7 +38,7 @@ class result_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = result
         exclude = ('aux_output', 'aux_paramiko_output', 'campaign',
-                   'debugger_output', 'dut_output',  'paramiko_output')
+                   'debugger_output', 'dut_output', 'id', 'paramiko_output')
 
 
 class hw_injection_table(tables.Table):
@@ -45,7 +57,8 @@ class simics_injection_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = injection
-        exclude = ('core', 'id', 'result', 'time', 'time_rounded')
+        exclude = ('config_object', 'config_type', 'core', 'id', 'result',
+                   'time', 'time_rounded')
 
 
 class simics_register_diff_table(tables.Table):

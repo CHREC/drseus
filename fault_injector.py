@@ -123,15 +123,15 @@ class fault_injector:
         sql = sql_db.cursor()
         sql.execute(
             'INSERT INTO drseus_logging_campaign '
-            '(application,output_file,command,aux_command,use_aux,'
-            'use_aux_output,exec_time,architecture,use_simics,dut_output,'
-            'aux_output,debugger_output,paramiko_output,aux_paramiko_output,'
-            'num_cycles,num_checkpoints,cycles_between,timestamp) VALUES '
-            '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            '(campaign_number,application,output_file,command,aux_command,'
+            'use_aux,use_aux_output,exec_time,architecture,'
+            'use_simics,dut_output,aux_output,debugger_output,paramiko_output,'
+            'aux_paramiko_output,num_cycles,num_checkpoints,cycles_between,'
+            'timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
             (
-                application, output_file, self.command, self.aux_command,
-                self.use_aux, use_aux_output, exec_time, architecture,
-                self.use_simics,
+                self.campaign_number, application, output_file, self.command,
+                self.aux_command, self.use_aux, use_aux_output, exec_time,
+                architecture, self.use_simics,
                 self.debugger.dut.output.decode('utf-8', 'ignore'),
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
                 self.use_aux else '',
@@ -165,8 +165,20 @@ class fault_injector:
                              '/aux-files/'+item)
         self.debugger.aux.send_files(files_aux)
 
-    def inject_faults(self, iteration, num_injections, selected_targets,
-                      compare_all):
+    def get_result_id(self, iteration):
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql = sql_db.cursor()
+        sql.execute('INSERT INTO drseus_logging_result (campaign_id,iteration'
+                    ',outcome,timestamp) VALUES (?,?,?,?)',
+                    (self.campaign_number, iteration, 'In progress',
+                     datetime.now()))
+        sql_db.commit()
+        result_id = sql.lastrowid
+        sql_db.close()
+        return result_id
+
+    def inject_faults(self, result_id, iteration, num_injections,
+                      selected_targets, compare_all):
         if self.use_simics:
             checkpoint_nums = range(self.num_checkpoints-1)
             injected_checkpoint_nums = []
@@ -175,7 +187,7 @@ class fault_injector:
                 checkpoint_nums.remove(checkpoint_num)
                 injected_checkpoint_nums.append(checkpoint_num)
             injected_checkpoint_nums = sorted(injected_checkpoint_nums)
-            return self.debugger.inject_fault(iteration,
+            return self.debugger.inject_fault(result_id, iteration,
                                               injected_checkpoint_nums,
                                               selected_targets,
                                               self.cycles_between,
@@ -196,7 +208,7 @@ class fault_injector:
             for i in xrange(num_injections):
                 injection_times.append(random.uniform(0, self.exec_time))
             injection_times = sorted(injection_times)
-            self.debugger.inject_fault(iteration, injection_times,
+            self.debugger.inject_fault(result_id, iteration, injection_times,
                                        self.command, selected_targets)
             return 0
 
@@ -297,8 +309,8 @@ class fault_injector:
                 outcome_category = 'No error'
         return outcome, outcome_category, detected_errors, data_diff
 
-    def log_result(self, iteration, outcome, outcome_category, detected_errors,
-                   data_diff):
+    def log_result(self, result_id, iteration, outcome, outcome_category,
+                   detected_errors, data_diff):
         print(colored('iteration: '+str(iteration), 'blue'))
         print(colored('outcome: '+outcome_category+' - '+outcome, 'blue'),
               end='')
@@ -309,18 +321,17 @@ class fault_injector:
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute(
-            'INSERT INTO drseus_logging_result (campaign_id,'
-            'iteration,outcome,outcome_category,data_diff,detected_errors,'
-            'dut_output,aux_output,debugger_output,paramiko_output,'
-            'aux_paramiko_output,timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', (
-                self.campaign_number, iteration, outcome, outcome_category,
-                data_diff, detected_errors,
+            'UPDATE drseus_logging_result SET outcome=?,outcome_category=?,'
+            'data_diff=?,detected_errors=?,dut_output=?,aux_output=?,'
+            'debugger_output=?,paramiko_output=?,aux_paramiko_output=?,'
+            'timestamp=? WHERE id=?', (
+                outcome, outcome_category, data_diff, detected_errors,
                 self.debugger.dut.output.decode('utf-8', 'ignore'),
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
                 self.use_aux else '', self.debugger.output,
                 self.debugger.dut.paramiko_output,
                 self.debugger.aux.paramiko_output if self.use_aux else '',
-                datetime.now()
+                datetime.now(), result_id
             )
         )
         sql_db.commit()
@@ -335,10 +346,12 @@ class fault_injector:
             with iteration_counter.get_lock():
                 iteration = iteration_counter.value
                 iteration_counter.value += 1
+            result_id = self.get_result_id(iteration)
             if self.use_aux and not self.use_simics:
                 self.debugger.aux.serial.write('./'+self.aux_command+'\n')
             try:
-                latent_faults = self.inject_faults(iteration, num_injections,
+                latent_faults = self.inject_faults(result_id, iteration,
+                                                   num_injections,
                                                    selected_targets,
                                                    compare_all)
                 self.debugger.continue_dut()
@@ -375,7 +388,7 @@ class fault_injector:
                 finally:
                     shutil.rmtree('simics-workspace/injected-checkpoints/' +
                                   str(self.campaign_number)+'/'+str(iteration))
-            self.log_result(iteration, outcome, outcome_category,
+            self.log_result(result_id, iteration, outcome, outcome_category,
                             detected_errors, data_diff)
             if not self.use_simics:
                 self.debugger.output = ''
@@ -399,13 +412,14 @@ class fault_injector:
             self.prepare_aux()
         for iteration in xrange(starting_iteration,
                                 starting_iteration + iterations):
+            result_id = self.get_result_id(iteration)
             if self.use_aux:
                 self.debugger.aux.serial.write('./'+self.aux_command+'\n')
             self.debugger.dut.serial.write('./'+self.command+'\n')
             outcome, outcome_category, detected_errors, data_diff = \
                 self.monitor_execution(iteration, 0, output_file,
                                        use_aux_output)
-            self.log_result(iteration, outcome, outcome_category,
+            self.log_result(result_id, iteration, outcome, outcome_category,
                             detected_errors, data_diff)
             self.debugger.dut.output = ''
             self.debugger.dut.paramiko_output = ''

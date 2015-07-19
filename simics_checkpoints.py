@@ -370,7 +370,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
     return injection_data
 
 
-def inject_checkpoint(campaign_number, iteration, injection_number,
+def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
                       checkpoint_number, board, selected_targets, debug):
     """
     Create a new injected checkpoint (only performing injection on the
@@ -420,19 +420,17 @@ def inject_checkpoint(campaign_number, iteration, injection_number,
     else:
         register_index = injection_data['register_index']
     sql.execute(
-        'INSERT INTO drseus_logging_injection (campaign_id,result_id,'
-        'injection_number,register,bit,gold_value,injected_value,'
-        'checkpoint_number,target_index,target,config_object,config_type,'
-        'register_index,field,timestamp) VALUES '
-        '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        'INSERT INTO drseus_logging_injection (result_id,injection_number,'
+        'register,bit,gold_value,injected_value,checkpoint_number,target_index,'
+        'target,config_object,config_type,register_index,field,timestamp) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         (
-            campaign_number, iteration, injection_number,
-            injection_data['register'], injection_data['bit'],
-            injection_data['gold_value'], injection_data['injected_value'],
-            checkpoint_number, injection_data['target_index'],
-            injection_data['target'], injection_data['config_object'],
-            injection_data['config_type'], register_index,
-            injection_data['field'], datetime.now()
+            result_id, injection_number, injection_data['register'],
+            injection_data['bit'], injection_data['gold_value'],
+            injection_data['injected_value'], checkpoint_number,
+            injection_data['target_index'], injection_data['target'],
+            injection_data['config_object'], injection_data['config_type'],
+            register_index, injection_data['field'], datetime.now()
         )
     )
     sql_db.commit()
@@ -580,7 +578,7 @@ def parse_registers(config_file, board, targets):
     return registers
 
 
-def compare_registers(iteration, checkpoint_number, gold_checkpoint,
+def compare_registers(result_id, checkpoint_number, gold_checkpoint,
                       monitored_checkpoint, board):
     """
     Compares the register values of the checkpoint_number for iteration
@@ -623,8 +621,8 @@ def compare_registers(iteration, checkpoint_number, gold_checkpoint,
                                 '(result_id,checkpoint_number,'
                                 'config_object,register,gold_value,'
                                 'monitored_value) VALUES (?,?,?,?,?,?)', (
-                                    iteration, checkpoint_number,
-                                    target_key, register,
+                                    result_id, checkpoint_number, target_key,
+                                    register,
                                     gold_registers[target_key][register],
                                     monitored_registers[target_key][register]
                                 )
@@ -642,7 +640,7 @@ def compare_registers(iteration, checkpoint_number, gold_checkpoint,
                                     '(result_id,checkpoint_number,'
                                     'config_object,register,gold_value,'
                                     'monitored_value) VALUES (?,?,?,?,?,?)', (
-                                        iteration, checkpoint_number,
+                                        result_id, checkpoint_number,
                                         target_key, register+':'+str(index1),
                                         gold_registers[target_key]
                                                       [register][index1],
@@ -665,7 +663,7 @@ def compare_registers(iteration, checkpoint_number, gold_checkpoint,
                                         'config_object,register,gold_value,'
                                         'monitored_value) VALUES (?,?,?,?,?,?)',
                                         (
-                                            iteration, checkpoint_number,
+                                            result_id, checkpoint_number,
                                             target_key, register+':' +
                                             str(index1)+':'+str(index2),
                                             gold_registers[target_key][register]
@@ -726,7 +724,7 @@ def extract_diff_blocks(gold_ram, monitored_ram, incremental_checkpoint,
                       ' --output='+monitored_block)
 
 
-def compare_memory(iteration, checkpoint_number, gold_checkpoint,
+def compare_memory(result_id, checkpoint_number, gold_checkpoint,
                    monitored_checkpoint, board, extract_blocks=False):
     """
     Compare the memory contents of gold_checkpoint with monitored_checkpoint
@@ -770,9 +768,9 @@ def compare_memory(iteration, checkpoint_number, gold_checkpoint,
                                 changed_blocks, block_size)
         for block in changed_blocks:
             sql.execute('INSERT INTO drseus_logging_simics_memory_diff '
-                        '(campaign_id,result_id,checkpoint_number,image_index,'
-                        'block) VALUES (?,?,?,?)',
-                        (iteration, checkpoint_number, image_index, hex(block)))
+                        '(result_id,checkpoint_number,image_index,block) '
+                        'VALUES (?,?,?,?)',
+                        (result_id, checkpoint_number, image_index, hex(block)))
     sql_db.commit()
     sql_db.close()
     return errors

@@ -8,6 +8,7 @@ class campaign_manager(models.Manager):
 
 
 class campaign(models.Model):
+    campaign_number = models.IntegerField(primary_key=True)
     application = models.TextField()
     output_file = models.TextField()
     command = models.TextField()
@@ -39,27 +40,26 @@ class result(models.Model):
     campaign = models.ForeignKey(campaign)
     iteration = models.IntegerField()
     outcome = models.TextField()
-    outcome_category = models.TextField()
-    data_diff = models.FloatField()
-    detected_errors = models.IntegerField()
-    dut_output = models.TextField()
-    aux_output = models.TextField()
-    debugger_output = models.TextField()
-    paramiko_output = models.TextField()
-    aux_paramiko_output = models.TextField()
+    outcome_category = models.TextField(null=True)
+    data_diff = models.FloatField(null=True)
+    detected_errors = models.IntegerField(null=True)
+    dut_output = models.TextField(null=True)
+    aux_output = models.TextField(null=True)
+    debugger_output = models.TextField(null=True)
+    paramiko_output = models.TextField(null=True)
+    aux_paramiko_output = models.TextField(null=True)
     timestamp = models.DateTimeField()
     objects = result_manager()
 
 
 class injection_manager(models.Manager):
     def get_queryset(self):
-        return super(injection_manager, self).get_queryset().filter(
-            result__campaign_id__gt=0)
+        return super(injection_manager, self).get_queryset().exclude(
+            result__outcome='In progress')
 
 
 class injection(models.Model):
     # commond fields
-    campaign = models.ForeignKey(campaign)
     result = models.ForeignKey(result)
     injection_number = models.IntegerField()
     register = models.TextField()
@@ -84,7 +84,6 @@ class injection(models.Model):
 
 
 class simics_register_diff(models.Model):
-    campaign = models.ForeignKey(campaign)
     result = models.ForeignKey(result)
     checkpoint_number = models.IntegerField()
     config_object = models.TextField()
@@ -94,7 +93,6 @@ class simics_register_diff(models.Model):
 
 
 class simics_memory_diff(models.Model):
-    campaign = models.ForeignKey(campaign)
     result = models.ForeignKey(result)
     checkpoint_number = models.IntegerField()
     image_index = models.IntegerField()

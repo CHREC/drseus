@@ -15,8 +15,8 @@ class dut:
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
                  baud_rate=115200, ssh_port=22, color='green'):
         if debug:
-            paramiko.util.log_to_file('paramiko_'+ip_address+'_'+str(ssh_port) +
-                                      '.log')
+            paramiko.util.log_to_file('campaign-data/paramiko_'+ip_address+'_' +
+                                      str(ssh_port)+'.log')
         self.output = ''
         self.paramiko_output = ''
         try:
@@ -48,7 +48,7 @@ class dut:
         ssh.close()
         if self.debug:
             print(colored('files sent', 'blue'))
-        paramiko_log = ('paramiko_'+self.ip_address+'_' +
+        paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
         if os.path.exists(paramiko_log):
             with open(paramiko_log) as log_file:
@@ -64,7 +64,7 @@ class dut:
         dut_scp.get(file, local_path=local_path)
         dut_scp.close()
         ssh.close()
-        paramiko_log = ('paramiko_'+self.ip_address+'_' +
+        paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
         if os.path.exists(paramiko_log):
             with open(paramiko_log) as log_file:
