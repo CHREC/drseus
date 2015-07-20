@@ -17,7 +17,7 @@ navigation_items = (('Campaign Information', '../campaign'),
 
 
 def charts_page(request, campaign_number):
-    page_items = (('Outcomes', 'outcomes'),
+    page_items = (('Outcomes & Categories', 'outcomes'),
                   ('Outcomes By Register', 'registers'),
                   ('Outcomes By Bit', 'bits'),
                   ('Outcomes Over Time', 'times'))
@@ -65,12 +65,6 @@ def campaigns_page(request):
 
 def results_page(request, campaign_number):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
-    page_items = [('Result', 'result'), ('Injections', 'injections'),
-                  ('DUT Output', 'dut_output')]
-    if campaign_data.use_aux:
-        page_items.append(('AUX Output', 'aux_output'))
-    page_items.extend([('Debugger Output', 'debugger_output'),
-                       ('SCP Log', 'paramiko_output')])
     if campaign_data.use_aux:
         page_items.append(('AUX SCP Log', 'aux_paramiko_output'))
     result_objects = result.objects.filter(
@@ -86,7 +80,6 @@ def results_page(request, campaign_number):
                                             'filter': result_filter,
                                             'navigation_items':
                                                 navigation_items,
-                                            'page_items': page_items,
                                             'table': table})
 
 

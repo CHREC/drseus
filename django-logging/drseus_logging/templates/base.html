@@ -54,28 +54,24 @@
                         DrSEUS Navigation
                     </h3>
                     <ul>
-                        <ul>
-                            <li>
-                                <a class="reference internal" href="/">
-                                    Campaign List
-                                </a>
-                            </li>
-                        </ul>
+                        <li>
+                            <a class="reference internal" href="/">
+                                Campaign List
+                            </a>
+                        </li>
                     </ul>
                     {% if navigation_items %}
                     <h3>
                         Campaign Navigation
                     </h3>
                     <ul>
-                        <ul>
-                        {% for name, link in navigation_items %}
-                            <li>
-                                <a class="reference internal" href="{{ link }}">
-                                    {{ name }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                        </ul>
+                    {% for name, link in navigation_items %}
+                        <li>
+                            <a class="reference internal" href="{{ link }}">
+                                {{ name }}
+                            </a>
+                        </li>
+                    {% endfor %}
                     </ul>
                     {% endif %}
                     {% if page_items %}
@@ -83,15 +79,13 @@
                         Page Navigation
                     </h3>
                     <ul>
-                        <ul>
-                        {% for name, link in page_items %}
-                            <li>
-                                <a class="reference internal" href="#{{ link }}">
-                                    {{ name }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                        </ul>
+                    {% for name, link in page_items %}
+                        <li>
+                            <a class="reference internal" href="#{{ link }}">
+                                {{ name }}
+                            </a>
+                        </li>
+                    {% endfor %}
                     </ul>
                     {% endif %}
                     {% if filter %}
