@@ -15,7 +15,6 @@ from fault_injector import fault_injector
 # TODO: implement persistent fault detection
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: reimplement checkpoint regeneration with multiple injections
-# TODO: fix saving iteration as result_id (won't work with multiple campaigns)
 
 
 def list_campaigns():
@@ -37,8 +36,8 @@ def list_campaigns():
 
 
 def get_last_campaign():
-    if not os.path.exists('campaign-data') or \
-            not os.path.exists('campaign-data/db.sqlite3'):
+    if (not os.path.exists('campaign-data') or
+            not os.path.exists('campaign-data/db.sqlite3')):
         return 0
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql_db.row_factory = sqlite3.Row

@@ -148,13 +148,13 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                 random_bit = randrange(total_bits)
                 if random_bit < fields[field_to_inject]['bits_l']:
                     register_index[-1] = fields[field_to_inject]['index_l']
-                    start_bit_index = \
-                        fields[field_to_inject]['bit_indicies_l'][0]
+                    start_bit_index = (fields[field_to_inject]
+                                             ['bit_indicies_l'][0])
                     end_bit_index = fields[field_to_inject]['bit_indicies_l'][1]
                 else:
                     register_index[-1] = fields[field_to_inject]['index_h']
-                    start_bit_index = \
-                        fields[field_to_inject]['bit_indicies_h'][0]
+                    start_bit_index = (fields[field_to_inject]
+                                             ['bit_indicies_h'][0])
                     end_bit_index = fields[field_to_inject]['bit_indicies_h'][1]
             else:
                 register_index[-1] = fields[field_to_inject]['index']
@@ -164,8 +164,8 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
             bit_to_inject = randrange(start_bit_index, end_bit_index+1)
         else:
             if 'bits' in targets[target]['registers'][register]:
-                num_bits_to_inject = \
-                    targets[target]['registers'][register]['bits']
+                num_bits_to_inject = (targets[target]['registers']
+                                             [register]['bits'])
             else:
                 num_bits_to_inject = 32
             bit_to_inject = randrange(num_bits_to_inject)
@@ -175,8 +175,8 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                            ['adjustBit'][bit_to_inject]
                 )
             if 'actualBits' in targets[target]['registers'][register]:
-                num_bits_to_inject = \
-                    targets[target]['registers'][register]['actualBits']
+                num_bits_to_inject = (targets[target]['registers']
+                                             [register]['actualBits'])
             if 'fields' in targets[target]['registers'][register]:
                 for field_name, field_bounds in (targets[target]
                                                         ['registers'][register]
@@ -287,8 +287,8 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                 if previous_injection_data is None:
                     injected_value = flip_bit(gold_value, num_bits_to_inject,
                                               bit_to_inject)
-                register_list[register_index[0]][register_index[1]] = \
-                    injected_value
+                (register_list[register_index[0]]
+                              [register_index[1]]) = injected_value
                 injected_config.write('\t'+register+': ((')
                 for index1 in xrange(len(register_list)):
                     for index2 in xrange(len(register_list[index1])):
@@ -336,8 +336,8 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                 injected_config.write('\t'+register+': (((')
                 for index1 in xrange(len(register_list)):
                     for index2 in xrange(len(register_list[index1])):
-                        for index3 in \
-                                xrange(len(register_list[index1][index2])):
+                        for index3 in xrange(len(register_list[index1]
+                                                              [index2])):
                             if index3 != len(register_list[index1][index2])-1:
                                 injected_config.write(
                                     register_list[index1][index2][index3]+', '
@@ -554,13 +554,13 @@ def parse_registers(config_file, board, targets):
                                             'parse_registers(): '
                                             'Too many dimensions for register'
                                             ' in target: '+target)
-                                    registers[target_key][current_item] = \
-                                        register_list
+                                    (registers[target_key]
+                                              [current_item]) = register_list
                                 else:
                                     current_value = \
                                         current_line.split(':')[1].strip()
-                                    registers[target_key][current_item] = \
-                                        current_value
+                                    (registers[target_key]
+                                              [current_item]) = current_value
                         current_line = config.readline()
                 if (len(registers[target_key]) !=
                         len(targets[target]['registers'])):
@@ -751,9 +751,9 @@ def compare_memory(result_id, checkpoint_number, gold_checkpoint,
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql = sql_db.cursor()
     errors = 0
-    for image_index, gold_ram, monitored_ram, ram_diff, diff_content_map in \
-            zip(range(len(monitored_rams)), gold_rams, monitored_rams,
-                ram_diffs, diff_content_maps):
+    for (image_index, gold_ram, monitored_ram, ram_diff,
+         diff_content_map) in zip(range(len(monitored_rams)), gold_rams,
+                                  monitored_rams, ram_diffs, diff_content_maps):
         os.system('simics-workspace/bin/craff --diff '+gold_ram+' ' +
                   monitored_ram+' --output='+ram_diff)
         os.system('simics-workspace/bin/craff --content-map '+ram_diff +

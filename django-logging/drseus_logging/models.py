@@ -4,7 +4,7 @@ from django.db import models
 class campaign_manager(models.Manager):
     def get_queryset(self):
         return super(campaign_manager, self).get_queryset().annotate(
-            results=models.Count('result'))
+            results=models.Count('result'), last_injection=models.Max('result__injection__timestamp'))
 
 
 class campaign(models.Model):

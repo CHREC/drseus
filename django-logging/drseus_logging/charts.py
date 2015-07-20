@@ -2,6 +2,7 @@ from collections import OrderedDict
 from django.db.models import Count
 from re import split
 from simplejson import dumps
+from .models import result
 
 
 def fix_sort(string):
@@ -323,6 +324,85 @@ def time_chart(queryset, campaign_data):
     return chart
 
 
+def injection_count_chart(queryset, campaign_data):
+    injection_counts = list(
+        queryset.filter().annotate(
+            injection_count=Count('result__injection')
+        ).values_list('injection_count').distinct())
+    injection_counts = sorted(zip(*injection_counts)[0])
+    outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
+        'result__outcome'))
+    outcomes = zip(*outcomes)[0]
+    result_ids = queryset.values_list('result__id').distinct()
+    result_ids = zip(*result_ids)[0]
+    data = {}
+    for result_id in result_ids:
+        result_entry = result.objects.get(id=result_id)
+        if result_entry.outcome in data:
+            if result_entry.injections in data[result_entry.outcome]:
+                data[result_entry.outcome][result_entry.injections] += 1
+            else:
+                data[result_entry.outcome][result_entry.injections] = 1
+        else:
+            data[result_entry.outcome] = {result_entry.injections: 1}
+    chart = {
+        'chart': {
+            'renderTo': 'count_chart',
+            'type': 'column'
+        },
+        'exporting': {
+            'filename': (campaign_data.application +
+                         ' outcomes by injection quantity'),
+            'sourceWidth': 1024,
+            'sourceHeight': 576,
+            'scale': 3,
+        },
+        'plotOptions': {
+            'column': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                }
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'count_chart_click'
+                    }
+                }
+            }
+        },
+        'title': {
+            'text': 'Outcomes By Injection Quantity'
+        },
+        'xAxis': {
+            'categories': injection_counts,
+            'title': {
+                'text': 'Injections Per Execution'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Iterations'
+            }
+        }
+    }
+    chart['series'] = []
+    print data
+    for outcome in outcomes:
+        chart_data = []
+        for injection_count in injection_counts:
+            if injection_count in data[outcome]:
+                chart_data.append(data[outcome][injection_count])
+            else:
+                chart_data.append(0)
+        chart['series'].append({
+            'data': chart_data, 'name': outcome, 'stacking': True
+        })
+    return chart
+
+
 def json_charts(queryset, campaign_data):
     outcome_categories, outcome_category_list = \
         outcome_category_chart(queryset, campaign_data)
@@ -332,6 +412,7 @@ def json_charts(queryset, campaign_data):
     registers = register_chart(queryset, campaign_data)
     bits = bit_chart(queryset, campaign_data)
     times = time_chart(queryset, campaign_data)
+    counts = injection_count_chart(queryset, campaign_data)
     outcome_category_chart_click = """
     function(event) {
         var outcome_categories = outcome_category_list;
@@ -388,7 +469,14 @@ def json_charts(queryset, campaign_data):
                                '&injection__time_rounded='+time.toFixed(1));
     }
     """
-    chart_array = dumps([outcome_categories, outcomes, registers, bits, times],
+    count_chart_click = """
+    function(event) {
+        window.location.assign('../results/?outcome='+this.series.name+
+                               '&injections='+this.category);
+    }
+    """
+    chart_array = dumps([outcome_categories, outcomes, registers, bits, times,
+                         counts],
                         indent=4)
     replacements = [('\"outcome_category_chart_click\"',
                      outcome_category_chart_click),
@@ -401,7 +489,8 @@ def json_charts(queryset, campaign_data):
                     ('\"bit_chart_click\"', bit_chart_click),
                     ('\"time_chart_click\"',
                      (simics_time_chart_click if campaign_data.use_simics
-                      else hw_time_chart_click))]
+                      else hw_time_chart_click)),
+                    ('\"count_chart_click\"', count_chart_click)]
     for replacement in replacements:
         chart_array = chart_array.replace(replacement[0], replacement[1])
     return chart_array

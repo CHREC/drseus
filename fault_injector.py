@@ -364,9 +364,10 @@ class fault_injector:
                 data_diff = -1.0
                 detected_errors = 0
             else:
-                outcome, outcome_category, detected_errors, data_diff = \
-                    self.monitor_execution(iteration, latent_faults,
-                                           output_file, use_aux_output)
+                (outcome, outcome_category, detected_errors,
+                 data_diff) = self.monitor_execution(iteration, latent_faults,
+                                                     output_file,
+                                                     use_aux_output)
                 if outcome == 'Latent faults' or (not self.use_simics
                                                   and outcome == 'No error'):
                     if self.use_aux:
@@ -416,9 +417,9 @@ class fault_injector:
             if self.use_aux:
                 self.debugger.aux.serial.write('./'+self.aux_command+'\n')
             self.debugger.dut.serial.write('./'+self.command+'\n')
-            outcome, outcome_category, detected_errors, data_diff = \
-                self.monitor_execution(iteration, 0, output_file,
-                                       use_aux_output)
+            (outcome, outcome_category, detected_errors,
+             data_diff) = self.monitor_execution(iteration, 0, output_file,
+                                                 use_aux_output)
             self.log_result(result_id, iteration, outcome, outcome_category,
                             detected_errors, data_diff)
             self.debugger.dut.output = ''

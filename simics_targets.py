@@ -2171,8 +2171,8 @@ for device in devices:
                     count *= dimension
             else:
                 count = 1
-            devices[device][target]['registers'][register]['total_bits'] = \
-                count * bits
+            (devices[device][target]['registers']
+                    [register]['total_bits']) = count * bits
             total_bits += count * bits
             # if a register is partially implemented generate an adjust_bit
             # mapping list to ensure an unimplemented field is not injected into

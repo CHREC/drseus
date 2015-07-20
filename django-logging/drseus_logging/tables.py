@@ -4,17 +4,33 @@ from .models import (campaign, result, injection, simics_register_diff,
 
 
 class campaign_table(tables.Table):
-    campaign_number = tables.TemplateColumn(
-        '<a href="/{{record.campaign_number}}/results">'
-        '{{record.campaign_number}}</a>')
     results = tables.Column()
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+    last_injection = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
         attrs = {"class": "paleblue"}
         model = campaign
-        exclude = ('aux_output', 'aux_paramiko_output', 'debugger_output',
-                   'dut_output', 'paramiko_output')
+        exclude = ('application', 'aux_output', 'aux_paramiko_output',
+                   'cycles_between', 'debugger_output', 'dut_output',
+                   'num_cycles', 'paramiko_output', 'use_aux', 'use_aux_output')
+
+
+class campaigns_table(tables.Table):
+    campaign_number = tables.TemplateColumn(
+        '<a href="/{{record.campaign_number}}/charts">'
+        '{{record.campaign_number}}</a>')
+    results = tables.Column()
+    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+    last_injection = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+
+    class Meta:
+        attrs = {"class": "paleblue"}
+        model = campaign
+        exclude = ('application', 'aux_application', 'aux_output',
+                   'aux_paramiko_output', 'cycles_between', 'debugger_output',
+                   'dut_output', 'output_file', 'num_cycles', 'num_checkpoints',
+                   'paramiko_output', 'use_aux', 'use_aux_output')
 
 
 class result_table(tables.Table):
