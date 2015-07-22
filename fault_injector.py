@@ -382,6 +382,18 @@ class fault_injector:
                     outcome_category = 'Simics error'
                 else:
                     outcome_category = 'Debugger error'
+                    if not self.use_simics:
+                        try:
+                            self.debugger.continue_dut()
+                            if self.use_aux:
+                                aux_process = Thread(
+                                    target=self.debugger.aux.read_until)
+                                aux_process.start()
+                            self.debugger.dut.read_until()
+                            if self.use_aux:
+                                aux_process.join()
+                        except:
+                            pass
                 data_diff = -1.0
                 detected_errors = 0
             else:

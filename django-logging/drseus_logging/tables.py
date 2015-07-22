@@ -19,11 +19,11 @@ class campaign_table(tables.Table):
 class campaigns_table(tables.Table):
     campaign_number = tables.TemplateColumn(
         '{% if record.results > 0 %}'
-        '<a href="/{{record.campaign_number}}/charts">'
+        '<a href="/{{ value}}/charts">'
         '{% else %}'
-        '<a href="/{{record.campaign_number}}/campaign">'
+        '<a href="/{{ value }}/campaign">'
         '{% endif %}'
-        '{{record.campaign_number}}'
+        '{{ value }}'
         '</a>')
     results = tables.Column()
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
@@ -52,7 +52,7 @@ class result_table(tables.Table):
 class results_table(tables.Table):
     injections = tables.Column()
     iteration = tables.TemplateColumn(
-        '<a href="../result/{{record.iteration}}">{{record.iteration}}</a>')
+        '<a href="../result/{{ value }}">{{ value }}</a>')
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:

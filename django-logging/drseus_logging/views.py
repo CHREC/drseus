@@ -81,7 +81,7 @@ def results_page(request, campaign_number):
         result_filter = hw_result_filter(request.GET, queryset=result_objects,
                                          campaign=campaign_number)
     table = results_table(result_filter.qs)
-    RequestConfig(request, paginate={'per_page': 100}).configure(table)
+    table.paginate(page=request.GET.get('page', 1), per_page=100)
     return render(request, 'results.html', {'campaign_data': campaign_data,
                                             'filter': result_filter,
                                             'navigation_items':
@@ -122,13 +122,12 @@ def result_page(request, campaign_number, iteration):
             simics_register_diff_filter(request.GET, queryset=register_objects,
                                         campaign=campaign_number)
         register_table = simics_register_diff_table(register_filter.qs)
+        register_table.paginate(page=request.GET.get('page', 1), per_page=50)
         memory_objects = simics_memory_diff.objects.filter(
             result__campaign__campaign_number=campaign_number,
             result__iteration=iteration)
         memory_table = simics_memory_diff_table(memory_objects)
-        config = RequestConfig(request, paginate={'per_page': 50})
-        config.configure(memory_table)
-        config.configure(register_table)
+        memory_table.paginate(page=request.GET.get('page', 1), per_page=50)
     else:
         register_filter = None
         memory_table = None

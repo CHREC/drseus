@@ -43,7 +43,8 @@ class bdi:
             self.aux.close()
 
     def reset_dut(self):
-        self.command('reset', error_message='Error resetting DUT')
+        self.telnet.write('reset')
+        self.telnet.write('\r')
 
     def command(self, command, expected_output=[], error_message=None):
         return_buffer = ''
@@ -203,7 +204,7 @@ class bdi_p2020(bdi):
         self.prompts = ['P2020>']
         # TODO: add pmr, spr, L2 TLB
         # TODO: check if only certain bits are read only (some partially worked)
-        # TODO: ccsrbar reset after read/write?
+        # TODO: ccsrbar, tsr reset after read/write?
         self.registers = ['bbear', 'bbtar',  # 'altcar', 'altcbar', 'autorstsr',
                           # 'bptr', 'br0',
                           'br1', 'br2', 'br3',  # 'br4',
@@ -225,7 +226,8 @@ class bdi_p2020(bdi):
                           'ddr_mode', 'ddr_mode_2', 'ddr_mode_cntl',
                           # 'ddr_wrlvl_cntl', 'ddr_zq_cntl',
                           'ddrcdr_1',  # 'ddrcdr_2', 'ddrclkdr', 'ddrdsr_1',
-                          'ddrdsr_2', 'dear',  # 'dec',
+                          # 'ddrdsr_2',
+                          'dear',  # 'dec',
                           'decar',  # 'devdisr', 'ecc_err_inject', 'ecmcr',
                           # 'ectrstcr', 'eeatr', 'eebacr', 'eebpcr', 'eedr',
                           # 'eeer', 'eehadr', 'eeladr',
@@ -257,13 +259,12 @@ class bdi_p2020(bdi):
                           # 'l2errctl', 'l2errdet', 'l2errdis',
                           'l2errinjctl', 'l2errinjhi', 'l2errinjlo',
                           # 'l2errinten', 'l2srbar0', 'l2srbar1', 'l2srbarea0',
-                          # 'l2srbarea1', 'laipbrr1',
-                          'laipbrr2',  # 'lawar0',
+                          # 'l2srbarea1', 'laipbrr1', 'laipbrr2', 'lawar0',
                           'lawar1',  # 'lawar2',
                           'lawar3',  # 'lawar4', 'lawar5', 'lawar6', 'lawar7',
                           'lawar8', 'lawar9',  # 'lawar10', 'lawar11',
-                          'lawbar0',  # 'lawbar1', 'lawbar2',
-                          'lawbar3', 'lawbar4', 'lawbar5',  # 'lawbar6',
+                          'lawbar0',  # 'lawbar1', 'lawbar2', 'lawbar3',
+                          'lawbar4', 'lawbar5',  # 'lawbar6',
                           'lawbar7', 'lawbar8', 'lawbar9', 'lawbar10',
                           'lawbar11', 'lbcr',  # 'lbcvselcr', 'lcrr',
                           'lr',  # 'lsdmr', 'lsor', 'lsrt',
@@ -285,8 +286,8 @@ class bdi_p2020(bdi):
                           'tbu', 'tcr',  # 'timing_cfg_0',
                           'timing_cfg_1',  # 'timing_cfg_2', 'timing_cfg_3',
                           # 'timing_cfg_4',
-                          'timing_cfg_5',  # 'tlb0cfg', 'tlb1cfg',
-                          'tsr', 'usprg0',
+                          'timing_cfg_5',  # 'tlb0cfg', 'tlb1cfg', 'tsr',
+                          'usprg0',
                           # 'xer'
                           ]
         # egpr's have twice as many bits (64) as other registers (32)
