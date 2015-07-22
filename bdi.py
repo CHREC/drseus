@@ -13,7 +13,7 @@ from error import DrSEUSError
 
 class bdi:
     error_messages = ['timeout while waiting for halt',
-                      'wrong state for requested command']
+                      'wrong state for requested command', 'read access failed']
 
     def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
                  aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug,

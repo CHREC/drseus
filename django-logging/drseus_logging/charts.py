@@ -162,9 +162,7 @@ def register_chart(queryset, campaign_data):
         },
         'xAxis': {
             'categories': [
-                reg[0] if reg[0] else '' +
-                ':'+reg[1] if reg[1] else ''
-                for reg in registers
+                reg[0] + (':'+reg[1] if reg[1] else '') for reg in registers
             ],
             'labels': {
                 'align': 'right',
