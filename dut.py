@@ -37,7 +37,7 @@ class dut:
 
     def send_files(self, files):
         if self.debug:
-            print(colored('sending files...', 'blue'), end='')
+            print(colored('sending files...', 'blue'))
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(self.ip_address, port=self.ssh_port, username='root',
@@ -74,7 +74,7 @@ class dut:
             self.command('rm '+file)
 
     def is_logged_in(self):
-        self.serial.write('\n')
+        self.serial.write('\x03\n')
         buff = ''
         while True:
             char = self.serial.read()
@@ -83,7 +83,7 @@ class dut:
                 print(colored(char, self.color), end='')
             buff += char
             if not char:
-                raise DrSEUSError(DrSEUSError.dut_hanging)
+                raise DrSEUSError(DrSEUSError.hanging)
             elif buff[-len(self.prompt):] == self.prompt:
                 return True
             elif buff[-len('login: '):] == 'login: ':
@@ -125,7 +125,7 @@ class dut:
                 if message in buff:
                     raise DrSEUSError(message)
         if hanging:
-            raise DrSEUSError(DrSEUSError.dut_hanging)
+            raise DrSEUSError(DrSEUSError.hanging)
         else:
             return buff
 
@@ -144,7 +144,7 @@ class dut:
                     print(colored(char, self.color), end='')
                 buff += char
                 if not char:
-                    raise DrSEUSError(DrSEUSError.dut_hanging)
+                    raise DrSEUSError(DrSEUSError.hanging)
                 elif buff[-len(self.prompt):] == self.prompt:
                     break
                 elif buff[-len('Password: '):] == 'Password: ':

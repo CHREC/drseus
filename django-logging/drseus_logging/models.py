@@ -4,7 +4,8 @@ from django.db import models
 class campaign_manager(models.Manager):
     def get_queryset(self):
         return super(campaign_manager, self).get_queryset().annotate(
-            results=models.Count('result'), last_injection=models.Max('result__injection__timestamp'))
+            results=models.Count('result'),
+            last_injection=models.Max('result__injection__timestamp'))
 
 
 class campaign(models.Model):
@@ -62,11 +63,11 @@ class injection(models.Model):
     # commond fields
     result = models.ForeignKey(result)
     injection_number = models.IntegerField()
-    register = models.TextField()
-    bit = models.IntegerField()
-    gold_value = models.TextField()
-    injected_value = models.TextField()
     timestamp = models.DateTimeField()
+    register = models.TextField(null=True)
+    bit = models.IntegerField(null=True)
+    gold_value = models.TextField(null=True)
+    injected_value = models.TextField(null=True)
     # hw fields
     time = models.FloatField(null=True)
     time_rounded = models.FloatField(null=True)

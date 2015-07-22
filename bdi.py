@@ -24,9 +24,11 @@ class bdi:
         self.output = ''
         try:
             self.telnet = Telnet(ip_address, timeout=self.timeout)
-            self.command('', error_message='Debugger not ready')
         except:
-            raise Exception('could not connect to debugger')
+            print('Could not connect to debugger, '
+                  'running in supervisor-only mode')
+        else:
+            self.command('', error_message='Debugger not ready')
         self.dut = dut(dut_ip_address, rsakey,
                        dut_serial_port, dut_prompt, debug, timeout)
         if self.use_aux:
@@ -39,6 +41,9 @@ class bdi:
         self.dut.close()
         if self.use_aux:
             self.aux.close()
+
+    def reset_dut(self):
+        self.command('reset', error_message='Error resetting DUT')
 
     def command(self, command, expected_output=[], error_message=None):
         return_buffer = ''
@@ -133,9 +138,9 @@ class bdi:
                 'injection_number,register,bit,gold_value,injected_value,time,'
                 'time_rounded,core,timestamp) VALUES (?,?,?,?,?,?,?,?,?,?)',
                 (
-                    result_id, iteration, injection, register, bit,
-                    gold_value, injected_value, injection_time,
-                    round(injection_time, 1), core, datetime.now()
+                    result_id, injection, register, bit, gold_value,
+                    injected_value, injection_time, round(injection_time, 1),
+                    core, datetime.now()
                 )
             )
             sql_db.commit()
@@ -153,11 +158,6 @@ class bdi_arm(bdi):
         bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
                      aux_ip_address, aux_serial_port, use_aux, dut_prompt,
                      debug, timeout)
-
-    def reset_dut(self):
-        # TODO: add additional expected messages
-        self.command('reset', ['- TARGET: processing target startup passed'],
-                     'Error resetting DUT')
 
     def halt_dut(self):
         self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
@@ -300,18 +300,6 @@ class bdi_p2020(bdi):
         bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
                      aux_ip_address, aux_serial_port, use_aux, dut_prompt,
                      debug, timeout)
-
-    def reset_dut(self):
-        self.command('reset', ['- TARGET: processing user reset request',
-                               '- BDI asserts HRESET',
-                               '- Reset JTAG controller passed',
-                               '- JTAG exists check passed', '- IDCODE',
-                               '- SVR', '- PVR', '- CCSRBAR',
-                               '- BDI removes HRESET',
-                               '- TARGET: resetting target passed',
-                               '- TARGET: processing target startup',
-                               '- TARGET: processing target startup passed'],
-                     'Error resetting DUT')
 
     def halt_dut(self):
         self.command('halt 0; halt 1', ['Target CPU', 'Core state',

@@ -1,5 +1,5 @@
 class DrSEUSError(Exception):
-    dut_hanging = 'DUT hanging'
+    hanging = 'Hanging'
     missing_output = 'Missing output'
 
     def __init__(self, error_type):

@@ -15,6 +15,7 @@ from fault_injector import fault_injector
 # TODO: implement persistent fault detection
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: reimplement checkpoint regeneration with multiple injections
+# TODO: add command line options for ip addresses, serial ports, serial prompts
 
 
 def list_campaigns():
@@ -189,7 +190,7 @@ def new_campaign(application, options):
         os.system('./django-logging/manage.py migrate')
     drseus = fault_injector(campaign_number, dut_ip_address, '10.42.0.20',
                             dut_serial_port, '/dev/ttyUSB0', '10.42.0.50',
-                            options.architecture, options.use_aux, True,
+                            options.architecture, options.use_aux,
                             options.debug, options.use_simics, options.seconds)
     drseus.setup_campaign(options.directory, options.architecture, application,
                           options.arguments, options.file, options.files,
@@ -199,17 +200,25 @@ def new_campaign(application, options):
     print('\nsuccessfully setup campaign')
 
 
-# def get_injection_data(campaign_data, injection_number):
-#     if not os.path.exists('campaign-data/db.sqlite3'):
-#         raise Exception('could not find campaign data')
-#     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
-#     sql_db.row_factory = sqlite3.Row
-#     sql = sql_db.cursor()
-#     sql.execute('SELECT * FROM drseus_logging_injection WHERE ' +
-#                 'injection_number = (?)', (injection_number, ))
-#     injection_data = sql.fetchone()
-#     sql_db.close()
-#     return injection_data
+def get_injection_data(campaign_data, iteration):
+    if not os.path.exists('campaign-data/db.sqlite3'):
+        raise Exception('could not find campaign data')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db.row_factory = sqlite3.Row
+    sql = sql_db.cursor()
+    sql.execute('SELECT register,gold_value,injected_value,checkpoint_number,'
+                'bit,target_index,target,config_object,config_type,'
+                'register_index,field FROM drseus_logging_injection '
+                'INNER JOIN drseus_logging_result ON '
+                '(drseus_logging_injection.result_id=drseus_logging_result.id) '
+                'WHERE drseus_logging_result.iteration=? AND '
+                'drseus_logging_result.campaign_id=?',
+                (iteration, campaign_data['campaign_number']))
+    injection_data = sql.fetchall()
+    sql_db.close()
+    injection_data = sorted(injection_data,
+                            key=lambda x: x['checkpoint_number'])
+    return injection_data
 
 
 def load_campaign(campaign_data, options):
@@ -222,7 +231,7 @@ def load_campaign(campaign_data, options):
     drseus = fault_injector(campaign_data['campaign_number'], dut_ip_address,
                             '10.42.0.20', dut_serial_port, '/dev/ttyUSB0',
                             '10.42.0.50', campaign_data['architecture'],
-                            campaign_data['use_aux'], False, options.debug,
+                            campaign_data['use_aux'], options.debug,
                             campaign_data['use_simics'], options.seconds)
     drseus.command = campaign_data['command']
     drseus.aux_command = campaign_data['aux_command']
@@ -308,14 +317,14 @@ mode_group.add_option('-l', '--log', action='store_true',
                       help='open logs in browser')
 parser.add_option_group(mode_group)
 
-# simics_mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes (Simics only)',
-#                                          'These modes are only available for '
-#                                          'Simics campaigns')
-# simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
-#                              dest='injection', default=-1,
-#                              help='regenerate an injected checkpoint and '
-#                              'launch in Simics')
-# parser.add_option_group(simics_mode_group)
+simics_mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes (Simics only)',
+                                         'These modes are only available for '
+                                         'Simics campaigns')
+simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
+                             dest='injection', default=-1,
+                             help='regenerate an injected checkpoint and '
+                             'launch in Simics')
+parser.add_option_group(simics_mode_group)
 
 new_group = optparse.OptionGroup(parser, 'New Campaign Options',
                                  'Use these to create a new campaign, they will'
@@ -353,7 +362,8 @@ new_group.add_option('-z', '--aux_args', action='store', type='str',
                      help='arguments for auxiliary application')
 new_group.add_option('-O', '--aux_output', action='store_true',
                      dest='use_aux_output', default=False,
-                     help='check output data from aux instead of dut')
+                     help='check console output from aux before dut and '
+                          'get output file from aux instead of dut')
 parser.add_option_group(new_group)
 
 new_simics_group = optparse.OptionGroup(parser, 'New Campaign Options '
@@ -471,21 +481,24 @@ elif options.supervise:
     drseus.supervise(iteration, options.target_seconds,
                      campaign_data['output_file'],
                      campaign_data['use_aux_output'])
-# elif options.injection >= 0:
-#     campaign_data = get_campaign_data()
-#     if not campaign_data['use_simics']:
-#         print('This feature is only available for Simics campaigns')
-#         return -1
-#     drseus = load_campaign(campaign_data, options)
-#     injection_data = get_injection_data(campaign_data,
-#                                         options.injection)
-#     checkpoint = drseus.debugger.regenerate_injected_checkpoint(
-#          injection_data)
-#     drseus.debugger.launch_simics_gui(checkpoint)
-#     shutil.rmtree('simics-workspace/'+checkpoint)
-#     if not os.listdir('simics-workspace/temp'):
-#         os.rmdir('simics-workspace/temp')
+elif options.injection >= 0:
+    if not options.number:
+        options.number = get_last_campaign()
+    campaign_data = get_campaign_data(options.number)
+    if not campaign_data['use_simics']:
+        raise Exception('This feature is only available for Simics campaigns')
+    drseus = load_campaign(campaign_data, options)
+    injection_data = get_injection_data(campaign_data,
+                                        options.injection)
+    for injection in injection_data:
+        print(dict(zip(injection.keys(), injection)))
+    # checkpoint = drseus.debugger.regenerate_injected_checkpoint(
+    #      injection_data)
+    # drseus.debugger.launch_simics_gui(checkpoint)
+    # shutil.rmtree('simics-workspace/'+checkpoint)
+    # if not os.listdir('simics-workspace/temp'):
+    #     os.rmdir('simics-workspace/temp')
 else:
     if len(args) < 1:
-        parser.error('please specify a target application')
+        parser.error('please specify a target application or mode')
     new_campaign(args[0], options)

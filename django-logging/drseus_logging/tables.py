@@ -18,8 +18,13 @@ class campaign_table(tables.Table):
 
 class campaigns_table(tables.Table):
     campaign_number = tables.TemplateColumn(
+        '{% if record.results > 0 %}'
         '<a href="/{{record.campaign_number}}/charts">'
-        '{{record.campaign_number}}</a>')
+        '{% else %}'
+        '<a href="/{{record.campaign_number}}/campaign">'
+        '{% endif %}'
+        '{{record.campaign_number}}'
+        '</a>')
     results = tables.Column()
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
     last_injection = tables.DateTimeColumn(format='m/d/Y H:i:s.u')

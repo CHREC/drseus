@@ -11,9 +11,9 @@ from .tables import (campaign_table, campaigns_table, result_table,
                      results_table, hw_injection_table, simics_injection_table,
                      simics_register_diff_table, simics_memory_diff_table)
 
-navigation_items = (('Campaign Information', '../campaign'),
-                    ('Injection Charts', '../charts/'),
-                    ('Results Table', '../results/'))
+navigation_items = (('Information', '../campaign'),
+                    ('Charts', '../charts/'),
+                    ('Table', '../results/'))
 
 
 def charts_page(request, campaign_number):
@@ -33,7 +33,10 @@ def charts_page(request, campaign_number):
         injection_filter = hw_injection_filter(request.GET,
                                                queryset=injection_objects,
                                                campaign=campaign_number)
-    chart_array = json_charts(injection_filter.qs, campaign_data)
+    if injection_filter.qs.count() > 0:
+        chart_array = json_charts(injection_filter.qs, campaign_data)
+    else:
+        chart_array = None
     return render(request, 'charts.html', {'campaign_data': campaign_data,
                                            'chart_array': chart_array,
                                            'filter': injection_filter,
@@ -88,9 +91,9 @@ def results_page(request, campaign_number):
 
 def result_page(request, campaign_number, iteration):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
-    navigation_items = (('Campaign Information', '../../campaign'),
-                        ('Injection Charts', '../../charts/'),
-                        ('Results Table', '../../results/'))
+    navigation_items = (('Information', '../../campaign'),
+                        ('Charts', '../../charts/'),
+                        ('Table', '../../results/'))
     page_items = [('Result', 'result'), ('Injections', 'injections'),
                   ('DUT Output', 'dut_output')]
     if campaign_data.use_aux:

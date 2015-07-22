@@ -125,6 +125,8 @@ def register_chart(queryset, campaign_data):
     registers = sorted(queryset.values_list('register',
                                             'register_index').distinct(),
                        key=fix_reg_sort)
+    if len(registers) <= 1:
+        return None
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
     outcomes = zip(*outcomes)[0]
@@ -160,7 +162,9 @@ def register_chart(queryset, campaign_data):
         },
         'xAxis': {
             'categories': [
-                reg[0]+(':'+reg[1] if reg[1] else '')for reg in registers
+                reg[0] if reg[0] else '' +
+                ':'+reg[1] if reg[1] else ''
+                for reg in registers
             ],
             'labels': {
                 'align': 'right',
@@ -186,15 +190,16 @@ def register_chart(queryset, campaign_data):
             data.append(queryset.filter(result__outcome=outcome,
                                         register=register[0],
                                         register_index=register[1]).count())
-        chart['series'].append({
-            'data': data, 'name': outcome, 'stacking': True
-        })
+        chart['series'].append({'data': data, 'name': outcome,
+                                'stacking': True})
     return chart
 
 
 def bit_chart(queryset, campaign_data):
     bits = sorted(queryset.values_list('bit').distinct(), key=fix_sort)
     bits = zip(*bits)[0]
+    if len(bits) <= 1:
+        return None
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
     outcomes = zip(*outcomes)[0]
@@ -246,9 +251,8 @@ def bit_chart(queryset, campaign_data):
         for bit in bits:
             data.append(queryset.filter(result__outcome=outcome,
                                         bit=bit).count())
-        chart['series'].append({
-            'data': data, 'name': outcome, 'stacking': True
-        })
+        chart['series'].append({'data': data, 'name': outcome,
+                                'stacking': True})
     return chart
 
 
@@ -260,6 +264,8 @@ def time_chart(queryset, campaign_data):
         times = sorted(queryset.values_list('time_rounded').distinct(),
                        key=fix_sort)
     times = zip(*times)[0]
+    if len(times) <= 1:
+        return None
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
     outcomes = zip(*outcomes)[0]
@@ -318,9 +324,8 @@ def time_chart(queryset, campaign_data):
             else:
                 data.append(queryset.filter(result__outcome=outcome,
                                             time_rounded=time).count())
-        chart['series'].append({
-            'data': data, 'name': outcome, 'stacking': True
-        })
+        chart['series'].append({'data': data, 'name': outcome,
+                                'stacking': True})
     return chart
 
 
@@ -330,6 +335,8 @@ def injection_count_chart(queryset, campaign_data):
             injection_count=Count('result__injection')
         ).values_list('injection_count').distinct())
     injection_counts = sorted(zip(*injection_counts)[0])
+    if len(injection_counts) <= 1:
+        return None
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
     outcomes = zip(*outcomes)[0]
@@ -397,9 +404,8 @@ def injection_count_chart(queryset, campaign_data):
                 chart_data.append(data[outcome][injection_count])
             else:
                 chart_data.append(0)
-        chart['series'].append({
-            'data': chart_data, 'name': outcome, 'stacking': True
-        })
+        chart['series'].append({'data': chart_data, 'name': outcome,
+                                'stacking': True})
     return chart
 
 
@@ -475,9 +481,10 @@ def json_charts(queryset, campaign_data):
                                '&injections='+this.category);
     }
     """
-    chart_array = dumps([outcome_categories, outcomes, registers, bits, times,
-                         counts],
-                        indent=4)
+    chart_array = [outcome_categories, outcomes, registers, bits, times,
+                   counts]
+    chart_array = [chart for chart in chart_array if chart]
+    chart_array = dumps(chart_array, indent=4)
     replacements = [('\"outcome_category_chart_click\"',
                      outcome_category_chart_click),
                     ('\"outcome_category_percentage_formatter\"',

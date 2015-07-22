@@ -17,7 +17,7 @@ from simics import simics
 class fault_injector:
     def __init__(self, campaign_number, dut_ip_address, aux_ip_address,
                  dut_serial_port, aux_serial_port, debugger_ip_address,
-                 architecture, use_aux, new, debug, use_simics, timeout):
+                 architecture, use_aux, debug, use_simics, timeout):
         self.campaign_number = campaign_number
         self.use_simics = use_simics
         self.use_aux = use_aux
@@ -30,7 +30,7 @@ class fault_injector:
             self.rsakey.write_private_key_file('campaign-data/private.key')
         if self.use_simics:
             self.debugger = simics(campaign_number, architecture, self.rsakey,
-                                   use_aux, new, debug, timeout)
+                                   use_aux, debug, timeout)
         else:
             if architecture == 'p2020':
                 self.debugger = bdi_p2020(debugger_ip_address,
@@ -44,14 +44,14 @@ class fault_injector:
                                         dut_serial_port, aux_ip_address,
                                         aux_serial_port, use_aux, '[root@ZED]#',
                                         debug, timeout)
-            if new:
+            if self.debugger.telnet:
                 self.debugger.reset_dut()
-                if self.use_aux:
-                    aux_process = Thread(target=self.debugger.aux.do_login)
-                    aux_process.start()
-                self.debugger.dut.do_login()
-                if self.use_aux:
-                    aux_process.join()
+            if self.use_aux:
+                aux_process = Thread(target=self.debugger.aux.do_login)
+                aux_process.start()
+            self.debugger.dut.do_login()
+            if self.use_aux:
+                aux_process.join()
 
     def close(self):
         if not self.use_simics:
@@ -61,6 +61,8 @@ class fault_injector:
                        output_file, dut_files, aux_files, iterations,
                        aux_application, aux_arguments, use_aux_output,
                        num_checkpoints):
+        if self.use_simics:
+            self.debugger.launch_simics()
         if arguments:
             self.command = application+' '+arguments
         else:
@@ -156,14 +158,21 @@ class fault_injector:
                                       str(self.campaign_number)+'/aux-files/')
         self.close()
 
-    def prepare_aux(self):
-        self.debugger.aux.do_login()
-        files_aux = []
+    def send_dut_files(self):
+        files = []
+        for item in os.listdir('campaign-data/'+str(self.campaign_number) +
+                               '/dut-files'):
+            files.append('campaign-data/'+str(self.campaign_number) +
+                         '/dut-files/'+item)
+        self.debugger.dut.send_files(files)
+
+    def send_aux_files(self):
+        files = []
         for item in os.listdir('campaign-data/'+str(self.campaign_number) +
                                '/aux-files'):
-            files_aux.append('campaign-data/'+str(self.campaign_number) +
-                             '/aux-files/'+item)
-        self.debugger.aux.send_files(files_aux)
+            files.append('campaign-data/'+str(self.campaign_number) +
+                         '/aux-files/'+item)
+        self.debugger.aux.send_files(files)
 
     def get_result_id(self, iteration):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
@@ -194,16 +203,6 @@ class fault_injector:
                                               self.num_checkpoints,
                                               compare_all)
         else:
-            self.debugger.reset_dut()
-            self.debugger.dut.do_login()
-            files = []
-            for item in os.listdir('campaign-data/'+str(self.campaign_number) +
-                                   '/dut-files'):
-                files.append('campaign-data/'+str(self.campaign_number) +
-                             '/dut-files/'+item)
-            self.debugger.dut.send_files(files)
-            # if self.use_aux:
-            #     aux_process.join()
             injection_times = []
             for i in xrange(num_injections):
                 injection_times.append(random.uniform(0, self.exec_time))
@@ -259,29 +258,43 @@ class fault_injector:
     def monitor_execution(self, iteration, latent_faults, output_file,
                           use_aux_output):
         # TODO: monitor aux for errors
+        buff = ''
+        aux_buff = ''
         detected_errors = 0
         data_diff = -1.0
         outcome = ''
         outcome_category = ''
+        if self.use_aux and use_aux_output:
+            try:
+                aux_buff = self.debugger.aux.read_until()
+            except DrSEUSError as error:
+                self.debugger.dut.serial.write('\x03\n')
+                outcome = error.type
+                outcome_category = 'AUX execution error'
         try:
             buff = self.debugger.dut.read_until()
-            if self.use_aux:
-                aux_buff = self.debugger.aux.read_until()
         except DrSEUSError as error:
+            if self.use_aux and not use_aux_output:
+                self.debugger.aux.serial.write('\x03\n')
             outcome = error.type
             outcome_category = 'Execution error'
-        else:
-            for line in buff.split('\n'):
+        if self.use_aux and not use_aux_output:
+            try:
+                aux_buff = self.debugger.aux.read_until()
+            except DrSEUSError as error:
+                outcome = error.type
+                outcome_category = 'AUX execution error'
+        for line in buff.split('\n'):
+            if 'drseus_detected_errors:' in line:
+                detected_errors = int(line.replace(
+                                      'drseus_detected_errors:', ''))
+                break
+        if self.use_aux:
+            for line in aux_buff.split('\n'):
                 if 'drseus_detected_errors:' in line:
-                    detected_errors = int(line.replace(
-                                          'drseus_detected_errors:', ''))
+                    detected_errors += int(line.replace(
+                                           'drseus_detected_errors:', ''))
                     break
-            if self.use_aux:
-                for line in aux_buff.split('\n'):
-                    if 'drseus_detected_errors:' in line:
-                        detected_errors += int(line.replace(
-                                               'drseus_detected_errors:', ''))
-                        break
         if output_file and not outcome:
             try:
                 data_diff = self.check_output(iteration, output_file,
@@ -341,12 +354,17 @@ class fault_injector:
                            num_injections, selected_targets, output_file,
                            use_aux_output, compare_all):
         if self.use_aux and not self.use_simics:
-            self.prepare_aux()
+            self.send_aux_files()
         for i in xrange(num_iterations):
             with iteration_counter.get_lock():
                 iteration = iteration_counter.value
                 iteration_counter.value += 1
             result_id = self.get_result_id(iteration)
+            if not self.use_simics:
+                if i != 0:
+                    self.debugger.reset_dut()
+                    self.debugger.dut.do_login()
+                self.send_dut_files()
             if self.use_aux and not self.use_simics:
                 self.debugger.aux.serial.write('./'+self.aux_command+'\n')
             try:
@@ -409,11 +427,24 @@ class fault_injector:
                                         str(self.campaign_number)+'/' +
                                         str(self.num_checkpoints-1)+'_merged')
             self.debugger.continue_dut()
-        if self.use_aux and not self.use_simics:
-            self.prepare_aux()
+        if not self.use_simics:
+            self.send_dut_files()
+            if self.use_aux:
+                self.send_aux_files()
         for iteration in xrange(starting_iteration,
                                 starting_iteration + iterations):
             result_id = self.get_result_id(iteration)
+            sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+            sql = sql_db.cursor()
+            sql.execute(
+                'INSERT INTO drseus_logging_injection (result_id,'
+                'injection_number,timestamp) VALUES (?,?,?)',
+                (
+                    result_id, 0, datetime.now()
+                )
+            )
+            sql_db.commit()
+            sql_db.close()
             if self.use_aux:
                 self.debugger.aux.serial.write('./'+self.aux_command+'\n')
             self.debugger.dut.serial.write('./'+self.command+'\n')

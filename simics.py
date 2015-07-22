@@ -21,8 +21,8 @@ class simics:
                       'where nothing is mapped', 'Error']
 
     # create simics instance and boot device
-    def __init__(self, campaign_number, architecture, rsakey, use_aux, new,
-                 debug, timeout):
+    def __init__(self, campaign_number, architecture, rsakey, use_aux, debug,
+                 timeout):
         self.campaign_number = campaign_number
         self.debug = debug
         self.timeout = timeout
@@ -32,8 +32,6 @@ class simics:
             self.board = 'a9x2'
         self.rsakey = rsakey
         self.use_aux = use_aux
-        if new:
-            self.launch_simics()
 
     def launch_simics(self, checkpoint=None):
         self.output = ''
