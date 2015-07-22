@@ -44,11 +44,14 @@ class fault_injector:
                                         dut_serial_port, aux_ip_address,
                                         aux_serial_port, use_aux, '[root@ZED]#',
                                         debug, timeout)
-            if self.debugger.telnet:
-                self.debugger.reset_dut()
             if self.use_aux:
+                self.debugger.aux.write('\x03\n')
                 aux_process = Thread(target=self.debugger.aux.do_login)
                 aux_process.start()
+            if self.debugger.telnet:
+                self.debugger.reset_dut()
+            else:
+                self.debugger.dut.write('\x03\n')
             self.debugger.dut.do_login()
             if self.use_aux:
                 aux_process.join()

@@ -74,7 +74,7 @@ class dut:
             self.command('rm '+file)
 
     def is_logged_in(self):
-        self.serial.write('\x03\n')
+        self.serial.write('\n')
         buff = ''
         while True:
             char = self.serial.read()
