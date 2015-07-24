@@ -1,4 +1,4 @@
-from django.forms import SelectMultiple
+from django.forms import SelectMultiple, Textarea
 import django_filters
 from re import split
 
@@ -63,6 +63,10 @@ class hw_result_filter(django_filters.FilterSet):
         self.filters['injection__time_rounded'].widget.attrs['size'] = min(
             len(time_rounded_choices), 10)
 
+    dut_output = django_filters.CharFilter(
+        label='DUT output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
     injection__bit = django_filters.MultipleChoiceFilter(
         label='Bit',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
@@ -86,8 +90,8 @@ class hw_result_filter(django_filters.FilterSet):
     class Meta:
         model = result
         exclude = ['aux_output', 'aux_paramiko_output', 'campaign', 'data_diff',
-                   'debugger_output', 'detected_errors', 'dut_output',
-                   'iteration', 'paramiko_output', 'timestamp']
+                   'debugger_output', 'detected_errors', 'iteration',
+                   'paramiko_output', 'timestamp']
 
 
 class hw_injection_filter(django_filters.FilterSet):
@@ -199,6 +203,10 @@ class simics_result_filter(django_filters.FilterSet):
         self.filters['injection__target_index'].widget.attrs['size'] = min(
             len(target_index_choices), 10)
 
+    dut_output = django_filters.CharFilter(
+        label='DUT output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
     injection__bit = django_filters.MultipleChoiceFilter(
         label='Bit',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
@@ -228,8 +236,8 @@ class simics_result_filter(django_filters.FilterSet):
     class Meta:
         model = result
         exclude = ['aux_output', 'aux_paramiko_output', 'campaign', 'data_diff',
-                   'debugger_output', 'detected_errors', 'dut_output',
-                   'iteration', 'paramiko_output', 'timestamp']
+                   'debugger_output', 'detected_errors', 'iteration',
+                   'paramiko_output', 'timestamp']
 
 
 class simics_injection_filter(django_filters.FilterSet):
