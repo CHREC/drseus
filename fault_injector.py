@@ -5,7 +5,9 @@ import os
 from paramiko import RSAKey
 import random
 import shutil
+from signal import SIGINT
 import sqlite3
+import subprocess
 from termcolor import colored
 from threading import Thread
 
@@ -45,13 +47,13 @@ class fault_injector:
                                         aux_serial_port, use_aux, '[root@ZED]#',
                                         debug, timeout)
             if self.use_aux:
-                self.debugger.aux.write('\x03\n')
+                self.debugger.aux.serial.write('\x03\n')
                 aux_process = Thread(target=self.debugger.aux.do_login)
                 aux_process.start()
             if self.debugger.telnet:
                 self.debugger.reset_dut()
             else:
-                self.debugger.dut.write('\x03\n')
+                self.debugger.dut.serial.write('\x03\n')
             self.debugger.dut.do_login()
             if self.use_aux:
                 aux_process.join()
@@ -434,7 +436,7 @@ class fault_injector:
         self.close()
 
     def supervise(self, starting_iteration, run_time, output_file,
-                  use_aux_output):
+                  use_aux_output, packet_capture):
         iterations = int(run_time / self.exec_time)
         print(colored('performing '+str(iterations)+' iterations', 'blue'))
         if self.use_simics:
@@ -460,6 +462,21 @@ class fault_injector:
             )
             sql_db.commit()
             sql_db.close()
+            if packet_capture:
+                data_dir = ('campaign-data/'+str(self.campaign_number) +
+                            '/results/'+str(iteration))
+                os.makedirs(data_dir)
+                capture_file = open(data_dir+'/capture.pcap', 'w')
+                capture_process = subprocess.Popen(['ssh', 'p2020', 'tshark '
+                                                    '-F pcap -i eth1 -w -'],
+                                                   stderr=subprocess.PIPE,
+                                                   stdout=capture_file)
+                buff = ''
+                while True:
+                    buff += capture_process.stderr.read(1)
+                    if buff[-len('Capturing on \'eth1\''):] == \
+                            'Capturing on \'eth1\'':
+                        break
             if self.use_aux:
                 self.debugger.aux.serial.write('./'+self.aux_command+'\n')
             self.debugger.dut.serial.write('./'+self.command+'\n')
@@ -468,6 +485,12 @@ class fault_injector:
                                                  use_aux_output)
             self.log_result(result_id, iteration, outcome, outcome_category,
                             detected_errors, data_diff)
+            if packet_capture:
+                import time
+                time.sleep(5)
+                os.system('ssh p2020 \'killall tshark\'')
+                capture_process.wait()
+                capture_file.close()
             self.debugger.dut.output = ''
             self.debugger.dut.paramiko_output = ''
             if self.use_aux:

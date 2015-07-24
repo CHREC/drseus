@@ -25,6 +25,7 @@ class bdi:
         try:
             self.telnet = Telnet(ip_address, timeout=self.timeout)
         except:
+            self.telnet = None
             print('Could not connect to debugger, '
                   'running in supervisor-only mode')
         else:
@@ -36,8 +37,9 @@ class bdi:
                            'root@p2020rdb:~#', debug, timeout, color='cyan')
 
     def close(self):
-        self.telnet.write('quit\r')
-        self.telnet.close()
+        if self.telnet:
+            self.telnet.write('quit\r')
+            self.telnet.close()
         self.dut.close()
         if self.use_aux:
             self.aux.close()

@@ -123,11 +123,15 @@ def delete_campaign(campaign_number):
     if os.path.exists('campaign-data/db.sqlite3'):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
-        sql.execute('DELETE FROM drseus_logging_campaign WHERE campaign_id=?',
+        sql.execute('DELETE FROM drseus_logging_campaign '
+                    'WHERE campaign_number=?',
                     (campaign_number,))
         sql_db.commit()
         sql_db.close()
         print('deleted campaign from database')
+    if os.path.exists('campaign-data/'+str(campaign_number)):
+        shutil.rmtree('campaign-data/'+str(campaign_number))
+        print('deleted campaign data')
     if os.path.exists('simics-workspace/gold-checkpoints/' +
                       str(campaign_number)):
         shutil.rmtree('simics-workspace/gold-checkpoints/' +
@@ -413,6 +417,8 @@ supervise_group.add_option('-R', '--runtime', action='store', type='int',
                            dest='target_seconds', default=30,
                            help='Desired time in seconds to run (calculates '
                                 'number of iterations to run) [default=30]')
+supervise_group.add_option('-w', '--wireshark', action='store_true',
+                           dest='capture', help='run remote packet capture')
 parser.add_option_group(supervise_group)
 options, args = parser.parse_args()
 
@@ -481,7 +487,7 @@ elif options.supervise:
     drseus = load_campaign(campaign_data, options)
     drseus.supervise(iteration, options.target_seconds,
                      campaign_data['output_file'],
-                     campaign_data['use_aux_output'])
+                     campaign_data['use_aux_output'], options.capture)
 elif options.iteration >= 0:
     if not options.number:
         options.number = get_last_campaign()
