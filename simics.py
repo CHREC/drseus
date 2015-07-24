@@ -8,9 +8,7 @@ from time import time
 
 from dut import dut
 from error import DrSEUSError
-from simics_checkpoints import (inject_checkpoint, compare_registers,
-                                # regenerate_injected_checkpoint,
-                                compare_memory)
+import simics_checkpoints
 
 
 class simics:
@@ -335,13 +333,9 @@ class simics:
         latent_faults = 0
         for injection_number in xrange(len(checkpoints_to_inject)):
             checkpoint_number = checkpoints_to_inject[injection_number]
-            injected_checkpoint = inject_checkpoint(self.campaign_number,
-                                                    result_id, iteration,
-                                                    injection_number,
-                                                    checkpoint_number,
-                                                    self.board,
-                                                    selected_targets,
-                                                    self.debug)
+            injected_checkpoint = simics_checkpoints.inject_checkpoint(
+                self.campaign_number, result_id, iteration, injection_number,
+                checkpoint_number, self.board, selected_targets, self.debug)
             self.launch_simics(checkpoint=injected_checkpoint)
             injections_remaining = (injection_number + 1 <
                                     len(checkpoints_to_inject))
@@ -372,8 +366,38 @@ class simics:
             self.aux.paramiko_output = aux_paramiko_output
         return latent_faults
 
-    # def regenerate_injected_checkpoint(self, injection_data):
-    #     return regenerate_injected_checkpoint(self.board, injection_data)
+    def regenerate_checkpoints(self, iteration, cycles_between, injection_data):
+        for i in xrange(len(injection_data)):
+            if i == 0:
+                checkpoint = ('simics-workspace/gold-checkpoints/' +
+                              str(self.campaign_number)+'/' +
+                              str(injection_data[i]['checkpoint_number']))
+            else:
+                checkpoint = ('simics-workspace/injected-checkpoints/' +
+                              str(self.campaign_number)+'/' +
+                              str(iteration)+'/' +
+                              str(injection_data[i]['checkpoint_number']))
+            injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
+                                   str(self.campaign_number)+'/' +
+                                   str(iteration)+'/' +
+                                   str(injection_data[i]['checkpoint_number']) +
+                                   '_injected')
+            os.makedirs(injected_checkpoint)
+            injected_checkpoint = \
+                simics_checkpoints.regenerate_injected_checkpoint(
+                    self.board, checkpoint, injected_checkpoint,
+                    injection_data[i])
+            if i < len(injection_data) - 1:
+                self.launch_simics(checkpoint=injected_checkpoint)
+                for j in xrange(injection_data[i]['checkpoint_number'],
+                                injection_data[i+1]['checkpoint_number']):
+                    self.command('run-cycles '+str(cycles_between))
+                self.command('write-configuration injected-checkpoints/' +
+                             str(self.campaign_number)+'/' +
+                             str(iteration)+'/' +
+                             str(injection_data[i+1]['checkpoint_number']))
+                self.close()
+        return injected_checkpoint
 
     def compare_checkpoints(self, result_id, iteration, checkpoint_number,
                             last_checkpoint, cycles_between_checkpoints,
@@ -405,14 +429,14 @@ class simics:
                                  gold_checkpoint)
                 gold_checkpoint = 'simics-workspace/'+gold_checkpoint
                 monitored_checkpoint = 'simics-workspace/'+monitored_checkpoint
-                errors = compare_registers(result_id, checkpoint_number,
-                                           gold_checkpoint,
-                                           monitored_checkpoint, self.board)
+                errors = simics_checkpoints.compare_registers(
+                    result_id, checkpoint_number, gold_checkpoint,
+                    monitored_checkpoint, self.board)
                 if errors > reg_errors:
                     reg_errors = errors
-                errors = compare_memory(result_id, checkpoint_number,
-                                        gold_checkpoint, monitored_checkpoint,
-                                        self.board)
+                errors = simics_checkpoints.compare_memory(
+                    result_id, checkpoint_number, gold_checkpoint,
+                    monitored_checkpoint, self.board)
                 if errors > reg_errors:
                     mem_errors = errors
         return reg_errors + mem_errors

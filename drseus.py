@@ -322,8 +322,8 @@ simics_mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes (Simics only)',
                                          'These modes are only available for '
                                          'Simics campaigns')
 simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
-                             dest='injection', default=-1,
-                             help='regenerate an injected checkpoint and '
+                             dest='iteration', default=-1,
+                             help='regenerate a campaign iteration and '
                              'launch in Simics')
 parser.add_option_group(simics_mode_group)
 
@@ -482,23 +482,21 @@ elif options.supervise:
     drseus.supervise(iteration, options.target_seconds,
                      campaign_data['output_file'],
                      campaign_data['use_aux_output'])
-elif options.injection >= 0:
+elif options.iteration >= 0:
     if not options.number:
         options.number = get_last_campaign()
     campaign_data = get_campaign_data(options.number)
     if not campaign_data['use_simics']:
         raise Exception('This feature is only available for Simics campaigns')
     drseus = load_campaign(campaign_data, options)
-    injection_data = get_injection_data(campaign_data,
-                                        options.injection)
-    for injection in injection_data:
-        print(dict(zip(injection.keys(), injection)))
-    # checkpoint = drseus.debugger.regenerate_injected_checkpoint(
-    #      injection_data)
-    # drseus.debugger.launch_simics_gui(checkpoint)
-    # shutil.rmtree('simics-workspace/'+checkpoint)
-    # if not os.listdir('simics-workspace/temp'):
-    #     os.rmdir('simics-workspace/temp')
+    injection_data = get_injection_data(campaign_data, options.iteration)
+    checkpoint = drseus.debugger.regenerate_checkpoints(options.iteration,
+                                                        drseus.cycles_between,
+                                                        injection_data)
+    drseus.debugger.launch_simics_gui(checkpoint)
+    shutil.rmtree('simics-workspace/injected-checkpoints/' +
+                  str(campaign_data['campaign_number'])+'/' +
+                  str(options.iteration))
 else:
     if len(args) < 1:
         parser.error('please specify a target application or mode')

@@ -387,14 +387,13 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
     if injection_number == 0:
         gold_checkpoint = ('simics-workspace/gold-checkpoints/' +
                            str(campaign_number)+'/'+str(checkpoint_number))
-        injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
-                               str(campaign_number)+'/'+str(iteration)+'/' +
-                               str(checkpoint_number)+'_injected')
     else:
         gold_checkpoint = ('simics-workspace/injected-checkpoints/' +
                            str(campaign_number)+'/'+str(iteration)+'/' +
                            str(checkpoint_number))
-        injected_checkpoint = gold_checkpoint+'_injected'
+    injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
+                           str(campaign_number)+'/'+str(iteration)+'/' +
+                           str(checkpoint_number)+'_injected')
     os.makedirs(injected_checkpoint)
     # copy gold checkpoint files
     checkpoint_files = os.listdir(gold_checkpoint)
@@ -446,35 +445,22 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
     return injected_checkpoint.replace('simics-workspace/', '')
 
 
-# def regenerate_injected_checkpoint(board, injection_data):
-#     """
-#     Regenerate a previously created injected checkpoint using injection_data.
-#     """
-#     gold_checkpoint = ('simics-workspace/gold-checkpoints/checkpoint-' +
-#                        str(injection_data['checkpoint_number'])+'.ckpt')
-#     if not os.path.exists(gold_checkpoint):
-#         gold_checkpoint = ('simics-workspace/gold-checkpoints/incremental-' +
-#                            str(injection_data['checkpoint_number'])+'.ckpt')
-#     # create temporary directory
-#     if not os.path.exists('simics-workspace/temp'):
-#         os.mkdir('simics-workspace/temp')
-#     injected_checkpoint = ('simics-workspace/temp/' +
-#                            str(injection_data['injection_number'])+'_'
-#                            'checkpoint-' +
-#                            str(injection_data['checkpoint_number'])+'.ckpt')
-#     os.makedirs(injected_checkpoint)
-#     # copy gold checkpoint files
-#     checkpoint_files = os.listdir(gold_checkpoint)
-#     checkpoint_files.remove('config')
-#     for checkpoint_file in checkpoint_files:
-#         copyfile(gold_checkpoint+'/'+checkpoint_file,
-#                  injected_checkpoint+'/'+checkpoint_file)
-#     # perform fault injection
-#     targets = devices[board]
-#     inject_register(gold_checkpoint, injected_checkpoint,
-#                     injection_data['register'], injection_data['target'],
-#                     board, targets, injection_data)
-#     return injected_checkpoint.replace('simics-workspace/', '')
+def regenerate_injected_checkpoint(board, checkpoint, injected_checkpoint,
+                                   injection_data):
+    """
+    Regenerate a previously created injected checkpoint using injection_data.
+    """
+    checkpoint_files = os.listdir(checkpoint)
+    checkpoint_files.remove('config')
+    for checkpoint_file in checkpoint_files:
+        copyfile(checkpoint+'/'+checkpoint_file,
+                 injected_checkpoint+'/'+checkpoint_file)
+    # perform fault injection
+    targets = devices[board]
+    inject_register(checkpoint, injected_checkpoint,
+                    injection_data['register'], injection_data['target'],
+                    board, targets, injection_data)
+    return injected_checkpoint.replace('simics-workspace/', '')
 
 
 def parse_registers(config_file, board, targets):
