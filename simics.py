@@ -142,7 +142,6 @@ class simics:
                                 ' '+aux_board+'.'+serial_port+';'
                                 'connect-real-network-port-in ssh '
                                 'ethernet_switch0 target-ip=10.10.0.104;')
-        print(colored(simics_commands, 'red'))
         os.system('cd simics-workspace; '
                   './simics-gui -e \"'+simics_commands+'\"')
 
