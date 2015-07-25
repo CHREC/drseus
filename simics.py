@@ -132,15 +132,17 @@ class simics:
                            'connect text_console0.serial'
                            ' '+dut_board+'.'+serial_port+';'
                            'connect-real-network-port-in ssh '
-                           'ethernet_switch0 target-ip=10.10.0.100')
+                           'ethernet_switch0 target-ip=10.10.0.100;')
         if self.use_aux:
             aux_board = 'AUX_'+self.board+'_1'
-            simics_commands += ('disconnect '+aux_board+'.console0.serial'
+            simics_commands += ('new-text-console-comp text_console1;'
+                                'disconnect '+aux_board+'.console0.serial'
                                 ' '+aux_board+'.'+serial_port+';'
-                                'connect text_console0.serial'
+                                'connect text_console1.serial'
                                 ' '+aux_board+'.'+serial_port+';'
-                                ';connect-real-network-port-in ssh '
-                                'ethernet_switch0 target-ip=10.10.0.104')
+                                'connect-real-network-port-in ssh '
+                                'ethernet_switch0 target-ip=10.10.0.104;')
+        print(colored(simics_commands, 'red'))
         os.system('cd simics-workspace; '
                   './simics-gui -e \"'+simics_commands+'\"')
 
