@@ -12,9 +12,7 @@ import sqlite3
 from fault_injector import fault_injector
 
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
-# TODO: implement persistent fault detection
 # TODO: add option for number of times to rerun app for latent fault case
-# TODO: reimplement checkpoint regeneration with multiple injections
 # TODO: add command line options for ip addresses, serial ports, serial prompts
 # TODO: change Exception in simics_checkpoints.py to DrSEUSError
 

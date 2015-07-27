@@ -262,7 +262,6 @@ class fault_injector:
 
     def monitor_execution(self, iteration, latent_faults, output_file,
                           use_aux_output):
-        # TODO: monitor aux for errors
         buff = ''
         aux_buff = ''
         detected_errors = 0
@@ -318,8 +317,7 @@ class fault_injector:
             elif data_diff < 1.0 and data_diff != -1.0:
                 outcome = 'Silent data error'
                 outcome_category = 'Data error'
-        if not outcome:
-            if latent_faults:
+            elif latent_faults:
                 outcome = 'Latent faults'
                 outcome_category = 'No error'
             else:
@@ -415,6 +413,9 @@ class fault_injector:
                     if next_outcome != 'No error':
                         outcome = next_outcome
                         outcome_category = 'Post execution error'
+                    elif self.use_simics:
+                        if self.debugger.persistent_faults(result_id):
+                            outcome = 'Persistent faults'
             if self.use_simics:
                 try:
                     self.debugger.close()

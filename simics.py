@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 from signal import SIGINT
+import sqlite3
 import subprocess
 from termcolor import colored
 from threading import Thread
@@ -441,3 +442,37 @@ class simics:
                 if errors > reg_errors:
                     mem_errors = errors
         return reg_errors + mem_errors
+
+    def persistent_faults(self, result_id):
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql_db.row_factory = sqlite3.Row
+        sql = sql_db.cursor()
+        sql.execute('SELECT config_object,register,register_index,'
+                    'injected_value FROM drseus_logging_injection WHERE '
+                    'result_id=?', (result_id,))
+        injections = sql.fetchall()
+        sql.execute('SELECT * FROM drseus_logging_simics_register_diff WHERE '
+                    'result_id=?', (result_id,))
+        register_diffs = sql.fetchall()
+        sql.execute('SELECT * FROM drseus_logging_simics_memory_diff WHERE '
+                    'result_id=?', (result_id,))
+        memory_diffs = sql.fetchall()
+        sql_db.close()
+        if len(memory_diffs) > 0:
+            return False
+        for register_diff in register_diffs:
+            for injection in injections:
+                if injection['register_index']:
+                    injected_register = (injection['register']+':' +
+                                         injection['register_index'])
+                else:
+                    injected_register = injection['register']
+                if (register_diff['config_object'] == injection['config_object']
+                        and register_diff['register'] == injected_register):
+                    if (int(register_diff['monitored_value'], base=0) ==
+                            int(injection['injected_value'], base=0)):
+                        break
+            else:
+                return False
+        else:
+            return True
