@@ -4,7 +4,10 @@
  */
 
 Highcharts.theme = {
-	colors: ['#058DC7', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572', '#FF9655', '#FFF263', '#6AF9C4'],
+	colors: ['#058DC7', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572',
+             '#FF9655', '#FFF263', '#6AF9C4', '#f45b5b', '#8085e9', '#8d4654',
+             '#7798BF', '#aaeeee', '#ff0066', '#eeaaee', '#55BF3B', '#DF5353',
+             '#7798BF', '#aaeeee'],
 	chart: {
 		backgroundColor: {
 			linearGradient: { x1: 0, y1: 0, x2: 1, y2: 1 },

@@ -1,16 +1,4 @@
 {% extends "base.html" %}
-{% block chart_loader_header %}
-        <script type="text/javascript">
-            {% autoescape off %}
-            chart_array = {{ chart_array }}
-            $(document).ready(function() {
-                $.each(chart_array, function(index, chartoptions) {
-                    chart = new Highcharts.Chart(chartoptions);
-                });
-            });
-            {% endautoescape %}
-        </script>
-{% endblock %}
 {% block body %}
                         <div class="source" align="center">
                             <a name="outcomes">

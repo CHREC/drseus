@@ -17,6 +17,91 @@ def fix_reg_sort(register):
         return fix_sort(register[0])
 
 
+def campaign_chart(queryset):
+    campaigns = list(
+        queryset.values_list('campaign__campaign_number',
+                             'campaign__command').distinct())
+    campaigns = zip(*campaigns)
+    campaign_numbers = campaigns[0]
+    campaigns = campaigns[1]
+    if len(campaigns) <= 1:
+        return None
+    outcomes = list(
+        queryset.values_list('outcome').distinct().order_by('outcome'))
+    outcomes = zip(*outcomes)[0]
+    chart = {
+        'chart': {
+            'height': 600,
+            'renderTo': 'campaign_chart',
+            'type': 'column'
+        },
+        'exporting': {
+            'filename': ('campaigns'),
+            'sourceWidth': 1024,
+            'sourceHeight': 576,
+            'scale': 3,
+        },
+        'plotOptions': {
+            'column': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                }
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'campaign_chart_click'
+                    }
+                },
+                'stacking': 'percent'
+            }
+        },
+        'title': {
+            'text': 'Outcomes By Campaign'
+        },
+        'xAxis': {
+            'categories': campaigns,
+            'title': {
+                'text': 'Campaigns'
+            }
+        },
+        'yAxis': {
+            'labels': {
+                'format': '{value}%'
+            },
+            'title': {
+                'text': None
+            }
+        }
+    }
+    chart['series'] = []
+    for outcome in outcomes:
+        data = []
+        for campaign in campaigns:
+            data.append(queryset.filter(campaign__command=campaign,
+                                        outcome=outcome).count())
+        chart['series'].append({'data': data, 'name': outcome})
+    return chart, campaign_numbers
+
+
+def json_campaigns(queryset):
+    chart, campaign_number_list = campaign_chart(queryset)
+    campaign_number_list = dumps(campaign_number_list)
+    campaign_chart_click = """
+    function(event) {
+        var campaign_numbers = campaign_number_list;
+        window.location.assign(''+campaign_numbers[this.x]+'/results/?outcome='+
+                               this.series.name);
+    }
+    """.replace('campaign_number_list', campaign_number_list)
+    chart_array = [chart]
+    chart_array = dumps(chart_array, indent=4).replace(
+        '\"campaign_chart_click\"', campaign_chart_click)
+    return chart_array
+
+
 def outcome_category_chart(queryset, campaign_data):
     outcomes = sorted(queryset.filter(injection_number=0).values_list(
         'result__outcome_category', 'result__outcome').annotate(
@@ -394,7 +479,6 @@ def injection_count_chart(queryset, campaign_data):
         }
     }
     chart['series'] = []
-    print data
     for outcome in outcomes:
         chart_data = []
         for injection_count in injection_counts:
