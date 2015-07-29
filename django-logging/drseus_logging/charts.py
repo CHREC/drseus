@@ -22,10 +22,10 @@ def campaign_chart(queryset):
         queryset.values_list('campaign__campaign_number',
                              'campaign__command').distinct())
     campaigns = zip(*campaigns)
+    if len(campaigns) <= 1:
+        return None, None
     campaign_numbers = campaigns[0]
     campaigns = campaigns[1]
-    if len(campaigns) <= 1:
-        return None
     outcomes = list(
         queryset.values_list('outcome').distinct().order_by('outcome'))
     outcomes = zip(*outcomes)[0]

@@ -5,7 +5,6 @@ import os
 from paramiko import RSAKey
 import random
 import shutil
-from signal import SIGINT
 import sqlite3
 import subprocess
 from termcolor import colored
@@ -25,8 +24,8 @@ class fault_injector:
         self.use_aux = use_aux
         self.debug = debug
         if os.path.exists('campaign-data/private.key'):
-            self.rsakey = RSAKey.from_private_key_file(
-                'campaign-data/private.key')
+            self.rsakey = RSAKey.from_private_key_file('campaign-data/'
+                                                       'private.key')
         else:
             self.rsakey = RSAKey.generate(1024)
             self.rsakey.write_private_key_file('campaign-data/private.key')
@@ -47,13 +46,13 @@ class fault_injector:
                                         aux_serial_port, use_aux, '[root@ZED]#',
                                         debug, timeout)
             if self.use_aux:
-                self.debugger.aux.serial.write('\x03\n')
+                self.debugger.aux.serial.write('\x03')
                 aux_process = Thread(target=self.debugger.aux.do_login)
                 aux_process.start()
             if self.debugger.telnet:
                 self.debugger.reset_dut()
             else:
-                self.debugger.dut.serial.write('\x03\n')
+                self.debugger.dut.serial.write('\x03')
             self.debugger.dut.do_login()
             if self.use_aux:
                 aux_process.join()
@@ -65,7 +64,8 @@ class fault_injector:
     def setup_campaign(self, directory, architecture, application, arguments,
                        output_file, dut_files, aux_files, iterations,
                        aux_application, aux_arguments, use_aux_output,
-                       num_checkpoints):
+                       num_checkpoints, kill_dut):
+        self.kill_dut = kill_dut
         if self.use_simics:
             self.debugger.launch_simics()
         if arguments:
@@ -106,11 +106,12 @@ class fault_injector:
             aux_process.join()
         if self.use_simics:
             num_cycles = self.debugger.calculate_cycles(
-                self.command, self.aux_command)
+                self.command, self.aux_command, self.kill_dut)
         else:
             num_cycles = 0
         exec_time = self.debugger.time_application(self.command,
-                                                   self.aux_command, iterations)
+                                                   self.aux_command, iterations,
+                                                   self.kill_dut)
         if output_file:
             if use_aux_output:
                 self.debugger.aux.get_file(output_file, 'campaign-data/' +
@@ -122,7 +123,8 @@ class fault_injector:
                                            output_file)
         if self.use_simics:
             cycles_between = self.debugger.create_checkpoints(
-                self.command, self.aux_command, num_cycles, num_checkpoints)
+                self.command, self.aux_command, num_cycles, num_checkpoints,
+                self.kill_dut)
         else:
             num_checkpoints = 0
             cycles_between = 0
@@ -134,7 +136,8 @@ class fault_injector:
             'use_aux,use_aux_output,exec_time,architecture,'
             'use_simics,dut_output,aux_output,debugger_output,paramiko_output,'
             'aux_paramiko_output,num_cycles,num_checkpoints,cycles_between,'
-            'timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            'timestamp,kill_dut) VALUES '
+            '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
             (
                 self.campaign_number, application, output_file, self.command,
                 self.aux_command, self.use_aux, use_aux_output, exec_time,
@@ -145,7 +148,8 @@ class fault_injector:
                 self.debugger.output,  # .decode('utf-8', 'ignore'),
                 self.debugger.dut.paramiko_output,
                 self.debugger.aux.paramiko_output if self.use_aux else '',
-                num_cycles, num_checkpoints, cycles_between, datetime.now()
+                num_cycles, num_checkpoints, cycles_between, datetime.now(),
+                self.kill_dut
             )
         )
         sql_db.commit()
@@ -268,26 +272,21 @@ class fault_injector:
         data_diff = -1.0
         outcome = ''
         outcome_category = ''
-        if self.use_aux and use_aux_output:
+        if self.use_aux:
             try:
                 aux_buff = self.debugger.aux.read_until()
             except DrSEUSError as error:
-                self.debugger.dut.serial.write('\x03\n')
+                self.debugger.dut.serial.write('\x03')
                 outcome = error.type
                 outcome_category = 'AUX execution error'
+            else:
+                if self.kill_dut:
+                    self.debugger.dut.serial.write('\x03')
         try:
             buff = self.debugger.dut.read_until()
         except DrSEUSError as error:
-            if self.use_aux and not use_aux_output:
-                self.debugger.aux.serial.write('\x03\n')
             outcome = error.type
             outcome_category = 'Execution error'
-        if self.use_aux and not use_aux_output:
-            try:
-                aux_buff = self.debugger.aux.read_until()
-            except DrSEUSError as error:
-                outcome = error.type
-                outcome_category = 'AUX execution error'
         for line in buff.split('\n'):
             if 'drseus_detected_errors:' in line:
                 detected_errors = int(line.replace(
@@ -452,6 +451,7 @@ class fault_injector:
         for iteration in xrange(starting_iteration,
                                 starting_iteration + iterations):
             result_id = self.get_result_id(iteration)
+            # create empty injection, used for injection charts in log viewer
             sql_db = sqlite3.connect('campaign-data/db.sqlite3')
             sql = sql_db.cursor()
             sql.execute(

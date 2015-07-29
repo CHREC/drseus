@@ -264,44 +264,44 @@ class simics:
                 self.aux.read_until('##')
                 self.aux.read_until('##')
 
-    def calculate_cycles(self, command, aux_command):
+    def calculate_cycles(self, command, aux_command, kill_dut):
         self.halt_dut()
         start_cycles = self.command(
             'print-time').split('\n')[-2].split()[2]
-        if self.use_aux:
-            aux_process = Thread(target=self.aux.command,
-                                 args=('./'+aux_command, ))
-            aux_process.start()
         self.continue_dut()
-        self.dut.command('./'+command)
+        self.time_application(command, aux_command, 1, kill_dut)
         self.halt_dut()
-        if self.use_aux:
-            aux_process.join()
         end_cycles = self.command(
             'print-time').split('\n')[-2].split()[2]
         self.continue_dut()
         return int(end_cycles) - int(start_cycles)
 
-    def time_application(self, command, aux_command, iterations):
+    def time_application(self, command, aux_command, iterations, kill_dut):
         start = time()
         for i in xrange(iterations):
             if self.use_aux:
                 aux_process = Thread(target=self.aux.command,
                                      args=('./'+aux_command, ))
                 aux_process.start()
-            self.dut.command('./'+command)
-            end = time()
+            self.dut.serial.write('./'+command+'\n')
             if self.use_aux:
                 aux_process.join()
+            if kill_dut:
+                self.dut.serial.write('\x03')
+            self.dut.read_until()
+        end = time()
         return (end - start) / iterations
 
-    def create_checkpoints(self, command, aux_command, cycles, num_checkpoints):
+    def create_checkpoints(self, command, aux_command, cycles, num_checkpoints,
+                           kill_dut):
         os.makedirs('simics-workspace/gold-checkpoints/' +
                     str(self.campaign_number))
         step_cycles = cycles / num_checkpoints
         self.halt_dut()
         if self.use_aux:
-            self.aux.serial.write('./'+aux_command+'\n')
+                aux_process = Thread(target=self.aux.command,
+                                     args=('./'+aux_command, ))
+                aux_process.start()
         self.dut.serial.write('./'+command+'\n')
         for checkpoint in xrange(num_checkpoints):
             self.command('run-cycles '+str(step_cycles))
@@ -315,11 +315,10 @@ class simics:
                              ' '+merged_checkpoint)
         self.continue_dut()
         if self.use_aux:
-            aux_process = Thread(target=self.aux.read_until)
-            aux_process.start()
-        self.dut.read_until()
-        if self.use_aux:
             aux_process.join()
+        if kill_dut:
+            self.dut.serial.write('\x03')
+        self.dut.read_until()
         self.close()
         return step_cycles
 

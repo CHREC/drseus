@@ -85,17 +85,20 @@ class bdi:
                 raise DrSEUSError(error_message)
         return return_buffer
 
-    def time_application(self, command, aux_command, iterations):
+    def time_application(self, command, aux_command, iterations, kill_dut):
         start = time.time()
         for i in xrange(iterations):
             if self.use_aux:
                 aux_process = Thread(target=self.aux.command,
                                      args=('./'+aux_command, ))
                 aux_process.start()
-            self.dut.command('./'+command)
-            end = time.time()
+            self.dut.serial.write('./'+command+'\n')
             if self.use_aux:
                 aux_process.join()
+            if kill_dut:
+                self.dut.serial.write('\x03')
+            self.dut.read_until()
+        end = time.time()
         return (end - start) / iterations
 
     def inject_fault(self, result_id, iteration, injection_times, command,

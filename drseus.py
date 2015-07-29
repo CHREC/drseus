@@ -199,7 +199,8 @@ def new_campaign(application, options):
                           options.arguments, options.file, options.files,
                           options.aux_files, options.iterations,
                           aux_application, options.aux_args,
-                          options.use_aux_output, options.num_checkpoints)
+                          options.use_aux_output, options.num_checkpoints,
+                          options.kill_dut)
     print('\nsuccessfully setup campaign')
 
 
@@ -241,6 +242,7 @@ def load_campaign(campaign_data, options):
     drseus.num_checkpoints = campaign_data['num_checkpoints']
     drseus.cycles_between = campaign_data['cycles_between']
     drseus.exec_time = campaign_data['exec_time']
+    drseus.kill_dut = campaign_data['kill_dut']
     return drseus
 
 
@@ -365,8 +367,10 @@ new_group.add_option('-z', '--aux_args', action='store', type='str',
                      help='arguments for auxiliary application')
 new_group.add_option('-O', '--aux_output', action='store_true',
                      dest='use_aux_output', default=False,
-                     help='check console output from aux before dut and '
-                          'get output file from aux instead of dut')
+                     help='get output file from aux instead of dut')
+new_group.add_option('-k', '--kill_dut', action='store_true',
+                     dest='kill_dut', default=False,
+                     help='send ctrl-c to dut after aux completes execution')
 parser.add_option_group(new_group)
 
 new_simics_group = optparse.OptionGroup(parser, 'New Campaign Options '

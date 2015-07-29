@@ -28,6 +28,7 @@ class campaign(models.Model):
     num_checkpoints = models.IntegerField()
     cycles_between = models.IntegerField()
     timestamp = models.DateTimeField()
+    kill_dut = models.BooleanField()
     objects = campaign_manager()
 
 
