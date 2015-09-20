@@ -152,12 +152,12 @@ class simics:
             self.aux.close()
         self.simics.send_signal(SIGINT)
         self.simics.stdin.write('quit\n')
-        try:
-            self.read_until()
-        except:
-            # TODO: remove debug statements
-            print(colored('simics close error', 'red'))
-            print(self.output)
+        read_thread = Thread(target=self.read_until)
+        read_thread.start()
+        read_thread.join(timeout=30)
+        if read_thread.is_alive():
+            self.simics.kill()
+            raise DrSEUSError('Simics close error')
         self.output += 'quit'+'\n'
         if self.debug:
             print(colored('quit'+'\n', 'yellow'), end='')
