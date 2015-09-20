@@ -188,7 +188,8 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                 else:
                     raise Exception('simics_checkpoints.py:'
                                     'inject_register(): '
-                                    'Error finding register field name')
+                                    'Error finding register field name for '
+                                    'register '+register)
                 injection_data['field'] = field_to_inject
             else:
                 injection_data['field'] = None
