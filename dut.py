@@ -55,23 +55,29 @@ class dut:
                 self.paramiko_output += log_file.read()
             os.remove(paramiko_log)
 
-    def get_file(self, file, local_path='', delete_file=True):
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.ip_address, port=self.ssh_port, username='root',
-                    pkey=self.rsakey, look_for_keys=False)
-        dut_scp = SCPClient(ssh.get_transport())
-        dut_scp.get(file, local_path=local_path)
-        dut_scp.close()
-        ssh.close()
+    def get_file(self, target_file, local_path=''):
+        fallback = False
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(self.ip_address, port=self.ssh_port, username='root',
+                        pkey=self.rsakey, look_for_keys=False)
+            dut_scp = SCPClient(ssh.get_transport())
+            dut_scp.get(target_file, local_path=local_path)
+            dut_scp.close()
+            ssh.close()
+        except:
+            fallback = True
+            os.system('scp -P '+self.ssh_port+' -i campaign-data/private.key '
+                      'root@localhost:'+target_file+' ./'+local_path)
         paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
         if os.path.exists(paramiko_log):
             with open(paramiko_log) as log_file:
                 self.paramiko_output += log_file.read()
             os.remove(paramiko_log)
-        if delete_file:
-            self.command('rm '+file)
+        if fallback:
+            self.paramiko_output += '\nFallback to SCP used'
 
     def is_logged_in(self):
         self.serial.write('\n')

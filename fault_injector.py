@@ -230,16 +230,12 @@ class fault_injector:
         output_location = result_folder+'/'+output_file
         gold_location = ('campaign-data/'+str(self.campaign_number)+'/gold_' +
                          output_file)
-        try:
-            if use_aux_output:
-                self.debugger.aux.get_file(output_file, output_location,
-                                           delete_file=False)
-            else:
-                self.debugger.dut.get_file(output_file, output_location,
-                                           delete_file=False)
-        except:
-            if not os.listdir(result_folder):
-                os.rmdir(result_folder)
+        if use_aux_output:
+            self.debugger.aux.get_file(output_file, output_location)
+        else:
+            self.debugger.dut.get_file(output_file, output_location)
+        if not os.listdir(result_folder):
+            os.rmdir(result_folder)
             missing_output = True
         else:
             with open(gold_location, 'r') as solution:
@@ -259,9 +255,8 @@ class fault_injector:
                 self.debugger.dut.command('rm '+output_file)
         except DrSEUSError as error:
             raise DrSEUSError(error.type)
-        else:
-            if missing_output:
-                raise DrSEUSError(DrSEUSError.missing_output)
+        if missing_output:
+            raise DrSEUSError(DrSEUSError.missing_output)
         return data_diff
 
     def monitor_execution(self, iteration, latent_faults, output_file,
