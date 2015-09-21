@@ -1,3 +1,5 @@
+# TODO: fix field lookup for regs_CS_SPMODE
+
 # if count is not present it is assumed to be 1
 # if bits is not present it is assumbed to be 32
 # bits are listed as MSB:0 LSB:31 hence 31-i in bit ranges

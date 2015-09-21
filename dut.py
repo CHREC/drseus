@@ -68,8 +68,9 @@ class dut:
             ssh.close()
         except:
             fallback = True
-            os.system('scp -P '+self.ssh_port+' -i campaign-data/private.key '
-                      'root@localhost:'+target_file+' ./'+local_path)
+            os.system('scp -P '+str(self.ssh_port) +
+                      ' -i campaign-data/private.key root@localhost:' +
+                      target_file+' ./'+local_path)
         paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
         if os.path.exists(paramiko_log):
