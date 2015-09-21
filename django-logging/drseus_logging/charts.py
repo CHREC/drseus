@@ -1,5 +1,6 @@
 from collections import OrderedDict
-from django.db.models import Count
+from django.db.models import Case, Count, IntegerField, Sum, Value, When
+from django.db.models.functions import Concat
 from re import split
 from simplejson import dumps
 from threading import Thread
@@ -239,9 +240,9 @@ def outcome_chart(queryset, campaign_data, chart_array):
 
 
 def register_chart(queryset, campaign_data, chart_array):
-    registers = sorted(queryset.values_list('register',
-                                            'register_index').distinct(),
-                       key=fix_reg_sort)
+    registers = queryset.annotate(
+        register_name=Concat('register', Value(':'), 'register_index')
+    ).values_list('register_name').distinct().order_by('register_name')
     if len(registers) <= 1:
         return
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
@@ -278,9 +279,7 @@ def register_chart(queryset, campaign_data, chart_array):
             }
         },
         'xAxis': {
-            'categories': [
-                reg[0] + (':'+reg[1] if reg[1] else '') for reg in registers
-            ],
+            'categories': zip(*registers)[0],
             'labels': {
                 'align': 'right',
                 'rotation': -60,
@@ -299,35 +298,29 @@ def register_chart(queryset, campaign_data, chart_array):
         }
     }
     chart['series'] = []
-
-    def worker(outcome, registers, series_index):
-        data = []
-        for register in registers:
-            data.append(queryset.filter(result__outcome=outcome,
-                                        register=register[0],
-                                        register_index=register[1]).count())
-        chart['series'][series_index] = {'data': data, 'name': outcome,
-                                         'stacking': True}
-
-    index = 0
-    threads = []
     for outcome in outcomes:
-        chart['series'].append(None)
-        thread = Thread(target=worker,
-                        args=(outcome, registers, index))
-        threads.append(thread)
-        thread.start()
-        index += 1
-    for thread in threads:
-        thread.join()
+        data = queryset.annotate(
+            register_name=Concat('register', Value(':'), 'register_index')
+        ).values_list('register_name').distinct().order_by('register_name'
+                                                           ).annotate(
+            count=Sum(Case(When(result__outcome=outcome, then=1),
+                           default=0, output_field=IntegerField()))
+        ).values_list('register_name', 'count')
+        chart['series'].append({'data': zip(*data)[1], 'name': outcome,
+                                'stacking': True})
     chart_array.append(dumps(chart).replace('\"register_chart_click\"', """
     function(event) {
         var reg = this.category.split(':');
         var register = reg[0];
         var index = reg[1];
-        window.location.assign('../results/?outcome='+this.series.name+
-                               '&injection__register='+register+
-                               '&injection__register_index='+index);
+        if (index) {
+            window.location.assign('../results/?outcome='+this.series.name+
+                                   '&injection__register='+register+
+                                   '&injection__register_index='+index);
+        } else {
+            window.location.assign('../results/?outcome='+this.series.name+
+                                   '&injection__register='+register);
+        }
     }
     """))
 
