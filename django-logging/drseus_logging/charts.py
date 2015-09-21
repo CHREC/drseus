@@ -299,14 +299,27 @@ def register_chart(queryset, campaign_data, chart_array):
         }
     }
     chart['series'] = []
-    for outcome in outcomes:
+
+    def worker(outcome, registers, series_index):
         data = []
         for register in registers:
             data.append(queryset.filter(result__outcome=outcome,
                                         register=register[0],
                                         register_index=register[1]).count())
-        chart['series'].append({'data': data, 'name': outcome,
-                                'stacking': True})
+        chart['series'][series_index] = {'data': data, 'name': outcome,
+                                         'stacking': True}
+
+    index = 0
+    threads = []
+    for outcome in outcomes:
+        chart['series'].append(None)
+        thread = Thread(target=worker,
+                        args=(outcome, registers, index))
+        threads.append(thread)
+        thread.start()
+        index += 1
+    for thread in threads:
+        thread.join()
     chart_array.append(dumps(chart).replace('\"register_chart_click\"', """
     function(event) {
         var reg = this.category.split(':');
