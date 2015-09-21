@@ -69,7 +69,8 @@ class dut:
         except:
             fallback = True
             os.system('scp -P '+str(self.ssh_port) +
-                      ' -i campaign-data/private.key root@localhost:' +
+                      ' -i campaign-data/private.key '
+                      '-o StrictHostKeyChecking=no root@localhost:' +
                       target_file+' ./'+local_path)
         paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
