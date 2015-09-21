@@ -2,6 +2,7 @@ from collections import OrderedDict
 from django.db.models import Count
 from re import split
 from simplejson import dumps
+from threading import Thread
 from .models import result
 
 
@@ -102,7 +103,7 @@ def json_campaigns(queryset):
     return chart_array
 
 
-def outcome_category_chart(queryset, campaign_data):
+def outcome_category_chart(queryset, campaign_data, chart_array):
     outcomes = sorted(queryset.filter(injection_number=0).values_list(
         'result__outcome_category', 'result__outcome').annotate(
         count=Count('result__outcome_category')), key=lambda x: x[1])
@@ -156,10 +157,26 @@ def outcome_category_chart(queryset, campaign_data):
             'text': 'Outcome Categories'
         }
     }
-    return chart, zip(*outcome_categories)[0]
+    outcome_category_list = dumps(zip(*outcome_categories)[0])
+    chart = dumps(chart)
+    chart = chart.replace('\"outcome_category_chart_click\"', """
+    function(event) {
+        var outcome_categories = outcome_category_list;
+        window.location.assign('../results/?outcome_category='+
+                               outcome_categories[this.x]);
+    }
+    """.replace('outcome_category_list', outcome_category_list))
+    chart = chart.replace('\"outcome_category_percentage_formatter\"',  """
+    function() {
+        var outcome_categories = outcome_category_list;
+        return ''+outcome_categories[parseInt(this.point.x)]+' '+
+        Highcharts.numberFormat(this.percentage, 1)+'%';
+    }
+    """.replace('outcome_category_list', outcome_category_list))
+    chart_array.append(chart)
 
 
-def outcome_chart(queryset, campaign_data):
+def outcome_chart(queryset, campaign_data, chart_array):
     outcomes = list(queryset.filter(injection_number=0).values_list(
         'result__outcome').annotate(count=Count('result__outcome')))
     chart = {
@@ -203,15 +220,30 @@ def outcome_chart(queryset, campaign_data):
         }
 
     }
-    return chart, zip(*outcomes)[0]
+    outcome_list = dumps(zip(*outcomes)[0])
+    chart = dumps(chart)
+    chart = chart.replace('\"outcome_chart_click\"', """
+    function(event) {
+        var outcomes = outcome_list;
+        window.location.assign('../results/?outcome='+outcomes[this.x]);
+    }
+    """.replace('outcome_list', outcome_list))
+    chart = chart.replace('\"outcome_percentage_formatter\"', """
+    function() {
+        var outcomes = outcome_list;
+        return ''+outcomes[parseInt(this.point.x)]+' '+
+        Highcharts.numberFormat(this.percentage, 1)+'%';
+    }
+    """.replace('outcome_list', outcome_list))
+    chart_array.append(chart)
 
 
-def register_chart(queryset, campaign_data):
+def register_chart(queryset, campaign_data, chart_array):
     registers = sorted(queryset.values_list('register',
                                             'register_index').distinct(),
                        key=fix_reg_sort)
     if len(registers) <= 1:
-        return None
+        return
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
     outcomes = zip(*outcomes)[0]
@@ -275,14 +307,23 @@ def register_chart(queryset, campaign_data):
                                         register_index=register[1]).count())
         chart['series'].append({'data': data, 'name': outcome,
                                 'stacking': True})
-    return chart
+    chart_array.append(dumps(chart).replace('\"register_chart_click\"', """
+    function(event) {
+        var reg = this.category.split(':');
+        var register = reg[0];
+        var index = reg[1];
+        window.location.assign('../results/?outcome='+this.series.name+
+                               '&injection__register='+register+
+                               '&injection__register_index='+index);
+    }
+    """))
 
 
-def bit_chart(queryset, campaign_data):
+def bit_chart(queryset, campaign_data, chart_array):
     bits = sorted(queryset.values_list('bit').distinct(), key=fix_sort)
     bits = zip(*bits)[0]
     if len(bits) <= 1:
-        return None
+        return
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
     outcomes = zip(*outcomes)[0]
@@ -336,10 +377,15 @@ def bit_chart(queryset, campaign_data):
                                         bit=bit).count())
         chart['series'].append({'data': data, 'name': outcome,
                                 'stacking': True})
-    return chart
+    chart_array.append(dumps(chart).replace('\"bit_chart_click\"', """
+    function(event) {
+        window.location.assign('../results/?outcome='+this.series.name+
+                               '&injection__bit='+this.category);
+    }
+    """))
 
 
-def time_chart(queryset, campaign_data):
+def time_chart(queryset, campaign_data, chart_array):
     if campaign_data.use_simics:
         times = sorted(queryset.values_list('checkpoint_number').distinct(),
                        key=fix_sort)
@@ -348,7 +394,7 @@ def time_chart(queryset, campaign_data):
                        key=fix_sort)
     times = zip(*times)[0]
     if len(times) <= 1:
-        return None
+        return
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
     outcomes = zip(*outcomes)[0]
@@ -409,17 +455,33 @@ def time_chart(queryset, campaign_data):
                                             time_rounded=time).count())
         chart['series'].append({'data': data, 'name': outcome,
                                 'stacking': True})
-    return chart
+    chart = dumps(chart)
+    if campaign_data.use_simics:
+        chart_array.append(chart.replace('\"time_chart_click\"', """
+        function(event) {
+            window.location.assign('../results/?outcome='+this.series.name+
+                                   '&injection__checkpoint_number='+
+                                   this.category);
+        }
+        """))
+    else:
+        chart_array.append(chart.replace('\"time_chart_click\"', """
+        function(event) {
+            var time = parseFloat(this.category)
+            window.location.assign('../results/?outcome='+this.series.name+
+                                   '&injection__time_rounded='+time.toFixed(1));
+        }
+        """))
 
 
-def injection_count_chart(queryset, campaign_data):
+def injection_count_chart(queryset, campaign_data, chart_array):
     injection_counts = list(
         queryset.filter().annotate(
             injection_count=Count('result__injection')
         ).values_list('injection_count').distinct())
     injection_counts = sorted(zip(*injection_counts)[0])
     if len(injection_counts) <= 1:
-        return None
+        return
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
         'result__outcome'))
     outcomes = zip(*outcomes)[0]
@@ -488,98 +550,39 @@ def injection_count_chart(queryset, campaign_data):
                 chart_data.append(0)
         chart['series'].append({'data': chart_data, 'name': outcome,
                                 'stacking': True})
-    return chart
-
-
-def json_charts(queryset, campaign_data):
-    outcome_categories, outcome_category_list = \
-        outcome_category_chart(queryset, campaign_data)
-    outcome_category_list = dumps(outcome_category_list)
-    outcomes, outcome_list = outcome_chart(queryset, campaign_data)
-    outcome_list = dumps(outcome_list)
-    registers = register_chart(queryset, campaign_data)
-    bits = bit_chart(queryset, campaign_data)
-    times = time_chart(queryset, campaign_data)
-    counts = injection_count_chart(queryset, campaign_data)
-    outcome_category_chart_click = """
-    function(event) {
-        var outcome_categories = outcome_category_list;
-        window.location.assign('../results/?outcome_category='+
-                               outcome_categories[this.x]);
-    }
-    """.replace('outcome_category_list', outcome_category_list)
-    outcome_category_percentage_formatter = """
-    function() {
-        var outcome_categories = outcome_category_list;
-        return ''+outcome_categories[parseInt(this.point.x)]+' '+
-        Highcharts.numberFormat(this.percentage, 1)+'%';
-    }
-    """.replace('outcome_category_list', outcome_category_list)
-    outcome_chart_click = """
-    function(event) {
-        var outcomes = outcome_list;
-        window.location.assign('../results/?outcome='+outcomes[this.x]);
-    }
-    """.replace('outcome_list', outcome_list)
-    outcome_percentage_formatter = """
-    function() {
-        var outcomes = outcome_list;
-        return ''+outcomes[parseInt(this.point.x)]+' '+
-        Highcharts.numberFormat(this.percentage, 1)+'%';
-    }
-    """.replace('outcome_list', outcome_list)
-    register_chart_click = """
-    function(event) {
-        var reg = this.category.split(':');
-        var register = reg[0];
-        var index = reg[1];
-        window.location.assign('../results/?outcome='+this.series.name+
-                               '&injection__register='+register+
-                               '&injection__register_index='+index);
-    }
-    """
-    bit_chart_click = """
-    function(event) {
-        window.location.assign('../results/?outcome='+this.series.name+
-                               '&injection__bit='+this.category);
-    }
-    """
-    simics_time_chart_click = """
-    function(event) {
-        window.location.assign('../results/?outcome='+this.series.name+
-                               '&injection__checkpoint_number='+this.category);
-    }
-    """
-    hw_time_chart_click = """
-    function(event) {
-        var time = parseFloat(this.category)
-        window.location.assign('../results/?outcome='+this.series.name+
-                               '&injection__time_rounded='+time.toFixed(1));
-    }
-    """
-    count_chart_click = """
+    chart_array.append(dumps(chart).replace('\"count_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
                                '&injections='+this.category);
     }
-    """
-    chart_array = [outcome_categories, outcomes, registers, bits, times,
-                   counts]
-    chart_array = [chart for chart in chart_array if chart]
-    chart_array = dumps(chart_array, indent=4)
-    replacements = [('\"outcome_category_chart_click\"',
-                     outcome_category_chart_click),
-                    ('\"outcome_category_percentage_formatter\"',
-                     outcome_category_percentage_formatter),
-                    ('\"outcome_chart_click\"', outcome_chart_click),
-                    ('\"outcome_percentage_formatter\"',
-                     outcome_percentage_formatter),
-                    ('\"register_chart_click\"', register_chart_click),
-                    ('\"bit_chart_click\"', bit_chart_click),
-                    ('\"time_chart_click\"',
-                     (simics_time_chart_click if campaign_data.use_simics
-                      else hw_time_chart_click)),
-                    ('\"count_chart_click\"', count_chart_click)]
-    for replacement in replacements:
-        chart_array = chart_array.replace(replacement[0], replacement[1])
-    return chart_array
+    """))
+
+
+def json_charts(queryset, campaign_data):
+    chart_array = []
+    outcome_category_thread = Thread(target=outcome_category_chart,
+                                     args=(queryset, campaign_data,
+                                           chart_array))
+    outcome_category_thread.start()
+    outcome_thread = Thread(target=outcome_chart,
+                            args=(queryset, campaign_data, chart_array))
+    outcome_thread.start()
+    register_thread = Thread(target=register_chart,
+                             args=(queryset, campaign_data, chart_array))
+    register_thread.start()
+    bit_thread = Thread(target=bit_chart,
+                        args=(queryset, campaign_data, chart_array))
+    bit_thread.start()
+    time_thread = Thread(target=time_chart,
+                         args=(queryset, campaign_data, chart_array))
+    time_thread.start()
+    injection_count_thread = Thread(target=injection_count_chart,
+                                    args=(queryset, campaign_data, chart_array))
+    injection_count_thread.start()
+    outcome_category_thread.join()
+    outcome_thread.join()
+    register_thread.join()
+    bit_thread.join()
+    time_thread.join()
+    injection_count_thread.join()
+    return '['+','.join(chart_array)+']'
