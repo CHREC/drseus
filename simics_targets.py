@@ -1,4 +1,5 @@
-# TODO: fix field lookup for regs_CS_SPMODE, tbi_TBICON, LCRR, RCTRL
+# TODO: fix field lookup for regs_CS_SPMODE, tbi_TBICON, LCRR, RCTRL,
+#                            usb_regs_usbcmd
 
 # if count is not present it is assumed to be 1
 # if bits is not present it is assumbed to be 32
