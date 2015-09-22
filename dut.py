@@ -125,7 +125,8 @@ class dut:
             signal = 'Signal received'
             for line in buff.split('\n'):
                 if 'drseus_sighandler:' in line:
-                    signal = line.replace('drseus_sighandler:', '').strip()
+                    signal = line[line.index('drseus_sighandler:'):
+                                  ].replace('drseus_sighandler:', '').strip()
                     break
             raise DrSEUSError('Signal '+signal)
         else:

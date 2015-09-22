@@ -15,6 +15,7 @@ from fault_injector import fault_injector
 # TODO: add result editing to log viewer
 # TODO: add data diff filter to log viewer
 # TODO: remove ppc_fi and arm_fi prefixes
+# TODO: fix chart filtering on injection number
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: add command line options for ip addresses, serial ports, serial prompts

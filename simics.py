@@ -157,11 +157,15 @@ class simics:
         read_thread.join(timeout=30)
         if read_thread.is_alive():
             self.simics.kill()
-            raise DrSEUSError('Simics close error')
-        self.output += 'quit'+'\n'
-        if self.debug:
-            print(colored('quit'+'\n', 'yellow'), end='')
-        self.simics.wait()
+            self.output += '\nkilled unresponsive simics process\n'
+            if self.debug:
+                print(colored('killed unresponsive simics process\n',
+                              'yellow'), end='')
+        else:
+            self.output += 'quit\n'
+            if self.debug:
+                print(colored('quit\n', 'yellow'), end='')
+            self.simics.wait()
 
     def halt_dut(self):
         self.simics.send_signal(SIGINT)

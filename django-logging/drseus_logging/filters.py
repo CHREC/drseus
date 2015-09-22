@@ -105,11 +105,11 @@ class hw_injection_filter(django_filters.FilterSet):
         core_choices = injection_choices(campaign, 'core')
         self.filters['core'].extra.update(choices=core_choices)
         self.filters['core'].widget.attrs['size'] = min(len(core_choices), 10)
-        injections_choices = result_choices(campaign, 'injections')
-        self.filters['result__injections'].extra.update(
-            choices=injections_choices)
-        self.filters['result__injections'].widget.attrs['size'] = min(
-            len(injections_choices), 10)
+        # injections_choices = result_choices(campaign, 'injections')
+        # self.filters['result__injections'].extra.update(
+        #     choices=injections_choices)
+        # self.filters['result__injections'].widget.attrs['size'] = min(
+        #     len(injections_choices), 10)
         outcome_choices = result_choices(campaign, 'outcome')
         self.filters['result__outcome'].extra.update(choices=outcome_choices)
         self.filters['result__outcome'].widget.attrs['size'] = min(
@@ -134,9 +134,9 @@ class hw_injection_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     register = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    result__injections = django_filters.MultipleChoiceFilter(
-        label='Number of injections',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    # result__injections = django_filters.MultipleChoiceFilter(
+    #     label='Number of injections',
+    #     widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     result__outcome = django_filters.MultipleChoiceFilter(
         label='Outcome',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
@@ -254,11 +254,11 @@ class simics_injection_filter(django_filters.FilterSet):
             choices=checkpoint_number_choices)
         self.filters['checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), 10)
-        injections_choices = result_choices(campaign, 'injections')
-        self.filters['result__injections'].extra.update(
-            choices=injections_choices)
-        self.filters['result__injections'].widget.attrs['size'] = min(
-            len(injections_choices), 10)
+        # injections_choices = result_choices(campaign, 'injections')
+        # self.filters['result__injections'].extra.update(
+        #     choices=injections_choices)
+        # self.filters['result__injections'].widget.attrs['size'] = min(
+        #     len(injections_choices), 10)
         outcome_choices = result_choices(campaign, 'outcome')
         self.filters['result__outcome'].extra.update(choices=outcome_choices)
         self.filters['result__outcome'].widget.attrs['size'] = min(
@@ -294,9 +294,9 @@ class simics_injection_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     register_index = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    result__injections = django_filters.MultipleChoiceFilter(
-        label='Number of injections',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    # result__injections = django_filters.MultipleChoiceFilter(
+    #     label='Number of injections',
+    #     widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     result__outcome = django_filters.MultipleChoiceFilter(
         label='Outcome',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
