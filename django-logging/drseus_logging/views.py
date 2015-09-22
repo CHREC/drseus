@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django_tables2 import RequestConfig
 
 from .charts import json_campaigns, json_charts
 from .filters import (hw_result_filter, hw_injection_filter,
@@ -56,6 +57,7 @@ def campaign_page(request, campaign_number):
         page_items.append(('AUX SCP Log', 'aux_paramiko_output'))
     table = campaign_table(campaign.objects.filter(
         campaign_number=campaign_number))
+    RequestConfig(request).configure(table)
     return render(request, 'campaign.html', {'campaign_data': campaign_data,
                                              'navigation_items':
                                                  navigation_items,
@@ -66,6 +68,7 @@ def campaign_page(request, campaign_number):
 def campaigns_page(request):
     table = campaigns_table(campaign.objects.all())
     chart_array = json_campaigns(result.objects.all())
+    RequestConfig(request).configure(table)
     return render(request, 'campaigns.html', {'chart_array': chart_array,
                                               'table': table})
 
@@ -83,6 +86,7 @@ def results_page(request, campaign_number):
                                          campaign=campaign_number)
     table = results_table(result_filter.qs)
     table.paginate(page=request.GET.get('page', 1), per_page=100)
+    RequestConfig(request).configure(table)
     return render(request, 'results.html', {'campaign_data': campaign_data,
                                             'filter': result_filter,
                                             'navigation_items':
@@ -134,6 +138,10 @@ def result_page(request, campaign_number, iteration):
         memory_table = None
         register_table = None
         injection_table = hw_injection_table(injection_objects)
+    RequestConfig(request).configure(table)
+    RequestConfig(request).configure(injection_table)
+    RequestConfig(request).configure(memory_table)
+    RequestConfig(request).configure(register_table)
     return render(request, 'result.html', {'campaign_data': campaign_data,
                                            'filter': register_filter,
                                            'injection_table': injection_table,

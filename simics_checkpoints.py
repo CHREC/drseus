@@ -7,6 +7,7 @@ from subprocess import check_output
 import sqlite3
 from termcolor import colored
 
+from error import DrSEUSError
 from simics_targets import devices
 
 
@@ -406,9 +407,24 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
     # choose injection target
     target = choose_target(selected_targets, targets)
     register = choose_register(target, targets)
-    # perform fault injection
-    injection_data = inject_register(gold_checkpoint, injected_checkpoint,
-                                     register, target, board, targets)
+    try:
+        # perform fault injection
+        injection_data = inject_register(gold_checkpoint, injected_checkpoint,
+                                         register, target, board, targets)
+    except Exception as error:
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql = sql_db.cursor()
+        sql.execute(
+            'INSERT INTO drseus_logging_injection (result_id,injection_number,'
+            'register,target,timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            (
+                result_id, injection_number, register, target, datetime.now()
+            )
+        )
+        sql_db.commit()
+        sql_db.close()
+        print(error)
+        raise DrSEUSError('Error injecting fault')
     # log injection data
     sql_db = sqlite3.connect('campaign-data/db.sqlite3')
     sql = sql_db.cursor()
