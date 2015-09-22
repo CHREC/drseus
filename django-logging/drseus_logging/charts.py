@@ -292,8 +292,8 @@ def register_chart(queryset, campaign_data, chart_array):
                                                            ).annotate(
             count=Sum(Case(When(result__outcome=outcome, then=1),
                            default=0, output_field=IntegerField()))
-        ).values_list('register_name', 'count')
-        chart['series'].append({'data': zip(*data)[1], 'name': outcome,
+        ).values_list('count')
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
     chart_array.append(dumps(chart).replace('\"register_chart_click\"', """
     function(event) {
@@ -366,8 +366,8 @@ def bit_chart(queryset, campaign_data, chart_array):
         data = queryset.values_list('bit').distinct().order_by('bit').annotate(
             count=Sum(Case(When(result__outcome=outcome, then=1), default=0,
                            output_field=IntegerField()))
-        ).values_list('bit', 'count')
-        chart['series'].append({'data': zip(*data)[1], 'name': outcome,
+        ).values_list('count')
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
     chart_array.append(dumps(chart).replace('\"bit_chart_click\"', """
     function(event) {
@@ -441,14 +441,14 @@ def time_chart(queryset, campaign_data, chart_array):
                 ).order_by('checkpoint_number').annotate(
                     count=Sum(Case(When(result__outcome=outcome, then=1),
                                    default=0, output_field=IntegerField()))
-            ).values_list('checkpoint_number', 'count')
+            ).values_list('count')
         else:
             data = queryset.values_list('checkpoint_number').distinct(
                 ).order_by('checkpoint_number').annotate(
                     count=Sum(Case(When(result__outcome=outcome, then=1),
                                    default=0, output_field=IntegerField()))
-            ).values_list('checkpoint_number', 'count')
-        chart['series'].append({'data': zip(*data)[1], 'name': outcome,
+            ).values_list('count')
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
     chart = dumps(chart)
     if campaign_data.use_simics:
