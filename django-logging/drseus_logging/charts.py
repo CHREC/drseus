@@ -1,22 +1,9 @@
 from collections import OrderedDict
 from django.db.models import Case, Count, IntegerField, Sum, Value, When
 from django.db.models.functions import Concat
-from re import split
 from simplejson import dumps
 from threading import Thread
 from .models import result
-
-
-def fix_sort(string):
-    return ''.join([text.zfill(5) if text.isdigit() else text.lower() for
-                    text in split('([0-9]+)', str(string))])
-
-
-def fix_reg_sort(register):
-    if register[1]:
-        return fix_sort(register[0]+register[1])
-    else:
-        return fix_sort(register[0])
 
 
 def campaign_chart(queryset):
@@ -326,8 +313,7 @@ def register_chart(queryset, campaign_data, chart_array):
 
 
 def bit_chart(queryset, campaign_data, chart_array):
-    bits = sorted(queryset.values_list('bit').distinct(), key=fix_sort)
-    bits = zip(*bits)[0]
+    bits = queryset.values_list('bit').distinct().order_by('bit')
     if len(bits) <= 1:
         return
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
@@ -364,7 +350,7 @@ def bit_chart(queryset, campaign_data, chart_array):
             'text': 'Outcomes By Bit'
         },
         'xAxis': {
-            'categories': bits,
+            'categories': zip(*bits)[0],
             'title': {
                 'text': 'Bit Index'
             }
@@ -377,11 +363,11 @@ def bit_chart(queryset, campaign_data, chart_array):
     }
     chart['series'] = []
     for outcome in outcomes:
-        data = []
-        for bit in bits:
-            data.append(queryset.filter(result__outcome=outcome,
-                                        bit=bit).count())
-        chart['series'].append({'data': data, 'name': outcome,
+        data = queryset.values_list('bit').distinct().order_by('bit').annotate(
+            count=Sum(Case(When(result__outcome=outcome, then=1), default=0,
+                           output_field=IntegerField()))
+        ).values_list('bit', 'count')
+        chart['series'].append({'data': zip(*data)[1], 'name': outcome,
                                 'stacking': True})
     chart_array.append(dumps(chart).replace('\"bit_chart_click\"', """
     function(event) {
@@ -393,12 +379,11 @@ def bit_chart(queryset, campaign_data, chart_array):
 
 def time_chart(queryset, campaign_data, chart_array):
     if campaign_data.use_simics:
-        times = sorted(queryset.values_list('checkpoint_number').distinct(),
-                       key=fix_sort)
+        times = queryset.values_list('checkpoint_number').distinct().order_by(
+            'checkpoint_number')
     else:
-        times = sorted(queryset.values_list('time_rounded').distinct(),
-                       key=fix_sort)
-    times = zip(*times)[0]
+        times = queryset.values_list('time_rounded').distinct().order_by(
+            'time_rounded')
     if len(times) <= 1:
         return
     outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
@@ -438,7 +423,7 @@ def time_chart(queryset, campaign_data, chart_array):
             'text': 'Outcomes Over Time'
         },
         'xAxis': {
-            'categories': times,
+            'categories': zip(*times)[0],
             'title': {
                 'text': 'Checkpoint' if campaign_data.use_simics else 'Seconds'
             }
@@ -451,15 +436,19 @@ def time_chart(queryset, campaign_data, chart_array):
     }
     chart['series'] = []
     for outcome in outcomes:
-        data = []
-        for time in times:
-            if campaign_data.use_simics:
-                data.append(queryset.filter(result__outcome=outcome,
-                                            checkpoint_number=time).count())
-            else:
-                data.append(queryset.filter(result__outcome=outcome,
-                                            time_rounded=time).count())
-        chart['series'].append({'data': data, 'name': outcome,
+        if campaign_data.use_simics:
+            data = queryset.values_list('checkpoint_number').distinct(
+                ).order_by('checkpoint_number').annotate(
+                    count=Sum(Case(When(result__outcome=outcome, then=1),
+                                   default=0, output_field=IntegerField()))
+            ).values_list('checkpoint_number', 'count')
+        else:
+            data = queryset.values_list('checkpoint_number').distinct(
+                ).order_by('checkpoint_number').annotate(
+                    count=Sum(Case(When(result__outcome=outcome, then=1),
+                                   default=0, output_field=IntegerField()))
+            ).values_list('checkpoint_number', 'count')
+        chart['series'].append({'data': zip(*data)[1], 'name': outcome,
                                 'stacking': True})
     chart = dumps(chart)
     if campaign_data.use_simics:
