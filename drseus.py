@@ -13,8 +13,6 @@ from fault_injector import fault_injector
 
 # TODO: add better ctrl-c handling and save partial results
 # TODO: add result editing to log viewer
-# TODO: add data diff filter to log viewer
-# TODO: remove ppc_fi and arm_fi prefixes
 # TODO: fix chart filtering on injection number
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
@@ -147,21 +145,15 @@ def new_campaign(application, options):
     if options.architecture == 'p2020':
         dut_ip_address = '10.42.0.21'
         dut_serial_port = '/dev/ttyUSB1'
-        application = 'ppc_fi_'+application
-        if options.aux_app:
-            aux_application = 'ppc_fi_'+options.aux_app
-        else:
-            aux_application = application
     elif options.architecture == 'a9':
         dut_ip_address = '10.42.0.30'
         dut_serial_port = '/dev/ttyACM0'
-        application = 'arm_fi_'+application
-        if options.aux_app:
-            aux_application = 'arm_fi_'+options.aux_app
-        else:
-            aux_application = application
     else:
         raise Exception('invalid architecture: '+options.architecture)
+    if options.aux_app:
+        aux_application = options.aux_app
+    else:
+        aux_application = application
     if options.directory == 'fiapps':
         if not os.path.exists('fiapps'):
             os.system('./setup_apps.sh')
