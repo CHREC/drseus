@@ -182,15 +182,16 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                 for field_name, field_bounds in (targets[target]
                                                         ['registers'][register]
                                                         ['fields'].iteritems()):
-                    if bit_to_inject in xrange(field_bounds[0],
-                                               field_bounds[1]+1):
+                    if bit_to_inject in range(field_bounds[0],
+                                              field_bounds[1]+1):
                         field_to_inject = field_name
                         break
                 else:
                     raise Exception('simics_checkpoints.py:'
                                     'inject_register(): '
                                     'Error finding register field name for '
-                                    'register '+register)
+                                    'bit '+bit_to_inject +
+                                    ' in register '+register)
                 injection_data['field'] = field_to_inject
             else:
                 injection_data['field'] = None

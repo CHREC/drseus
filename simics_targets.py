@@ -2185,8 +2185,7 @@ for device in devices:
                 for field, field_range in (devices[device][target]
                                                   ['registers'][register]
                                                   ['fields'].iteritems()):
-                    for bit in xrange(field_range[0], field_range[1]+1):
-                        adjust_bit.append(bit)
+                    adjust_bit.extend(range(field_range[0], field_range[1]+1))
                 if len(adjust_bit) != bits:
                     raise Exception('simics_targets.py: ' +
                                     'bits mismatch for register: '+register +
