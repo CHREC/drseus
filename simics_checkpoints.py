@@ -416,7 +416,7 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
         sql = sql_db.cursor()
         sql.execute(
             'INSERT INTO drseus_logging_injection (result_id,injection_number,'
-            'register,target,timestamp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            'register,target,timestamp) VALUES (?,?,?,?,?)',
             (
                 result_id, injection_number, register, target, datetime.now()
             )
