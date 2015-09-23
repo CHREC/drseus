@@ -11,9 +11,6 @@ import sqlite3
 
 from fault_injector import fault_injector
 
-# TODO: use result_id as iteration in fault_injector and debuggers
-# TODO: instead of iterating over num_iterations, check if result_id is greater
-#       than final result_id, make sure num_processes are always active
 # TODO: add better ctrl-c handling and save partial results
 # TODO: add result editing to log viewer
 # TODO: fix chart filtering on injection number
@@ -246,14 +243,15 @@ def load_campaign(campaign_data, options):
     return drseus
 
 
-def perform_injections(campaign_data, iteration_counter, options):
+def perform_injections(campaign_data, iteration_counter, last_iteration,
+                       options):
     drseus = load_campaign(campaign_data, options)
     if options.selected_targets is not None:
         selected_targets = options.selected_targets.split(',')
     else:
         selected_targets = None
     # try:
-    drseus.inject_and_monitor(iteration_counter, options.num_iterations,
+    drseus.inject_and_monitor(iteration_counter, last_iteration,
                               options.num_injections, selected_targets,
                               campaign_data['output_file'],
                               campaign_data['use_aux_output'],
@@ -404,8 +402,7 @@ simics_injection_group = optparse.OptionGroup(parser, 'Injection Options '
 simics_injection_group.add_option('-p', '--procs', action='store',
                                   type='int', dest='num_processes', default=1,
                                   help='number of simics injections to perform '
-                                       'in parallel (each instance performs '
-                                        'NUM_ITERATIONS)')
+                                       'in parallel')
 simics_injection_group.add_option('-M', '--all', action='store_true',
                                   dest='compare_all', default=False,
                                   help='monitorall all checkpoints, only last '
@@ -451,6 +448,8 @@ elif options.inject:
     if not options.number:
         options.number = get_last_campaign()
     campaign_data = get_campaign_data(options.number)
+    starting_iteration = get_next_iteration(options.number)
+    last_iteration = starting_iteration + options.num_iterations
     if campaign_data['use_simics']:
         if os.path.exists('simics-workspace/injected-checkpoints/' +
                           str(options.number)):
@@ -460,7 +459,6 @@ elif options.inject:
                     str(options.number))
     if not os.path.exists('campaign-data/'+str(options.number)+'/results'):
         os.makedirs('campaign-data/'+str(options.number)+'/results')
-    starting_iteration = get_next_iteration(options.number)
     iteration_counter = multiprocessing.Value('I', starting_iteration)
     if campaign_data['use_simics'] and options.num_processes > 1:
         options.debug = False
@@ -469,7 +467,7 @@ elif options.inject:
             process = multiprocessing.Process(target=perform_injections,
                                               args=(campaign_data,
                                                     iteration_counter,
-                                                    options))
+                                                    last_iteration, options))
             processes.append(process)
             process.start()
         try:
@@ -480,7 +478,8 @@ elif options.inject:
                 process.terminate()
                 process.join()
     else:
-        perform_injections(campaign_data, iteration_counter, options)
+        perform_injections(campaign_data, iteration_counter, last_iteration,
+                           options)
 elif options.supervise:
     if not options.number:
         options.number = get_last_campaign()
