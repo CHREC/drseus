@@ -34,8 +34,10 @@ class campaign(models.Model):
 
 class result_manager(models.Manager):
     def get_queryset(self):
-        return super(result_manager, self).get_queryset().exclude(
-            outcome='In progress').annotate(
+        # return super(result_manager, self).get_queryset().exclude(
+        #     outcome='In progress').annotate(
+        #     injections=models.Count('injection'))
+        return super(result_manager, self).get_queryset().annotate(
             injections=models.Count('injection'))
 
 
@@ -55,10 +57,10 @@ class result(models.Model):
     objects = result_manager()
 
 
-class injection_manager(models.Manager):
-    def get_queryset(self):
-        return super(injection_manager, self).get_queryset().exclude(
-            result__outcome='In progress')
+# class injection_manager(models.Manager):
+#     def get_queryset(self):
+#         return super(injection_manager, self).get_queryset().exclude(
+#             result__outcome='In progress')
 
 
 class injection(models.Model):
@@ -83,7 +85,7 @@ class injection(models.Model):
     register_index = models.TextField(null=True)
     field = models.TextField(null=True)
     # gold_debug_info = models.TextField(null=True)
-    objects = injection_manager()
+    # objects = injection_manager()
 
 
 class simics_register_diff(models.Model):

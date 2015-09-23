@@ -82,7 +82,6 @@ class dut:
             if scp_process.is_alive():
                 scp_process.terminate()
                 fallback_failed = True
-            os.system()
         paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
         if os.path.exists(paramiko_log):

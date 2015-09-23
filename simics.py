@@ -156,11 +156,14 @@ class simics:
         read_thread.start()
         read_thread.join(timeout=30)
         if read_thread.is_alive():
-            self.simics.kill()
-            self.output += '\nkilled unresponsive simics process\n'
-            if self.debug:
-                print(colored('killed unresponsive simics process\n',
-                              'yellow'), end='')
+            try:
+                self.simics.kill()
+                self.output += '\nkilled unresponsive simics process\n'
+                if self.debug:
+                    print(colored('killed unresponsive simics process\n',
+                                  'yellow'), end='')
+            except:
+                pass
         else:
             self.output += 'quit\n'
             if self.debug:

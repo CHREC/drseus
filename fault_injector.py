@@ -347,20 +347,21 @@ class fault_injector:
         sql_db.commit()
         sql_db.close()
 
-    def inject_and_monitor(self, iteration_counter, num_iterations,
+    def inject_and_monitor(self, iteration_counter, last_iteration,
                            num_injections, selected_targets, output_file,
                            use_aux_output, compare_all):
         if self.use_aux and not self.use_simics:
             self.send_aux_files()
-        for i in xrange(num_iterations):
+        while True:
             with iteration_counter.get_lock():
                 iteration = iteration_counter.value
                 iteration_counter.value += 1
+            if iteration > last_iteration:
+                break
             result_id = self.get_result_id(iteration)
             if not self.use_simics:
-                if i != 0:
-                    self.debugger.reset_dut()
-                    self.debugger.dut.do_login()
+                self.debugger.reset_dut()
+                self.debugger.dut.do_login()
                 self.send_dut_files()
             if self.use_aux and not self.use_simics:
                 self.debugger.aux.serial.write('./'+self.aux_command+'\n')
