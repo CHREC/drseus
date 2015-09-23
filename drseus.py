@@ -11,6 +11,9 @@ import sqlite3
 
 from fault_injector import fault_injector
 
+# TODO: use result_id as iteration in fault_injector and debuggers
+# TODO: instead of iterating over num_iterations, check if result_id is greater
+#       than final result_id, make sure num_processes are always active
 # TODO: add better ctrl-c handling and save partial results
 # TODO: add result editing to log viewer
 # TODO: fix chart filtering on injection number
