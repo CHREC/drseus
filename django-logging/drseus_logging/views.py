@@ -85,8 +85,7 @@ def results_page(request, campaign_number):
         result_filter = hw_result_filter(request.GET, queryset=result_objects,
                                          campaign=campaign_number)
     table = results_table(result_filter.qs)
-    table.paginate(page=request.GET.get('page', 1), per_page=100)
-    RequestConfig(request).configure(table)
+    RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {'campaign_data': campaign_data,
                                             'filter': result_filter,
                                             'navigation_items':
@@ -127,12 +126,14 @@ def result_page(request, campaign_number, iteration):
             simics_register_diff_filter(request.GET, queryset=register_objects,
                                         campaign=campaign_number)
         register_table = simics_register_diff_table(register_filter.qs)
-        register_table.paginate(page=request.GET.get('page', 1), per_page=50)
+        RequestConfig(request,
+                      paginate={'per_page': 50}).configure(register_table)
         memory_objects = simics_memory_diff.objects.filter(
             result__campaign__campaign_number=campaign_number,
             result__iteration=iteration)
         memory_table = simics_memory_diff_table(memory_objects)
-        memory_table.paginate(page=request.GET.get('page', 1), per_page=50)
+        RequestConfig(request,
+                      paginate={'per_page': 50}).configure(memory_table)
     else:
         register_filter = None
         memory_table = None
@@ -140,8 +141,6 @@ def result_page(request, campaign_number, iteration):
         injection_table = hw_injection_table(injection_objects)
     RequestConfig(request).configure(table)
     RequestConfig(request).configure(injection_table)
-    RequestConfig(request).configure(memory_table)
-    RequestConfig(request).configure(register_table)
     return render(request, 'result.html', {'campaign_data': campaign_data,
                                            'filter': register_filter,
                                            'injection_table': injection_table,
