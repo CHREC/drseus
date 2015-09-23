@@ -1,5 +1,5 @@
 from __future__ import print_function
-from multiprocess import Process
+from multiprocessing import Process
 import os
 import paramiko
 from scp import SCPClient
