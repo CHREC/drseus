@@ -66,7 +66,8 @@ class dut:
             dut_scp.get(target_file, local_path=local_path)
             dut_scp.close()
             ssh.close()
-        except:
+        except Exception as error:
+            print(error)
             fallback = True
             os.system('scp -P '+str(self.ssh_port) +
                       ' -i campaign-data/private.key '
