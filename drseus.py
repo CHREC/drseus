@@ -11,7 +11,6 @@ import sqlite3
 
 from fault_injector import fault_injector
 
-# TODO: add timeout to fallback scp in dut.get_file()
 # TODO: add better ctrl-c handling and save partial results
 # TODO: add result editing to log viewer
 # TODO: fix chart filtering on injection number

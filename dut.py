@@ -1,4 +1,5 @@
 from __future__ import print_function
+from multiprocess import Process
 import os
 import paramiko
 from scp import SCPClient
@@ -57,6 +58,7 @@ class dut:
 
     def get_file(self, target_file, local_path=''):
         fallback = False
+        fallback_failed = False
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -69,10 +71,18 @@ class dut:
         except Exception as error:
             print(error)
             fallback = True
-            os.system('scp -P '+str(self.ssh_port) +
-                      ' -i campaign-data/private.key '
-                      '-o StrictHostKeyChecking=no root@localhost:' +
-                      target_file+' ./'+local_path)
+            scp_process = Process(target=os.system,
+                                  args=('scp -P '+str(self.ssh_port) +
+                                        ' -i campaign-data/private.key '
+                                        '-o StrictHostKeyChecking=no '
+                                        'root@localhost:'+target_file +
+                                        ' ./'+local_path,))
+            scp_process.start()
+            scp_process.join(timeout=30)
+            if scp_process.is_alive():
+                scp_process.terminate()
+                fallback_failed = True
+            os.system()
         paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
         if os.path.exists(paramiko_log):
@@ -81,6 +91,8 @@ class dut:
             os.remove(paramiko_log)
         if fallback:
             self.paramiko_output += '\nFallback to SCP used'
+            if fallback_failed:
+                self.paramiko_output += ', but failed'
 
     def is_logged_in(self):
         self.serial.write('\n')
