@@ -170,10 +170,10 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
             else:
                 num_bits_to_inject = 32
             bit_to_inject = randrange(num_bits_to_inject)
-            if 'adjustBit' in targets[target]['registers'][register]:
+            if 'adjust_bit' in targets[target]['registers'][register]:
                 bit_to_inject = (
                     targets[target]['registers'][register]
-                           ['adjustBit'][bit_to_inject]
+                           ['adjust_bit'][bit_to_inject]
                 )
             if 'actualBits' in targets[target]['registers'][register]:
                 num_bits_to_inject = (targets[target]['registers']
