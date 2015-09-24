@@ -190,7 +190,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                     raise Exception('simics_checkpoints.py:'
                                     'inject_register(): '
                                     'Error finding register field name for '
-                                    'bit '+bit_to_inject +
+                                    'bit '+str(bit_to_inject) +
                                     ' in register '+register)
                 injection_data['field'] = field_to_inject
             else:

@@ -22,6 +22,9 @@ class simics:
     # create simics instance and boot device
     def __init__(self, campaign_number, architecture, rsakey, use_aux, debug,
                  timeout):
+        self.simics = None
+        self.dut = None
+        self.aux = None
         self.campaign_number = campaign_number
         self.debug = debug
         self.timeout = timeout
@@ -147,28 +150,30 @@ class simics:
                   './simics-gui -e \"'+simics_commands+'\"')
 
     def close(self):
-        self.dut.close()
-        if self.use_aux:
+        if self.dut:
+            self.dut.close()
+            self.dut = None
+        if self.aux and self.use_aux:
             self.aux.close()
-        self.simics.send_signal(SIGINT)
-        self.simics.stdin.write('quit\n')
-        read_thread = Thread(target=self.read_until)
-        read_thread.start()
-        read_thread.join(timeout=30)
-        if read_thread.is_alive():
-            try:
+            self.aux = None
+        if self.simics:
+            self.simics.send_signal(SIGINT)
+            self.simics.stdin.write('quit\n')
+            read_thread = Thread(target=self.read_until)
+            read_thread.start()
+            read_thread.join(timeout=30)
+            if read_thread.is_alive():
                 self.simics.kill()
                 self.output += '\nkilled unresponsive simics process\n'
                 if self.debug:
                     print(colored('killed unresponsive simics process\n',
                                   'yellow'), end='')
-            except:
-                pass
-        else:
-            self.output += 'quit\n'
-            if self.debug:
-                print(colored('quit\n', 'yellow'), end='')
-            self.simics.wait()
+            else:
+                self.output += 'quit\n'
+                if self.debug:
+                    print(colored('quit\n', 'yellow'), end='')
+                self.simics.wait()
+        self.simics = None
 
     def halt_dut(self):
         self.simics.send_signal(SIGINT)
