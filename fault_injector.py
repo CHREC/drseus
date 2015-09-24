@@ -188,7 +188,7 @@ class fault_injector:
         sql = sql_db.cursor()
         sql.execute('INSERT INTO drseus_logging_result (campaign_id,iteration'
                     ',outcome,timestamp) VALUES (?,?,?,?)',
-                    (self.campaign_number, iteration, 'In progress',
+                    (self.campaign_number, iteration, 'Incomplete',
                      datetime.now()))
         sql_db.commit()
         result_id = sql.lastrowid

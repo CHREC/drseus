@@ -35,7 +35,7 @@ class campaign(models.Model):
 class result_manager(models.Manager):
     def get_queryset(self):
         # return super(result_manager, self).get_queryset().exclude(
-        #     outcome='In progress').annotate(
+        #     outcome='Incomplete').annotate(
         #     injections=models.Count('injection'))
         return super(result_manager, self).get_queryset().annotate(
             injections=models.Count('injection'))
@@ -60,7 +60,7 @@ class result(models.Model):
 # class injection_manager(models.Manager):
 #     def get_queryset(self):
 #         return super(injection_manager, self).get_queryset().exclude(
-#             result__outcome='In progress')
+#             result__outcome='Incomplete')
 
 
 class injection(models.Model):

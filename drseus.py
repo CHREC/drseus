@@ -84,11 +84,11 @@ def get_next_iteration(campaign_number):
     else:
         iteration = result_data['iteration']
     # delete incomple injections
-    sql.execute('DELETE FROM drseus_logging_injection WHERE result_id IN '
-                '(SELECT id FROM drseus_logging_result WHERE outcome=?)',
-                ('In progress',))
-    sql.execute('DELETE FROM drseus_logging_result WHERE outcome=?',
-                ('In progress',))
+    # sql.execute('DELETE FROM drseus_logging_injection WHERE result_id IN '
+    #             '(SELECT id FROM drseus_logging_result WHERE outcome=?)',
+    #             ('Incomplete',))
+    # sql.execute('DELETE FROM drseus_logging_result WHERE outcome=?',
+    #             ('Incomplete',))
     sql_db.commit()
     sql_db.close()
     return iteration + 1
