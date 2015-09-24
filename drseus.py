@@ -272,10 +272,15 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
 def view_logs():
     server = Popen([os.getcwd()+'/django-logging/manage.py', 'runserver'],
                    cwd=os.getcwd()+'/django-logging/')
-    if os.system('which google-chrome'):
-        os.system('firefox http://localhost:8000')
-    else:
-        os.system('google-chrome http://localhost:8000')
+    try:
+        if os.system('which google-chrome'):
+            os.system('firefox http://localhost:8000')
+        else:
+            os.system('google-chrome http://localhost:8000')
+    except:
+        print('error opening web browser, '
+              'log server is running at localhost:8000')
+        raw_input('press enter to quit')
     try:
         os.killpg(os.getpgid(server.pid), SIGINT)
     except KeyboardInterrupt:
