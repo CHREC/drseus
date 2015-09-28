@@ -350,7 +350,7 @@ class simics:
             if injections_remaining:
                 next_checkpoint = checkpoints_to_inject[injection_number + 1]
             else:
-                next_checkpoint = num_checkpoints
+                next_checkpoint = num_checkpoints - 1
             errors = self.compare_checkpoints(result_id, iteration,
                                               checkpoint_number,
                                               next_checkpoint,
