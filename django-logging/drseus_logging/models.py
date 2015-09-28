@@ -45,7 +45,7 @@ class result(models.Model):
     campaign = models.ForeignKey(campaign)
     iteration = models.IntegerField()
     outcome = models.TextField()
-    outcome_category = models.TextField(null=True)
+    outcome_category = models.TextField()
     data_diff = models.FloatField(null=True)
     detected_errors = models.IntegerField(null=True)
     dut_output = models.TextField(null=True)

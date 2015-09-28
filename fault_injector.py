@@ -187,9 +187,9 @@ class fault_injector:
         sql_db = sqlite3.connect('campaign-data/db.sqlite3')
         sql = sql_db.cursor()
         sql.execute('INSERT INTO drseus_logging_result (campaign_id,iteration'
-                    ',outcome,timestamp) VALUES (?,?,?,?)',
+                    ',outcome,outcome_category,timestamp) VALUES (?,?,?,?,?)',
                     (self.campaign_number, iteration, 'Incomplete',
-                     datetime.now()))
+                     'Incomplete', datetime.now()))
         sql_db.commit()
         result_id = sql.lastrowid
         sql_db.close()

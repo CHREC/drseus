@@ -169,6 +169,10 @@ class simics_result_filter(django_filters.FilterSet):
             choices=checkpoint_number_choices)
         self.filters['injection__checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), 10)
+        field_choices = injection_choices(campaign, 'field')
+        self.filters['injection__field'].extra.update(choices=field_choices)
+        self.filters['injection__field'].widget.attrs['size'] = min(
+            len(field_choices), 10)
         injections_choices = result_choices(campaign, 'injections')
         self.filters['injections'].extra.update(choices=injections_choices)
         self.filters['injections'].widget.attrs['size'] = min(
@@ -209,6 +213,9 @@ class simics_result_filter(django_filters.FilterSet):
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
     injection__bit = django_filters.MultipleChoiceFilter(
         label='Bit',
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    injection__field = django_filters.MultipleChoiceFilter(
+        label='Field',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     injection__checkpoint_number = django_filters.MultipleChoiceFilter(
         label='Checkpoint number',
@@ -254,6 +261,9 @@ class simics_injection_filter(django_filters.FilterSet):
             choices=checkpoint_number_choices)
         self.filters['checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), 10)
+        field_choices = injection_choices(campaign, 'field')
+        self.filters['field'].extra.update(choices=field_choices)
+        self.filters['field'].widget.attrs['size'] = min(len(field_choices), 10)
         # injections_choices = result_choices(campaign, 'injections')
         # self.filters['result__injections'].extra.update(
         #     choices=injections_choices)
@@ -290,6 +300,8 @@ class simics_injection_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     checkpoint_number = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    field = django_filters.MultipleChoiceFilter(
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     register = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     register_index = django_filters.MultipleChoiceFilter(
@@ -311,8 +323,8 @@ class simics_injection_filter(django_filters.FilterSet):
     class Meta:
         model = injection
         exclude = ['checkpoint_number', 'config_object', 'config_type', 'core',
-                   'field', 'gold_value', 'injected_value', 'injection_number',
-                   'result', 'time', 'time_rounded',  'timestamp']
+                   'gold_value', 'injected_value', 'injection_number', 'result',
+                   'time', 'time_rounded',  'timestamp']
 
 
 class simics_register_diff_filter(django_filters.FilterSet):

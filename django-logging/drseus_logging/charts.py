@@ -6,17 +6,16 @@ from threading import Thread
 from .models import result
 
 
-def campaign_chart(queryset):
-    campaigns = list(
-        queryset.values_list('campaign__campaign_number',
-                             'campaign__command').distinct())
+def json_campaigns(queryset):
+    campaigns = queryset.values_list('campaign__campaign_number',
+                                     'campaign__command').distinct().order_by(
+        'campaign__campaign_number')
     campaigns = zip(*campaigns)
     if len(campaigns) <= 1:
-        return None, None
-    campaign_numbers = campaigns[0]
+        return '[]'
+    campaign_numbers = dumps(campaigns[0])
     campaigns = campaigns[1]
-    outcomes = list(
-        queryset.values_list('outcome').distinct().order_by('outcome'))
+    outcomes = queryset.values_list('outcome').distinct().order_by('outcome')
     outcomes = zip(*outcomes)[0]
     chart = {
         'chart': {
@@ -25,7 +24,7 @@ def campaign_chart(queryset):
             'type': 'column'
         },
         'exporting': {
-            'filename': ('campaigns'),
+            'filename': 'campaigns',
             'sourceWidth': 1024,
             'sourceHeight': 576,
             'scale': 3,
@@ -67,31 +66,24 @@ def campaign_chart(queryset):
     }
     chart['series'] = []
     for outcome in outcomes:
-        data = []
-        for campaign in campaigns:
-            data.append(queryset.filter(campaign__command=campaign,
-                                        outcome=outcome).count())
-        chart['series'].append({'data': data, 'name': outcome})
-    return chart, campaign_numbers
-
-
-def json_campaigns(queryset):
-    chart, campaign_number_list = campaign_chart(queryset)
-    campaign_number_list = dumps(campaign_number_list)
-    campaign_chart_click = """
+        data = queryset.values_list('campaign__command').distinct().order_by(
+            'campaign__command').annotate(
+                count=Sum(Case(When(outcome=outcome, then=1), default=0,
+                               output_field=IntegerField()))
+            ).values_list('count')
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome})
+    chart = dumps(chart)
+    chart = chart.replace('\"campaign_chart_click\"', """
     function(event) {
         var campaign_numbers = campaign_number_list;
         window.location.assign(''+campaign_numbers[this.x]+'/results/?outcome='+
                                this.series.name);
     }
-    """.replace('campaign_number_list', campaign_number_list)
-    chart_array = [chart]
-    chart_array = dumps(chart_array, indent=4).replace(
-        '\"campaign_chart_click\"', campaign_chart_click)
-    return chart_array
+    """.replace('campaign_number_list', campaign_numbers))
+    return '['+chart+']'
 
 
-def outcome_category_chart(queryset, campaign_data, chart_array):
+def outcome_category_chart(queryset, campaign_data, unused, chart_array):
     outcomes = sorted(queryset.filter(injection_number=0).values_list(
         'result__outcome_category', 'result__outcome').annotate(
         count=Count('result__outcome_category')), key=lambda x: x[1])
@@ -164,7 +156,7 @@ def outcome_category_chart(queryset, campaign_data, chart_array):
     chart_array.append(chart)
 
 
-def outcome_chart(queryset, campaign_data, chart_array):
+def outcome_chart(queryset, campaign_data, unused, chart_array):
     outcomes = list(queryset.filter(injection_number=0).values_list(
         'result__outcome').annotate(count=Count('result__outcome')))
     chart = {
@@ -226,15 +218,75 @@ def outcome_chart(queryset, campaign_data, chart_array):
     chart_array.append(chart)
 
 
-def register_chart(queryset, campaign_data, chart_array):
+def target_chart(queryset, campaign_data, outcomes, chart_array):
+    targets = queryset.values_list('target').distinct().order_by('target')
+    if len(targets) <= 1:
+        return
+    chart = {
+        'chart': {
+            'renderTo': 'target_chart',
+            'type': 'column'
+        },
+        'exporting': {
+            'filename': campaign_data.application+' outcomes by target',
+            'sourceWidth': 1024,
+            'sourceHeight': 576,
+            'scale': 3,
+        },
+        'plotOptions': {
+            'column': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                }
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'target_chart_click'
+                    }
+                }
+            }
+        },
+        'title': {
+            'text': 'Outcomes By target'
+        },
+        'xAxis': {
+            'categories': zip(*targets)[0],
+            'title': {
+                'text': 'Target'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Injections'
+            }
+        }
+    }
+    chart['series'] = []
+    for outcome in outcomes:
+        data = queryset.values_list('target').distinct().order_by('target'
+                                                                  ).annotate(
+            count=Sum(Case(When(result__outcome=outcome, then=1), default=0,
+                           output_field=IntegerField()))
+        ).values_list('count')
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
+                                'stacking': True})
+    chart_array.append(dumps(chart).replace('\"target_chart_click\"', """
+    function(event) {
+        window.location.assign('../results/?outcome='+this.series.name+
+                               '&injection__target='+this.category);
+    }
+    """))
+
+
+def register_chart(queryset, campaign_data, outcomes, chart_array):
     registers = queryset.annotate(
         register_name=Concat('register', Value(':'), 'register_index')
     ).values_list('register_name').distinct().order_by('register_name')
     if len(registers) <= 1:
         return
-    outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
-        'result__outcome'))
-    outcomes = zip(*outcomes)[0]
     chart = {
         'chart': {
             'renderTo': 'register_chart',
@@ -312,13 +364,74 @@ def register_chart(queryset, campaign_data, chart_array):
     """))
 
 
-def bit_chart(queryset, campaign_data, chart_array):
+def field_chart(queryset, campaign_data, outcomes, chart_array):
+    fields = queryset.exclude(field=None).values_list('field').distinct(
+        ).order_by('field')
+    if len(fields) <= 1:
+        return
+    chart = {
+        'chart': {
+            'renderTo': 'field_chart',
+            'type': 'column'
+        },
+        'exporting': {
+            'filename': campaign_data.application+' outcomes by field',
+            'sourceWidth': 1024,
+            'sourceHeight': 576,
+            'scale': 3,
+        },
+        'plotOptions': {
+            'column': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                }
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'field_chart_click'
+                    }
+                }
+            }
+        },
+        'title': {
+            'text': 'Outcomes By Field'
+        },
+        'xAxis': {
+            'categories': zip(*fields)[0],
+            'title': {
+                'text': 'Field'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Injections'
+            }
+        }
+    }
+    chart['series'] = []
+    for outcome in outcomes:
+        data = queryset.exclude(field=None).values_list('field').distinct(
+            ).order_by('field').annotate(
+                count=Sum(Case(When(result__outcome=outcome, then=1), default=0,
+                               output_field=IntegerField()))
+        ).values_list('count')
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
+                                'stacking': True})
+    chart_array.append(dumps(chart).replace('\"field_chart_click\"', """
+    function(event) {
+        window.location.assign('../results/?outcome='+this.series.name+
+                               '&injection__field='+this.category);
+    }
+    """))
+
+
+def bit_chart(queryset, campaign_data, outcomes, chart_array):
     bits = queryset.values_list('bit').distinct().order_by('bit')
     if len(bits) <= 1:
         return
-    outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
-        'result__outcome'))
-    outcomes = zip(*outcomes)[0]
     chart = {
         'chart': {
             'renderTo': 'bit_chart',
@@ -377,7 +490,7 @@ def bit_chart(queryset, campaign_data, chart_array):
     """))
 
 
-def time_chart(queryset, campaign_data, chart_array):
+def time_chart(queryset, campaign_data, outcomes, chart_array):
     if campaign_data.use_simics:
         times = queryset.values_list('checkpoint_number').distinct().order_by(
             'checkpoint_number')
@@ -386,9 +499,6 @@ def time_chart(queryset, campaign_data, chart_array):
             'time_rounded')
     if len(times) <= 1:
         return
-    outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
-        'result__outcome'))
-    outcomes = zip(*outcomes)[0]
     chart = {
         'chart': {
             'renderTo': 'time_chart',
@@ -469,7 +579,7 @@ def time_chart(queryset, campaign_data, chart_array):
         """))
 
 
-def injection_count_chart(queryset, campaign_data, chart_array):
+def injection_count_chart(queryset, campaign_data, outcomes, chart_array):
     injection_counts = list(
         queryset.filter().annotate(
             injection_count=Count('result__injection')
@@ -477,9 +587,6 @@ def injection_count_chart(queryset, campaign_data, chart_array):
     injection_counts = sorted(zip(*injection_counts)[0])
     if len(injection_counts) <= 1:
         return
-    outcomes = list(queryset.values_list('result__outcome').distinct().order_by(
-        'result__outcome'))
-    outcomes = zip(*outcomes)[0]
     result_ids = queryset.values_list('result__id').distinct()
     result_ids = zip(*result_ids)[0]
     data = {}
@@ -554,30 +661,19 @@ def injection_count_chart(queryset, campaign_data, chart_array):
 
 
 def json_charts(queryset, campaign_data):
+    charts = (outcome_category_chart, outcome_chart, target_chart,
+              register_chart, field_chart, bit_chart, time_chart,
+              injection_count_chart)
+    outcomes = queryset.values_list('result__outcome').distinct().order_by(
+        'result__outcome')
+    outcomes = zip(*outcomes)[0]
     chart_array = []
-    outcome_category_thread = Thread(target=outcome_category_chart,
-                                     args=(queryset, campaign_data,
-                                           chart_array))
-    outcome_category_thread.start()
-    outcome_thread = Thread(target=outcome_chart,
-                            args=(queryset, campaign_data, chart_array))
-    outcome_thread.start()
-    register_thread = Thread(target=register_chart,
-                             args=(queryset, campaign_data, chart_array))
-    register_thread.start()
-    bit_thread = Thread(target=bit_chart,
-                        args=(queryset, campaign_data, chart_array))
-    bit_thread.start()
-    time_thread = Thread(target=time_chart,
-                         args=(queryset, campaign_data, chart_array))
-    time_thread.start()
-    injection_count_thread = Thread(target=injection_count_chart,
-                                    args=(queryset, campaign_data, chart_array))
-    injection_count_thread.start()
-    outcome_category_thread.join()
-    outcome_thread.join()
-    register_thread.join()
-    bit_thread.join()
-    time_thread.join()
-    injection_count_thread.join()
+    threads = []
+    for chart in charts:
+        thread = Thread(target=chart,
+                        args=(queryset, campaign_data, outcomes, chart_array))
+        thread.start()
+        threads.append(thread)
+    for thread in threads:
+        thread.join()
     return '['+','.join(chart_array)+']'

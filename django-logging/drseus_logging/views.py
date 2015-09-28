@@ -18,7 +18,9 @@ navigation_items = (('Information', '../campaign'),
 
 def charts_page(request, campaign_number):
     page_items = (('Outcomes & Categories', 'outcomes'),
+                  ('Outcomes By Target', 'targets'),
                   ('Outcomes By Register', 'registers'),
+                  ('Outcomes By Field', 'fields'),
                   ('Outcomes By Bit', 'bits'),
                   ('Outcomes Over Time', 'times'),
                   ('Outcomes By Injection Count', 'counts'))
