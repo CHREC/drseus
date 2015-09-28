@@ -2166,8 +2166,15 @@ for device in devices:
                 bits = 32
             if 'count' in devices[device][target]['registers'][register]:
                 count = 1
-                for dimension in (devices[device][target]['registers']
-                                         [register]['count']):
+                if ('is_tlb' in devices[device][target]['registers'][register]
+                        and devices[device][target]['registers'][register]
+                                   ['is_tlb']):
+                    dimensions = (devices[device][target]['registers']
+                                         [register]['count'][:-1])
+                else:
+                    dimensions = (devices[device][target]['registers']
+                                         [register]['count'])
+                for dimension in dimensions:
                     count *= dimension
             else:
                 count = 1

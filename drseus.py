@@ -11,6 +11,7 @@ import sqlite3
 
 from fault_injector import fault_injector
 
+# TODO: fix database locking when using log viewer while running injections
 # TODO: add better ctrl-c handling and save partial results
 # TODO: add result editing to log viewer
 # TODO: fix chart filtering on injection number
