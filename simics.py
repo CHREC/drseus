@@ -450,7 +450,7 @@ class simics:
         return reg_errors + mem_errors
 
     def persistent_faults(self, result_id):
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql_db.row_factory = sqlite3.Row
         sql = sql_db.cursor()
         sql.execute('SELECT config_object,register,register_index,'

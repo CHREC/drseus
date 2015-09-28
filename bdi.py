@@ -137,7 +137,7 @@ class bdi:
                 print(colored('gold value: '+gold_value, 'magenta'))
                 print(colored('injected value: '+injected_value, 'magenta'))
             self.set_register_value(register, injected_value)
-            sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+            sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
             sql.execute(
                 'INSERT INTO drseus_logging_injection (result_id,'

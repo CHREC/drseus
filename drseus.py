@@ -11,7 +11,6 @@ import sqlite3
 
 from fault_injector import fault_injector
 
-# TODO: fix database locking when using log viewer while running injections
 # TODO: add better ctrl-c handling and save partial results
 # TODO: add result editing to log viewer
 # TODO: fix chart filtering on injection number
@@ -24,7 +23,7 @@ from fault_injector import fault_injector
 def list_campaigns():
     if not os.path.exists('campaign-data/db.sqlite3'):
         raise Exception('could not find campaign data')
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
     sql.execute('SELECT campaign_number, application, architecture, use_simics '
@@ -43,7 +42,7 @@ def get_last_campaign():
     if (not os.path.exists('campaign-data') or
             not os.path.exists('campaign-data/db.sqlite3')):
         return 0
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
     sql.execute('SELECT campaign_number FROM drseus_logging_campaign ORDER BY '
@@ -60,7 +59,7 @@ def get_last_campaign():
 def get_campaign_data(campaign_number):
     if not os.path.exists('campaign-data/db.sqlite3'):
         raise Exception('could not find campaign data')
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
     sql.execute('SELECT * FROM drseus_logging_campaign WHERE campaign_number=?',
@@ -73,7 +72,7 @@ def get_campaign_data(campaign_number):
 def get_next_iteration(campaign_number):
     if not os.path.exists('campaign-data/db.sqlite3'):
         raise Exception('could not find campaign data')
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
     sql.execute('SELECT * FROM drseus_logging_result WHERE '
@@ -100,7 +99,7 @@ def delete_results(campaign_number):
         shutil.rmtree('campaign-data/'+str(campaign_number)+'/results')
         print('deleted results')
     if os.path.exists('campaign-data/db.sqlite3'):
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute('DELETE FROM drseus_logging_simics_register_diff WHERE '
                     'result_id IN (SELECT id FROM drseus_logging_result WHERE '
@@ -123,7 +122,7 @@ def delete_results(campaign_number):
 def delete_campaign(campaign_number):
     delete_results(campaign_number)
     if os.path.exists('campaign-data/db.sqlite3'):
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute('DELETE FROM drseus_logging_campaign '
                     'WHERE campaign_number=?',
@@ -205,7 +204,7 @@ def new_campaign(application, options):
 def get_injection_data(campaign_data, iteration):
     if not os.path.exists('campaign-data/db.sqlite3'):
         raise Exception('could not find campaign data')
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
     sql.execute('SELECT register,gold_value,injected_value,checkpoint_number,'

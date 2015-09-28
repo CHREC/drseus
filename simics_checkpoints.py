@@ -413,7 +413,7 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
         injection_data = inject_register(gold_checkpoint, injected_checkpoint,
                                          register, target, board, targets)
     except Exception as error:
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute(
             'INSERT INTO drseus_logging_injection (result_id,injection_number,'
@@ -427,7 +427,7 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
         print(error)
         raise DrSEUSError('Error injecting fault')
     # log injection data
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql = sql_db.cursor()
     if injection_data['register_index'] is not None:
         register_index = ''
@@ -592,7 +592,7 @@ def compare_registers(result_id, checkpoint_number, gold_checkpoint,
     gold_registers = parse_registers(gold_checkpoint+'/config', board, targets)
     monitored_registers = parse_registers(monitored_checkpoint+'/config', board,
                                           targets)
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql = sql_db.cursor()
     errors = 0
     for target in targets:
@@ -752,7 +752,7 @@ def compare_memory(result_id, checkpoint_number, gold_checkpoint,
                           for index in xrange(2)]
     ram_diffs = [ram+'.diff' for ram in monitored_rams]
     diff_content_maps = [diff+'.content_map' for diff in ram_diffs]
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql = sql_db.cursor()
     errors = 0
     for (image_index, gold_ram, monitored_ram, ram_diff,

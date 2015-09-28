@@ -128,7 +128,7 @@ class fault_injector:
         else:
             num_checkpoints = 0
             cycles_between = 0
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute(
             'INSERT INTO drseus_logging_campaign '
@@ -184,7 +184,7 @@ class fault_injector:
         self.debugger.aux.send_files(files)
 
     def get_result_id(self, iteration):
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute('INSERT INTO drseus_logging_result (campaign_id,iteration'
                     ',outcome,outcome_category,timestamp) VALUES (?,?,?,?,?)',
@@ -328,7 +328,7 @@ class fault_injector:
             print(colored(', data diff: '+str(data_diff), 'blue'))
         else:
             print()
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute(
             'UPDATE drseus_logging_result SET outcome=?,outcome_category=?,'
@@ -448,7 +448,7 @@ class fault_injector:
                                 starting_iteration + iterations):
             result_id = self.get_result_id(iteration)
             # create empty injection, used for injection charts in log viewer
-            sql_db = sqlite3.connect('campaign-data/db.sqlite3')
+            sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
             sql.execute(
                 'INSERT INTO drseus_logging_injection (result_id,'
