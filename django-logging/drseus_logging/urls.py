@@ -22,7 +22,9 @@ charts_and_tables = [
     (r'(?P<campaign_number>[0-9]+)/charts/', 'charts_page',),
     (r'(?P<campaign_number>[0-9]+)/results/', 'results_page'),
     (r'(?P<campaign_number>[0-9]+)/result/(?P<iteration>[0-9]+)/',
-     'result_page')
+     'result_page'),
+    (r'output-images/(?P<campaign_number>[0-9]+)/(?P<iteration>[0-9]+)',
+     'output_image')
 ]
 
 chart_pattern_tuples = [(r'^' + myurl + r'$', view)

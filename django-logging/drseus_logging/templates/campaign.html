@@ -11,6 +11,14 @@
                                     {% load django_tables2 %}
                                     {% render_table table %}
                                 </div>
+                                {% if output_image %}
+                                <div align="center">
+                                    <h2>
+                                        Output Image
+                                    </h2>
+                                    <img src="/output-images/{{ campaign_data.campaign_number }}/0" alt="Gold Output">
+                                </div>
+                                {% endif %}
                                 <h2 align="center">
                                     <a name="dut_output">
                                     </a>

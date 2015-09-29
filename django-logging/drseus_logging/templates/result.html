@@ -8,13 +8,22 @@
         </a>
         Result
     </h2>
-    {% render_table table %}
+    <form action="" method="post">
+        {% csrf_token %}
+        {% render_table table %}
+    </form>
     <h3>
         <a name="injections">
         </a>
         Injections
     </h3>
     {% render_table injection_table %}
+    {% if output_image %}
+    <h3>
+        Output Image
+    </h3>
+    <img src="/output-images/{{ campaign_data.campaign_number }}/{{ result.iteration }}" alt="Gold Output">
+    {% endif %}
     <table>
         <tr>
             <td valign="top">

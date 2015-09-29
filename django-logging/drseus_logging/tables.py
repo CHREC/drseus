@@ -19,7 +19,7 @@ class campaign_table(tables.Table):
 class campaigns_table(tables.Table):
     campaign_number = tables.TemplateColumn(
         '{% if record.results > 0 %}'
-        '<a href="/{{ value}}/charts">'
+        '<a href="/{{ value}}/results">'
         '{% else %}'
         '<a href="/{{ value }}/campaign">'
         '{% endif %}'
@@ -39,7 +39,10 @@ class campaigns_table(tables.Table):
 
 
 class result_table(tables.Table):
+    outcome = tables.TemplateColumn('{{ form.outcome }}')
+    outcome_category = tables.TemplateColumn('{{ form.outcome_category }}')
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+    edit = tables.TemplateColumn('<input type="submit" value="Save" />')
 
     class Meta:
         attrs = {"class": "paleblue"}
