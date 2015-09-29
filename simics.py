@@ -310,8 +310,11 @@ class simics:
                                      args=('./'+aux_command, ))
                 aux_process.start()
         self.dut.serial.write('./'+command+'\n')
+        read_thread = Thread(target=self.dut.read_until)
+        read_thread.start()
         for checkpoint in xrange(num_checkpoints):
             self.command('run-cycles '+str(step_cycles))
+            self.dut.output += '***drseus_checkpoint: '+str(checkpoint)+'***\n'
             incremental_checkpoint = ('gold-checkpoints/' +
                                       str(self.campaign_number)+'/' +
                                       str(checkpoint))
@@ -325,7 +328,7 @@ class simics:
             aux_process.join()
         if kill_dut:
             self.dut.serial.write('\x03')
-        self.dut.read_until()
+        read_thread.join()
         self.close()
         return step_cycles
 
