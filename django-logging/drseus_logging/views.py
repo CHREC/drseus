@@ -6,7 +6,7 @@ from mimetypes import guess_type
 from subprocess import Popen
 import os
 
-from .charts import json_campaigns, json_charts
+from .charts import json_campaign, json_campaigns, json_charts
 from .filters import (hw_result_filter, hw_injection_filter,
                       simics_result_filter, simics_injection_filter,
                       simics_register_diff_filter)
@@ -55,7 +55,11 @@ def charts_page(request, campaign_number):
 
 def campaign_page(request, campaign_number):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
+    chart_array = json_campaign(campaign_data)
     page_items = [('Campaign Data', 'campaign_data'), ]
+    chart_array = json_campaign(campaign_data)
+    if chart_array != '[]':
+        page_items.append(('Injection Targets', 'device_targets'))
     output_file = ('../campaign-data/'+str(campaign_number) +
                    '/gold_'+campaign_data.output_file)
     print output_file
@@ -75,6 +79,7 @@ def campaign_page(request, campaign_number):
         campaign_number=campaign_number))
     RequestConfig(request, paginate=False).configure(table)
     return render(request, 'campaign.html', {'campaign_data': campaign_data,
+                                             'chart_array': chart_array,
                                              'navigation_items':
                                                  navigation_items,
                                              'output_image': output_image,

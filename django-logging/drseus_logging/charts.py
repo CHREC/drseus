@@ -4,6 +4,9 @@ from django.db.models.functions import Concat
 from simplejson import dumps
 from threading import Thread
 from .models import result
+import sys
+sys.path.append('../')
+from simics_targets import devices
 
 
 def json_campaigns(queryset):
@@ -81,6 +84,61 @@ def json_campaigns(queryset):
     }
     """.replace('campaign_number_list', campaign_numbers))
     return '['+chart+']'
+
+
+def json_campaign(campaign_data):
+    if not campaign_data.use_simics:
+        return '[]'
+    if campaign_data.architecture == 'p2020':
+        targets = devices['p2020rdb']
+    elif campaign_data.architecture == 'a9':
+        targets = devices['a9x2']
+    else:
+        return '[]'
+    target_list = sorted(targets.keys())
+    chart = {
+        'chart': {
+            'renderTo': 'device_bit_chart',
+            'type': 'column'
+        },
+        'exporting': {
+            'filename': campaign_data.architecture+' targets',
+            'sourceWidth': 1024,
+            'sourceHeight': 576,
+            'scale': 3,
+        },
+        'legend': {
+            'enabled': False
+        },
+        'plotOptions': {
+            'column': {
+                'dataLabels': {
+                    'style': {
+                        'textShadow': False
+                    }
+                }
+            }
+        },
+        'title': {
+            'text': campaign_data.architecture.upper()+' Targets'
+        },
+        'xAxis': {
+            'categories': target_list,
+            'title': {
+                'text': 'Component'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Bits'
+            }
+        }
+    }
+    bits = []
+    for target in target_list:
+        bits.append(targets[target]['total_bits'])
+    chart['series'] = [{'data': bits, }, ]
+    return '['+dumps(chart)+']'
 
 
 def outcome_category_chart(queryset, campaign_data, unused, chart_array):
