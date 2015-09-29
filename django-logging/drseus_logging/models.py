@@ -4,7 +4,7 @@ from django.db import models
 class campaign_manager(models.Manager):
     def get_queryset(self):
         return super(campaign_manager, self).get_queryset().annotate(
-            results=models.Count('result'),
+            results=models.Count('result', distinct=True),
             last_injection=models.Max('result__injection__timestamp'))
 
 
@@ -34,9 +34,6 @@ class campaign(models.Model):
 
 class result_manager(models.Manager):
     def get_queryset(self):
-        # return super(result_manager, self).get_queryset().exclude(
-        #     outcome='Incomplete').annotate(
-        #     injections=models.Count('injection'))
         return super(result_manager, self).get_queryset().annotate(
             injections=models.Count('injection'))
 
@@ -59,8 +56,9 @@ class result(models.Model):
 
 # class injection_manager(models.Manager):
 #     def get_queryset(self):
-#         return super(injection_manager, self).get_queryset().exclude(
-#             result__outcome='Incomplete')
+#         return super(injection_manager, self).get_queryset().annotate(
+#             result__injections=models.Count('result__injection',
+#                                             distinct=True))
 
 
 class injection(models.Model):
