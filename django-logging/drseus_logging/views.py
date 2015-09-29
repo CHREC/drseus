@@ -54,15 +54,16 @@ def charts_page(request, campaign_number):
 
 def campaign_page(request, campaign_number):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
+    page_items = [('Campaign Data', 'campaign_data'), ]
     output_file = ('../campaign-data/'+str(campaign_number) +
                    '/gold_'+campaign_data.output_file)
     print output_file
     if os.path.exists(output_file) and what(output_file) is not None:
         output_image = True
+        page_items.append(('Output Image', 'output_image'))
     else:
         output_image = False
-    page_items = [('Campaign Data', 'campaign_data'),
-                  ('DUT Output', 'dut_output')]
+    page_items.append(('DUT Output', 'dut_output'))
     if campaign_data.use_aux:
         page_items.append(('AUX Output', 'aux_output'))
     page_items.extend([('Debugger Output', 'debugger_output'),
@@ -71,7 +72,7 @@ def campaign_page(request, campaign_number):
         page_items.append(('AUX SCP Log', 'aux_paramiko_output'))
     table = campaign_table(campaign.objects.filter(
         campaign_number=campaign_number))
-    RequestConfig(request).configure(table)
+    RequestConfig(request, paginate=False).configure(table)
     return render(request, 'campaign.html', {'campaign_data': campaign_data,
                                              'navigation_items':
                                                  navigation_items,
@@ -113,8 +114,15 @@ def result_page(request, campaign_number, iteration):
     navigation_items = (('Information', '../../campaign'),
                         ('Charts', '../../charts/'),
                         ('Table', '../../results/'))
-    page_items = [('Result', 'result'), ('Injections', 'injections'),
-                  ('DUT Output', 'dut_output')]
+    page_items = [('Result', 'result'), ('Injections', 'injections')]
+    output_file = ('../campaign-data/'+campaign_number+'/results/'+iteration +
+                   '/'+campaign_data.output_file)
+    if os.path.exists(output_file) and what(output_file) is not None:
+        output_image = True
+        page_items.append(('Output Image', 'output_image'))
+    else:
+        output_image = False
+    page_items.append(('DUT Output', 'dut_output'))
     if campaign_data.use_aux:
         page_items.append(('AUX Output', 'aux_output'))
     page_items.extend([('Debugger Output', 'debugger_output'),
@@ -145,12 +153,6 @@ def result_page(request, campaign_number, iteration):
         injection.objects.filter(
             result__campaign__campaign_number=campaign_number,
             result__iteration=iteration)
-    output_file = ('../campaign-data/'+campaign_number+'/results/'+iteration +
-                   '/'+campaign_data.output_file)
-    if os.path.exists(output_file) and what(output_file) is not None:
-        output_image = True
-    else:
-        output_image = False
     if campaign_data.use_simics:
         injection_table = simics_injection_table(injection_objects)
         register_objects = simics_register_diff.objects.filter(

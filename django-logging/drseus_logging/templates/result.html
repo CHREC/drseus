@@ -20,6 +20,8 @@
     {% render_table injection_table %}
     {% if output_image %}
     <h3>
+        <a name="output_image">
+        </a>
         Output Image
     </h3>
     <img src="/output-images/{{ campaign_data.campaign_number }}/{{ result.iteration }}" alt="Gold Output">
@@ -51,14 +53,14 @@
                     <h3 align="center">
                         <a name="paramiko_output">
                         </a>
-                        Paramiko Log
+                        SCP Log
                     </h3>
                     {{ result.paramiko_output|linebreaksbr }}
                     {% if campaign_data.use_aux %}
                     <h3 align="center">
                         <a name="aux_paramiko_output">
                         </a>
-                        AUX Paramiko Log
+                        AUX SCP Log
                     </h3>
                     {{ result.aux_paramiko_output|linebreaksbr }}
                     {% endif %}
