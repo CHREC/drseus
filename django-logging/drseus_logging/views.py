@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django_tables2 import RequestConfig
 from imghdr import what
 from mimetypes import guess_type
+from subprocess import Popen
 import os
 
 from .charts import json_campaigns, json_charts
@@ -149,6 +150,12 @@ def result_page(request, campaign_number, iteration):
         form = result_form(
             initial={'outcome': result_object.outcome,
                      'outcome_category': result_object.outcome_category})
+    if request.method == 'GET' and request.GET.get('launch'):
+        drseus = '../drseus.py'
+        if not os.path.exists('../drseus.py'):
+            drseus += 'c'
+        Popen([os.getcwd()+'/'+drseus, '-r '+iteration],
+              cwd=os.getcwd()+'/../')
     injection_objects = \
         injection.objects.filter(
             result__campaign__campaign_number=campaign_number,

@@ -12,6 +12,10 @@
         {% csrf_token %}
         {% render_table table %}
     </form>
+    <br>
+    <form action="" method="get">
+        <input type="submit" name="launch" value="Launch in Simics" />
+    </form>
     <h3>
         <a name="injections">
         </a>
@@ -95,7 +99,10 @@
         Result
     </h2>
     <div align="center">
-        {% render_table table %}
+        <form action="" method="post">
+            {% csrf_token %}
+            {% render_table table %}
+        </form>
     </div>
     <div class="section">
         <h3 align="center">
