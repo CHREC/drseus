@@ -35,9 +35,8 @@ class simics:
             self.board = 'a9x2'
         self.rsakey = rsakey
         self.use_aux = use_aux
-        self.checkpoint = None
 
-    def launch_simics(self):
+    def launch_simics(self, checkpoint=None):
         self.output = ''
         self.simics = subprocess.Popen([os.getcwd()+'/simics-workspace/simics',
                                         '-no-win', '-no-gui', '-q'],
@@ -45,7 +44,7 @@ class simics:
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
         self.read_until()
-        if self.checkpoint is None:
+        if checkpoint is None:
             try:
                 self.command('$drseus=TRUE')
                 buff = self.command('run-command-file simics-'+self.board+'/' +
@@ -56,21 +55,21 @@ class simics:
             except IOError:
                 raise Exception('lost contact with simics')
         else:
-            buff = self.command('read-configuration '+self.checkpoint)
+            buff = self.command('read-configuration '+checkpoint)
             buff += self.command('connect-real-network-port-in ssh '
                                  'ethernet_switch0 target-ip=10.10.0.100')
             if self.use_aux:
                 buff += self.command('connect-real-network-port-in ssh '
                                      'ethernet_switch0 target-ip=10.10.0.104')
         found_settings = 0
-        if self.checkpoint is None:
+        if checkpoint is None:
             serial_ports = []
         else:
             serial_ports = [0, 0]
         ssh_ports = []
         for line in buff.split('\n'):
             if 'pseudo device opened: /dev/pts/' in line:
-                if self.checkpoint is None:
+                if checkpoint is None:
                     serial_ports.append(line.split(':')[1].strip())
                 else:
                     if 'AUX_' in line:
@@ -102,7 +101,7 @@ class simics:
                 self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
                                '#', self.debug, self.timeout, 38400,
                                ssh_ports[1], 'cyan')
-        if self.checkpoint is None:
+        if checkpoint is None:
             self.continue_dut()
             self.do_uboot()
             if self.use_aux:
@@ -356,10 +355,10 @@ class simics:
         latent_faults = 0
         for injection_number in xrange(len(checkpoints_to_inject)):
             checkpoint_number = checkpoints_to_inject[injection_number]
-            self.checkpoint = simics_checkpoints.inject_checkpoint(
+            injected_checkpoint = simics_checkpoints.inject_checkpoint(
                 self.campaign_number, result_id, iteration, injection_number,
                 checkpoint_number, self.board, selected_targets, self.debug)
-            self.launch_simics()
+            self.launch_simics(injected_checkpoint)
             injections_remaining = (injection_number + 1 <
                                     len(checkpoints_to_inject))
             if injections_remaining:

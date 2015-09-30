@@ -12,6 +12,7 @@ import sys
 
 from fault_injector import fault_injector
 
+# TODO: add synchronization around injection logging and/or db access
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: add command line options for ip addresses, serial ports, serial prompts
@@ -247,13 +248,19 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
 
     def interrupt_handler(signum, frame):
         drseus.log_result('Interrupted', 'Incomplete', 0, -1.0)
-        if os.path.exists('campaign-data/results/'+str(drseus.iteration)):
-            shutil.rmtree('campaign-data/results/'+str(drseus.iteration))
+        if os.path.exists('campaign-data/results/' +
+                          str(campaign_data['campaign_number'])+'/' +
+                          str(drseus.iteration)):
+            shutil.rmtree('campaign-data/results/' +
+                          str(campaign_data['campaign_number'])+'/' +
+                          str(drseus.iteration))
         if drseus.use_simics:
-            if os.path.exists('simics-workspace/' +
-                              drseus.debugger.checkpoint):
-                shutil.rmtree('simics-workspace/' +
-                              drseus.debugger.checkpoint)
+            if os.path.exists('simics-workspace/injected-checkpoints/' +
+                              str(campaign_data['campaign_number'])+'/' +
+                              str(drseus.iteration)):
+                shutil.rmtree('simics-workspace/injected-checkpoints/' +
+                              str(campaign_data['campaign_number'])+'/' +
+                              str(drseus.iteration))
         else:
             drseus.debugger.continue_dut()
         drseus.debugger.close()
