@@ -7,8 +7,7 @@ from subprocess import Popen
 import os
 
 from .charts import json_campaign, json_campaigns, json_charts
-from .filters import (hw_result_filter, hw_injection_filter,
-                      simics_result_filter, simics_injection_filter,
+from .filters import (injection_filter, result_filter,
                       simics_register_diff_filter)
 from .forms import result_form
 from .models import (campaign, result, injection, simics_register_diff,
@@ -33,21 +32,15 @@ def charts_page(request, campaign_number):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
     injection_objects = injection.objects.filter(
         result__campaign__campaign_number=campaign_number)
-    if campaign_data.use_simics:
-        injection_filter = simics_injection_filter(request.GET,
-                                                   queryset=injection_objects,
-                                                   campaign=campaign_number)
-    else:
-        injection_filter = hw_injection_filter(request.GET,
-                                               queryset=injection_objects,
-                                               campaign=campaign_number)
-    if injection_filter.qs.count() > 0:
-        chart_array = json_charts(injection_filter.qs, campaign_data)
+    filter_ = injection_filter(request.GET, queryset=injection_objects,
+                               campaign=campaign_number)
+    if filter_.qs.count() > 0:
+        chart_array = json_charts(filter_.qs, campaign_data)
     else:
         chart_array = None
     return render(request, 'charts.html', {'campaign_data': campaign_data,
                                            'chart_array': chart_array,
-                                           'filter': injection_filter,
+                                           'filter': filter_,
                                            'navigation_items':
                                                navigation_items,
                                            'page_items': page_items})
@@ -99,17 +92,12 @@ def results_page(request, campaign_number):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
     result_objects = result.objects.filter(
         campaign__campaign_number=campaign_number)
-    if campaign_data.use_simics:
-        result_filter = simics_result_filter(request.GET,
-                                             queryset=result_objects,
-                                             campaign=campaign_number)
-    else:
-        result_filter = hw_result_filter(request.GET, queryset=result_objects,
-                                         campaign=campaign_number)
-    table = results_table(result_filter.qs)
+    filter_ = result_filter(request.GET,  queryset=result_objects,
+                            campaign=campaign_number)
+    table = results_table(filter_.qs)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {'campaign_data': campaign_data,
-                                            'filter': result_filter,
+                                            'filter': filter_,
                                             'navigation_items':
                                                 navigation_items,
                                             'table': table})

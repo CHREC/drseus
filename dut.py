@@ -56,7 +56,7 @@ class dut:
                 self.paramiko_output += log_file.read()
             os.remove(paramiko_log)
 
-    def get_file(self, target_file, local_path=''):
+    def get_file(self, file_, local_path=''):
         fallback = False
         fallback_failed = False
         try:
@@ -65,7 +65,7 @@ class dut:
             ssh.connect(self.ip_address, port=self.ssh_port, username='root',
                         pkey=self.rsakey, look_for_keys=False)
             dut_scp = SCPClient(ssh.get_transport())
-            dut_scp.get(target_file, local_path=local_path)
+            dut_scp.get(file_, local_path=local_path)
             dut_scp.close()
             ssh.close()
         except Exception as error:
@@ -75,7 +75,7 @@ class dut:
                                   args=('scp -P '+str(self.ssh_port) +
                                         ' -i campaign-data/private.key '
                                         '-o StrictHostKeyChecking=no '
-                                        'root@localhost:'+target_file +
+                                        'root@localhost:'+file_ +
                                         ' ./'+local_path,))
             scp_process.start()
             scp_process.join(timeout=30)

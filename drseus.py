@@ -12,7 +12,6 @@ import sqlite3
 from fault_injector import fault_injector
 
 # TODO: add better ctrl-c handling and save partial results
-# TODO: fix chart filtering on injection number
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: add command line options for ip addresses, serial ports, serial prompts

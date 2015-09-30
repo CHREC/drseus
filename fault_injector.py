@@ -356,7 +356,7 @@ class fault_injector:
             with iteration_counter.get_lock():
                 iteration = iteration_counter.value
                 iteration_counter.value += 1
-            if iteration > last_iteration:
+            if iteration >= last_iteration:
                 break
             result_id = self.get_result_id(iteration)
             if not self.use_simics:

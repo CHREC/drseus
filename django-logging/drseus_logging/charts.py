@@ -651,12 +651,12 @@ def injection_count_chart(queryset, campaign_data, outcomes, chart_array):
     for result_id in result_ids:
         result_entry = result.objects.get(id=result_id)
         if result_entry.outcome in data:
-            if result_entry.injections in data[result_entry.outcome]:
-                data[result_entry.outcome][result_entry.injections] += 1
+            if result_entry.num_injections in data[result_entry.outcome]:
+                data[result_entry.outcome][result_entry.num_injections] += 1
             else:
-                data[result_entry.outcome][result_entry.injections] = 1
+                data[result_entry.outcome][result_entry.num_injections] = 1
         else:
-            data[result_entry.outcome] = {result_entry.injections: 1}
+            data[result_entry.outcome] = {result_entry.num_injections: 1}
     chart = {
         'chart': {
             'renderTo': 'count_chart',

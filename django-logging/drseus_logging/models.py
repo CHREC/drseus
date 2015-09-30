@@ -35,7 +35,7 @@ class campaign(models.Model):
 class result_manager(models.Manager):
     def get_queryset(self):
         return super(result_manager, self).get_queryset().annotate(
-            injections=models.Count('injection'))
+            num_injections=models.Count('injection'))
 
 
 class result(models.Model):
@@ -52,13 +52,6 @@ class result(models.Model):
     aux_paramiko_output = models.TextField(null=True)
     timestamp = models.DateTimeField()
     objects = result_manager()
-
-
-# class injection_manager(models.Manager):
-#     def get_queryset(self):
-#         return super(injection_manager, self).get_queryset().annotate(
-#             result__injections=models.Count('result__injection',
-#                                             distinct=True))
 
 
 class injection(models.Model):
@@ -83,7 +76,6 @@ class injection(models.Model):
     register_index = models.TextField(null=True)
     field = models.TextField(null=True)
     # gold_debug_info = models.TextField(null=True)
-    # objects = injection_manager()
 
 
 class simics_register_diff(models.Model):

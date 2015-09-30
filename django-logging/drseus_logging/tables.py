@@ -53,10 +53,22 @@ class result_table(tables.Table):
 
 
 class results_table(tables.Table):
-    injections = tables.Column()
+    num_injections = tables.Column()
     iteration = tables.TemplateColumn(
         '<a href="../result/{{ value }}">{{ value }}</a>')
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+    targets = tables.Column(empty_values=())
+
+    def render_targets(self, record):
+        if record is not None:
+            targets = [inj.target
+                       for inj in injection.objects.filter(result=record.id)]
+        else:
+            targets = []
+        if len(targets) > 0:
+            return ', '.join(targets)
+        else:
+            return '-'
 
     class Meta:
         attrs = {"class": "paleblue"}

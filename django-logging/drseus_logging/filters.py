@@ -26,139 +26,11 @@ def result_choices(campaign, attribute):
     return sorted(choices, key=fix_sort)
 
 
-class hw_result_filter(django_filters.FilterSet):
+class result_filter(django_filters.FilterSet):
     def __init__(self, *args, **kwargs):
         campaign = kwargs['campaign']
         del kwargs['campaign']
-        super(hw_result_filter, self).__init__(*args, **kwargs)
-        bit_choices = injection_choices(campaign, 'bit')
-        self.filters['injection__bit'].extra.update(choices=bit_choices)
-        self.filters['injection__bit'].widget.attrs['size'] = min(
-            len(bit_choices), 10)
-        core_choices = injection_choices(campaign, 'core')
-        self.filters['injection__core'].extra.update(choices=core_choices)
-        self.filters['injection__core'].widget.attrs['size'] = min(
-            len(core_choices), 10)
-        injections_choices = result_choices(campaign, 'injections')
-        self.filters['injections'].extra.update(choices=injections_choices)
-        self.filters['injections'].widget.attrs['size'] = min(
-            len(injections_choices), 10)
-        outcome_choices = result_choices(campaign, 'outcome')
-        self.filters['outcome'].extra.update(choices=outcome_choices)
-        self.filters['outcome'].widget.attrs['size'] = min(
-            len(outcome_choices), 10)
-        outcome_category_choices = result_choices(campaign, 'outcome_category')
-        self.filters['outcome_category'].extra.update(
-            choices=outcome_category_choices)
-        self.filters['outcome_category'].widget.attrs['size'] = min(
-            len(outcome_category_choices), 10)
-        register_choices = injection_choices(campaign, 'register')
-        self.filters['injection__register'].extra.update(
-            choices=register_choices)
-        self.filters['injection__register'].widget.attrs['size'] = min(
-            len(register_choices), 10)
-        time_rounded_choices = injection_choices(campaign, 'time_rounded')
-        self.filters['injection__time_rounded'].extra.update(
-            choices=time_rounded_choices)
-        self.filters['injection__time_rounded'].widget.attrs['size'] = min(
-            len(time_rounded_choices), 10)
-
-    dut_output = django_filters.CharFilter(
-        label='DUT output',
-        lookup_type='icontains',
-        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
-    injection__bit = django_filters.MultipleChoiceFilter(
-        label='Bit',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    injection__core = django_filters.MultipleChoiceFilter(
-        label='Core',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    injection__register = django_filters.MultipleChoiceFilter(
-        label='Register',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    injection__time_rounded = django_filters.MultipleChoiceFilter(
-        label='Injection time',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    injections = django_filters.MultipleChoiceFilter(
-        label='Number of injections',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    outcome = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    outcome_category = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-
-    class Meta:
-        model = result
-        exclude = ['aux_output', 'aux_paramiko_output', 'campaign', 'data_diff',
-                   'debugger_output', 'detected_errors', 'iteration',
-                   'paramiko_output', 'timestamp']
-
-
-class hw_injection_filter(django_filters.FilterSet):
-    def __init__(self, *args, **kwargs):
-        campaign = kwargs['campaign']
-        del kwargs['campaign']
-        super(hw_injection_filter, self).__init__(*args, **kwargs)
-        bit_choices = injection_choices(campaign, 'bit')
-        self.filters['bit'].extra.update(choices=bit_choices)
-        self.filters['bit'].widget.attrs['size'] = min(len(bit_choices), 10)
-        core_choices = injection_choices(campaign, 'core')
-        self.filters['core'].extra.update(choices=core_choices)
-        self.filters['core'].widget.attrs['size'] = min(len(core_choices), 10)
-        # injections_choices = result_choices(campaign, 'injections')
-        # self.filters['result__injections'].extra.update(
-        #     choices=injections_choices)
-        # self.filters['result__injections'].widget.attrs['size'] = min(
-        #     len(injections_choices), 10)
-        outcome_choices = result_choices(campaign, 'outcome')
-        self.filters['result__outcome'].extra.update(choices=outcome_choices)
-        self.filters['result__outcome'].widget.attrs['size'] = min(
-            len(outcome_choices), 10)
-        outcome_category_choices = result_choices(campaign, 'outcome_category')
-        self.filters['result__outcome_category'].extra.update(
-            choices=outcome_category_choices)
-        self.filters['result__outcome_category'].widget.attrs['size'] = min(
-            len(outcome_category_choices), 10)
-        register_choices = injection_choices(campaign, 'register')
-        self.filters['register'].extra.update(choices=register_choices)
-        self.filters['register'].widget.attrs['size'] = min(
-            len(register_choices), 10)
-        time_rounded_choices = injection_choices(campaign, 'time_rounded')
-        self.filters['time_rounded'].extra.update(choices=time_rounded_choices)
-        self.filters['time_rounded'].widget.attrs['size'] = min(
-            len(time_rounded_choices), 10)
-
-    bit = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    core = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    register = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    # result__injections = django_filters.MultipleChoiceFilter(
-    #     label='Number of injections',
-    #     widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    result__outcome = django_filters.MultipleChoiceFilter(
-        label='Outcome',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    result__outcome_category = django_filters.MultipleChoiceFilter(
-        label='Outcome category',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    time_rounded = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-
-    class Meta:
-        model = result
-        exclude = ['aux_output', 'aux_paramiko_output', 'campaign', 'data_diff',
-                   'debugger_output', 'detected_errors', 'dut_output',
-                   'iteration', 'outcome', 'outcome_category',
-                   'paramiko_output', 'timestamp']
-
-
-class simics_result_filter(django_filters.FilterSet):
-    def __init__(self, *args, **kwargs):
-        campaign = kwargs['campaign']
-        del kwargs['campaign']
-        super(simics_result_filter, self).__init__(*args, **kwargs)
+        super(result_filter, self).__init__(*args, **kwargs)
         bit_choices = injection_choices(campaign, 'bit')
         self.filters['injection__bit'].extra.update(choices=bit_choices)
         self.filters['injection__bit'].widget.attrs['size'] = min(
@@ -169,14 +41,18 @@ class simics_result_filter(django_filters.FilterSet):
             choices=checkpoint_number_choices)
         self.filters['injection__checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), 10)
+        core_choices = injection_choices(campaign, 'core')
+        self.filters['injection__core'].extra.update(choices=core_choices)
+        self.filters['injection__core'].widget.attrs['size'] = min(
+            len(core_choices), 10)
         field_choices = injection_choices(campaign, 'field')
         self.filters['injection__field'].extra.update(choices=field_choices)
         self.filters['injection__field'].widget.attrs['size'] = min(
             len(field_choices), 10)
-        injections_choices = result_choices(campaign, 'injections')
-        self.filters['injections'].extra.update(choices=injections_choices)
-        self.filters['injections'].widget.attrs['size'] = min(
-            len(injections_choices), 10)
+        num_injections_choices = result_choices(campaign, 'num_injections')
+        self.filters['num_injections'].extra.update(choices=num_injections_choices)
+        self.filters['num_injections'].widget.attrs['size'] = min(
+            len(num_injections_choices), 10)
         outcome_choices = result_choices(campaign, 'outcome')
         self.filters['outcome'].extra.update(choices=outcome_choices)
         self.filters['outcome'].widget.attrs['size'] = min(
@@ -206,13 +82,29 @@ class simics_result_filter(django_filters.FilterSet):
             choices=target_index_choices)
         self.filters['injection__target_index'].widget.attrs['size'] = min(
             len(target_index_choices), 10)
+        time_rounded_choices = injection_choices(campaign, 'time_rounded')
+        self.filters['injection__time_rounded'].extra.update(
+            choices=time_rounded_choices)
+        self.filters['injection__time_rounded'].widget.attrs['size'] = min(
+            len(time_rounded_choices), 10)
 
+    aux_output = django_filters.CharFilter(
+        label='AUX output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
+    debugger_output = django_filters.CharFilter(
+        label='Simics output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
     dut_output = django_filters.CharFilter(
         label='DUT output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
     injection__bit = django_filters.MultipleChoiceFilter(
         label='Bit',
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    injection__core = django_filters.MultipleChoiceFilter(
+        label='Core',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     injection__field = django_filters.MultipleChoiceFilter(
         label='Field',
@@ -232,26 +124,32 @@ class simics_result_filter(django_filters.FilterSet):
     injection__target_index = django_filters.MultipleChoiceFilter(
         label='Target index',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    injections = django_filters.MultipleChoiceFilter(
+    injection__time_rounded = django_filters.MultipleChoiceFilter(
+        label='Injection time',
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    num_injections = django_filters.MultipleChoiceFilter(
         label='Number of injections',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     outcome = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     outcome_category = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    paramiko_output = django_filters.CharFilter(
+        label='SCP output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
 
     class Meta:
         model = result
-        exclude = ['aux_output', 'aux_paramiko_output', 'campaign', 'data_diff',
-                   'debugger_output', 'detected_errors', 'iteration',
-                   'paramiko_output', 'timestamp']
+        exclude = ['aux_paramiko_output', 'campaign', 'data_diff',
+                   'detected_errors', 'iteration', 'timestamp']
 
 
-class simics_injection_filter(django_filters.FilterSet):
+class injection_filter(django_filters.FilterSet):
     def __init__(self, *args, **kwargs):
         campaign = kwargs['campaign']
         del kwargs['campaign']
-        super(simics_injection_filter, self).__init__(*args, **kwargs)
+        super(injection_filter, self).__init__(*args, **kwargs)
         bit_choices = injection_choices(campaign, 'bit')
         self.filters['bit'].extra.update(choices=bit_choices)
         self.filters['bit'].widget.attrs['size'] = min(len(bit_choices), 10)
@@ -261,14 +159,17 @@ class simics_injection_filter(django_filters.FilterSet):
             choices=checkpoint_number_choices)
         self.filters['checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), 10)
+        core_choices = injection_choices(campaign, 'core')
+        self.filters['core'].extra.update(choices=core_choices)
+        self.filters['core'].widget.attrs['size'] = min(len(core_choices), 10)
         field_choices = injection_choices(campaign, 'field')
         self.filters['field'].extra.update(choices=field_choices)
         self.filters['field'].widget.attrs['size'] = min(len(field_choices), 10)
-        # injections_choices = result_choices(campaign, 'injections')
-        # self.filters['result__injections'].extra.update(
-        #     choices=injections_choices)
-        # self.filters['result__injections'].widget.attrs['size'] = min(
-        #     len(injections_choices), 10)
+        num_injections_choices = result_choices(campaign, 'num_injections')
+        self.filters['result__num_injections'].extra.update(
+            choices=num_injections_choices)
+        self.filters['result__num_injections'].widget.attrs['size'] = min(
+            len(num_injections_choices), 10)
         outcome_choices = result_choices(campaign, 'outcome')
         self.filters['result__outcome'].extra.update(choices=outcome_choices)
         self.filters['result__outcome'].widget.attrs['size'] = min(
@@ -295,8 +196,21 @@ class simics_injection_filter(django_filters.FilterSet):
         self.filters['target_index'].extra.update(choices=target_index_choices)
         self.filters['target_index'].widget.attrs['size'] = min(
             len(target_index_choices), 10)
+        time_rounded_choices = injection_choices(campaign, 'time_rounded')
+        self.filters['time_rounded'].extra.update(choices=time_rounded_choices)
+        self.filters['time_rounded'].widget.attrs['size'] = min(
+            len(time_rounded_choices), 10)
+
+    def num_injections_filter(queryset, value):
+        if value:
+            return queryset.filter(result_id__in=result.objects.filter(
+                num_injections__in=value).values_list('id'))
+        else:
+            return queryset
 
     bit = django_filters.MultipleChoiceFilter(
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    core = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     checkpoint_number = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
@@ -306,9 +220,9 @@ class simics_injection_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     register_index = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
-    # result__injections = django_filters.MultipleChoiceFilter(
-    #     label='Number of injections',
-    #     widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    result__num_injections = django_filters.MultipleChoiceFilter(
+        action=num_injections_filter, label='Number of injections',
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     result__outcome = django_filters.MultipleChoiceFilter(
         label='Outcome',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
@@ -319,12 +233,14 @@ class simics_injection_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     target_index = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+    time_rounded = django_filters.MultipleChoiceFilter(
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
 
     class Meta:
         model = injection
-        exclude = ['checkpoint_number', 'config_object', 'config_type', 'core',
-                   'gold_value', 'injected_value', 'injection_number', 'result',
-                   'time', 'time_rounded',  'timestamp']
+        exclude = ['config_object', 'config_type', 'gold_value',
+                   'injected_value', 'injection_number', 'result', 'time',
+                   'timestamp']
 
 
 class simics_register_diff_filter(django_filters.FilterSet):
