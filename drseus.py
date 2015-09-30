@@ -404,8 +404,11 @@ simics_injection_group.add_option('-p', '--procs', action='store',
                                        'in parallel')
 simics_injection_group.add_option('-M', '--all', action='store_true',
                                   dest='compare_all', default=False,
-                                  help='monitorall all checkpoints, only last '
-                                       'by default')
+                                  help='monitor all checkpoints (only last by '
+                                       'default), IMPORTANT: do NOT use with '
+                                       '\"-p\" or \"--procs\" when using this '
+                                       'option for the first time in a '
+                                       'campaign')
 parser.add_option_group(simics_injection_group)
 
 supervise_group = optparse.OptionGroup(parser, 'Supervisor Options', 'Use these'

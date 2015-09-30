@@ -428,6 +428,15 @@ class simics:
                 monitored_checkpoint = incremental_checkpoint+'_merged'
                 self.command('!bin/checkpoint-merge '+incremental_checkpoint +
                              ' '+monitored_checkpoint)
+                # merge = subprocess.Popen([os.getcwd()+'/simics-workspace/'
+                #                           '/bin/checkpoint-merge',
+                #                           incremental_checkpoint,
+                #                           monitored_checkpoint],
+                #                          cwd=(os.getcwd() +
+                #                               '/simics-workspace'),
+                #                          stdout=subprocess.PIPE)
+                # if merge.wait():
+                #     raise DrSEUSError('Error merging checkpoint')
                 gold_incremental_checkpoint = ('gold-checkpoints/' +
                                                str(self.campaign_number)+'/' +
                                                str(checkpoint_number))
@@ -438,6 +447,15 @@ class simics:
                     self.command('!bin/checkpoint-merge ' +
                                  gold_incremental_checkpoint+' ' +
                                  gold_checkpoint)
+                    # merge = subprocess.Popen([os.getcwd()+'/simics-workspace/'
+                    #                           '/bin/checkpoint-merge',
+                    #                           gold_incremental_checkpoint,
+                    #                           gold_checkpoint],
+                    #                          cwd=(os.getcwd() +
+                    #                               '/simics-workspace'),
+                    #                          stdout=subprocess.PIPE)
+                    # if merge.wait():
+                    #     raise DrSEUSError('Error merging checkpoint')
                 gold_checkpoint = 'simics-workspace/'+gold_checkpoint
                 monitored_checkpoint = 'simics-workspace/'+monitored_checkpoint
                 errors = simics_checkpoints.compare_registers(

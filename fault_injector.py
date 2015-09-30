@@ -321,9 +321,8 @@ class fault_injector:
 
     def log_result(self, result_id, iteration, outcome, outcome_category,
                    detected_errors, data_diff):
-        print(colored('iteration: '+str(iteration), 'blue'))
-        print(colored('outcome: '+outcome_category+' - '+outcome, 'blue'),
-              end='')
+        print(colored('iteration '+str(iteration)+' outcome: ' +
+                      outcome_category+' - '+outcome, 'blue'), end='')
         if data_diff < 1.0 and data_diff != -1.0:
             print(colored(', data diff: '+str(data_diff), 'blue'))
         else:
