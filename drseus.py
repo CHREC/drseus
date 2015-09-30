@@ -5,13 +5,13 @@ import multiprocessing
 import optparse
 import os
 import shutil
-from signal import SIGINT
+import signal
 from subprocess import Popen
 import sqlite3
+import sys
 
 from fault_injector import fault_injector
 
-# TODO: add better ctrl-c handling and save partial results
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: add command line options for ip addresses, serial ports, serial prompts
@@ -244,27 +244,31 @@ def load_campaign(campaign_data, options):
 def perform_injections(campaign_data, iteration_counter, last_iteration,
                        options):
     drseus = load_campaign(campaign_data, options)
+
+    def interrupt_handler(signum, frame):
+        drseus.log_result('Interrupted', 'Incomplete', 0, -1.0)
+        if os.path.exists('campaign-data/results/'+str(drseus.iteration)):
+            shutil.rmtree('campaign-data/results/'+str(drseus.iteration))
+        if drseus.use_simics:
+            if os.path.exists('simics-workspace/' +
+                              drseus.debugger.checkpoint):
+                shutil.rmtree('simics-workspace/' +
+                              drseus.debugger.checkpoint)
+        else:
+            drseus.debugger.continue_dut()
+        drseus.debugger.close()
+        sys.exit()
+    signal.signal(signal.SIGINT, interrupt_handler)
+
     if options.selected_targets is not None:
         selected_targets = options.selected_targets.split(',')
     else:
         selected_targets = None
-    # try:
     drseus.inject_and_monitor(iteration_counter, last_iteration,
                               options.num_injections, selected_targets,
                               campaign_data['output_file'],
                               campaign_data['use_aux_output'],
                               options.compare_all)
-    # except KeyboardInterrupt:
-    #     shutil.rmtree('campaign-data/results/'+str(iteration))
-    #     if drseus.simics:
-    #         try:
-    #             shutil.rmtree('simics-workspace/' +
-    #                           drseus.debugger.injected_checkpoint)
-    #         except:
-    #             pass
-    #     else:
-    #         drseus.debugger.continue_dut()
-    #     drseus.close()
 
 
 def view_logs():
@@ -276,7 +280,7 @@ def view_logs():
                   'log server is running at localhost:8000')
             raw_input('press enter to quit server\n')
     try:
-        os.killpg(os.getpgid(server.pid), SIGINT)
+        os.killpg(os.getpgid(server.pid), signal.SIGINT)
     except KeyboardInterrupt:
         pass
 
@@ -477,7 +481,7 @@ elif options.inject:
                 process.join()
         except KeyboardInterrupt:
             for process in processes:
-                process.terminate()
+                os.kill(process.pid, signal.SIGINT)
                 process.join()
     else:
         perform_injections(campaign_data, iteration_counter, last_iteration,

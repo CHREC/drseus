@@ -35,6 +35,8 @@ class bdi:
         if self.use_aux:
             self.aux = dut(aux_ip_address, rsakey, aux_serial_port,
                            'root@p2020rdb:~#', debug, timeout, color='cyan')
+        else:
+            self.aux = None
 
     def close(self):
         if self.telnet:

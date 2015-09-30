@@ -183,20 +183,19 @@ class fault_injector:
                          '/aux-files/'+item)
         self.debugger.aux.send_files(files)
 
-    def get_result_id(self, iteration):
+    def get_result_id(self):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute('INSERT INTO drseus_logging_result (campaign_id,iteration'
                     ',outcome,outcome_category,timestamp) VALUES (?,?,?,?,?)',
-                    (self.campaign_number, iteration, 'Incomplete',
+                    (self.campaign_number, self.iteration, 'In progress',
                      'Incomplete', datetime.now()))
         sql_db.commit()
         result_id = sql.lastrowid
         sql_db.close()
         return result_id
 
-    def inject_faults(self, result_id, iteration, num_injections,
-                      selected_targets, compare_all):
+    def inject_faults(self, num_injections, selected_targets, compare_all):
         if self.use_simics:
             checkpoint_nums = range(self.num_checkpoints-1)
             injected_checkpoint_nums = []
@@ -205,7 +204,7 @@ class fault_injector:
                 checkpoint_nums.remove(checkpoint_num)
                 injected_checkpoint_nums.append(checkpoint_num)
             injected_checkpoint_nums = sorted(injected_checkpoint_nums)
-            return self.debugger.inject_fault(result_id, iteration,
+            return self.debugger.inject_fault(self.result_id, self.iteration,
                                               injected_checkpoint_nums,
                                               selected_targets,
                                               self.cycles_between,
@@ -216,17 +215,18 @@ class fault_injector:
             for i in xrange(num_injections):
                 injection_times.append(random.uniform(0, self.exec_time))
             injection_times = sorted(injection_times)
-            self.debugger.inject_fault(result_id, iteration, injection_times,
-                                       self.command, selected_targets)
+            self.debugger.inject_fault(self.result_id, self.iteration,
+                                       injection_times, self.command,
+                                       selected_targets)
             return 0
 
-    def check_output(self, number, output_file, use_aux_output):
+    def check_output(self, output_file, use_aux_output):
         missing_output = False
         data_diff = -1.0
         os.makedirs('campaign-data/'+str(self.campaign_number)+'/results/' +
-                    str(number))
+                    str(self.iteration))
         result_folder = ('campaign-data/'+str(self.campaign_number) +
-                         '/results/'+str(number))
+                         '/results/'+str(self.iteration))
         output_location = result_folder+'/'+output_file
         gold_location = ('campaign-data/'+str(self.campaign_number)+'/gold_' +
                          output_file)
@@ -259,8 +259,7 @@ class fault_injector:
             raise DrSEUSError(DrSEUSError.missing_output)
         return data_diff
 
-    def monitor_execution(self, iteration, latent_faults, output_file,
-                          use_aux_output):
+    def monitor_execution(self, latent_faults, output_file, use_aux_output):
         buff = ''
         aux_buff = ''
         detected_errors = 0
@@ -295,8 +294,7 @@ class fault_injector:
                     break
         if output_file and not outcome:
             try:
-                data_diff = self.check_output(iteration, output_file,
-                                              use_aux_output)
+                data_diff = self.check_output(output_file, use_aux_output)
             except DrSEUSError as error:
                 if error.type == DrSEUSError.missing_output:
                     outcome = error.type
@@ -319,9 +317,8 @@ class fault_injector:
                 outcome_category = 'No error'
         return outcome, outcome_category, detected_errors, data_diff
 
-    def log_result(self, result_id, iteration, outcome, outcome_category,
-                   detected_errors, data_diff):
-        print(colored('iteration '+str(iteration)+' outcome: ' +
+    def log_result(self, outcome, outcome_category, detected_errors, data_diff):
+        print(colored('iteration '+str(self.iteration)+' outcome: ' +
                       outcome_category+' - '+outcome, 'blue'), end='')
         if data_diff < 1.0 and data_diff != -1.0:
             print(colored(', data diff: '+str(data_diff), 'blue'))
@@ -335,12 +332,16 @@ class fault_injector:
             'debugger_output=?,paramiko_output=?,aux_paramiko_output=?,'
             'timestamp=? WHERE id=?', (
                 outcome, outcome_category, data_diff, detected_errors,
-                self.debugger.dut.output.decode('utf-8', 'ignore'),
+                self.debugger.dut.output.decode('utf-8', 'ignore') if
+                self.debugger.dut is not None else '',
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
-                self.use_aux else '', self.debugger.output,
-                self.debugger.dut.paramiko_output,
-                self.debugger.aux.paramiko_output if self.use_aux else '',
-                datetime.now(), result_id
+                self.use_aux and self.debugger.aux is not None else '',
+                self.debugger.output,
+                self.debugger.dut.paramiko_output if
+                self.debugger.dut is not None else '',
+                self.debugger.aux.paramiko_output if
+                self.use_aux and self.debugger.aux is not None else '',
+                datetime.now(), self.result_id
             )
         )
         sql_db.commit()
@@ -353,11 +354,11 @@ class fault_injector:
             self.send_aux_files()
         while True:
             with iteration_counter.get_lock():
-                iteration = iteration_counter.value
+                self.iteration = iteration_counter.value
                 iteration_counter.value += 1
-            if iteration >= last_iteration:
+            if self.iteration >= last_iteration:
                 break
-            result_id = self.get_result_id(iteration)
+            self.result_id = self.get_result_id()
             if not self.use_simics:
                 self.debugger.reset_dut()
                 self.debugger.dut.do_login()
@@ -365,8 +366,7 @@ class fault_injector:
             if self.use_aux and not self.use_simics:
                 self.debugger.aux.serial.write('./'+self.aux_command+'\n')
             try:
-                latent_faults = self.inject_faults(result_id, iteration,
-                                                   num_injections,
+                latent_faults = self.inject_faults(num_injections,
                                                    selected_targets,
                                                    compare_all)
                 self.debugger.continue_dut()
@@ -392,8 +392,7 @@ class fault_injector:
                 detected_errors = 0
             else:
                 (outcome, outcome_category, detected_errors,
-                 data_diff) = self.monitor_execution(iteration, latent_faults,
-                                                     output_file,
+                 data_diff) = self.monitor_execution(latent_faults, output_file,
                                                      use_aux_output)
                 if outcome == 'Latent faults' or (not self.use_simics
                                                   and outcome == 'No error'):
@@ -401,14 +400,13 @@ class fault_injector:
                         self.debugger.aux.serial.write('./'+self.aux_command +
                                                        '\n')
                     self.debugger.dut.serial.write('./'+self.command+'\n')
-                    next_outcome = self.monitor_execution(iteration, 0,
-                                                          output_file,
+                    next_outcome = self.monitor_execution(0, output_file,
                                                           use_aux_output)[0]
                     if next_outcome != 'No error':
                         outcome = next_outcome
                         outcome_category = 'Post execution error'
                     elif self.use_simics:
-                        if self.debugger.persistent_faults(result_id):
+                        if self.debugger.persistent_faults(self.result_id):
                             outcome = 'Persistent faults'
             if self.use_simics:
                 try:
@@ -418,9 +416,10 @@ class fault_injector:
                     outcome_category = 'Simics error'
                 finally:
                     shutil.rmtree('simics-workspace/injected-checkpoints/' +
-                                  str(self.campaign_number)+'/'+str(iteration))
-            self.log_result(result_id, iteration, outcome, outcome_category,
-                            detected_errors, data_diff)
+                                  str(self.campaign_number)+'/' +
+                                  str(self.iteration))
+            self.log_result(outcome, outcome_category, detected_errors,
+                            data_diff)
             if not self.use_simics:
                 self.debugger.output = ''
                 self.debugger.dut.output = ''

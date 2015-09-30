@@ -23,6 +23,9 @@ class simics:
     def __init__(self, campaign_number, architecture, rsakey, use_aux, debug,
                  timeout):
         self.simics = None
+        self.output = ''
+        self.dut = None
+        self.aux = None
         self.campaign_number = campaign_number
         self.debug = debug
         self.timeout = timeout
@@ -32,8 +35,9 @@ class simics:
             self.board = 'a9x2'
         self.rsakey = rsakey
         self.use_aux = use_aux
+        self.checkpoint = None
 
-    def launch_simics(self, checkpoint=None):
+    def launch_simics(self):
         self.output = ''
         self.simics = subprocess.Popen([os.getcwd()+'/simics-workspace/simics',
                                         '-no-win', '-no-gui', '-q'],
@@ -41,7 +45,7 @@ class simics:
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
         self.read_until()
-        if checkpoint is None:
+        if self.checkpoint is None:
             try:
                 self.command('$drseus=TRUE')
                 buff = self.command('run-command-file simics-'+self.board+'/' +
@@ -52,22 +56,21 @@ class simics:
             except IOError:
                 raise Exception('lost contact with simics')
         else:
-            self.injected_checkpoint = checkpoint
-            buff = self.command('read-configuration '+checkpoint)
+            buff = self.command('read-configuration '+self.checkpoint)
             buff += self.command('connect-real-network-port-in ssh '
                                  'ethernet_switch0 target-ip=10.10.0.100')
             if self.use_aux:
                 buff += self.command('connect-real-network-port-in ssh '
                                      'ethernet_switch0 target-ip=10.10.0.104')
         found_settings = 0
-        if checkpoint is None:
+        if self.checkpoint is None:
             serial_ports = []
         else:
             serial_ports = [0, 0]
         ssh_ports = []
         for line in buff.split('\n'):
             if 'pseudo device opened: /dev/pts/' in line:
-                if checkpoint is None:
+                if self.checkpoint is None:
                     serial_ports.append(line.split(':')[1].strip())
                 else:
                     if 'AUX_' in line:
@@ -99,7 +102,7 @@ class simics:
                 self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
                                '#', self.debug, self.timeout, 38400,
                                ssh_ports[1], 'cyan')
-        if checkpoint is None:
+        if self.checkpoint is None:
             self.continue_dut()
             self.do_uboot()
             if self.use_aux:
@@ -153,10 +156,19 @@ class simics:
             self.aux.close()
         if self.simics:
             self.simics.send_signal(SIGINT)
-            self.simics.stdin.write('quit\n')
-            read_thread = Thread(target=self.read_until)
+            try:
+                self.simics.stdin.write('quit\n')
+            except:
+                pass
+
+            def read_worker():
+                try:
+                    self.read_until()
+                except DrSEUSError:
+                    pass
+            read_thread = Thread(target=read_worker)
             read_thread.start()
-            read_thread.join(timeout=30)
+            read_thread.join(timeout=5)
             if read_thread.is_alive():
                 self.simics.kill()
                 self.output += '\nkilled unresponsive simics process\n'
@@ -344,10 +356,10 @@ class simics:
         latent_faults = 0
         for injection_number in xrange(len(checkpoints_to_inject)):
             checkpoint_number = checkpoints_to_inject[injection_number]
-            injected_checkpoint = simics_checkpoints.inject_checkpoint(
+            self.checkpoint = simics_checkpoints.inject_checkpoint(
                 self.campaign_number, result_id, iteration, injection_number,
                 checkpoint_number, self.board, selected_targets, self.debug)
-            self.launch_simics(checkpoint=injected_checkpoint)
+            self.launch_simics()
             injections_remaining = (injection_number + 1 <
                                     len(checkpoints_to_inject))
             if injections_remaining:
