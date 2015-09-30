@@ -103,9 +103,9 @@ def json_campaign(campaign_data):
         },
         'exporting': {
             'filename': campaign_data.architecture+' targets',
-            'sourceWidth': 1024,
-            'sourceHeight': 576,
-            'scale': 3,
+            'sourceWidth': 512,
+            'sourceHeight': 384,
+            'scale': 2
         },
         'legend': {
             'enabled': False
