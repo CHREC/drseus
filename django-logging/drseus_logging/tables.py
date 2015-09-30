@@ -42,7 +42,14 @@ class result_table(tables.Table):
     outcome = tables.TemplateColumn('{{ form.outcome }}')
     outcome_category = tables.TemplateColumn('{{ form.outcome_category }}')
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
-    edit = tables.TemplateColumn('<input type="submit" value="Save" />')
+    edit = tables.TemplateColumn('<input type="submit" name="save" '
+                                 'value="Save" onclick="return confirm('
+                                 '\'Are you sure you want to edit this '
+                                 'result?\')"/>')
+    delete = tables.TemplateColumn('<input type="submit" name="delete" '
+                                   'value="Delete" onclick="return confirm('
+                                   '\'Are you sure you want to delete this '
+                                   'iteration?\')" />')
 
     class Meta:
         attrs = {"class": "paleblue"}

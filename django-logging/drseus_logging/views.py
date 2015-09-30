@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django_tables2 import RequestConfig
 from imghdr import what
 from mimetypes import guess_type
@@ -130,7 +130,7 @@ def result_page(request, campaign_number, iteration):
         campaign__campaign_number=campaign_number, iteration=iteration)
     table = result_table(result.objects.filter(
         campaign__campaign_number=campaign_number, iteration=iteration))
-    if request.method == 'POST':
+    if request.method == 'POST' and 'save' in request.POST:
         form = result_form(request.POST)
         if form.is_valid():
             if form.cleaned_data['outcome']:
@@ -143,6 +143,12 @@ def result_page(request, campaign_number, iteration):
         form = result_form(
             initial={'outcome': result_object.outcome,
                      'outcome_category': result_object.outcome_category})
+    if request.method == 'POST' and 'delete' in request.POST:
+        result_object.delete()
+        injection.objects.filter(result_id=result_object.id).delete()
+        simics_register_diff.objects.filter(result_id=result_object.id).delete()
+        simics_memory_diff.objects.filter(result_id=result_object.id).delete()
+        return redirect('../../results')
     if request.method == 'GET' and request.GET.get('launch'):
         drseus = '../drseus.py'
         if not os.path.exists('../drseus.py'):
