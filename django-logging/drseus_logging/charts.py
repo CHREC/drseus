@@ -1,6 +1,6 @@
-from collections import OrderedDict
-from django.db.models import Case, Count, IntegerField, Sum, Value, When
-from django.db.models.functions import Concat
+from django.db.models import (Case, Count, IntegerField, Sum, TextField, Value,
+                              When)
+from django.db.models.functions import Concat, Length, Substr
 from simplejson import dumps
 from threading import Thread
 from .models import result
@@ -18,7 +18,8 @@ def json_campaigns(queryset):
         return '[]'
     campaign_numbers = dumps(campaigns[0])
     campaigns = campaigns[1]
-    outcomes = queryset.values_list('outcome').distinct().order_by('outcome')
+    outcomes = queryset.values_list('outcome_category').distinct().order_by(
+        'outcome_category')
     outcomes = zip(*outcomes)[0]
     chart = {
         'chart': {
@@ -50,7 +51,7 @@ def json_campaigns(queryset):
             }
         },
         'title': {
-            'text': 'Outcomes By Campaign'
+            'text': 'DrSEUS Campaigns'
         },
         'xAxis': {
             'categories': campaigns,
@@ -71,16 +72,16 @@ def json_campaigns(queryset):
     for outcome in outcomes:
         data = queryset.values_list('campaign__command').distinct().order_by(
             'campaign__command').annotate(
-                count=Sum(Case(When(outcome=outcome, then=1), default=0,
-                               output_field=IntegerField()))
+                count=Sum(Case(When(outcome_category=outcome, then=1),
+                               default=0, output_field=IntegerField()))
             ).values_list('count')
         chart['series'].append({'data': zip(*data)[0], 'name': outcome})
     chart = dumps(chart)
     chart = chart.replace('\"campaign_chart_click\"', """
     function(event) {
         var campaign_numbers = campaign_number_list;
-        window.location.assign(''+campaign_numbers[this.x]+'/results/?outcome='+
-                               this.series.name);
+        window.location.assign(''+campaign_numbers[this.x]+'/results/?'+
+                               'outcome_category='+this.series.name);
     }
     """.replace('campaign_number_list', campaign_numbers))
     return '['+chart+']'
@@ -141,89 +142,15 @@ def json_campaign(campaign_data):
     return '['+dumps(chart)+']'
 
 
-def outcome_category_chart(queryset, campaign_data, unused, chart_array):
-    outcomes = sorted(queryset.filter(injection_number=0).values_list(
-        'result__outcome_category', 'result__outcome').annotate(
-        count=Count('result__outcome_category')), key=lambda x: x[1])
-    outcome_categories = OrderedDict()
-    for outcome in outcomes:
-        if outcome[0] in outcome_categories:
-            outcome_categories[outcome[0]] += outcome[2]
-        else:
-            outcome_categories[outcome[0]] = outcome[2]
-    outcome_categories = outcome_categories.items()
-    chart = {
-        'chart': {
-            'renderTo': 'outcome_category_chart',
-            'type': 'pie'
-        },
-        'exporting': {
-            'filename': campaign_data.application+' outcome categories',
-            'scale': 3,
-            'sourceHeight': 480,
-            'sourceWidth': 640
-        },
-        'plotOptions': {
-            'pie': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                }
-            },
-            'series': {
-                'point': {
-                    'events': {
-                        'click': 'outcome_category_chart_click'
-                    }
-                }
-            }
-        },
-        'series': [
-            {
-                'colors': ['#f45b5b', '#8085e9', '#8d4654', '#7798BF',
-                           '#aaeeee', '#ff0066', '#eeaaee', '#55BF3B',
-                           '#DF5353', '#7798BF', '#aaeeee'],
-                'data': outcome_categories,
-                'dataLabels': {
-                    'formatter': 'outcome_category_percentage_formatter',
-                },
-                'name': 'Outcome Categories'
-            }
-        ],
-        'title': {
-            'text': 'Outcome Categories'
-        }
-    }
-    outcome_category_list = dumps(zip(*outcome_categories)[0])
-    chart = dumps(chart)
-    chart = chart.replace('\"outcome_category_chart_click\"', """
-    function(event) {
-        var outcome_categories = outcome_category_list;
-        window.location.assign('../results/?outcome_category='+
-                               outcome_categories[this.x]);
-    }
-    """.replace('outcome_category_list', outcome_category_list))
-    chart = chart.replace('\"outcome_category_percentage_formatter\"',  """
-    function() {
-        var outcome_categories = outcome_category_list;
-        return ''+outcome_categories[parseInt(this.point.x)]+' '+
-        Highcharts.numberFormat(this.percentage, 1)+'%';
-    }
-    """.replace('outcome_category_list', outcome_category_list))
-    chart_array.append(chart)
-
-
-def outcome_chart(queryset, campaign_data, unused, chart_array):
-    outcomes = list(queryset.filter(injection_number=0).values_list(
-        'result__outcome').annotate(count=Count('result__outcome')))
+def outcome_chart(queryset, campaign_data, outcomes, group_categories,
+                  chart_array):
     chart = {
         'chart': {
             'renderTo': 'outcome_chart',
             'type': 'pie'
         },
         'exporting': {
-            'filename': campaign_data.application+' outcomes',
+            'filename': campaign_data.application+' overview',
             'scale': 3,
             'sourceHeight': 480,
             'sourceWidth': 640
@@ -246,7 +173,7 @@ def outcome_chart(queryset, campaign_data, unused, chart_array):
         },
         'series': [
             {
-                'data': outcomes,
+                'data': [],
                 'dataLabels': {
                     'formatter': 'outcome_percentage_formatter',
                 },
@@ -254,18 +181,25 @@ def outcome_chart(queryset, campaign_data, unused, chart_array):
             }
         ],
         'title': {
-            'text': 'Outcomes'
+            'text': 'Overview'
         }
 
     }
-    outcome_list = dumps(zip(*outcomes)[0])
-    chart = dumps(chart)
-    chart = chart.replace('\"outcome_chart_click\"', """
+    for outcome in outcomes:
+        filter_kwargs = {'injection_number': 0}
+        filter_kwargs['result__outcome_category' if group_categories
+                      else 'result__outcome'] = outcome
+        chart['series'][0]['data'].append(
+            (outcome, queryset.filter(**filter_kwargs).count()))
+    outcome_list = dumps(outcomes)
+    chart = dumps(chart).replace('\"outcome_chart_click\"', """
     function(event) {
         var outcomes = outcome_list;
         window.location.assign('../results/?outcome='+outcomes[this.x]);
     }
     """.replace('outcome_list', outcome_list))
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart = chart.replace('\"outcome_percentage_formatter\"', """
     function() {
         var outcomes = outcome_list;
@@ -276,7 +210,8 @@ def outcome_chart(queryset, campaign_data, unused, chart_array):
     chart_array.append(chart)
 
 
-def target_chart(queryset, campaign_data, outcomes, chart_array):
+def target_chart(queryset, campaign_data, outcomes, group_categories,
+                 chart_array):
     targets = queryset.values_list('target').distinct().order_by('target')
     if len(targets) <= 1:
         return
@@ -286,7 +221,7 @@ def target_chart(queryset, campaign_data, outcomes, chart_array):
             'type': 'column'
         },
         'exporting': {
-            'filename': campaign_data.application+' outcomes by target',
+            'filename': campaign_data.application+' targets',
             'sourceWidth': 1024,
             'sourceHeight': 576,
             'scale': 3,
@@ -307,8 +242,9 @@ def target_chart(queryset, campaign_data, outcomes, chart_array):
                 }
             }
         },
+        'series': [],
         'title': {
-            'text': 'Outcomes By target'
+            'text': 'Targets'
         },
         'xAxis': {
             'categories': zip(*targets)[0],
@@ -318,46 +254,61 @@ def target_chart(queryset, campaign_data, outcomes, chart_array):
         },
         'yAxis': {
             'title': {
-                'text': 'Injections'
+                'text': 'Total Injections'
             }
         }
     }
-    chart['series'] = []
     for outcome in outcomes:
+        when_kwargs = {'then': 1}
+        when_kwargs['result__outcome_category' if group_categories
+                    else 'result__outcome'] = outcome
         data = queryset.values_list('target').distinct().order_by('target'
                                                                   ).annotate(
-            count=Sum(Case(When(result__outcome=outcome, then=1), default=0,
+            count=Sum(Case(When(**when_kwargs), default=0,
                            output_field=IntegerField()))
         ).values_list('count')
         chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
-    chart_array.append(dumps(chart).replace('\"target_chart_click\"', """
+    chart = dumps(chart).replace('\"target_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
                                '&injection__target='+this.category);
     }
-    """))
+    """)
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_array.append(chart)
 
 
-def register_chart(queryset, campaign_data, outcomes, chart_array):
-    registers = queryset.annotate(
-        register_name=Concat('register', Value(':'), 'register_index')
-    ).values_list('register_name').distinct().order_by('register_name')
+def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
+                       chart_array):
+    if not tlb:
+        registers = queryset.exclude(target='TLB').annotate(
+            register_name=Concat('register', Value(' '), 'register_index')
+        ).values_list('register_name').distinct().order_by('register_name')
+    else:
+        registers = queryset.filter(target='TLB').annotate(
+            tlb_index=Substr('register_index', 1,
+                             Length('register_index')-2,
+                             output_field=TextField()),
+            register_name=Concat('register', Value(' '), 'tlb_index')
+        ).values_list('register_name').distinct().order_by('register_name')
     if len(registers) <= 1:
         return
     chart = {
         'chart': {
-            'renderTo': 'register_chart',
+            'renderTo': 'register_chart' if not tlb else 'tlb_chart',
             'type': 'column'
         },
         'exporting': {
-            'filename': campaign_data.application+' outcomes by register',
+            'filename': (campaign_data.application+' ' +
+                         ('registers' if not tlb else 'tlb entries')),
             'scale': 3,
             'sourceHeight': 576,
             'sourceWidth': 1024
         },
         'title': {
-            'text': 'Outcomes By Register'
+            'text': 'Registers' if not tlb else 'TLB Entries'
         },
         'plotOptions': {
             'column': {
@@ -375,6 +326,7 @@ def register_chart(queryset, campaign_data, outcomes, chart_array):
                 }
             }
         },
+        'series': [],
         'xAxis': {
             'categories': zip(*registers)[0],
             'labels': {
@@ -385,27 +337,41 @@ def register_chart(queryset, campaign_data, outcomes, chart_array):
                 'y': 15
             },
             'title': {
-                'text': 'Register'
+                'text': 'Register' if not tlb else 'TLB Entry'
             }
         },
         'yAxis': {
             'title': {
-                'text': 'Injections'
+                'text': 'Total Injections'
             }
         }
     }
-    chart['series'] = []
     for outcome in outcomes:
-        data = queryset.annotate(
-            register_name=Concat('register', Value(':'), 'register_index')
-        ).values_list('register_name').distinct().order_by('register_name'
-                                                           ).annotate(
-            count=Sum(Case(When(result__outcome=outcome, then=1),
-                           default=0, output_field=IntegerField()))
-        ).values_list('count')
+        when_kwargs = {'then': 1}
+        when_kwargs['result__outcome_category' if group_categories
+                    else 'result__outcome'] = outcome
+        if not tlb:
+            data = queryset.exclude(target='TLB').annotate(
+                register_name=Concat('register', Value(' '), 'register_index')
+            ).values_list('register_name').distinct().order_by('register_name'
+                                                               ).annotate(
+                count=Sum(Case(When(**when_kwargs),
+                               default=0, output_field=IntegerField()))
+            ).values_list('count')
+        else:
+            data = queryset.filter(target='TLB').annotate(
+                tlb_index=Substr('register_index', 1,
+                                 Length('register_index')-2,
+                                 output_field=TextField()),
+                register_name=Concat('register', Value(' '), 'tlb_index')
+            ).values_list('register_name').distinct().order_by('register_name'
+                                                               ).annotate(
+                count=Sum(Case(When(**when_kwargs),
+                               default=0, output_field=IntegerField()))
+            ).values_list('count')
         chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
-    chart_array.append(dumps(chart).replace('\"register_chart_click\"', """
+    chart = dumps(chart).replace('\"register_chart_click\"', """
     function(event) {
         var reg = this.category.split(':');
         var register = reg[0];
@@ -419,11 +385,26 @@ def register_chart(queryset, campaign_data, outcomes, chart_array):
                                    '&injection__register='+register);
         }
     }
-    """))
+    """)
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_array.append(chart)
 
 
-def field_chart(queryset, campaign_data, outcomes, chart_array):
-    fields = queryset.exclude(field=None).values_list('field').distinct(
+def register_chart(queryset, campaign_data, outcomes, group_categories,
+                   chart_array):
+    register_tlb_chart(False, queryset, campaign_data, outcomes,
+                       group_categories, chart_array)
+
+
+def tlb_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
+    register_tlb_chart(True, queryset, campaign_data, outcomes,
+                       group_categories, chart_array)
+
+
+def field_chart(queryset, campaign_data, outcomes, group_categories,
+                chart_array):
+    fields = queryset.filter(target='TLB').values_list('field').distinct(
         ).order_by('field')
     if len(fields) <= 1:
         return
@@ -433,7 +414,7 @@ def field_chart(queryset, campaign_data, outcomes, chart_array):
             'type': 'column'
         },
         'exporting': {
-            'filename': campaign_data.application+' outcomes by field',
+            'filename': campaign_data.application+' tlb fields',
             'sourceWidth': 1024,
             'sourceHeight': 576,
             'scale': 3,
@@ -454,8 +435,9 @@ def field_chart(queryset, campaign_data, outcomes, chart_array):
                 }
             }
         },
+        'series': [],
         'title': {
-            'text': 'Outcomes By Field'
+            'text': 'TLB Fields'
         },
         'xAxis': {
             'categories': zip(*fields)[0],
@@ -465,29 +447,35 @@ def field_chart(queryset, campaign_data, outcomes, chart_array):
         },
         'yAxis': {
             'title': {
-                'text': 'Injections'
+                'text': 'Total Injections'
             }
         }
     }
-    chart['series'] = []
     for outcome in outcomes:
-        data = queryset.exclude(field=None).values_list('field').distinct(
+        when_kwargs = {'then': 1}
+        when_kwargs['result__outcome_category' if group_categories
+                    else 'result__outcome'] = outcome
+        data = queryset.filter(target='TLB').values_list('field').distinct(
             ).order_by('field').annotate(
-                count=Sum(Case(When(result__outcome=outcome, then=1), default=0,
+                count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
         ).values_list('count')
         chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
-    chart_array.append(dumps(chart).replace('\"field_chart_click\"', """
+    chart = dumps(chart).replace('\"field_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
                                '&injection__field='+this.category);
     }
-    """))
+    """)
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_array.append(chart)
 
 
-def bit_chart(queryset, campaign_data, outcomes, chart_array):
-    bits = queryset.values_list('bit').distinct().order_by('bit')
+def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
+    bits = queryset.exclude(target='TLB').values_list('bit').distinct(
+        ).order_by('bit')
     if len(bits) <= 1:
         return
     chart = {
@@ -496,7 +484,7 @@ def bit_chart(queryset, campaign_data, outcomes, chart_array):
             'type': 'column'
         },
         'exporting': {
-            'filename': campaign_data.application+' outcomes by bit',
+            'filename': campaign_data.application+' register bits',
             'sourceWidth': 1024,
             'sourceHeight': 576,
             'scale': 3,
@@ -517,8 +505,9 @@ def bit_chart(queryset, campaign_data, outcomes, chart_array):
                 }
             }
         },
+        'series': [],
         'title': {
-            'text': 'Outcomes By Bit'
+            'text': 'Register Bits'
         },
         'xAxis': {
             'categories': zip(*bits)[0],
@@ -528,27 +517,34 @@ def bit_chart(queryset, campaign_data, outcomes, chart_array):
         },
         'yAxis': {
             'title': {
-                'text': 'Injections'
+                'text': 'Total Injections'
             }
         }
     }
-    chart['series'] = []
     for outcome in outcomes:
-        data = queryset.values_list('bit').distinct().order_by('bit').annotate(
-            count=Sum(Case(When(result__outcome=outcome, then=1), default=0,
-                           output_field=IntegerField()))
+        when_kwargs = {'then': 1}
+        when_kwargs['result__outcome_category' if group_categories
+                    else 'result__outcome'] = outcome
+        data = queryset.exclude(target='TLB').values_list('bit').distinct(
+            ).order_by('bit').annotate(
+                count=Sum(Case(When(**when_kwargs), default=0,
+                               output_field=IntegerField()))
         ).values_list('count')
         chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
-    chart_array.append(dumps(chart).replace('\"bit_chart_click\"', """
+    chart = dumps(chart).replace('\"bit_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
                                '&injection__bit='+this.category);
     }
-    """))
+    """)
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_array.append(chart)
 
 
-def time_chart(queryset, campaign_data, outcomes, chart_array):
+def time_chart(queryset, campaign_data, outcomes, group_categories,
+               chart_array):
     if campaign_data.use_simics:
         times = queryset.values_list('checkpoint_number').distinct().order_by(
             'checkpoint_number')
@@ -563,7 +559,7 @@ def time_chart(queryset, campaign_data, outcomes, chart_array):
             'type': 'column'
         },
         'exporting': {
-            'filename': campaign_data.application+' outcomes over time',
+            'filename': campaign_data.application+' injections over time',
             'scale': 3,
             'sourceHeight': 576,
             'sourceWidth': 1024
@@ -587,8 +583,9 @@ def time_chart(queryset, campaign_data, outcomes, chart_array):
                 }
             }
         },
+        'series': [],
         'title': {
-            'text': 'Outcomes Over Time'
+            'text': 'Injections Over Time'
         },
         'xAxis': {
             'categories': zip(*times)[0],
@@ -598,46 +595,51 @@ def time_chart(queryset, campaign_data, outcomes, chart_array):
         },
         'yAxis': {
             'title': {
-                'text': 'Injections'
+                'text': 'Total Injections'
             }
         }
     }
-    chart['series'] = []
     for outcome in outcomes:
+        when_kwargs = {'then': 1}
+        when_kwargs['result__outcome_category' if group_categories
+                    else 'result__outcome'] = outcome
         if campaign_data.use_simics:
             data = queryset.values_list('checkpoint_number').distinct(
                 ).order_by('checkpoint_number').annotate(
-                    count=Sum(Case(When(result__outcome=outcome, then=1),
+                    count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
             ).values_list('count')
         else:
             data = queryset.values_list('checkpoint_number').distinct(
                 ).order_by('checkpoint_number').annotate(
-                    count=Sum(Case(When(result__outcome=outcome, then=1),
+                    count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
             ).values_list('count')
         chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
-    chart = dumps(chart)
     if campaign_data.use_simics:
-        chart_array.append(chart.replace('\"time_chart_click\"', """
+        chart = dumps(chart).replace('\"time_chart_click\"', """
         function(event) {
             window.location.assign('../results/?outcome='+this.series.name+
                                    '&injection__checkpoint_number='+
                                    this.category);
         }
-        """))
+        """)
     else:
-        chart_array.append(chart.replace('\"time_chart_click\"', """
+        chart = dumps(chart).replace('\"time_chart_click\"', """
         function(event) {
             var time = parseFloat(this.category)
             window.location.assign('../results/?outcome='+this.series.name+
                                    '&injection__time_rounded='+time.toFixed(1));
         }
-        """))
+        """)
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_array.append(chart)
 
 
-def injection_count_chart(queryset, campaign_data, outcomes, chart_array):
+def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
+                          chart_array):
     injection_counts = list(
         queryset.filter().annotate(
             injection_count=Count('result__injection')
@@ -663,8 +665,7 @@ def injection_count_chart(queryset, campaign_data, outcomes, chart_array):
             'type': 'column'
         },
         'exporting': {
-            'filename': (campaign_data.application +
-                         ' outcomes by injection quantity'),
+            'filename': campaign_data.application+' injection quantity',
             'sourceWidth': 1024,
             'sourceHeight': 576,
             'scale': 3,
@@ -685,8 +686,9 @@ def injection_count_chart(queryset, campaign_data, outcomes, chart_array):
                 }
             }
         },
+        'series': [],
         'title': {
-            'text': 'Outcomes By Injection Quantity'
+            'text': 'Injection Quantity'
         },
         'xAxis': {
             'categories': injection_counts,
@@ -700,7 +702,6 @@ def injection_count_chart(queryset, campaign_data, outcomes, chart_array):
             }
         }
     }
-    chart['series'] = []
     for outcome in outcomes:
         chart_data = []
         for injection_count in injection_counts:
@@ -710,26 +711,42 @@ def injection_count_chart(queryset, campaign_data, outcomes, chart_array):
                 chart_data.append(0)
         chart['series'].append({'data': chart_data, 'name': outcome,
                                 'stacking': True})
-    chart_array.append(dumps(chart).replace('\"count_chart_click\"', """
+    chart = dumps(chart).replace('\"count_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
                                '&injections='+this.category);
     }
-    """))
+    """)
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_array.append(chart)
 
 
-def json_charts(queryset, campaign_data):
-    charts = (outcome_category_chart, outcome_chart, target_chart,
-              register_chart, field_chart, bit_chart, time_chart,
-              injection_count_chart)
-    outcomes = queryset.values_list('result__outcome').distinct().order_by(
-        'result__outcome')
-    outcomes = zip(*outcomes)[0]
+def json_charts(queryset, campaign_data, group_categories):
+    charts = (outcome_chart, target_chart, register_chart, tlb_chart,
+              field_chart, bit_chart, time_chart, injection_count_chart)
+    if group_categories:
+        outcomes = queryset.values_list('result__outcome_category').distinct(
+            ).order_by('result__outcome_category')
+    else:
+        outcomes = queryset.values_list('result__outcome').distinct(
+            ).order_by('result__outcome')
+    outcomes = list(zip(*outcomes)[0])
+    if 'Latent faults' in outcomes:
+        outcomes.remove('Latent faults')
+        outcomes[:0] = ('Latent faults', )
+    if 'Persistent faults' in outcomes:
+        outcomes.remove('Persistent faults')
+        outcomes[:0] = ('Persistent faults', )
+    if 'No error' in outcomes:
+        outcomes.remove('No error')
+        outcomes[:0] = ('No error', )
     chart_array = []
     threads = []
     for chart in charts:
         thread = Thread(target=chart,
-                        args=(queryset, campaign_data, outcomes, chart_array))
+                        args=(queryset, campaign_data, outcomes,
+                              group_categories, chart_array))
         thread.start()
         threads.append(thread)
     for thread in threads:

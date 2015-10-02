@@ -9,7 +9,7 @@ import os
 from .charts import json_campaign, json_campaigns, json_charts
 from .filters import (injection_filter, result_filter,
                       simics_register_diff_filter)
-from .forms import result_form
+from .forms import chart_form, result_form
 from .models import (campaign, result, injection, simics_register_diff,
                      simics_memory_diff)
 from .tables import (campaign_table, campaigns_table, result_table,
@@ -22,24 +22,33 @@ navigation_items = (('Information', '../campaign'),
 
 
 def charts_page(request, campaign_number):
-    page_items = (('Outcomes & Categories', 'outcomes'),
-                  ('Outcomes By Target', 'targets'),
-                  ('Outcomes By Register', 'registers'),
-                  ('Outcomes By Field', 'fields'),
-                  ('Outcomes By Bit', 'bits'),
-                  ('Outcomes Over Time', 'times'),
-                  ('Outcomes By Injection Count', 'counts'))
+    page_items = (('Overview', 'outcomes'),
+                  ('Injections By Target', 'targets'),
+                  ('Injections By Register', 'registers'),
+                  ('Injections By Bit', 'bits'),
+                  ('Injections By TLB Entries', 'tlbs'),
+                  ('Injections By Field', 'fields'),
+                  ('Injections Over Time', 'times'),
+                  ('Iterations By Injection Count', 'counts'))
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
     injection_objects = injection.objects.filter(
         result__campaign__campaign_number=campaign_number)
     filter_ = injection_filter(request.GET, queryset=injection_objects,
                                campaign=campaign_number)
+    group_categories = True
+    if request.method == 'POST' and 'group' in request.POST:
+        form = chart_form(request.POST)
+        if form.is_valid():
+            group_categories = form.cleaned_data['group_categories'] == 'True'
+    else:
+        form = chart_form()
     if filter_.qs.count() > 0:
-        chart_array = json_charts(filter_.qs, campaign_data)
+        chart_array = json_charts(filter_.qs, campaign_data, group_categories)
     else:
         chart_array = None
     return render(request, 'charts.html', {'campaign_data': campaign_data,
                                            'chart_array': chart_array,
+                                           'chart_form': form,
                                            'filter': filter_,
                                            'navigation_items':
                                                navigation_items,
@@ -55,7 +64,6 @@ def campaign_page(request, campaign_number):
         page_items.append(('Injection Targets', 'device_targets'))
     output_file = ('../campaign-data/'+str(campaign_number) +
                    '/gold_'+campaign_data.output_file)
-    print output_file
     if os.path.exists(output_file) and what(output_file) is not None:
         output_image = True
         page_items.append(('Output Image', 'output_image'))

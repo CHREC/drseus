@@ -88,6 +88,15 @@
                     <h3>
                         Page Navigation
                     </h3>
+                    {% if chart_form %}
+                    <div align="center">
+                        <form action="" method="post">
+                            {% csrf_token %}
+                            Group By: {{ chart_form.group_categories }}
+                            <input type="submit" name="group" value="Go"/>
+                        </form>
+                    </div>
+                    {% endif %}
                     <ul>
                     {% for name, link in page_items %}
                         <li>
@@ -103,7 +112,7 @@
                         Filter
                     </h3>
                     <form action="" method="get">
-                        <input type="submit" style="display:block;margin-left:auto;margin-right:auto;width:65%;" />
+                        <input type="submit" style="display:block;margin-left:auto;margin-right:auto;width:65%;" value="Apply" />
                         <ul>
                             {{ filter.form.as_p }}
                         </ul>
