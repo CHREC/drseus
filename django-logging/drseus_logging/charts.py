@@ -1,6 +1,7 @@
 from django.db.models import (Case, Count, IntegerField, Sum, TextField, Value,
                               When)
 from django.db.models.functions import Concat, Length, Substr
+import numpy
 from simplejson import dumps
 from threading import Thread
 from .models import result
@@ -609,13 +610,18 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
             ).values_list('count')
+            window_size = 10
+            data = numpy.convolve(zip(*data)[0],
+                                  numpy.ones(window_size)/window_size,
+                                  'same').tolist()
         else:
-            data = queryset.values_list('checkpoint_number').distinct(
-                ).order_by('checkpoint_number').annotate(
+            data = queryset.values_list('time_rounded').distinct(
+                ).order_by('time_rounded').annotate(
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
             ).values_list('count')
-        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
+            data = zip(*data)[0]
+        chart['series'].append({'data': data, 'name': outcome,
                                 'stacking': True})
     if campaign_data.use_simics:
         chart = dumps(chart).replace('\"time_chart_click\"', """
