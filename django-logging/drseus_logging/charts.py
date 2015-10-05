@@ -1,3 +1,4 @@
+from copy import deepcopy
 from django.db.models import (Case, Count, IntegerField, Sum, TextField, Value,
                               When)
 from django.db.models.functions import Concat, Length, Substr
@@ -35,13 +36,6 @@ def json_campaigns(queryset):
             'scale': 3,
         },
         'plotOptions': {
-            'column': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                }
-            },
             'series': {
                 'point': {
                     'events': {
@@ -103,6 +97,9 @@ def json_campaign(campaign_data):
             'renderTo': 'device_bit_chart',
             'type': 'column'
         },
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
             'filename': campaign_data.architecture+' targets',
             'sourceWidth': 512,
@@ -111,15 +108,6 @@ def json_campaign(campaign_data):
         },
         'legend': {
             'enabled': False
-        },
-        'plotOptions': {
-            'column': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                }
-            }
         },
         'title': {
             'text': campaign_data.architecture.upper()+' Targets'
@@ -150,6 +138,9 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
             'renderTo': 'outcome_chart',
             'type': 'pie'
         },
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
             'filename': campaign_data.application+' overview',
             'scale': 3,
@@ -157,13 +148,6 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
             'sourceWidth': 640
         },
         'plotOptions': {
-            'pie': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                }
-            },
             'series': {
                 'point': {
                     'events': {
@@ -219,7 +203,11 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
     chart = {
         'chart': {
             'renderTo': 'target_chart',
-            'type': 'column'
+            'type': 'column',
+            'zoomType': 'y'
+        },
+        'credits': {
+            'enabled': False
         },
         'exporting': {
             'filename': campaign_data.application+' targets',
@@ -228,13 +216,6 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             'scale': 3,
         },
         'plotOptions': {
-            'column': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                }
-            },
             'series': {
                 'point': {
                     'events': {
@@ -299,7 +280,11 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
     chart = {
         'chart': {
             'renderTo': 'register_chart' if not tlb else 'tlb_chart',
-            'type': 'column'
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'credits': {
+            'enabled': False
         },
         'exporting': {
             'filename': (campaign_data.application+' ' +
@@ -312,13 +297,6 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
             'text': 'Registers' if not tlb else 'TLB Entries'
         },
         'plotOptions': {
-            'column': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                }
-            },
             'series': {
                 'point': {
                     'events': {
@@ -412,7 +390,11 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
     chart = {
         'chart': {
             'renderTo': 'field_chart',
-            'type': 'column'
+            'type': 'column',
+            'zoomType': 'y'
+        },
+        'credits': {
+            'enabled': False
         },
         'exporting': {
             'filename': campaign_data.application+' tlb fields',
@@ -421,13 +403,6 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
             'scale': 3,
         },
         'plotOptions': {
-            'column': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                }
-            },
             'series': {
                 'point': {
                     'events': {
@@ -482,7 +457,11 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
     chart = {
         'chart': {
             'renderTo': 'bit_chart',
-            'type': 'column'
+            'type': 'column',
+            'zoomType': 'y'
+        },
+        'credits': {
+            'enabled': False
         },
         'exporting': {
             'filename': campaign_data.application+' register bits',
@@ -491,13 +470,6 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
             'scale': 3,
         },
         'plotOptions': {
-            'column': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                }
-            },
             'series': {
                 'point': {
                     'events': {
@@ -547,6 +519,7 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
 def time_chart(queryset, campaign_data, outcomes, group_categories,
                chart_array):
     if campaign_data.use_simics:
+        window_size = 10
         times = queryset.values_list('checkpoint_number').distinct().order_by(
             'checkpoint_number')
     else:
@@ -557,7 +530,11 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
     chart = {
         'chart': {
             'renderTo': 'time_chart',
-            'type': 'column'
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'credits': {
+            'enabled': False
         },
         'exporting': {
             'filename': campaign_data.application+' injections over time',
@@ -566,16 +543,6 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             'sourceWidth': 1024
         },
         'plotOptions': {
-            'column': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                },
-                'marker': {
-                    'enabled': False
-                }
-            },
             'series': {
                 'point': {
                     'events': {
@@ -600,6 +567,14 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             }
         }
     }
+    if campaign_data.use_simics:
+        chart_smoothed = deepcopy(chart)
+        chart_smoothed['chart']['type'] = 'area'
+        chart_smoothed['chart']['renderTo'] += '_smoothed'
+        chart_smoothed['title']['text'] += ' Smoothed'
+        chart_smoothed['yAxis']['title']['text'] = ('Average Injections '
+                                                    '(Window Size = ' +
+                                                    str(window_size)+')')
     for outcome in outcomes:
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
@@ -610,20 +585,22 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
             ).values_list('count')
-            window_size = 10
-            data = numpy.convolve(zip(*data)[0],
-                                  numpy.ones(window_size)/window_size,
-                                  'same').tolist()
+            chart_smoothed['series'].append({
+                'data': numpy.convolve(zip(*data)[0],
+                                       numpy.ones(window_size)/window_size,
+                                       'same').tolist(),
+                'name': outcome,
+                'stacking': True})
         else:
             data = queryset.values_list('time_rounded').distinct(
                 ).order_by('time_rounded').annotate(
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
             ).values_list('count')
-            data = zip(*data)[0]
-        chart['series'].append({'data': data, 'name': outcome,
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
     if campaign_data.use_simics:
+        chart_array.append(dumps(chart_smoothed))
         chart = dumps(chart).replace('\"time_chart_click\"', """
         function(event) {
             window.location.assign('../results/?outcome='+this.series.name+
@@ -669,6 +646,9 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
         'chart': {
             'renderTo': 'count_chart',
             'type': 'column'
+        },
+        'credits': {
+            'enabled': False
         },
         'exporting': {
             'filename': campaign_data.application+' injection quantity',
