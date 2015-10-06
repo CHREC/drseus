@@ -835,7 +835,7 @@ devices = {
                 'regs_SPCOM': {
                     'fields': {
                         'CS': (31-1, 31-0),
-                        'RxDelay': (31-2, 21-2),
+                        'RxDelay': (31-2, 31-2),
                         'DO': (31-3, 31-3),  # Write-access not implemented
                         'TO': (31-4, 31-4),
                         'HLD': (31-5, 31-5),

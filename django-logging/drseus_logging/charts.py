@@ -33,7 +33,7 @@ def json_campaigns(queryset):
             'filename': 'campaigns',
             'sourceWidth': 1024,
             'sourceHeight': 576,
-            'scale': 3,
+            'scale': 3
         },
         'plotOptions': {
             'series': {
@@ -143,9 +143,9 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
         },
         'exporting': {
             'filename': campaign_data.application+' overview',
-            'scale': 3,
+            'sourceWidth': 640,
             'sourceHeight': 480,
-            'sourceWidth': 640
+            'scale': 2
         },
         'plotOptions': {
             'series': {
@@ -211,9 +211,9 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
         },
         'exporting': {
             'filename': campaign_data.application+' targets',
-            'sourceWidth': 1024,
-            'sourceHeight': 576,
-            'scale': 3,
+            'sourceWidth': 512,
+            'sourceHeight': 384,
+            'scale': 2
         },
         'plotOptions': {
             'series': {
@@ -398,9 +398,9 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
         },
         'exporting': {
             'filename': campaign_data.application+' tlb fields',
-            'sourceWidth': 1024,
-            'sourceHeight': 576,
-            'scale': 3,
+            'sourceWidth': 512,
+            'sourceHeight': 384,
+            'scale': 2
         },
         'plotOptions': {
             'series': {
@@ -467,7 +467,7 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
             'filename': campaign_data.application+' register bits',
             'sourceWidth': 1024,
             'sourceHeight': 576,
-            'scale': 3,
+            'scale': 3
         },
         'plotOptions': {
             'series': {
@@ -538,9 +538,9 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
         },
         'exporting': {
             'filename': campaign_data.application+' injections over time',
-            'scale': 3,
+            'sourceWidth': 1024,
             'sourceHeight': 576,
-            'sourceWidth': 1024
+            'scale': 3
         },
         'plotOptions': {
             'series': {
@@ -654,7 +654,7 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
             'filename': campaign_data.application+' injection quantity',
             'sourceWidth': 1024,
             'sourceHeight': 576,
-            'scale': 3,
+            'scale': 3
         },
         'plotOptions': {
             'column': {
