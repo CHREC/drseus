@@ -50,7 +50,8 @@ class result_filter(django_filters.FilterSet):
         self.filters['injection__field'].widget.attrs['size'] = min(
             len(field_choices), 10)
         num_injections_choices = result_choices(campaign, 'num_injections')
-        self.filters['num_injections'].extra.update(choices=num_injections_choices)
+        self.filters['num_injections'].extra.update(
+            choices=num_injections_choices)
         self.filters['num_injections'].widget.attrs['size'] = min(
             len(num_injections_choices), 10)
         outcome_choices = result_choices(campaign, 'outcome')

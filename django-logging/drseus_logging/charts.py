@@ -30,6 +30,18 @@ def json_campaigns(queryset):
             'type': 'column'
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': 'campaigns',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -101,6 +113,18 @@ def json_campaign(campaign_data):
             'enabled': False
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': campaign_data.architecture+' targets',
             'sourceWidth': 512,
             'sourceHeight': 384,
@@ -142,6 +166,18 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
             'enabled': False
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': campaign_data.application+' overview',
             'sourceWidth': 640,
             'sourceHeight': 480,
@@ -210,6 +246,18 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             'enabled': False
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': campaign_data.application+' targets',
             'sourceWidth': 512,
             'sourceHeight': 384,
@@ -262,6 +310,83 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
+def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
+                      chart_array):
+    if not campaign_data.use_simics:
+        return
+    targets = queryset.values_list('target').distinct().order_by('target')
+    targets = zip(*targets)[0]
+    if len(targets) <= 1:
+        return
+    chart = {
+        'chart': {
+            'renderTo': 'diff_target_chart',
+            'type': 'column',
+            'zoomType': 'y'
+        },
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
+            'filename': campaign_data.application+' target diffs',
+            'sourceWidth': 512,
+            'sourceHeight': 384,
+            'scale': 2
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'target_chart_click'
+                    }
+                }
+            }
+        },
+        'series': [],
+        'title': {
+            'text': 'Fault Propagation'
+        },
+        'xAxis': {
+            'categories': targets,
+            'title': {
+                'text': 'Target'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Average Items Affected'
+            }
+        }
+    }
+    reg_diff_list = []
+    mem_diff_list = []
+    for target in targets:
+        count = float(queryset.filter(target=target).count())
+        reg_diff_count = queryset.filter(target=target).aggregate(
+            reg_count=Count('result__simics_register_diff'))['reg_count']
+        mem_diff_count = queryset.filter(target=target).aggregate(
+            mem_count=Count('result__simics_memory_diff'))['mem_count']
+        reg_diff_list.append(reg_diff_count/count)
+        mem_diff_list.append(mem_diff_count/count)
+    chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks',
+                            'stacking': True})
+    chart['series'].append({'data': reg_diff_list, 'name': 'Registers',
+                            'stacking': True})
+    chart_array.append(dumps(chart))
+
+
 def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
                        chart_array):
     if not tlb:
@@ -287,6 +412,18 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
             'enabled': False
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': (campaign_data.application+' ' +
                          ('registers' if not tlb else 'tlb entries')),
             'scale': 3,
@@ -397,6 +534,18 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
             'enabled': False
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': campaign_data.application+' tlb fields',
             'sourceWidth': 512,
             'sourceHeight': 384,
@@ -464,6 +613,18 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
             'enabled': False
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': campaign_data.application+' register bits',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -537,6 +698,18 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             'enabled': False
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': campaign_data.application+' injections over time',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -624,7 +797,6 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
 def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
                     chart_array):
     if campaign_data.use_simics:
-        window_size = 10
         times = queryset.values_list('checkpoint_number').distinct().order_by(
             'checkpoint_number')
     else:
@@ -642,6 +814,18 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
             'enabled': False
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': campaign_data.application+' data errors over time',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -680,12 +864,6 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
         }
     }
     if campaign_data.use_simics:
-        chart_smoothed = deepcopy(chart)
-        chart_smoothed['chart']['type'] = 'area'
-        chart_smoothed['chart']['renderTo'] += '_smoothed'
-        chart_smoothed['title']['text'] += (' (Moving Average Window Size = ' +
-                                            str(window_size)+')')
-    if campaign_data.use_simics:
         data = queryset.values_list('checkpoint_number').distinct().order_by(
             'checkpoint_number').annotate(
                 avg=Avg(Case(When(result__data_diff=-1.0, then=0),
@@ -693,10 +871,6 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
                              default='result__data_diff'))
             ).values_list('avg')
         data = [x*100 for x in zip(*data)[0]]
-        chart_smoothed['series'].append({
-            'data': numpy.convolve(data,
-                                   numpy.ones(window_size)/window_size,
-                                   'same').tolist(), })
     else:
         data = queryset.values_list('time_rounded').distinct().order_by(
             'time_rounded').annotate(
@@ -707,7 +881,6 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
         data = [x*100 for x in zip(*data)[0]]
     chart['series'].append({'data': data, })
     if campaign_data.use_simics:
-        chart_array.append(dumps(chart_smoothed))
         chart = dumps(chart).replace('\"diff_time_chart_click\"', """
         function(event) {
             window.location.assign('../results/?injection__checkpoint_number='+
@@ -755,6 +928,18 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
             'enabled': False
         },
         'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
             'filename': campaign_data.application+' injection quantity',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -813,8 +998,8 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
 
 
 def json_charts(queryset, campaign_data, group_categories):
-    charts = (outcome_chart, target_chart, register_chart, tlb_chart,
-              field_chart, bit_chart, time_chart, diff_time_chart,
+    charts = (outcome_chart, target_chart, diff_target_chart, register_chart,
+              tlb_chart, field_chart, bit_chart, time_chart, diff_time_chart,
               injection_count_chart)
     if group_categories:
         outcomes = queryset.values_list('result__outcome_category').distinct(

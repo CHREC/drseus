@@ -13,6 +13,11 @@
                                 <div id="target_chart">
                                 </div>
                                 <br>
+                                {% if campaign_data.use_simics %}
+                                <div id="diff_target_chart">
+                                </div>
+                                <br>
+                                {% endif %}
                                 <a name="registers">
                                 </a>
                                 <div id="register_chart">
@@ -48,11 +53,6 @@
                                 <div id="diff_time_chart">
                                 </div>
                                 <br>
-                                {% if campaign_data.use_simics %}
-                                <div id="diff_time_chart_smoothed">
-                                </div>
-                                <br>
-                                {% endif %}
                                 <a name="counts">
                                 </a>
                                 <div id="count_chart">
