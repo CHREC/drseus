@@ -1,6 +1,6 @@
 from copy import deepcopy
-from django.db.models import (Case, Count, IntegerField, Sum, TextField, Value,
-                              When)
+from django.db.models import (Avg, Case, Count, IntegerField, Sum, TextField,
+                              Value, When)
 from django.db.models.functions import Concat, Length, Substr
 import numpy
 from simplejson import dumps
@@ -571,10 +571,8 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
         chart_smoothed = deepcopy(chart)
         chart_smoothed['chart']['type'] = 'area'
         chart_smoothed['chart']['renderTo'] += '_smoothed'
-        chart_smoothed['title']['text'] += ' Smoothed'
-        chart_smoothed['yAxis']['title']['text'] = ('Average Injections '
-                                                    '(Window Size = ' +
-                                                    str(window_size)+')')
+        chart_smoothed['title']['text'] += (' (Moving Average Window Size = ' +
+                                            str(window_size)+')')
     for outcome in outcomes:
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
@@ -585,8 +583,9 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
             ).values_list('count')
+            data = zip(*data)[0]
             chart_smoothed['series'].append({
-                'data': numpy.convolve(zip(*data)[0],
+                'data': numpy.convolve(data,
                                        numpy.ones(window_size)/window_size,
                                        'same').tolist(),
                 'name': outcome,
@@ -597,7 +596,8 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
             ).values_list('count')
-        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
+            data = zip(*data)[0]
+        chart['series'].append({'data': data, 'name': outcome,
                                 'stacking': True})
     if campaign_data.use_simics:
         chart_array.append(dumps(chart_smoothed))
@@ -618,6 +618,110 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
         """)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_array.append(chart)
+
+
+def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
+                    chart_array):
+    if campaign_data.use_simics:
+        window_size = 10
+        times = queryset.values_list('checkpoint_number').distinct().order_by(
+            'checkpoint_number')
+    else:
+        times = queryset.values_list('time_rounded').distinct().order_by(
+            'time_rounded')
+    if len(times) <= 1:
+        return
+    chart = {
+        'chart': {
+            'renderTo': 'diff_time_chart',
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': campaign_data.application+' data errors over time',
+            'sourceWidth': 1024,
+            'sourceHeight': 576,
+            'scale': 3
+        },
+        'legend': {
+            'enabled': False
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'diff_time_chart_click'
+                    }
+                },
+            }
+        },
+        'series': [],
+        'title': {
+            'text': 'Data Diff Over Time'
+        },
+        'xAxis': {
+            'categories': zip(*times)[0],
+            'title': {
+                'text': 'Checkpoint' if campaign_data.use_simics else 'Seconds'
+            }
+        },
+        'yAxis': {
+            'labels': {
+                'format': '{value}%'
+            },
+            'max': 100,
+            'title': {
+                'text': 'Average Data Diff'
+            }
+        }
+    }
+    if campaign_data.use_simics:
+        chart_smoothed = deepcopy(chart)
+        chart_smoothed['chart']['type'] = 'area'
+        chart_smoothed['chart']['renderTo'] += '_smoothed'
+        chart_smoothed['title']['text'] += (' (Moving Average Window Size = ' +
+                                            str(window_size)+')')
+    if campaign_data.use_simics:
+        data = queryset.values_list('checkpoint_number').distinct().order_by(
+            'checkpoint_number').annotate(
+                avg=Avg(Case(When(result__data_diff=-1.0, then=0),
+                             When(result__data_diff__isnull=True, then=0),
+                             default='result__data_diff'))
+            ).values_list('avg')
+        data = [x*100 for x in zip(*data)[0]]
+        chart_smoothed['series'].append({
+            'data': numpy.convolve(data,
+                                   numpy.ones(window_size)/window_size,
+                                   'same').tolist(), })
+    else:
+        data = queryset.values_list('time_rounded').distinct().order_by(
+            'time_rounded').annotate(
+                avg=Avg(Case(When(result__data_diff=-1.0, then=0),
+                             When(result__data_diff__isnull=True, then=0),
+                             default='result__data_diff'))
+            ).values_list('avg')
+        data = [x*100 for x in zip(*data)[0]]
+    chart['series'].append({'data': data, })
+    if campaign_data.use_simics:
+        chart_array.append(dumps(chart_smoothed))
+        chart = dumps(chart).replace('\"diff_time_chart_click\"', """
+        function(event) {
+            window.location.assign('../results/?injection__checkpoint_number='+
+                                   this.category);
+        }
+        """)
+    else:
+        chart = dumps(chart).replace('\"diff_time_chart_click\"', """
+        function(event) {
+            var time = parseFloat(this.category)
+            window.location.assign('../results/?injection__time_rounded='+
+                                   time.toFixed(1));
+        }
+        """)
     chart_array.append(chart)
 
 
@@ -710,7 +814,8 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
 
 def json_charts(queryset, campaign_data, group_categories):
     charts = (outcome_chart, target_chart, register_chart, tlb_chart,
-              field_chart, bit_chart, time_chart, injection_count_chart)
+              field_chart, bit_chart, time_chart, diff_time_chart,
+              injection_count_chart)
     if group_categories:
         outcomes = queryset.values_list('result__outcome_category').distinct(
             ).order_by('result__outcome_category')

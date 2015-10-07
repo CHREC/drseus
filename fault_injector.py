@@ -420,13 +420,12 @@ class fault_injector:
                                   str(self.iteration))
             self.log_result(outcome, outcome_category, detected_errors,
                             data_diff)
-            if not self.use_simics:
-                self.debugger.output = ''
-                self.debugger.dut.output = ''
-                self.debugger.dut.paramiko_output = ''
-                if self.use_aux:
-                    self.debugger.aux.output = ''
-                    self.debugger.aux.paramiko_output = ''
+            self.debugger.output = ''
+            self.debugger.dut.output = ''
+            self.debugger.dut.paramiko_output = ''
+            if self.use_aux:
+                self.debugger.aux.output = ''
+                self.debugger.aux.paramiko_output = ''
         self.close()
 
     def supervise(self, starting_iteration, run_time, output_file,
