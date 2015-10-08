@@ -387,6 +387,96 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(dumps(chart))
 
 
+def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
+                           chart_array):
+    targets = queryset.values_list('target').distinct().order_by('target')
+    if len(targets) <= 1:
+        return
+    chart = {
+        'chart': {
+            'renderTo': 'data_diff_target_chart',
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'chartOptions': {
+                'chart': {
+                    'backgroundColor': '#FFFFFF',
+                    'borderWidth': 0,
+                    'plotBackgroundColor': '#FFFFFF',
+                    'plotShadow': False,
+                    'plotBorderWidth': 0
+                },
+                'title': {
+                    'text': None
+                }
+            },
+            'filename': campaign_data.application+' data errors by target',
+            'sourceWidth': 1024,
+            'sourceHeight': 576,
+            'scale': 3
+        },
+        'legend': {
+            'enabled': False
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'diff_time_chart_click'
+                    }
+                },
+            }
+        },
+        'series': [],
+        'title': {
+            'text': 'Data Diff By Target'
+        },
+        'xAxis': {
+            'categories': zip(*targets)[0],
+            'title': {
+                'text': 'Target'
+            }
+        },
+        'yAxis': {
+            'labels': {
+                'format': '{value}%'
+            },
+            'max': 100,
+            'title': {
+                'text': 'Average Data Diff'
+            }
+        }
+    }
+    data = queryset.values_list('target').distinct().order_by(
+        'target').annotate(
+            avg=Avg(Case(When(result__data_diff=-1.0, then=0),
+                         When(result__data_diff__isnull=True, then=0),
+                         default='result__data_diff'))
+        ).values_list('avg')
+    data = [x*100 for x in zip(*data)[0]]
+    chart['series'].append({'data': data, })
+    if campaign_data.use_simics:
+        chart = dumps(chart).replace('\"diff_time_chart_click\"', """
+        function(event) {
+            window.location.assign('../results/?injection__checkpoint_number='+
+                                   this.category);
+        }
+        """)
+    else:
+        chart = dumps(chart).replace('\"diff_time_chart_click\"', """
+        function(event) {
+            var time = parseFloat(this.category)
+            window.location.assign('../results/?injection__time_rounded='+
+                                   time.toFixed(1));
+        }
+        """)
+    chart_array.append(chart)
+
+
 def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
                        chart_array):
     if not tlb:
@@ -998,9 +1088,9 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
 
 
 def json_charts(queryset, campaign_data, group_categories):
-    charts = (outcome_chart, target_chart, diff_target_chart, register_chart,
-              tlb_chart, field_chart, bit_chart, time_chart, diff_time_chart,
-              injection_count_chart)
+    charts = (outcome_chart, target_chart, diff_target_chart,
+              data_diff_target_chart, register_chart, tlb_chart, field_chart,
+              bit_chart, time_chart, diff_time_chart, injection_count_chart)
     if group_categories:
         outcomes = queryset.values_list('result__outcome_category').distinct(
             ).order_by('result__outcome_category')
