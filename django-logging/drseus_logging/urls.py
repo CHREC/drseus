@@ -19,6 +19,7 @@ from django.conf.urls import patterns
 charts_and_tables = [
     (r'', 'campaigns_page'),
     (r'(?P<campaign_number>[0-9]+)/campaign/', 'campaign_page'),
+    (r'(?P<campaign_number>[0-9]+)/edit/', 'edit_page'),
     (r'(?P<campaign_number>[0-9]+)/charts/', 'charts_page',),
     (r'(?P<campaign_number>[0-9]+)/results/', 'results_page'),
     (r'(?P<campaign_number>[0-9]+)/result/(?P<iteration>[0-9]+)/',

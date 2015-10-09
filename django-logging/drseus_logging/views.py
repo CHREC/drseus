@@ -9,7 +9,7 @@ import os
 from .charts import json_campaign, json_campaigns, json_charts
 from .filters import (injection_filter, result_filter,
                       simics_register_diff_filter)
-from .forms import chart_form, result_form
+from .forms import chart_form, edit_form, result_form
 from .models import (campaign, result, injection, simics_register_diff,
                      simics_memory_diff)
 from .tables import (campaign_table, campaigns_table, result_table,
@@ -18,7 +18,8 @@ from .tables import (campaign_table, campaigns_table, result_table,
 
 navigation_items = (('Information', '../campaign'),
                     ('Charts', '../charts/'),
-                    ('Table', '../results/'))
+                    ('Table', '../results/'),
+                    ('Edit Results', '../edit/'))
 
 
 def charts_page(request, campaign_number):
@@ -88,6 +89,52 @@ def campaign_page(request, campaign_number):
                                              'table': table})
 
 
+def edit_page(request, campaign_number):
+    if request.method == 'POST':
+        form = edit_form(request.POST, campaign=campaign_number)
+        if form.is_valid():
+            if 'edit_outcome' in request.POST:
+                if form.cleaned_data['new_outcome']:
+                    result.objects.filter(
+                        outcome=form.cleaned_data['outcome']
+                    ).values('outcome').update(
+                        outcome=form.cleaned_data['new_outcome'])
+            elif 'edit_outcome_category' in request.POST:
+                if form.cleaned_data['new_outcome_category']:
+                    result.objects.filter(
+                        outcome_category=form.cleaned_data['outcome_category']
+                    ).values('outcome_category').update(
+                        outcome_category=form.cleaned_data[
+                            'new_outcome_category'])
+            elif 'delete_outcome' in request.POST:
+                if form.cleaned_data['outcome']:
+                    injection.objects.filter(
+                        result__outcome=form.cleaned_data['outcome']).delete()
+                    simics_memory_diff.objects.filter(
+                        result__outcome=form.cleaned_data['outcome']).delete()
+                    simics_register_diff.objects.filter(
+                        result__outcome=form.cleaned_data['outcome']).delete()
+                    result.objects.filter(
+                        outcome=form.cleaned_data['outcome']).delete()
+            elif 'delete_outcome_category' in request.POST:
+                if form.cleaned_data['outcome_category']:
+                    injection.objects.filter(
+                        result__outcome_category=form.cleaned_data[
+                            'outcome_category']).delete()
+                    simics_memory_diff.objects.filter(
+                        result__outcome_category=form.cleaned_data[
+                            'outcome_category']).delete()
+                    simics_register_diff.objects.filter(
+                        result__outcome_category=form.cleaned_data[
+                            'outcome_category']).delete()
+                    result.objects.filter(
+                        outcome_category=form.cleaned_data[
+                            'outcome_category']).delete()
+    form = edit_form(campaign=campaign_number)
+    return render(request, 'edit.html', {'form': form,
+                                         'navigation_items': navigation_items})
+
+
 def campaigns_page(request):
     table = campaigns_table(campaign.objects.all())
     chart_array = json_campaigns(result.objects.all())
@@ -152,10 +199,10 @@ def result_page(request, campaign_number, iteration):
             initial={'outcome': result_object.outcome,
                      'outcome_category': result_object.outcome_category})
     if request.method == 'POST' and 'delete' in request.POST:
-        result_object.delete()
         injection.objects.filter(result_id=result_object.id).delete()
         simics_register_diff.objects.filter(result_id=result_object.id).delete()
         simics_memory_diff.objects.filter(result_id=result_object.id).delete()
+        result_object.delete()
         return redirect('../../results')
     if request.method == 'GET' and request.GET.get('launch'):
         drseus = '../drseus.py'

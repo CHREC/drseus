@@ -16,7 +16,7 @@ def json_campaigns(queryset):
                                      'campaign__command').distinct().order_by(
         'campaign__campaign_number')
     campaigns = zip(*campaigns)
-    if len(campaigns) <= 1:
+    if len(campaigns[0]) < 1:
         return '[]'
     campaign_numbers = dumps(campaigns[0])
     campaigns = campaigns[1]
@@ -139,7 +139,7 @@ def json_campaign(campaign_data):
         'xAxis': {
             'categories': target_list,
             'title': {
-                'text': 'Component'
+                'text': 'Target'
             }
         },
         'yAxis': {
@@ -234,7 +234,7 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
 def target_chart(queryset, campaign_data, outcomes, group_categories,
                  chart_array):
     targets = queryset.values_list('target').distinct().order_by('target')
-    if len(targets) <= 1:
+    if len(targets) < 1:
         return
     chart = {
         'chart': {
@@ -316,7 +316,7 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
         return
     targets = queryset.values_list('target').distinct().order_by('target')
     targets = zip(*targets)[0]
-    if len(targets) <= 1:
+    if len(targets) < 1:
         return
     chart = {
         'chart': {
@@ -390,7 +390,7 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
 def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                            chart_array):
     targets = queryset.values_list('target').distinct().order_by('target')
-    if len(targets) <= 1:
+    if len(targets) < 1:
         return
     chart = {
         'chart': {
@@ -490,7 +490,7 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
                              output_field=TextField()),
             register_name=Concat('register', Value(' '), 'tlb_index')
         ).values_list('register_name').distinct().order_by('register_name')
-    if len(registers) <= 1:
+    if len(registers) < 1:
         return
     chart = {
         'chart': {
@@ -612,7 +612,7 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
                 chart_array):
     fields = queryset.filter(target='TLB').values_list('field').distinct(
         ).order_by('field')
-    if len(fields) <= 1:
+    if len(fields) < 1:
         return
     chart = {
         'chart': {
@@ -691,7 +691,7 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
 def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
     bits = queryset.exclude(target='TLB').values_list('bit').distinct(
         ).order_by('bit')
-    if len(bits) <= 1:
+    if len(bits) < 1:
         return
     chart = {
         'chart': {
@@ -776,7 +776,7 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
     else:
         times = queryset.values_list('time_rounded').distinct().order_by(
             'time_rounded')
-    if len(times) <= 1:
+    if len(times) < 1:
         return
     chart = {
         'chart': {
@@ -892,7 +892,7 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
     else:
         times = queryset.values_list('time_rounded').distinct().order_by(
             'time_rounded')
-    if len(times) <= 1:
+    if len(times) < 1:
         return
     chart = {
         'chart': {
@@ -990,25 +990,11 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
 
 def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
                           chart_array):
-    injection_counts = list(
-        queryset.filter().annotate(
-            injection_count=Count('result__injection')
-        ).values_list('injection_count').distinct())
-    injection_counts = sorted(zip(*injection_counts)[0])
-    if len(injection_counts) <= 1:
+    qs_result_ids = queryset.values('result__id').distinct()
+    injection_counts = result.objects.filter(id__in=qs_result_ids).values_list(
+        'num_injections').distinct().order_by('num_injections')
+    if len(injection_counts) < 1:
         return
-    result_ids = queryset.values_list('result__id').distinct()
-    result_ids = zip(*result_ids)[0]
-    data = {}
-    for result_id in result_ids:
-        result_entry = result.objects.get(id=result_id)
-        if result_entry.outcome in data:
-            if result_entry.num_injections in data[result_entry.outcome]:
-                data[result_entry.outcome][result_entry.num_injections] += 1
-            else:
-                data[result_entry.outcome][result_entry.num_injections] = 1
-        else:
-            data[result_entry.outcome] = {result_entry.num_injections: 1}
     chart = {
         'chart': {
             'renderTo': 'count_chart',
@@ -1056,9 +1042,9 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
             'text': 'Injection Quantity'
         },
         'xAxis': {
-            'categories': injection_counts,
+            'categories': zip(*injection_counts)[0],
             'title': {
-                'text': 'Injections Per Execution'
+                'text': 'Injections Per Iteration'
             }
         },
         'yAxis': {
@@ -1068,18 +1054,20 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
         }
     }
     for outcome in outcomes:
-        chart_data = []
-        for injection_count in injection_counts:
-            if injection_count in data[outcome]:
-                chart_data.append(data[outcome][injection_count])
-            else:
-                chart_data.append(0)
-        chart['series'].append({'data': chart_data, 'name': outcome,
+        when_kwargs = {'then': 1}
+        when_kwargs['outcome_category' if group_categories
+                    else 'outcome'] = outcome
+        data = result.objects.filter(id__in=qs_result_ids).values_list(
+            'num_injections').distinct().order_by('num_injections').annotate(
+                count=Sum(Case(When(**when_kwargs), default=0,
+                               output_field=IntegerField()))
+            ).values_list('count')
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
                                 'stacking': True})
     chart = dumps(chart).replace('\"count_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
-                               '&injections='+this.category);
+                               '&num_injections='+this.category);
     }
     """)
     if group_categories:
