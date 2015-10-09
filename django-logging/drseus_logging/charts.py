@@ -22,7 +22,10 @@ def json_campaigns(queryset):
     campaigns = campaigns[1]
     outcomes = queryset.values_list('outcome_category').distinct().order_by(
         'outcome_category')
-    outcomes = zip(*outcomes)[0]
+    outcomes = list(zip(*outcomes)[0])
+    if 'No error' in outcomes:
+        outcomes.remove('No error')
+        outcomes[:0] = ('No error', )
     chart = {
         'chart': {
             'height': 600,

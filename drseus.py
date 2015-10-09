@@ -12,6 +12,7 @@ import sys
 
 from fault_injector import fault_injector
 
+# TODO: improve performance of calculating num_injections for results
 # TODO: add synchronization around injection logging and/or db access
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
