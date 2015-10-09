@@ -996,6 +996,7 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
     qs_result_ids = queryset.values('result__id').distinct()
     injection_counts = result.objects.filter(id__in=qs_result_ids).values_list(
         'num_injections').distinct().order_by('num_injections')
+    injection_counts = zip(*injection_counts)[0]
     if len(injection_counts) < 1:
         return
     chart = {
@@ -1037,7 +1038,8 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
                     'events': {
                         'click': 'count_chart_click'
                     }
-                }
+                },
+                'stacking': 'percent'
             }
         },
         'series': [],
@@ -1045,28 +1047,29 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
             'text': 'Injection Quantity'
         },
         'xAxis': {
-            'categories': zip(*injection_counts)[0],
+            'categories': injection_counts,
             'title': {
-                'text': 'Injections Per Iteration'
+                'text': 'Injections Per Execution'
             }
         },
         'yAxis': {
+            'labels': {
+                'format': '{value}%'
+            },
             'title': {
-                'text': 'Iterations'
+                'text': 'Percent of Results'
             }
         }
     }
+    filter_kwargs = {'id__in': qs_result_ids}
     for outcome in outcomes:
-        when_kwargs = {'then': 1}
-        when_kwargs['outcome_category' if group_categories
-                    else 'outcome'] = outcome
-        data = result.objects.filter(id__in=qs_result_ids).values_list(
-            'num_injections').distinct().order_by('num_injections').annotate(
-                count=Sum(Case(When(**when_kwargs), default=0,
-                               output_field=IntegerField()))
-            ).values_list('count')
-        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
-                                'stacking': True})
+        chart_data = []
+        filter_kwargs['outcome_category' if group_categories
+                      else 'outcome'] = outcome
+        for injection_count in injection_counts:
+            filter_kwargs['num_injections'] = injection_count
+            chart_data.append(result.objects.filter(**filter_kwargs).count())
+        chart['series'].append({'data': chart_data, 'name': outcome})
     chart = dumps(chart).replace('\"count_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
