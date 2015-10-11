@@ -209,12 +209,13 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
         }
 
     }
+    qs_result_ids = queryset.values('result__id').distinct()
+    filter_kwargs = {'id__in': qs_result_ids}
     for outcome in outcomes:
-        filter_kwargs = {'injection_number': 0}
-        filter_kwargs['result__outcome_category' if group_categories
-                      else 'result__outcome'] = outcome
+        filter_kwargs['outcome_category' if group_categories
+                      else 'outcome'] = outcome
         chart['series'][0]['data'].append(
-            (outcome, queryset.filter(**filter_kwargs).count()))
+            (outcome, result.objects.filter(**filter_kwargs).count()))
     outcome_list = dumps(outcomes)
     chart = dumps(chart).replace('\"outcome_chart_click\"', """
     function(event) {
