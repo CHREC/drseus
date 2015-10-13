@@ -595,9 +595,7 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
                 count=Sum(Case(When(**when_kwargs),
                                default=0, output_field=IntegerField()))
             ).values_list('register_name', 'count')
-        print data
         data = sorted(data, key=fix_sort)
-        print data
         chart['series'].append({'data': zip(*data)[1], 'name': outcome,
                                 'stacking': True})
     chart = dumps(chart).replace('\"register_chart_click\"', """
