@@ -5,6 +5,7 @@ from django.db.models.functions import Concat, Length, Substr
 import numpy
 from simplejson import dumps
 from threading import Thread
+from .filters import fix_sort
 from .models import result
 import sys
 sys.path.append('../')
@@ -273,7 +274,8 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
                     'events': {
                         'click': 'target_chart_click'
                     }
-                }
+                },
+                'stacking': True
             }
         },
         'series': [],
@@ -301,8 +303,18 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             count=Sum(Case(When(**when_kwargs), default=0,
                            output_field=IntegerField()))
         ).values_list('count')
-        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
-                                'stacking': True})
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome})
+    chart_percent = deepcopy(chart)
+    chart_percent['chart']['renderTo'] = 'target_percent_chart'
+    chart_percent['plotOptions']['series']['stacking'] = 'percent'
+    chart_percent['yAxis'] = {
+        'labels': {
+            'format': '{value}%'
+        },
+        'title': {
+            'text': 'Percent of Injections'
+        }
+    }
     chart = dumps(chart).replace('\"target_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
@@ -312,6 +324,7 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
+    chart_array.append(dumps(chart_percent))
 
 
 def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
@@ -371,7 +384,8 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
         'yAxis': {
             'title': {
                 'text': 'Average Items Affected'
-            }
+            },
+            'type': 'logarithmic'
         }
     }
     reg_diff_list = []
@@ -384,10 +398,8 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             mem_count=Count('result__simics_memory_diff'))['mem_count']
         reg_diff_list.append(reg_diff_count/count)
         mem_diff_list.append(mem_diff_count/count)
-    chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks',
-                            'stacking': True})
-    chart['series'].append({'data': reg_diff_list, 'name': 'Registers',
-                            'stacking': True})
+    chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
+    chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
     chart_array.append(dumps(chart))
 
 
@@ -496,6 +508,10 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
         ).values_list('register_name').distinct().order_by('register_name')
     if len(registers) < 1:
         return
+    registers = sorted(registers, key=fix_sort)
+    registers = zip(*registers)[0]
+    if campaign_data.use_simics and not tlb:
+        registers = [reg.replace('gprs ', 'r') for reg in registers]
     chart = {
         'chart': {
             'renderTo': 'register_chart' if not tlb else 'tlb_chart',
@@ -520,9 +536,9 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
             },
             'filename': (campaign_data.application+' ' +
                          ('registers' if not tlb else 'tlb entries')),
-            'scale': 3,
-            'sourceHeight': 576,
-            'sourceWidth': 1024
+            'sourceWidth': 512,
+            'sourceHeight': 384,
+            'scale': 2
         },
         'title': {
             'text': 'Registers' if not tlb else 'TLB Entries'
@@ -538,7 +554,7 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
         },
         'series': [],
         'xAxis': {
-            'categories': zip(*registers)[0],
+            'categories': registers,
             'labels': {
                 'align': 'right',
                 'rotation': -60,
@@ -567,7 +583,7 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
                                                                ).annotate(
                 count=Sum(Case(When(**when_kwargs),
                                default=0, output_field=IntegerField()))
-            ).values_list('count')
+            ).values_list('register_name', 'count')
         else:
             data = queryset.filter(target='TLB').annotate(
                 tlb_index=Substr('register_index', 1,
@@ -578,8 +594,11 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
                                                                ).annotate(
                 count=Sum(Case(When(**when_kwargs),
                                default=0, output_field=IntegerField()))
-            ).values_list('count')
-        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
+            ).values_list('register_name', 'count')
+        print data
+        data = sorted(data, key=fix_sort)
+        print data
+        chart['series'].append({'data': zip(*data)[1], 'name': outcome,
                                 'stacking': True})
     chart = dumps(chart).replace('\"register_chart_click\"', """
     function(event) {
