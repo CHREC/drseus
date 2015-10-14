@@ -10,6 +10,8 @@ import sqlite3
 from dut import dut
 from error import DrSEUSError
 
+# BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
+
 
 class bdi:
     error_messages = ['timeout while waiting for halt',

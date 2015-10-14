@@ -11,6 +11,19 @@ import sys
 sys.path.append('../')
 from simics_targets import devices
 
+export_options = {
+    'chart': {
+        'backgroundColor': '#FFFFFF',
+        'borderWidth': 0,
+        'plotBackgroundColor': '#FFFFFF',
+        'plotShadow': False,
+        'plotBorderWidth': 0
+    },
+    'title': {
+        'text': None
+    }
+}
+
 
 def json_campaigns(queryset):
     campaigns = queryset.values_list('campaign__campaign_number',
@@ -34,18 +47,7 @@ def json_campaigns(queryset):
             'type': 'column'
         },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': 'campaigns',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -113,22 +115,8 @@ def json_campaign(campaign_data):
             'renderTo': 'device_bit_chart',
             'type': 'column'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.architecture+' targets',
             'sourceWidth': 512,
             'sourceHeight': 384,
@@ -155,7 +143,7 @@ def json_campaign(campaign_data):
     bits = []
     for target in target_list:
         bits.append(targets[target]['total_bits'])
-    chart['series'] = [{'data': bits, }, ]
+    chart['series'] = [{'data': bits}]
     return '['+dumps(chart)+']'
 
 
@@ -166,25 +154,11 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
             'renderTo': 'outcome_chart',
             'type': 'pie'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.application+' overview',
-            'sourceWidth': 640,
-            'sourceHeight': 480,
+            'sourceWidth': 512,
+            'sourceHeight': 384,
             'scale': 2
         },
         'plotOptions': {
@@ -247,22 +221,8 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'y'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.application+' targets',
             'sourceWidth': 512,
             'sourceHeight': 384,
@@ -341,22 +301,8 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'y'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.application+' target diffs',
             'sourceWidth': 512,
             'sourceHeight': 384,
@@ -414,22 +360,8 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'xy'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.application+' data errors by target',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -444,7 +376,7 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                     'events': {
                         'click': 'diff_time_chart_click'
                     }
-                },
+                }
             }
         },
         'series': [],
@@ -474,7 +406,7 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                          default='result__data_diff'))
         ).values_list('avg')
     data = [x*100 for x in zip(*data)[0]]
-    chart['series'].append({'data': data, })
+    chart['series'].append({'data': data})
     if campaign_data.use_simics:
         chart = dumps(chart).replace('\"diff_time_chart_click\"', """
         function(event) {
@@ -518,22 +450,8 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'xy'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': (campaign_data.application+' ' +
                          ('registers' if not tlb else 'tlb entries')),
             'sourceWidth': 512,
@@ -549,7 +467,8 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
                     'events': {
                         'click': 'register_chart_click'
                     }
-                }
+                },
+                'stacking': True
             }
         },
         'series': [],
@@ -596,8 +515,7 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
                                default=0, output_field=IntegerField()))
             ).values_list('register_name', 'count')
         data = sorted(data, key=fix_sort)
-        chart['series'].append({'data': zip(*data)[1], 'name': outcome,
-                                'stacking': True})
+        chart['series'].append({'data': zip(*data)[1], 'name': outcome})
     chart = dumps(chart).replace('\"register_chart_click\"', """
     function(event) {
         var reg = this.category.split(':');
@@ -641,22 +559,8 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'y'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.application+' tlb fields',
             'sourceWidth': 512,
             'sourceHeight': 384,
@@ -668,7 +572,8 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
                     'events': {
                         'click': 'field_chart_click'
                     }
-                }
+                },
+                'stacking': True
             }
         },
         'series': [],
@@ -696,8 +601,7 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
         ).values_list('count')
-        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
-                                'stacking': True})
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome})
     chart = dumps(chart).replace('\"field_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
@@ -720,22 +624,8 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
             'type': 'column',
             'zoomType': 'y'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.application+' register bits',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -747,7 +637,8 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
                     'events': {
                         'click': 'bit_chart_click'
                     }
-                }
+                },
+                'stacking': True
             }
         },
         'series': [],
@@ -775,8 +666,7 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
         ).values_list('count')
-        chart['series'].append({'data': zip(*data)[0], 'name': outcome,
-                                'stacking': True})
+        chart['series'].append({'data': zip(*data)[0], 'name': outcome})
     chart = dumps(chart).replace('\"bit_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
@@ -805,22 +695,8 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'xy'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.application+' injections over time',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -832,7 +708,8 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                     'events': {
                         'click': 'time_chart_click'
                     }
-                }
+                },
+                'stacking': True
             }
         },
         'series': [],
@@ -881,8 +758,7 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                                    default=0, output_field=IntegerField()))
             ).values_list('count')
             data = zip(*data)[0]
-        chart['series'].append({'data': data, 'name': outcome,
-                                'stacking': True})
+        chart['series'].append({'data': data, 'name': outcome})
     if campaign_data.use_simics:
         chart_array.append(dumps(chart_smoothed))
         chart = dumps(chart).replace('\"time_chart_click\"', """
@@ -921,22 +797,8 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'xy'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.application+' data errors over time',
             'sourceWidth': 1024,
             'sourceHeight': 576,
@@ -969,6 +831,7 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
                 'format': '{value}%'
             },
             'max': 100,
+            'min': 80,
             'title': {
                 'text': 'Average Data Diff'
             }
@@ -990,7 +853,7 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
                              default='result__data_diff'))
             ).values_list('avg')
         data = [x*100 for x in zip(*data)[0]]
-    chart['series'].append({'data': data, })
+    chart['series'].append({'data': data})
     if campaign_data.use_simics:
         chart = dumps(chart).replace('\"diff_time_chart_click\"', """
         function(event) {
@@ -1022,35 +885,14 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
             'renderTo': 'count_chart',
             'type': 'column'
         },
-        'credits': {
-            'enabled': False
-        },
         'exporting': {
-            'chartOptions': {
-                'chart': {
-                    'backgroundColor': '#FFFFFF',
-                    'borderWidth': 0,
-                    'plotBackgroundColor': '#FFFFFF',
-                    'plotShadow': False,
-                    'plotBorderWidth': 0
-                },
-                'title': {
-                    'text': None
-                }
-            },
+            'chartOptions': export_options,
             'filename': campaign_data.application+' injection quantity',
-            'sourceWidth': 1024,
-            'sourceHeight': 576,
-            'scale': 3
+            'sourceWidth': 512,
+            'sourceHeight': 384,
+            'scale': 2
         },
         'plotOptions': {
-            'column': {
-                'dataLabels': {
-                    'style': {
-                        'textShadow': False
-                    }
-                }
-            },
             'series': {
                 'point': {
                     'events': {

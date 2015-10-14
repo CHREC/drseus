@@ -1,13 +1,16 @@
 /**
  * Grid theme for Highcharts JS
  * @author Torstein Honsi
+ * Modified by Ed Carlisle
+ * Colors generated with http://phrogz.net/css/distinct-colors.html
  */
 
 Highcharts.theme = {
-	colors: ['#058DC7', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572',
-             '#FF9655', '#FFF263', '#6AF9C4', '#f45b5b', '#8085e9', '#8d4654',
-             '#7798BF', '#aaeeee', '#ff0066', '#eeaaee', '#55BF3B', '#DF5353',
-             '#7798BF', '#aaeeee'],
+	colors: ['#33cc70', '#0061f2', '#ba79f2', '#cc3333', '#006652', '#c200f2',
+             '#7f6600', '#162859', '#ff4400', '#00ccbe', '#591643', '#f2a200',
+             '#9fbf60', '#88ff00', '#7c9da6', '#2929a6', '#ff4073', '#594c43',
+             '#185900', '#0099e6', '#aaa3d9', '#992645', '#bf6600', '#688060',
+             '#1d5673', '#646080', '#664d50'],
 	chart: {
 		backgroundColor: {
 			linearGradient: { x1: 0, y1: 0, x2: 1, y2: 1 },
@@ -92,14 +95,16 @@ Highcharts.theme = {
 			color: '#99b'
 		}
 	},
-
 	navigation: {
 		buttonOptions: {
 			theme: {
 				stroke: '#CCCCCC'
 			}
 		}
-	}
+	},
+    credits: {
+        enabled: false
+    },
 };
 
 // Apply the theme
