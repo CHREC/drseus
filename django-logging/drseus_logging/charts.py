@@ -149,6 +149,8 @@ def json_campaign(campaign_data):
 
 def outcome_chart(queryset, campaign_data, outcomes, group_categories,
                   chart_array):
+    if len(outcomes) <= 1:
+        return
     chart = {
         'chart': {
             'renderTo': 'outcome_chart',
@@ -275,6 +277,11 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             'text': 'Percent of Injections'
         }
     }
+    chart_array.append(dumps(chart_percent))
+    chart_log = deepcopy(chart)
+    chart_log['chart']['renderTo'] = 'target_log_chart'
+    chart_log['yAxis']['type'] = 'logarithmic'
+    chart_array.append(dumps(chart_log))
     chart = dumps(chart).replace('\"target_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
@@ -284,7 +291,6 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
-    chart_array.append(dumps(chart_percent))
 
 
 def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
@@ -363,9 +369,9 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' data errors by target',
-            'sourceWidth': 1024,
-            'sourceHeight': 576,
-            'scale': 3
+            'sourceWidth': 512,
+            'sourceHeight': 384,
+            'scale': 2
         },
         'legend': {
             'enabled': False
@@ -831,7 +837,6 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
                 'format': '{value}%'
             },
             'max': 100,
-            'min': 80,
             'title': {
                 'text': 'Average Data Diff'
             }
@@ -878,7 +883,7 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
     injection_counts = result.objects.filter(id__in=qs_result_ids).values_list(
         'num_injections').distinct().order_by('num_injections')
     injection_counts = zip(*injection_counts)[0]
-    if len(injection_counts) < 1:
+    if len(injection_counts) <= 1:
         return
     chart = {
         'chart': {
