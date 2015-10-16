@@ -322,9 +322,10 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
     }
     chart_array.append(dumps(chart_percent))
     chart_log = deepcopy(chart)
-    chart_log['chart']['renderTo'] = 'target_log_chart'
-    chart_log['yAxis']['type'] = 'logarithmic'
-    chart_array.append(dumps(chart_log))
+    if len(outcomes) == 1:
+        chart_log['chart']['renderTo'] = 'target_log_chart'
+        chart_log['yAxis']['type'] = 'logarithmic'
+        chart_array.append(dumps(chart_log))
     chart = dumps(chart).replace('\"target_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+
@@ -1021,6 +1022,9 @@ def json_charts(queryset, campaign_data, group_categories):
     if 'Persistent faults' in outcomes:
         outcomes.remove('Persistent faults')
         outcomes[:0] = ('Persistent faults', )
+    if 'Masked faults' in outcomes:
+        outcomes.remove('Masked faults')
+        outcomes[:0] = ('Masked faults', )
     if 'No error' in outcomes:
         outcomes.remove('No error')
         outcomes[:0] = ('No error', )
