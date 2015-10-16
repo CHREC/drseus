@@ -9,7 +9,7 @@ import os
 from .charts import json_campaign, json_campaigns, json_charts
 from .filters import (injection_filter, result_filter,
                       simics_register_diff_filter)
-from .forms import chart_form, edit_form, result_form
+from .forms import edit_form, result_form
 from .models import (campaign, result, injection, simics_register_diff,
                      simics_memory_diff)
 from .tables import (campaign_table, campaigns_table, result_table,
@@ -17,12 +17,21 @@ from .tables import (campaign_table, campaigns_table, result_table,
                      simics_register_diff_table, simics_memory_diff_table)
 
 navigation_items = (('Information', '../campaign'),
-                    ('Charts', '../charts/'),
+                    ('Charts (Grouped by Category)', '../charts/categories/'),
+                    ('Charts (Grouped by Outcome)', '../charts/outcomes/'),
                     ('Table', '../results/'),
                     ('Edit Results', '../edit/'))
 
 
-def charts_page(request, campaign_number):
+def charts_categories_page(request, campaign_number):
+    charts_page(request, campaign_number, True)
+
+
+def charts_outcomes_page(request, campaign_number):
+    charts_page(request, campaign_number, False)
+
+
+def charts_page(request, campaign_number, group_categories):
     page_items = (('Overview', 'outcomes'),
                   ('Injections By Target', 'targets'),
                   ('Injections By Register', 'registers'),
@@ -36,20 +45,12 @@ def charts_page(request, campaign_number):
         result__campaign__campaign_number=campaign_number)
     filter_ = injection_filter(request.GET, queryset=injection_objects,
                                campaign=campaign_number)
-    group_categories = True
-    if request.method == 'POST' and 'group' in request.POST:
-        form = chart_form(request.POST)
-        if form.is_valid():
-            group_categories = form.cleaned_data['group_categories'] == 'True'
-    else:
-        form = chart_form()
     if filter_.qs.count() > 0:
         chart_array = json_charts(filter_.qs, campaign_data, group_categories)
     else:
         chart_array = None
     return render(request, 'charts.html', {'campaign_data': campaign_data,
                                            'chart_array': chart_array,
-                                           'chart_form': form,
                                            'filter': filter_,
                                            'navigation_items':
                                                navigation_items,

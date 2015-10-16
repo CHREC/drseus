@@ -11,6 +11,40 @@ import sys
 sys.path.append('../')
 from simics_targets import devices
 
+colors = {
+    'Data error': '#33cc70',
+    'Detected data error': '#7f6600',
+    'Silet data error': '#162859',
+
+    'Execution error': '#0061f2',
+    'Hanging': '#c200f2',
+    'Illegal instruction': '#ff4400',
+    'Kernel error': '#591643',
+    'Segmentation fault': '#f2a200',
+    'Signal SIGILL': '#9fbf60',
+    'Signal SIGIOT': '#88ff00',
+    'Signal SIGSEGV': '#7c9da6',
+    'Signal SIGTRAP': '#ff4073',
+
+    'No error': '#ba79f2',
+    'Latent faults': '#594c43',
+    'Masked faults': '#185900',
+    'Persistent faults': '#0099e6',
+
+    'Post execution error': '#cc3333',
+
+    'SCP error': '#688060',
+    'Missing output': '#aaa3d9',
+
+    'Simics error': '#006652',
+    'Address not mapped': '#992645',
+    'Dropping memop': '#bf6600'
+}
+
+colors_extra = ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
+                '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1']
+
+
 export_options = {
     'chart': {
         'backgroundColor': '#FFFFFF',
@@ -40,12 +74,15 @@ def json_campaigns(queryset):
     if 'No error' in outcomes:
         outcomes.remove('No error')
         outcomes[:0] = ('No error', )
+    extra_colors = list(colors_extra)
     chart = {
         'chart': {
             'height': 600,
             'renderTo': 'campaign_chart',
             'type': 'column'
         },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
             'filename': 'campaigns',
@@ -151,11 +188,14 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
                   chart_array):
     if len(outcomes) <= 1:
         return
+    extra_colors = list(colors_extra)
     chart = {
         'chart': {
             'renderTo': 'outcome_chart',
             'type': 'pie'
         },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' overview',
@@ -217,12 +257,15 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
     targets = queryset.values_list('target').distinct().order_by('target')
     if len(targets) < 1:
         return
+    extra_colors = list(colors_extra)
     chart = {
         'chart': {
             'renderTo': 'target_chart',
             'type': 'column',
             'zoomType': 'y'
         },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' targets',
@@ -450,12 +493,15 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
     registers = zip(*registers)[0]
     if campaign_data.use_simics and not tlb:
         registers = [reg.replace('gprs ', 'r') for reg in registers]
+    extra_colors = list(colors_extra)
     chart = {
         'chart': {
             'renderTo': 'register_chart' if not tlb else 'tlb_chart',
             'type': 'column',
             'zoomType': 'xy'
         },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
             'filename': (campaign_data.application+' ' +
@@ -559,12 +605,15 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
         ).order_by('field')
     if len(fields) < 1:
         return
+    extra_colors = list(colors_extra)
     chart = {
         'chart': {
             'renderTo': 'field_chart',
             'type': 'column',
             'zoomType': 'y'
         },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' tlb fields',
@@ -624,12 +673,15 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
         ).order_by('bit')
     if len(bits) < 1:
         return
+    extra_colors = list(colors_extra)
     chart = {
         'chart': {
             'renderTo': 'bit_chart',
             'type': 'column',
             'zoomType': 'y'
         },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' register bits',
@@ -695,12 +747,15 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             'time_rounded')
     if len(times) < 1:
         return
+    extra_colors = list(colors_extra)
     chart = {
         'chart': {
             'renderTo': 'time_chart',
             'type': 'column',
             'zoomType': 'xy'
         },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' injections over time',
@@ -885,11 +940,14 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
     injection_counts = zip(*injection_counts)[0]
     if len(injection_counts) <= 1:
         return
+    extra_colors = list(colors_extra)
     chart = {
         'chart': {
             'renderTo': 'count_chart',
             'type': 'column'
         },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' injection quantity',

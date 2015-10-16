@@ -1,16 +1,11 @@
 /**
  * Grid theme for Highcharts JS
  * @author Torstein Honsi
- * Modified by Ed Carlisle
- * Colors generated with http://phrogz.net/css/distinct-colors.html
  */
 
 Highcharts.theme = {
-	colors: ['#33cc70', '#0061f2', '#ba79f2', '#cc3333', '#006652', '#7f6600',
-             '#162859', '#c200f2', '#ff4400', '#591643', '#f2a200', '#9fbf60',
-             '#88ff00', '#7c9da6', '#ff4073', '#594c43', '#185900', '#0099e6',
-             '#aaa3d9', '#992645', '#bf6600', '#688060', '#1d5673', '#646080',
-             '#664d50'],
+	colors: ['#058DC7', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572',
+             '#FF9655', '#FFF263', '#6AF9C4'],
 	chart: {
 		backgroundColor: {
 			linearGradient: { x1: 0, y1: 0, x2: 1, y2: 1 },

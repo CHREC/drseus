@@ -7,11 +7,6 @@ class result_form(forms.Form):
     outcome_category = forms.CharField(required=False)
 
 
-class chart_form(forms.Form):
-    group_categories = forms.ChoiceField(choices=((True, 'Categories'),
-                                                  (False, 'Outcomes')))
-
-
 class edit_form(forms.Form):
     def __init__(self, *args, **kwargs):
         campaign = kwargs['campaign']
