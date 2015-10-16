@@ -24,11 +24,11 @@ navigation_items = (('Information', '../campaign'),
 
 
 def charts_categories_page(request, campaign_number):
-    charts_page(request, campaign_number, True)
+    return charts_page(request, campaign_number, True)
 
 
 def charts_outcomes_page(request, campaign_number):
-    charts_page(request, campaign_number, False)
+    return charts_page(request, campaign_number, False)
 
 
 def charts_page(request, campaign_number, group_categories):
