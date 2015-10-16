@@ -17,17 +17,17 @@ from .tables import (campaign_table, campaigns_table, result_table,
                      simics_register_diff_table, simics_memory_diff_table)
 
 navigation_items = (('Information', '../campaign'),
-                    ('Charts (Grouped by Category)', '../charts/categories/'),
-                    ('Charts (Grouped by Outcome)', '../charts/outcomes/'),
+                    ('Charts (Grouped by Category)', '../category_charts/'),
+                    ('Charts (Grouped by Outcome)', '../outcome_charts/'),
                     ('Table', '../results/'),
                     ('Edit Results', '../edit/'))
 
 
-def charts_categories_page(request, campaign_number):
+def category_charts_page(request, campaign_number):
     return charts_page(request, campaign_number, True)
 
 
-def charts_outcomes_page(request, campaign_number):
+def outcome_charts_page(request, campaign_number):
     return charts_page(request, campaign_number, False)
 
 
