@@ -445,7 +445,7 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             },
             'max': 100,
             'title': {
-                'text': 'Average Data Diff'
+                'text': 'Average Data Match'
             }
         }
     }
