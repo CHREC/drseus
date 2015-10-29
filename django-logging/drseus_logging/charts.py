@@ -12,11 +12,11 @@ sys.path.append('../')
 from simics_targets import devices
 
 colors = {
-    'Data error': '#33cc70',
+    'Data error': '#ba79f2',
     'Detected data error': '#7f6600',
     'Silet data error': '#162859',
 
-    'Execution error': '#0061f2',
+    'Execution error': '#cc3333',
     'Hanging': '#c200f2',
     'Illegal instruction': '#ff4400',
     'Kernel error': '#591643',
@@ -24,17 +24,17 @@ colors = {
     'Signal SIGILL': '#9fbf60',
     'Signal SIGIOT': '#88ff00',
     'Signal SIGSEGV': '#7c9da6',
-    'Signal SIGTRAP': '#ff4073',
+    'Signal SIGTRAP': '#ff83ff',
 
-    'No error': '#ba79f2',
-    'Latent faults': '#594c43',
+    'No error': '#33cc70',
+    'Latent faults': '#a18069',
     'Masked faults': '#185900',
     'Persistent faults': '#0099e6',
 
-    'Post execution error': '#cc3333',
+    'Post execution error': '#0061f2',
 
-    'SCP error': '#688060',
-    'Missing output': '#aaa3d9',
+    'SCP error': '#d4a017',
+    'Missing output': '#f75d59',
 
     'Simics error': '#006652',
     'Address not mapped': '#992645',
@@ -86,9 +86,9 @@ def json_campaigns(queryset):
         'exporting': {
             'chartOptions': export_options,
             'filename': 'campaigns',
-            'sourceWidth': 1024,
-            'sourceHeight': 576,
-            'scale': 3
+            'sourceWidth': 960,
+            'sourceHeight': 540,
+            'scale': 2
         },
         'plotOptions': {
             'series': {
@@ -155,8 +155,8 @@ def json_campaign(campaign_data):
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.architecture+' targets',
-            'sourceWidth': 512,
-            'sourceHeight': 384,
+            'sourceWidth': 480,
+            'sourceHeight': 360,
             'scale': 2
         },
         'legend': {
@@ -199,8 +199,8 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' overview',
-            'sourceWidth': 512,
-            'sourceHeight': 384,
+            'sourceWidth': 480,
+            'sourceHeight': 360,
             'scale': 2
         },
         'plotOptions': {
@@ -269,8 +269,8 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' targets',
-            'sourceWidth': 512,
-            'sourceHeight': 384,
+            'sourceWidth': 480,
+            'sourceHeight': 360,
             'scale': 2
         },
         'plotOptions': {
@@ -351,11 +351,12 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'y'
         },
+        'colors': ('#77bfc7', '#a74ac7'),
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' target diffs',
-            'sourceWidth': 512,
-            'sourceHeight': 384,
+            'sourceWidth': 480,
+            'sourceHeight': 360,
             'scale': 2
         },
         'plotOptions': {
@@ -410,11 +411,12 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'xy'
         },
+        'colors': ('#008080', ),
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' data errors by target',
-            'sourceWidth': 512,
-            'sourceHeight': 384,
+            'sourceWidth': 480,
+            'sourceHeight': 360,
             'scale': 2
         },
         'legend': {
@@ -445,7 +447,7 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             },
             'max': 100,
             'title': {
-                'text': 'Average Data Diff'
+                'text': 'Average Data Match'
             }
         }
     }
@@ -507,8 +509,8 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
             'chartOptions': export_options,
             'filename': (campaign_data.application+' ' +
                          ('registers' if not tlb else 'tlb entries')),
-            'sourceWidth': 512,
-            'sourceHeight': 384,
+            'sourceWidth': 480,
+            'sourceHeight': 360,
             'scale': 2
         },
         'title': {
@@ -639,7 +641,7 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
         'xAxis': {
             'categories': zip(*fields)[0],
             'title': {
-                'text': 'Field'
+                'text': 'TLB Field'
             }
         },
         'yAxis': {
@@ -686,9 +688,9 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' register bits',
-            'sourceWidth': 1024,
-            'sourceHeight': 576,
-            'scale': 3
+            'sourceWidth': 960,
+            'sourceHeight': 540,
+            'scale': 2
         },
         'plotOptions': {
             'series': {
@@ -760,9 +762,9 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' injections over time',
-            'sourceWidth': 1024,
-            'sourceHeight': 576,
-            'scale': 3
+            'sourceWidth': 960,
+            'sourceHeight': 540,
+            'scale': 2
         },
         'plotOptions': {
             'series': {
@@ -859,12 +861,13 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
             'type': 'column',
             'zoomType': 'xy'
         },
+        'colors': ('#008080', ),
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' data errors over time',
-            'sourceWidth': 1024,
-            'sourceHeight': 576,
-            'scale': 3
+            'sourceWidth': 960,
+            'sourceHeight': 540,
+            'scale': 2
         },
         'legend': {
             'enabled': False
@@ -952,8 +955,8 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
         'exporting': {
             'chartOptions': export_options,
             'filename': campaign_data.application+' injection quantity',
-            'sourceWidth': 512,
-            'sourceHeight': 384,
+            'sourceWidth': 480,
+            'sourceHeight': 360,
             'scale': 2
         },
         'plotOptions': {
