@@ -202,13 +202,6 @@ class injection_filter(django_filters.FilterSet):
         self.filters['time_rounded'].widget.attrs['size'] = min(
             len(time_rounded_choices), 10)
 
-    def num_injections_filter(queryset, value):
-        if value:
-            return queryset.filter(result_id__in=result.objects.filter(
-                num_injections__in=value).values_list('id'))
-        else:
-            return queryset
-
     bit = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     core = django_filters.MultipleChoiceFilter(
@@ -222,7 +215,7 @@ class injection_filter(django_filters.FilterSet):
     register_index = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     result__num_injections = django_filters.MultipleChoiceFilter(
-        action=num_injections_filter, label='Number of injections',
+        label='Number of injections',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
     result__outcome = django_filters.MultipleChoiceFilter(
         label='Outcome',
