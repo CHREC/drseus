@@ -183,13 +183,14 @@ class fault_injector:
                          '/aux-files/'+item)
         self.debugger.aux.send_files(files)
 
-    def get_result_id(self):
+    def get_result_id(self, num_injections):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute('INSERT INTO drseus_logging_result (campaign_id,iteration'
-                    ',outcome,outcome_category,timestamp) VALUES (?,?,?,?,?)',
-                    (self.campaign_number, self.iteration, 'In progress',
-                     'Incomplete', datetime.now()))
+                    ',num_injections,outcome,outcome_category,timestamp) '
+                    'VALUES (?,?,?,?,?,?)',
+                    (self.campaign_number, self.iteration, num_injections,
+                     'In progress', 'Incomplete', datetime.now()))
         sql_db.commit()
         result_id = sql.lastrowid
         sql_db.close()
@@ -358,7 +359,7 @@ class fault_injector:
                 iteration_counter.value += 1
             if self.iteration >= last_iteration:
                 break
-            self.result_id = self.get_result_id()
+            self.result_id = self.get_result_id(num_injections)
             if not self.use_simics:
                 self.debugger.reset_dut()
                 self.debugger.dut.do_login()

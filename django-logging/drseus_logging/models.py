@@ -32,15 +32,10 @@ class campaign(models.Model):
     objects = campaign_manager()
 
 
-class result_manager(models.Manager):
-    def get_queryset(self):
-        return super(result_manager, self).get_queryset().annotate(
-            num_injections=models.Count('injection'))
-
-
 class result(models.Model):
     campaign = models.ForeignKey(campaign)
     iteration = models.IntegerField()
+    num_injections = models.IntegerField()
     outcome = models.TextField()
     outcome_category = models.TextField()
     data_diff = models.FloatField(null=True)
@@ -51,7 +46,6 @@ class result(models.Model):
     paramiko_output = models.TextField(null=True)
     aux_paramiko_output = models.TextField(null=True)
     timestamp = models.DateTimeField()
-    objects = result_manager()
 
 
 class injection(models.Model):
