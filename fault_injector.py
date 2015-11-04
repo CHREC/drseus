@@ -314,7 +314,7 @@ class fault_injector:
                 outcome = 'Latent faults'
                 outcome_category = 'No error'
             else:
-                outcome = 'No error'
+                outcome = 'Masked faults'
                 outcome_category = 'No error'
         return outcome, outcome_category, detected_errors, data_diff
 
@@ -396,14 +396,15 @@ class fault_injector:
                  data_diff) = self.monitor_execution(latent_faults, output_file,
                                                      use_aux_output)
                 if outcome == 'Latent faults' or (not self.use_simics
-                                                  and outcome == 'No error'):
+                                                  and outcome ==
+                                                  'Masked faults'):
                     if self.use_aux:
                         self.debugger.aux.serial.write('./'+self.aux_command +
                                                        '\n')
                     self.debugger.dut.serial.write('./'+self.command+'\n')
                     next_outcome = self.monitor_execution(0, output_file,
                                                           use_aux_output)[0]
-                    if next_outcome != 'No error':
+                    if next_outcome != 'Masked faults':
                         outcome = next_outcome
                         outcome_category = 'Post execution error'
                     elif self.use_simics:
