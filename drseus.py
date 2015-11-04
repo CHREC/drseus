@@ -6,7 +6,6 @@ import optparse
 import os
 import shutil
 import signal
-from subprocess import Popen
 import sqlite3
 import sys
 
@@ -279,18 +278,13 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
                               options.compare_all)
 
 
-def view_logs():
-    server = Popen([os.getcwd()+'/django-logging/manage.py', 'runserver'],
-                   cwd=os.getcwd()+'/django-logging/')
-    if os.system('google-chrome http://localhost:8000'):
-        if os.system('firefox http://localhost:8000'):
-            print('error opening web browser, '
-                  'log server is running at localhost:8000')
-            raw_input('press enter to quit server\n')
+def view_logs(args):
     try:
-        os.killpg(os.getpgid(server.pid), signal.SIGINT)
-    except KeyboardInterrupt:
-        pass
+        port = int(args[0])
+    except:
+        port = 8000
+    os.system('cd '+os.getcwd()+'/django-logging; ./manage.py runserver ' +
+              str(port))
 
 parser = optparse.OptionParser('drseus.py {application} {options}')
 
@@ -435,7 +429,6 @@ supervise_group.add_option('-w', '--wireshark', action='store_true',
 parser.add_option_group(supervise_group)
 options, args = parser.parse_args()
 
-
 if options.list:
     list_campaigns()
 elif options.delete_all:
@@ -457,7 +450,7 @@ elif options.delete_results:
         options.number = get_last_campaign()
     delete_results(options.number)
 elif options.view_logs:
-    view_logs()
+    view_logs(args)
 elif options.inject:
     if not options.number:
         options.number = get_last_campaign()
