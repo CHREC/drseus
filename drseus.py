@@ -162,7 +162,7 @@ def new_campaign(application, options):
         if not os.path.exits(options.directory):
             raise Exception('cannot find directory '+options.directory)
     if options.use_simics and not os.path.exists('simics-workspace'):
-        os.system('./setup_simics.sh')
+        os.system('./setup_simics_workspace.sh')
     if os.path.exists('campaign-data/'+str(campaign_number)):
         campaign_files = os.listdir('campaign-data/'+str(campaign_number))
         if 'results' in campaign_files:

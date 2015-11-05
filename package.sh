@@ -12,7 +12,7 @@ mkdir simics-workspace
 # popd
 # popd
 
-rm .gitignore setup_apps.sh setup_bdi_tftp.sh setup_simics.sh
+rm .gitignore setup_apps.sh setup_bdi_tftp.sh setup_simics_workspace.sh
 rm -rf .git
 
 python -m compileall -l .
