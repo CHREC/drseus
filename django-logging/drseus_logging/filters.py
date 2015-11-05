@@ -7,7 +7,11 @@ from .models import (injection, result, simics_register_diff)
 
 def fix_sort(string):
     return ''.join([text.zfill(5) if text.isdigit() else text.lower() for
-                    text in split('([0-9]+)', str(string[0]))])
+                    text in split('([0-9]+)', str(string))])
+
+
+def fix_sort_list(list):
+    return fix_sort(list[0])
 
 
 def injection_choices(campaign, attribute):
@@ -15,7 +19,7 @@ def injection_choices(campaign, attribute):
     for item in sorted(injection.objects.filter(
             result__campaign_id=campaign).values(attribute).distinct()):
         choices.append((item[attribute], item[attribute]))
-    return sorted(choices, key=fix_sort)
+    return sorted(choices, key=fix_sort_list)
 
 
 def result_choices(campaign, attribute):
@@ -23,7 +27,7 @@ def result_choices(campaign, attribute):
     for item in sorted(result.objects.filter(
             campaign_id=campaign).values(attribute).distinct()):
         choices.append((item[attribute], item[attribute]))
-    return sorted(choices, key=fix_sort)
+    return sorted(choices, key=fix_sort_list)
 
 
 class result_filter(django_filters.FilterSet):
@@ -260,7 +264,7 @@ class simics_register_diff_filter(django_filters.FilterSet):
             result__campaign_id=self.campaign
                 ).values(attribute).distinct()):
             choices.append((item[attribute], item[attribute]))
-        return sorted(choices, key=fix_sort)
+        return sorted(choices, key=fix_sort_list)
 
     checkpoint_number = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}))
