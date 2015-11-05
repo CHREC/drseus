@@ -63,9 +63,9 @@ def json_campaigns(queryset):
     campaigns = queryset.values_list('campaign__campaign_number',
                                      'campaign__command').distinct().order_by(
         'campaign__campaign_number')
-    campaigns = zip(*campaigns)
-    if len(campaigns[0]) < 1:
+    if len(campaigns) < 1:
         return '[]'
+    campaigns = zip(*campaigns)
     campaign_numbers = dumps(campaigns[0])
     campaigns = campaigns[1]
     outcomes = list(queryset.values_list(
