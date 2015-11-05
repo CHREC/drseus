@@ -96,7 +96,7 @@ class bdi:
                 aux_process = Thread(target=self.aux.command,
                                      args=('./'+aux_command, ))
                 aux_process.start()
-            self.dut.serial.write('./'+command+'\n')
+            self.dut.serial.write(str('./'+command+'\n'))
             if self.use_aux:
                 aux_process.join()
             if kill_dut:
@@ -122,7 +122,7 @@ class bdi:
                 print(colored('injection time: '+str(injection_time),
                               'magenta'))
             if injection == 0:
-                self.dut.serial.write('./'+command+'\n')
+                self.dut.serial.write(str('./'+command+'\n'))
             else:
                 self.continue_dut()
             time.sleep(injection_time)

@@ -301,7 +301,7 @@ class simics:
                 aux_process = Thread(target=self.aux.command,
                                      args=('./'+aux_command, ))
                 aux_process.start()
-            self.dut.serial.write('./'+command+'\n')
+            self.dut.serial.write(str('./'+command+'\n'))
             if self.use_aux:
                 aux_process.join()
             if kill_dut:

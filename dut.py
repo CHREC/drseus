@@ -151,7 +151,7 @@ class dut:
             return buff
 
     def command(self, command=''):
-        self.serial.write(command+'\n')
+        self.serial.write(str(command+'\n'))
         return self.read_until()
 
     def do_login(self, change_prompt=False):

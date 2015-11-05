@@ -365,7 +365,7 @@ class fault_injector:
                 self.debugger.dut.do_login()
                 self.send_dut_files()
             if self.use_aux and not self.use_simics:
-                self.debugger.aux.serial.write('./'+self.aux_command+'\n')
+                self.debugger.aux.serial.write(str('./'+self.aux_command+'\n'))
             try:
                 latent_faults = self.inject_faults(num_injections,
                                                    selected_targets,
@@ -399,9 +399,10 @@ class fault_injector:
                                                   and outcome ==
                                                   'Masked faults'):
                     if self.use_aux:
-                        self.debugger.aux.serial.write('./'+self.aux_command +
-                                                       '\n')
-                    self.debugger.dut.serial.write('./'+self.command+'\n')
+                        self.debugger.aux.serial.write(str('./' +
+                                                           self.aux_command +
+                                                           '\n'))
+                    self.debugger.dut.serial.write(str('./'+self.command+'\n'))
                     next_outcome = self.monitor_execution(0, output_file,
                                                           use_aux_output)[0]
                     if next_outcome != 'Masked faults':
@@ -474,8 +475,8 @@ class fault_injector:
                             'Capturing on \'eth1\'':
                         break
             if self.use_aux:
-                self.debugger.aux.serial.write('./'+self.aux_command+'\n')
-            self.debugger.dut.serial.write('./'+self.command+'\n')
+                self.debugger.aux.serial.write(str('./'+self.aux_command+'\n'))
+            self.debugger.dut.serial.write(str('./'+self.command+'\n'))
             (outcome, outcome_category, detected_errors,
              data_diff) = self.monitor_execution(iteration, 0, output_file,
                                                  use_aux_output)

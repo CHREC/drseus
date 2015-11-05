@@ -119,11 +119,11 @@ def json_campaigns(queryset):
     }
     chart['series'] = []
     for outcome in outcomes:
-        data = queryset.values_list('campaign__command').distinct().order_by(
-            'campaign__command').annotate(
+        data = list(queryset.values_list('campaign__command').distinct(
+            ).order_by('campaign__command').annotate(
                 count=Sum(Case(When(outcome_category=outcome, then=1),
                                default=0, output_field=IntegerField()))
-            ).values_list('count', flat=True)
+            ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart)
     chart = chart.replace('\"campaign_chart_click\"', """
@@ -253,8 +253,8 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
 
 def target_chart(queryset, campaign_data, outcomes, group_categories,
                  chart_array):
-    targets = queryset.values_list('target',
-                                   flat=True).distinct().order_by('target')
+    targets = list(queryset.values_list('target', flat=True).distinct(
+        ).order_by('target'))
     if len(targets) < 1:
         return
     extra_colors = list(colors_extra)
@@ -303,11 +303,11 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
                     else 'result__outcome'] = outcome
-        data = queryset.values_list('target').distinct().order_by('target'
-                                                                  ).annotate(
+        data = list(queryset.values_list('target').distinct(
+            ).order_by('target').annotate(
             count=Sum(Case(When(**when_kwargs), default=0,
                            output_field=IntegerField()))
-        ).values_list('count', flat=True)
+            ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
     chart_percent = deepcopy(chart)
     chart_percent['chart']['renderTo'] = 'target_percent_chart'
@@ -341,8 +341,8 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                       chart_array):
     if not campaign_data.use_simics:
         return
-    targets = queryset.values_list('target',
-                                   flat=True).distinct().order_by('target')
+    targets = list(queryset.values_list('target', flat=True).distinct(
+        ).order_by('target'))
     if len(targets) < 1:
         return
     chart = {
@@ -402,8 +402,8 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
 
 def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                            chart_array):
-    targets = queryset.values_list('target',
-                                   flat=True).distinct().order_by('target')
+    targets = list(queryset.values_list('target', flat=True).distinct(
+        ).order_by('target'))
     if len(targets) < 1:
         return
     chart = {
@@ -482,15 +482,16 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
     if not tlb:
         registers = queryset.exclude(target='TLB').annotate(
             register_name=Concat('register', Value(' '), 'register_index')
-        ).values_list('register_name').distinct().order_by('register_name')
+        ).values_list('register_name', flat=True).distinct(
+        ).order_by('register_name')
     else:
         registers = queryset.filter(target='TLB').annotate(
             tlb_index=Substr('register_index', 1,
                              Length('register_index')-2,
                              output_field=TextField()),
             register_name=Concat('register', Value(' '), 'tlb_index')
-        ).values_list('register_name',
-                      flat=True).distinct().order_by('register_name')
+        ).values_list('register_name', flat=True).distinct(
+        ).order_by('register_name')
     if len(registers) < 1:
         return
     registers = sorted(registers, key=fix_sort)
@@ -604,8 +605,8 @@ def tlb_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
 
 def field_chart(queryset, campaign_data, outcomes, group_categories,
                 chart_array):
-    fields = queryset.filter(target='TLB').values_list(
-        'field', flat=True).distinct().order_by('field')
+    fields = list(queryset.filter(target='TLB').values_list(
+        'field', flat=True).distinct().order_by('field'))
     if len(fields) < 1:
         return
     extra_colors = list(colors_extra)
@@ -654,11 +655,11 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
                     else 'result__outcome'] = outcome
-        data = queryset.filter(target='TLB').values_list('field').distinct(
+        data = list(queryset.filter(target='TLB').values_list('field').distinct(
             ).order_by('field').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
-        ).values_list('count', flat=True)
+            ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart).replace('\"field_chart_click\"', """
     function(event) {
@@ -672,8 +673,8 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
 
 
 def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
-    bits = queryset.exclude(target='TLB').values_list(
-        'bit', flat=True).distinct().order_by('bit')
+    bits = list(queryset.exclude(target='TLB').values_list(
+        'bit', flat=True).distinct().order_by('bit'))
     if len(bits) < 1:
         return
     extra_colors = list(colors_extra)
@@ -722,11 +723,11 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
                     else 'result__outcome'] = outcome
-        data = queryset.exclude(target='TLB').values_list('bit').distinct(
+        data = list(queryset.exclude(target='TLB').values_list('bit').distinct(
             ).order_by('bit').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
-        ).values_list('count', flat=True)
+            ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart).replace('\"bit_chart_click\"', """
     function(event) {
@@ -743,9 +744,9 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                chart_array):
     if campaign_data.use_simics:
         window_size = 10
-        times = queryset.values_list(
+        times = list(queryset.values_list(
             'checkpoint_number', flat=True).distinct().order_by(
-            'checkpoint_number')
+            'checkpoint_number'))
     else:
         times = queryset.values_list(
             'time_rounded', flat=True).distinct().order_by('time_rounded')
@@ -804,11 +805,11 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
         when_kwargs['result__outcome_category' if group_categories
                     else 'result__outcome'] = outcome
         if campaign_data.use_simics:
-            data = queryset.values_list('checkpoint_number').distinct(
+            data = list(queryset.values_list('checkpoint_number').distinct(
                 ).order_by('checkpoint_number').annotate(
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
-            ).values_list('count', flat=True)
+                ).values_list('count', flat=True))
             chart_smoothed['series'].append({
                 'data': numpy.convolve(data,
                                        numpy.ones(window_size)/window_size,
@@ -816,11 +817,11 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                 'name': outcome,
                 'stacking': True})
         else:
-            data = queryset.values_list('time_rounded').distinct(
+            data = list(queryset.values_list('time_rounded').distinct(
                 ).order_by('time_rounded').annotate(
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
-            ).values_list('count', flat=True)
+                ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
     if campaign_data.use_simics:
         chart_array.append(dumps(chart_smoothed))
@@ -847,12 +848,12 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
 def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
                     chart_array):
     if campaign_data.use_simics:
-        times = queryset.values_list(
+        times = list(queryset.values_list(
             'checkpoint_number', flat=True).distinct().order_by(
-            'checkpoint_number')
+            'checkpoint_number'))
     else:
-        times = queryset.values_list(
-            'time_rounded', flat=True).distinct().order_by('time_rounded')
+        times = list(queryset.values_list(
+            'time_rounded', flat=True).distinct().order_by('time_rounded'))
     if len(times) < 1:
         return
     chart = {
@@ -937,8 +938,9 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
 def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
                           chart_array):
     qs_result_ids = queryset.values('result__id').distinct()
-    injection_counts = result.objects.filter(id__in=qs_result_ids).values_list(
-        'num_injections', flat=True).distinct().order_by('num_injections')
+    injection_counts = list(result.objects.filter(
+        id__in=qs_result_ids).values_list('num_injections', flat=True).distinct(
+        ).order_by('num_injections'))
     if len(injection_counts) <= 1:
         return
     extra_colors = list(colors_extra)
