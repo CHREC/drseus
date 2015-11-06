@@ -11,7 +11,8 @@ from error import DrSEUSError
 
 class dut:
     error_messages = ['Kernel panic', 'panic', 'Oops', 'Segmentation fault',
-                      'Illegal instruction', 'Call Trace:']
+                      'Illegal instruction', 'Call Trace:',
+                      'detected stalls on CPU']
 
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
                  baud_rate=115200, ssh_port=22, color='green'):
