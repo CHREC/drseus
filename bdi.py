@@ -48,10 +48,6 @@ class bdi:
         if self.use_aux:
             self.aux.close()
 
-    def reset_dut(self):
-        self.telnet.write('reset')
-        self.telnet.write('\r')
-
     def command(self, command, expected_output=[], error_message=None):
         return_buffer = ''
         if error_message is None:
@@ -165,9 +161,28 @@ class bdi_arm(bdi):
                  aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug,
                  timeout):
         self.prompts = ['A9#0>', 'A9#1>']
+        self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
+                          'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'pc', 'cpsr',
+                          'spsr',
+                          'mainid', 'cachetype', 'tcmstatus', 'tlbtype',
+                          'mputype', 'multipid', 'procfeature0', 'procfeature1',
+                          'dbgfeature0', 'auxfeature0', 'memfeature0',
+                          'memfeature1', 'memfeature2', 'memfeature3',
+                          'instrattr0', 'instrattr1', 'instrattr2',
+                          'instrattr3', 'instrattr4', 'instrattr5',
+                          'instrattr6', 'instrattr7', 'control', 'auxcontrol',
+                          'cpaccess', 'securecfg', 'securedbg', 'nonsecure',
+                          'ttb0', 'ttb1', 'ttbc', 'dac', 'dfsr', 'ifsr',
+                          'dauxfsr', 'iaucfsr', 'dfar', 'ifar', 'fcsepid',
+                          'context'
+                          ]
         bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
                      aux_ip_address, aux_serial_port, use_aux, dut_prompt,
                      debug, timeout)
+
+    def reset_dut(self):
+        self.command('reset', ['- TARGET: processing target startup passed'],
+                     error_message='Error resetting DUT')
 
     def halt_dut(self):
         self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
@@ -181,29 +196,38 @@ class bdi_arm(bdi):
         # TODO: check if cores are running (not in debug mode)
         self.command('select '+str(core), ['Core number', 'Core state',
                                            'Debug entry cause', 'Current PC',
-                                           'Current CPSR', 'Current SPSR'],
+                                           'Current CPSR'],  # 'Current SPSR'],
                      'Error selecting core')
 
-    def get_dut_regs(self, selected_targets):
-        # TODO: get GPRs
-        # TODO: check for unused registers ttbc? iaucfsr?
-        regs = [{}, {}]
-        for core in xrange(2):
-            self.select_core(core)
-            debug_reglist = self.command('rdump')
-            for line in debug_reglist.split('\r')[:-1]:
-                line = line.split(': ')
-                register = line[0].strip()
-                if selected_targets is None:
-                    value = line[1].split(' ')[0].strip()
-                    regs[core][register] = value
-                else:
-                    for target in selected_targets:
-                        if target in register:
-                            value = line[1].split(' ')[0].strip()
-                            regs[core][register] = value
-                            break
-        return regs
+    def get_register_value(self, register):
+        buff = self.command('rd '+register, error_message='Error getting '
+                                                          'register value')
+        return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
+
+    def set_register_value(self, register, value):
+        self.command('rm '+register+' '+value, error_message='Error setting '
+                                                             'register value')
+
+    # def get_dut_regs(self, selected_targets):
+    #     # TODO: get GPRs
+    #     # TODO: check for unused registers ttbc? iaucfsr?
+    #     regs = [{}, {}]
+    #     for core in xrange(2):
+    #         self.select_core(core)
+    #         debug_reglist = self.command('rdump')
+    #         for line in debug_reglist.split('\r')[:-1]:
+    #             line = line.split(': ')
+    #             register = line[0].strip()
+    #             if selected_targets is None:
+    #                 value = line[1].split(' ')[0].strip()
+    #                 regs[core][register] = value
+    #             else:
+    #                 for target in selected_targets:
+    #                     if target in register:
+    #                         value = line[1].split(' ')[0].strip()
+    #                         regs[core][register] = value
+    #                         break
+    #     return regs
 
 
 class bdi_p2020(bdi):
@@ -310,6 +334,10 @@ class bdi_p2020(bdi):
         bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
                      aux_ip_address, aux_serial_port, use_aux, dut_prompt,
                      debug, timeout)
+
+    def reset_dut(self):
+        self.telnet.write('reset')
+        self.telnet.write('\r')
 
     def halt_dut(self):
         self.command('halt 0; halt 1', ['Target CPU', 'Core state',

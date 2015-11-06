@@ -748,8 +748,8 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
-        times = queryset.values_list(
-            'time_rounded', flat=True).distinct().order_by('time_rounded')
+        times = list(queryset.values_list(
+            'time_rounded', flat=True).distinct().order_by('time_rounded'))
     if len(times) < 1:
         return
     extra_colors = list(colors_extra)
