@@ -108,7 +108,7 @@ class fault_injector:
             num_cycles = self.debugger.calculate_cycles(
                 self.command, self.aux_command, self.kill_dut)
         else:
-            num_cycles = 0
+            num_cycles = None
         exec_time = self.debugger.time_application(self.command,
                                                    self.aux_command, iterations,
                                                    self.kill_dut)
@@ -126,8 +126,8 @@ class fault_injector:
                 self.command, self.aux_command, num_cycles, num_checkpoints,
                 self.kill_dut)
         else:
-            num_checkpoints = 0
-            cycles_between = 0
+            num_checkpoints = None
+            cycles_between = None
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute(
@@ -144,9 +144,9 @@ class fault_injector:
                 architecture, self.use_simics,
                 self.debugger.dut.output.decode('utf-8', 'ignore'),
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
-                self.use_aux else '', self.debugger.output,
+                self.use_aux else None, self.debugger.output,
                 self.debugger.dut.paramiko_output,
-                self.debugger.aux.paramiko_output if self.use_aux else '',
+                self.debugger.aux.paramiko_output if self.use_aux else None,
                 num_cycles, num_checkpoints, cycles_between, datetime.now(),
                 self.kill_dut
             )
@@ -286,6 +286,8 @@ class fault_injector:
         if self.use_aux:
             for line in aux_buff.split('\n'):
                 if 'drseus_detected_errors:' in line:
+                    if detected_errors is None:
+                        detected_errors = 0
                     detected_errors += int(line.replace(
                                            'drseus_detected_errors:', ''))
                     break
@@ -333,14 +335,14 @@ class fault_injector:
             'timestamp=? WHERE id=?', (
                 outcome, outcome_category, data_diff, detected_errors,
                 self.debugger.dut.output.decode('utf-8', 'ignore') if
-                self.debugger.dut is not None else '',
+                self.debugger.dut is not None else None,
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
-                self.use_aux and self.debugger.aux is not None else '',
+                self.use_aux and self.debugger.aux is not None else None,
                 self.debugger.output,
                 self.debugger.dut.paramiko_output if
-                self.debugger.dut is not None else '',
+                self.debugger.dut is not None else None,
                 self.debugger.aux.paramiko_output if
-                self.use_aux and self.debugger.aux is not None else '',
+                self.use_aux and self.debugger.aux is not None else None,
                 datetime.now(), self.result_id
             )
         )
@@ -492,11 +494,6 @@ class fault_injector:
                 os.system('ssh p2020 \'killall tshark\'')
                 capture_process.wait()
                 capture_file.close()
-            self.debugger.dut.output = ''
-            self.debugger.dut.paramiko_output = ''
-            if self.use_aux:
-                self.debugger.aux.output = ''
-                self.debugger.aux.paramiko_output = ''
         if self.use_simics:
             self.debugger.close()
         self.close()
