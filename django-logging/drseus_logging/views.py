@@ -162,8 +162,12 @@ def results_page(request, campaign_number):
 def result_page(request, campaign_number, iteration):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
     navigation_items = (('Information', '../../campaign'),
-                        ('Charts', '../../charts/'),
-                        ('Table', '../../results/'))
+                        ('Charts (Grouped by Category)',
+                         '../../category_charts/'),
+                        ('Charts (Grouped by Outcome)',
+                         '../../outcome_charts/'),
+                        ('Table', '../../results/'),
+                        ('Edit Results', '../../edit'))
     page_items = [('Result', 'result'), ('Injections', 'injections')]
     output_file = ('../campaign-data/'+campaign_number+'/results/'+iteration +
                    '/'+campaign_data.output_file)

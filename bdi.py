@@ -161,23 +161,20 @@ class bdi_arm(bdi):
                  aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug,
                  timeout):
         self.prompts = ['A9#0>', 'A9#1>']
+        # TODO: ttb1 bit 7 injected (not others)
         self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
                           'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'pc', 'cpsr',
                           # 'spsr', 'mainid', 'cachetype', 'tcmstatus',
                           # 'tlbtype', 'mputype', 'multipid', 'procfeature0',
-                          'procfeature1',
-                          # 'dbgfeature0',
-                          'auxfeature0',  # 'memfeature0',
-                          # 'memfeature1', 'memfeature2', 'memfeature3',
-                          # 'instrattr0', 'instrattr1', 'instrattr2',
-                          # 'instrattr3', 'instrattr4', 'instrattr5',
-                          # 'instrattr6', 'instrattr7', 'control', 'auxcontrol',
-                          # 'cpaccess', 'securecfg',
-                          'securedbg',  # 'nonsecure',
+                          # 'procfeature1', 'dbgfeature0', auxfeature0',
+                          # 'memfeature0', 'memfeature1', 'memfeature2',
+                          # 'memfeature3', 'instrattr0', 'instrattr1',
+                          # 'instrattr2', 'instrattr3', 'instrattr4',
+                          # 'instrattr5', 'instrattr6', 'instrattr7', 'control',
+                          # 'auxcontrol', 'cpaccess', 'securecfg', 'securedbg',
+                          # 'nonsecure',
                           'ttb0', 'ttb1',  # 'ttbc',
-                          'dac',  # 'dfsr', 'ifsr',
-                          # 'dauxfsr',
-                          # 'iaucfsr',
+                          'dac',  # 'dfsr', 'ifsr', 'dauxfsr', 'iaucfsr',
                           'dfar', 'ifar',  # 'fcsepid',
                           'context'
                           ]
