@@ -211,9 +211,9 @@ class dut:
                     break
         if change_prompt:
             self.serial.write('export PS1=\"DrSEUs# \"\n')
+            self.read_until('export PS1=\"DrSEUs# \"')
             self.prompt = 'DrSEUs# '
-            self.read_until()  # export command
-            self.read_until()  # actual prompt
+            self.read_until()
         self.command('mkdir ~/.ssh')
         self.command('touch ~/.ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
