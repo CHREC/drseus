@@ -8,7 +8,7 @@ from threading import Thread
 from time import time
 
 from dut import dut
-from error import DrSEUSError
+from error import DrSEUsError
 import simics_checkpoints
 
 
@@ -119,9 +119,9 @@ class simics:
             if self.use_aux:
                 aux_process.join()
         else:
-            self.dut.prompt = 'DrSEUS# '
+            self.dut.prompt = 'DrSEUs# '
             if self.use_aux:
-                self.aux.prompt = 'DrSEUS# '
+                self.aux.prompt = 'DrSEUs# '
 
     def launch_simics_gui(self, checkpoint):
         dut_board = 'DUT_'+self.board
@@ -163,7 +163,7 @@ class simics:
             def read_worker():
                 try:
                     self.read_until()
-                except DrSEUSError:
+                except DrSEUsError:
                     pass
             read_thread = Thread(target=read_worker)
             read_thread.start()
@@ -209,7 +209,7 @@ class simics:
                 break
         for message in self.error_messages:
             if message in buff:
-                raise DrSEUSError(message)
+                raise DrSEUsError(message)
         return buff
 
     def command(self, command):
@@ -447,7 +447,7 @@ class simics:
                 #                               '/simics-workspace'),
                 #                          stdout=subprocess.PIPE)
                 # if merge.wait():
-                #     raise DrSEUSError('Error merging checkpoint')
+                #     raise DrSEUsError('Error merging checkpoint')
                 gold_incremental_checkpoint = ('gold-checkpoints/' +
                                                str(self.campaign_number)+'/' +
                                                str(checkpoint_number))
@@ -466,7 +466,7 @@ class simics:
                     #                               '/simics-workspace'),
                     #                          stdout=subprocess.PIPE)
                     # if merge.wait():
-                    #     raise DrSEUSError('Error merging checkpoint')
+                    #     raise DrSEUsError('Error merging checkpoint')
                 gold_checkpoint = 'simics-workspace/'+gold_checkpoint
                 monitored_checkpoint = 'simics-workspace/'+monitored_checkpoint
                 errors = simics_checkpoints.compare_registers(

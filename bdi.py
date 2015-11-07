@@ -8,7 +8,7 @@ import random
 import sqlite3
 
 from dut import dut
-from error import DrSEUSError
+from error import DrSEUsError
 
 # BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
 
@@ -70,7 +70,7 @@ class bdi:
             return_buffer += buff
             print (colored(buff, 'yellow'), end='')
             if index < 0:
-                raise DrSEUSError(error_message)
+                raise DrSEUsError(error_message)
         else:
             print()
         index, match, buff = self.telnet.expect(self.prompts,
@@ -79,10 +79,10 @@ class bdi:
         return_buffer += buff
         print(colored(buff, 'yellow'))
         if index < 0:
-            raise DrSEUSError(error_message)
+            raise DrSEUsError(error_message)
         for message in self.error_messages:
             if message in buff:
-                raise DrSEUSError(error_message)
+                raise DrSEUsError(error_message)
         return return_buffer
 
     def time_application(self, command, aux_command, iterations, kill_dut):
@@ -153,7 +153,7 @@ class bdi:
             sql_db.close()
             if int(injected_value, base=16) != int(
                     self.get_register_value(register), base=16):
-                raise DrSEUSError('Error injecting fault')
+                raise DrSEUsError('Error injecting fault')
 
 
 class bdi_arm(bdi):
@@ -161,7 +161,7 @@ class bdi_arm(bdi):
                  aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug,
                  timeout):
         self.prompts = ['A9#0>', 'A9#1>']
-        # TODO: ttb1 bit 7 injected (not others)
+        # TODO: ttb1 cannot inject into bits 2, 8, 9, 11
         self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
                           'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'pc', 'cpsr',
                           # 'spsr', 'mainid', 'cachetype', 'tcmstatus',
@@ -183,7 +183,20 @@ class bdi_arm(bdi):
                      debug, timeout)
 
     def reset_dut(self):
-        self.command('reset', ['- TARGET: processing target startup passed'],
+        self.command('reset', ['- TARGET: processing reset request',
+                               '- TARGET: BDI removes TRST',
+                               '- TARGET: Bypass check',
+                               '- TARGET: JTAG exists check passed',
+                               '- Core#0: ID code', '- Core#0: DP-CSW',
+                               '- Core#0: DBG-AP', '- Core#0: DIDR',
+                               '- Core#1: ID code', '- Core#1: DP-CSW',
+                               '- Core#1: DBG-AP', '- Core#1: DIDR',
+                               '- TARGET: BDI removes RESET',
+                               '- TARGET: BDI waits for RESET inactive',
+                               '- TARGET: Reset sequence passed',
+                               '- TARGET: resetting target passed',
+                               '- TARGET: processing target startup',
+                               '- TARGET: processing target startup passed'],
                      error_message='Error resetting DUT')
 
     def halt_dut(self):
@@ -198,12 +211,12 @@ class bdi_arm(bdi):
         # TODO: check if cores are running (not in debug mode)
         self.command('select '+str(core), ['Core number', 'Core state',
                                            'Debug entry cause', 'Current PC',
-                                           'Current CPSR'],  # 'Current SPSR'],
+                                           'Current CPSR'],
                      'Error selecting core')
 
     def get_register_value(self, register):
-        buff = self.command('rd '+register, error_message='Error getting '
-                                                          'register value')
+        buff = self.command('rd '+register, [':'],
+                            error_message='Error getting register value')
         return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
 
     def set_register_value(self, register, value):

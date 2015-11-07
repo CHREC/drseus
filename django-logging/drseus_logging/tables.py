@@ -67,19 +67,21 @@ class results_table(tables.Table):
     targets = tables.Column(empty_values=())
 
     def render_targets(self, record):
-        if result.objects.get(id=record.id).campaign.use_simics:
-            if record is not None:
+        if record is not None:
+            if result.objects.get(id=record.id).campaign.use_simics:
                 targets = [inj.target
                            for inj in
                            injection.objects.filter(result=record.id)]
             else:
-                targets = []
-            if len(targets) > 0:
-                return ', '.join(targets)
-            else:
-                return '-'
+                targets = [inj.register
+                           for inj in
+                           injection.objects.filter(result=record.id)]
         else:
-            return 'N/A'
+            targets = []
+        if len(targets) > 0:
+            return ', '.join(targets)
+        else:
+            return '—'
 
     class Meta:
         attrs = {"class": "paleblue"}

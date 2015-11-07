@@ -11,7 +11,7 @@ from termcolor import colored
 from threading import Thread
 
 from bdi import bdi_p2020, bdi_arm
-from error import DrSEUSError
+from error import DrSEUsError
 from simics import simics
 
 
@@ -144,8 +144,7 @@ class fault_injector:
                 architecture, self.use_simics,
                 self.debugger.dut.output.decode('utf-8', 'ignore'),
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
-                self.use_aux else '',
-                self.debugger.output,  # .decode('utf-8', 'ignore'),
+                self.use_aux else '', self.debugger.output,
                 self.debugger.dut.paramiko_output,
                 self.debugger.aux.paramiko_output if self.use_aux else '',
                 num_cycles, num_checkpoints, cycles_between, datetime.now(),
@@ -183,7 +182,7 @@ class fault_injector:
                          '/aux-files/'+item)
         self.debugger.aux.send_files(files)
 
-    def get_result_id(self, num_injections):
+    def get_result_id(self, num_injections=0):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute('INSERT INTO drseus_logging_result (campaign_id,iteration'
@@ -223,7 +222,7 @@ class fault_injector:
 
     def check_output(self, output_file, use_aux_output):
         missing_output = False
-        data_diff = -1.0
+        data_diff = None
         os.makedirs('campaign-data/'+str(self.campaign_number)+'/results/' +
                     str(self.iteration))
         result_folder = ('campaign-data/'+str(self.campaign_number) +
@@ -249,28 +248,25 @@ class fault_injector:
                 os.remove(output_location)
                 if not os.listdir(result_folder):
                     os.rmdir(result_folder)
-        try:
-            if use_aux_output:
-                self.debugger.aux.command('rm '+output_file)
-            else:
-                self.debugger.dut.command('rm '+output_file)
-        except DrSEUSError as error:
-            raise DrSEUSError(error.type)
+        if use_aux_output:
+            self.debugger.aux.command('rm '+output_file)
+        else:
+            self.debugger.dut.command('rm '+output_file)
         if missing_output:
-            raise DrSEUSError(DrSEUSError.missing_output)
+            raise DrSEUsError(DrSEUsError.missing_output)
         return data_diff
 
     def monitor_execution(self, latent_faults, output_file, use_aux_output):
         buff = ''
         aux_buff = ''
-        detected_errors = 0
-        data_diff = -1.0
+        detected_errors = None
+        data_diff = None
         outcome = ''
         outcome_category = ''
         if self.use_aux:
             try:
                 aux_buff = self.debugger.aux.read_until()
-            except DrSEUSError as error:
+            except DrSEUsError as error:
                 self.debugger.dut.serial.write('\x03')
                 outcome = error.type
                 outcome_category = 'AUX execution error'
@@ -279,7 +275,7 @@ class fault_injector:
                     self.debugger.dut.serial.write('\x03')
         try:
             buff = self.debugger.dut.read_until()
-        except DrSEUSError as error:
+        except DrSEUsError as error:
             outcome = error.type
             outcome_category = 'Execution error'
         for line in buff.split('\n'):
@@ -296,9 +292,12 @@ class fault_injector:
         if output_file and not outcome:
             try:
                 data_diff = self.check_output(output_file, use_aux_output)
-            except DrSEUSError as error:
-                if error.type == DrSEUSError.missing_output:
-                    outcome = error.type
+            except DrSEUsError as error:
+                if error.type == DrSEUsError.scp_error:
+                    outcome = 'Error getting output file'
+                    outcome_category = 'SCP error'
+                elif error.type == DrSEUsError.missing_output:
+                    outcome = 'Missing output file'
                     outcome_category = 'SCP error'
                 else:
                     outcome = error.type
@@ -307,7 +306,7 @@ class fault_injector:
             if detected_errors > 0:
                 outcome = 'Detected data error'
                 outcome_category = 'Data error'
-            elif data_diff < 1.0 and data_diff != -1.0:
+            elif data_diff and data_diff < 1.0:
                 outcome = 'Silent data error'
                 outcome_category = 'Data error'
             elif latent_faults:
@@ -321,7 +320,7 @@ class fault_injector:
     def log_result(self, outcome, outcome_category, detected_errors, data_diff):
         print(colored('iteration '+str(self.iteration)+' outcome: ' +
                       outcome_category+' - '+outcome, 'blue'), end='')
-        if data_diff < 1.0 and data_diff != -1.0:
+        if data_diff and data_diff < 1.0:
             print(colored(', data diff: '+str(data_diff), 'blue'))
         else:
             print()
@@ -347,6 +346,12 @@ class fault_injector:
         )
         sql_db.commit()
         sql_db.close()
+        self.debugger.output = ''
+        self.debugger.dut.output = ''
+        self.debugger.dut.paramiko_output = ''
+        if self.use_aux:
+            self.debugger.aux.output = ''
+            self.debugger.aux.paramiko_output = ''
 
     def inject_and_monitor(self, iteration_counter, last_iteration,
                            num_injections, selected_targets, output_file,
@@ -360,10 +365,17 @@ class fault_injector:
             if self.iteration >= last_iteration:
                 break
             self.result_id = self.get_result_id(num_injections)
+            data_diff = None
+            detected_errors = None
             if not self.use_simics:
                 self.debugger.reset_dut()
                 self.debugger.dut.do_login()
-                self.send_dut_files()
+                try:
+                    self.send_dut_files()
+                except DrSEUsError:
+                    self.log_result('Error sending files to DUT', 'SCP error',
+                                    detected_errors, data_diff)
+                    continue
             if self.use_aux and not self.use_simics:
                 self.debugger.aux.serial.write(str('./'+self.aux_command+'\n'))
             try:
@@ -371,7 +383,7 @@ class fault_injector:
                                                    selected_targets,
                                                    compare_all)
                 self.debugger.continue_dut()
-            except DrSEUSError as error:
+            except DrSEUsError as error:
                 outcome = error.type
                 if self.use_simics:
                     outcome_category = 'Simics error'
@@ -389,8 +401,6 @@ class fault_injector:
                                 aux_process.join()
                         except:
                             pass
-                data_diff = -1.0
-                detected_errors = 0
             else:
                 (outcome, outcome_category, detected_errors,
                  data_diff) = self.monitor_execution(latent_faults, output_file,
@@ -414,7 +424,7 @@ class fault_injector:
             if self.use_simics:
                 try:
                     self.debugger.close()
-                except DrSEUSError as error:
+                except DrSEUsError as error:
                     outcome = error.type
                     outcome_category = 'Simics error'
                 finally:
@@ -423,12 +433,6 @@ class fault_injector:
                                   str(self.iteration))
             self.log_result(outcome, outcome_category, detected_errors,
                             data_diff)
-            self.debugger.output = ''
-            self.debugger.dut.output = ''
-            self.debugger.dut.paramiko_output = ''
-            if self.use_aux:
-                self.debugger.aux.output = ''
-                self.debugger.aux.paramiko_output = ''
         self.close()
 
     def supervise(self, starting_iteration, run_time, output_file,
@@ -446,7 +450,8 @@ class fault_injector:
                 self.send_aux_files()
         for iteration in xrange(starting_iteration,
                                 starting_iteration + iterations):
-            result_id = self.get_result_id(iteration)
+            self.iteration = iteration
+            self.result_id = self.get_result_id()
             # create empty injection, used for injection charts in log viewer
             sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
@@ -454,14 +459,14 @@ class fault_injector:
                 'INSERT INTO drseus_logging_injection (result_id,'
                 'injection_number,timestamp) VALUES (?,?,?)',
                 (
-                    result_id, 0, datetime.now()
+                    self.result_id, 0, datetime.now()
                 )
             )
             sql_db.commit()
             sql_db.close()
             if packet_capture:
                 data_dir = ('campaign-data/'+str(self.campaign_number) +
-                            '/results/'+str(iteration))
+                            '/results/'+str(self.iteration))
                 os.makedirs(data_dir)
                 capture_file = open(data_dir+'/capture.pcap', 'w')
                 capture_process = subprocess.Popen(['ssh', 'p2020', 'tshark '
@@ -478,10 +483,9 @@ class fault_injector:
                 self.debugger.aux.serial.write(str('./'+self.aux_command+'\n'))
             self.debugger.dut.serial.write(str('./'+self.command+'\n'))
             (outcome, outcome_category, detected_errors,
-             data_diff) = self.monitor_execution(iteration, 0, output_file,
-                                                 use_aux_output)
-            self.log_result(result_id, iteration, outcome, outcome_category,
-                            detected_errors, data_diff)
+             data_diff) = self.monitor_execution(0, output_file, use_aux_output)
+            self.log_result(outcome, outcome_category, detected_errors,
+                            data_diff)
             if packet_capture:
                 import time
                 time.sleep(5)

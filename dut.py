@@ -6,7 +6,7 @@ from scp import SCPClient
 from serial import Serial
 from termcolor import colored
 
-from error import DrSEUSError
+from error import DrSEUsError
 
 
 class dut:
@@ -40,14 +40,31 @@ class dut:
     def send_files(self, files):
         if self.debug:
             print(colored('sending files...', 'blue'))
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.ip_address, port=self.ssh_port, username='root',
-                    pkey=self.rsakey, look_for_keys=False)
-        dut_scp = SCPClient(ssh.get_transport())
-        dut_scp.put(files)
-        dut_scp.close()
-        ssh.close()
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(self.ip_address, port=self.ssh_port, username='root',
+                        pkey=self.rsakey, look_for_keys=False)
+            dut_scp = SCPClient(ssh.get_transport())
+            dut_scp.put(files)
+            dut_scp.close()
+            ssh.close()
+        except Exception as error:
+            print(error)
+            fallback = True
+            for file_ in files:
+                scp_process = Process(target=os.system,
+                                      args=('scp -P '+str(self.ssh_port) +
+                                            ' -i campaign-data/private.key '
+                                            '-o StrictHostKeyChecking=no ' +
+                                            file_+' root@' +
+                                            str(self.ip_address)+':',))
+                scp_process.start()
+                scp_process.join(timeout=30)
+                if scp_process.is_alive():
+                    scp_process.terminate()
+                    fallback_failed = True
+                    break
         if self.debug:
             print(colored('files sent', 'blue'))
         paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
@@ -56,6 +73,11 @@ class dut:
             with open(paramiko_log) as log_file:
                 self.paramiko_output += log_file.read()
             os.remove(paramiko_log)
+        if fallback:
+            self.paramiko_output += '\nFallback to SCP used'
+            if fallback_failed:
+                self.paramiko_output += ', but failed'
+                raise DrSEUsError(DrSEUsError.scp_error)
 
     def get_file(self, file_, local_path=''):
         fallback = False
@@ -76,7 +98,7 @@ class dut:
                                   args=('scp -P '+str(self.ssh_port) +
                                         ' -i campaign-data/private.key '
                                         '-o StrictHostKeyChecking=no '
-                                        'root@localhost:'+file_ +
+                                        'root@'+str(self.ip_address)+':'+file_ +
                                         ' ./'+local_path,))
             scp_process.start()
             scp_process.join(timeout=30)
@@ -93,6 +115,7 @@ class dut:
             self.paramiko_output += '\nFallback to SCP used'
             if fallback_failed:
                 self.paramiko_output += ', but failed'
+                raise DrSEUsError(DrSEUsError.scp_error)
 
     def is_logged_in(self):
         self.serial.write('\n')
@@ -104,7 +127,7 @@ class dut:
                 print(colored(char, self.color), end='')
             buff += char
             if not char:
-                raise DrSEUSError(DrSEUSError.hanging)
+                raise DrSEUsError(DrSEUsError.hanging)
             elif buff[-len(self.prompt):] == self.prompt:
                 return True
             elif buff[-len('login: '):] == 'login: ':
@@ -141,13 +164,13 @@ class dut:
                     signal = line[line.index('drseus_sighandler:'):
                                   ].replace('drseus_sighandler:', '').strip()
                     break
-            raise DrSEUSError('Signal '+signal)
+            raise DrSEUsError('Signal '+signal)
         else:
             for message in self.error_messages:
                 if message in buff:
-                    raise DrSEUSError(message)
+                    raise DrSEUsError(message)
         if hanging:
-            raise DrSEUSError(DrSEUSError.hanging)
+            raise DrSEUsError(DrSEUsError.hanging)
         else:
             return buff
 
@@ -166,15 +189,15 @@ class dut:
                     print(colored(char, self.color), end='')
                 buff += char
                 if not char:
-                    raise DrSEUSError(DrSEUSError.hanging)
+                    raise DrSEUsError(DrSEUsError.hanging)
                 elif buff[-len(self.prompt):] == self.prompt:
                     break
                 elif buff[-len('Password: '):] == 'Password: ':
                     self.command('chrec')
                     break
         if change_prompt:
-            self.serial.write('export PS1=\"DrSEUS# \"\n')
-            self.prompt = 'DrSEUS# '
+            self.serial.write('export PS1=\"DrSEUs# \"\n')
+            self.prompt = 'DrSEUs# '
             self.read_until()
         self.command('mkdir ~/.ssh')
         self.command('touch ~/.ssh/authorized_keys')

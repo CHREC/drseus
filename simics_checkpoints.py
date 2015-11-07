@@ -7,7 +7,7 @@ from subprocess import check_output
 import sqlite3
 from termcolor import colored
 
-from error import DrSEUSError
+from error import DrSEUsError
 from simics_targets import devices
 
 
@@ -425,7 +425,7 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
         sql_db.commit()
         sql_db.close()
         print(error)
-        raise DrSEUSError('Error injecting fault')
+        raise DrSEUsError('Error injecting fault')
     # log injection data
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql = sql_db.cursor()

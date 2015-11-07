@@ -100,7 +100,7 @@ def json_campaigns(queryset):
             }
         },
         'title': {
-            'text': 'DrSEUS Campaigns'
+            'text': 'DrSEUs Campaigns'
         },
         'xAxis': {
             'categories': campaigns,
@@ -454,8 +454,7 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
     }
     data = queryset.values_list('target').distinct().order_by(
         'target').annotate(
-            avg=Avg(Case(When(result__data_diff=-1.0, then=0),
-                         When(result__data_diff__isnull=True, then=0),
+            avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
                          default='result__data_diff'))
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 for x in data]})
@@ -905,15 +904,13 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
     if campaign_data.use_simics:
         data = queryset.values_list('checkpoint_number').distinct().order_by(
             'checkpoint_number').annotate(
-                avg=Avg(Case(When(result__data_diff=-1.0, then=0),
-                             When(result__data_diff__isnull=True, then=0),
+                avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
                              default='result__data_diff'))
             ).values_list('avg', flat=True)
     else:
         data = queryset.values_list('time_rounded').distinct().order_by(
             'time_rounded').annotate(
-                avg=Avg(Case(When(result__data_diff=-1.0, then=0),
-                             When(result__data_diff__isnull=True, then=0),
+                avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
                              default='result__data_diff'))
             ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 for x in data]})

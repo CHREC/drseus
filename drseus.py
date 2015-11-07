@@ -16,7 +16,7 @@ from fault_injector import fault_injector
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: add command line options for ip addresses, serial ports, serial prompts
-# TODO: change Exception in simics_checkpoints.py to DrSEUSError
+# TODO: change Exception in simics_checkpoints.py to DrSEUsError
 
 
 def list_campaigns():
@@ -29,7 +29,7 @@ def list_campaigns():
                 'FROM drseus_logging_campaign')
     campaign_list = sql.fetchall()
     sql_db.close()
-    print('DrSEUS Campaigns:')
+    print('DrSEUs Campaigns:')
     print('Number\t\tApplication\t\tArchitecture\tSimics')
     for campaign in campaign_list:
         campaign = list(campaign)
@@ -247,7 +247,7 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
     drseus = load_campaign(campaign_data, options)
 
     def interrupt_handler(signum, frame):
-        drseus.log_result('Interrupted', 'Incomplete', 0, -1.0)
+        drseus.log_result('Interrupted', 'Incomplete', None, None)
         if os.path.exists('campaign-data/results/' +
                           str(campaign_data['campaign_number'])+'/' +
                           str(drseus.iteration)):
@@ -298,7 +298,7 @@ parser.add_option('-T', '--timeout', action='store', type='int',
                   dest='seconds', default=300,
                   help='device read timeout in seconds [default=300]')
 
-mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes', 'Not specifying one '
+mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes', 'Not specifying one '
                                   'of these will create a new campaign')
 mode_group.add_option('-b', '--list_campaigns', action='store_true',
                       dest='list', help='list campaigns')
@@ -325,7 +325,7 @@ mode_group.add_option('-l', '--log', action='store_true',
                       help='open logs in browser')
 parser.add_option_group(mode_group)
 
-simics_mode_group = optparse.OptionGroup(parser, 'DrSEUS Modes (Simics only)',
+simics_mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes (Simics only)',
                                          'These modes are only available for '
                                          'Simics campaigns')
 simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
