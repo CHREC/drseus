@@ -81,7 +81,7 @@ class results_table(tables.Table):
         if len(targets) > 0:
             return ', '.join(targets)
         else:
-            return '—'
+            return '-'
 
     class Meta:
         attrs = {"class": "paleblue"}
