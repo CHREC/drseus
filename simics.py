@@ -283,18 +283,18 @@ class simics:
                 self.aux.read_until('##')
 
     def calculate_cycles(self, command, aux_command, iterations, kill_dut):
+        num_cycles = 0
         self.halt_dut()
         start_cycles = self.command('print-time').split('\n')[-2].split()[2]
-        num_cycles = 0
+        self.continue_dut()
         for i in xrange(iterations):
-            self.continue_dut()
             self.time_application(command, aux_command, 1, kill_dut)
             self.halt_dut()
             end_cycles = self.command(
                 'print-time').split('\n')[-2].split()[2]
-            self.continue_dut()
             num_cycles += int(end_cycles) - int(start_cycles)
             start_cycles = end_cycles
+            self.continue_dut()
         return int(num_cycles / iterations)
 
     def time_application(self, command, aux_command, iterations, kill_dut):
