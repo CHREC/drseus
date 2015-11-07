@@ -280,23 +280,12 @@ class simics:
                 self.aux.read_until('##')
                 self.aux.read_until('##')
 
-    def calculate_cycles(self, command, aux_command, iterations, kill_dut):
+    def time_application(self, command, aux_command, iterations, kill_dut):
         num_cycles = 0
         self.halt_dut()
         start_cycles = self.command('print-time').split('\n')[-2].split()[2]
+        start_time = time()
         self.continue_dut()
-        for i in xrange(iterations):
-            self.time_application(command, aux_command, 1, kill_dut)
-            self.halt_dut()
-            end_cycles = self.command(
-                'print-time').split('\n')[-2].split()[2]
-            num_cycles += int(end_cycles) - int(start_cycles)
-            start_cycles = end_cycles
-            self.continue_dut()
-        return int(num_cycles / iterations)
-
-    def time_application(self, command, aux_command, iterations, kill_dut):
-        start = time()
         for i in xrange(iterations):
             if self.use_aux:
                 aux_process = Thread(target=self.aux.command,
@@ -308,8 +297,15 @@ class simics:
             if kill_dut:
                 self.dut.serial.write('\x03')
             self.dut.read_until()
-        end = time()
-        return (end - start) / iterations
+            self.halt_dut()
+            end_cycles = self.command(
+                'print-time').split('\n')[-2].split()[2]
+            num_cycles += int(end_cycles) - int(start_cycles)
+            start_cycles = end_cycles
+            self.continue_dut()
+        end_time = time()
+        return ((end_time - start_time) / iterations,
+                int(num_cycles / iterations))
 
     def create_checkpoints(self, command, aux_command, cycles, num_checkpoints,
                            kill_dut):

@@ -104,15 +104,12 @@ class fault_injector:
         self.debugger.dut.command()
         if self.use_aux:
             aux_process.join()
-        exec_time = self.debugger.time_application(self.command,
-                                                   self.aux_command, iterations,
-                                                   self.kill_dut)
         if self.use_simics:
-            num_cycles = self.debugger.calculate_cycles(self.command,
-                                                        self.aux_command,
-                                                        iterations,
-                                                        self.kill_dut)
+            exec_time, num_cycles = self.debugger.time_application(
+                self.command, self.aux_command, iterations, self.kill_dut)
         else:
+            exec_time = self.debugger.time_application(
+                self.command, self.aux_command, iterations, self.kill_dut)
             num_cycles = None
         if output_file:
             if use_aux_output:
