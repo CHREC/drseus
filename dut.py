@@ -38,6 +38,8 @@ class dut:
         self.serial.close()
 
     def send_files(self, files):
+        fallback = False
+        fallback_failed = False
         if self.debug:
             print(colored('sending files...', 'blue'))
         try:
@@ -52,6 +54,8 @@ class dut:
         except Exception as error:
             print(error)
             fallback = True
+            if self.debug:
+                print(colored('falling back to scp...', 'blue'))
             for file_ in files:
                 scp_process = Process(target=os.system,
                                       args=('scp -P '+str(self.ssh_port) +
@@ -64,9 +68,9 @@ class dut:
                 if scp_process.is_alive():
                     scp_process.terminate()
                     fallback_failed = True
+                    if self.debug:
+                        print(colored('fallback failed', 'blue'))
                     break
-        if self.debug:
-            print(colored('files sent', 'blue'))
         paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
         if os.path.exists(paramiko_log):
@@ -78,10 +82,14 @@ class dut:
             if fallback_failed:
                 self.paramiko_output += ', but failed'
                 raise DrSEUsError(DrSEUsError.scp_error)
+        if self.debug:
+            print(colored('files sent', 'blue'))
 
     def get_file(self, file_, local_path=''):
         fallback = False
         fallback_failed = False
+        if self.debug:
+            print(colored('getting file...', 'blue'))
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -94,6 +102,8 @@ class dut:
         except Exception as error:
             print(error)
             fallback = True
+            if self.debug:
+                print(colored('falling back to scp...', 'blue'))
             scp_process = Process(target=os.system,
                                   args=('scp -P '+str(self.ssh_port) +
                                         ' -i campaign-data/private.key '
@@ -105,6 +115,8 @@ class dut:
             if scp_process.is_alive():
                 scp_process.terminate()
                 fallback_failed = True
+                if self.debug:
+                    print(colored('fallback failed', 'blue'))
         paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
                         str(self.ssh_port)+'.log')
         if os.path.exists(paramiko_log):
@@ -116,6 +128,8 @@ class dut:
             if fallback_failed:
                 self.paramiko_output += ', but failed'
                 raise DrSEUsError(DrSEUsError.scp_error)
+        if self.debug:
+            print(colored('file received', 'blue'))
 
     def is_logged_in(self):
         self.serial.write('\n')
