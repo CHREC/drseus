@@ -109,13 +109,11 @@ class simics:
                     self.aux.do_login(change_prompt=True)
                     self.aux.command('ifconfig eth0 10.10.0.104 '
                                      'netmask 255.255.255.0 up')
-                    self.aux.read_until()
                 aux_process = Thread(target=aux_login)
                 aux_process.start()
             self.dut.do_login(change_prompt=True)
             self.dut.command('ifconfig eth0 10.10.0.100 '
                              'netmask 255.255.255.0 up')
-            self.dut.read_until()
             if self.use_aux:
                 aux_process.join()
         else:
