@@ -284,7 +284,7 @@ class fault_injector:
                     break
         if output_file and not outcome:
             try:
-                self.data_diff = self.check_output(output_file, use_aux_output)
+                self.check_output(output_file, use_aux_output)
             except DrSEUsError as error:
                 if error.type == DrSEUsError.scp_error:
                     outcome = 'Error getting output file'
