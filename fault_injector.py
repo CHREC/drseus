@@ -45,17 +45,6 @@ class fault_injector:
                                         dut_serial_port, aux_ip_address,
                                         aux_serial_port, use_aux, '[root@ZED]#',
                                         debug, timeout)
-            if self.use_aux:
-                self.debugger.aux.serial.write('\x03')
-                aux_process = Thread(target=self.debugger.aux.do_login)
-                aux_process.start()
-            if self.debugger.telnet:
-                self.debugger.reset_dut()
-            else:
-                self.debugger.dut.serial.write('\x03')
-            self.debugger.dut.do_login()
-            if self.use_aux:
-                aux_process.join()
 
     def close(self):
         if not self.use_simics:
@@ -68,6 +57,18 @@ class fault_injector:
         self.kill_dut = kill_dut
         if self.use_simics:
             self.debugger.launch_simics()
+        else:
+            if self.use_aux:
+                self.debugger.aux.serial.write('\x03')
+                aux_process = Thread(target=self.debugger.aux.do_login)
+                aux_process.start()
+            if self.debugger.telnet:
+                self.debugger.reset_dut()
+            else:
+                self.debugger.dut.serial.write('\x03')
+            self.debugger.dut.do_login()
+            if self.use_aux:
+                aux_process.join()
         if arguments:
             self.command = application+' '+arguments
         else:
@@ -353,7 +354,10 @@ class fault_injector:
         self.data_diff = None
         self.detected_errors = None
         if self.use_aux and not self.use_simics:
-            self.send_aux_files()
+            if self.use_aux:
+                self.debugger.aux.serial.write('\x03')
+                self.debugger.aux.do_login()
+                self.send_aux_files()
         while True:
             with iteration_counter.get_lock():
                 self.iteration = iteration_counter.value
@@ -437,7 +441,18 @@ class fault_injector:
                                         str(self.campaign_number)+'/' +
                                         str(self.num_checkpoints-1)+'_merged')
             self.debugger.continue_dut()
-        if not self.use_simics:
+        else:
+            if self.use_aux:
+                self.debugger.aux.serial.write('\x03')
+                aux_process = Thread(target=self.debugger.aux.do_login)
+                aux_process.start()
+            if self.debugger.telnet:
+                self.debugger.reset_dut()
+            else:
+                self.debugger.dut.serial.write('\x03')
+            self.debugger.dut.do_login()
+            if self.use_aux:
+                aux_process.join()
             self.send_dut_files()
             if self.use_aux:
                 self.send_aux_files()
