@@ -96,53 +96,57 @@ class result_filter(django_filters.FilterSet):
     aux_output = django_filters.CharFilter(
         label='AUX output',
         lookup_type='icontains',
-        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
     debugger_output = django_filters.CharFilter(
         label='Simics output',
         lookup_type='icontains',
-        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
     dut_output = django_filters.CharFilter(
         label='DUT output',
         lookup_type='icontains',
-        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
     injection__bit = django_filters.MultipleChoiceFilter(
         label='Bit',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__core = django_filters.MultipleChoiceFilter(
         label='Core',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__field = django_filters.MultipleChoiceFilter(
         label='Field',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__checkpoint_number = django_filters.MultipleChoiceFilter(
         label='Checkpoint number',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__register = django_filters.MultipleChoiceFilter(
         label='Register',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__register_index = django_filters.MultipleChoiceFilter(
         label='Register index',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__target = django_filters.MultipleChoiceFilter(
         label='Target',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__target_index = django_filters.MultipleChoiceFilter(
         label='Target index',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__time_rounded = django_filters.MultipleChoiceFilter(
         label='Injection time',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     num_injections = django_filters.MultipleChoiceFilter(
         label='Number of injections',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     outcome = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     outcome_category = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     paramiko_output = django_filters.CharFilter(
         label='SCP output',
         lookup_type='icontains',
-        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}))
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
 
     class Meta:
         model = result
@@ -207,32 +211,32 @@ class injection_filter(django_filters.FilterSet):
             len(time_rounded_choices), 10)
 
     bit = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     core = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     checkpoint_number = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     field = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     register = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     register_index = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     result__num_injections = django_filters.MultipleChoiceFilter(
         label='Number of injections',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     result__outcome = django_filters.MultipleChoiceFilter(
         label='Outcome',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     result__outcome_category = django_filters.MultipleChoiceFilter(
         label='Outcome category',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     target = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     target_index = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     time_rounded = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
 
     class Meta:
         model = injection
@@ -267,9 +271,9 @@ class simics_register_diff_filter(django_filters.FilterSet):
         return sorted(choices, key=fix_sort_list)
 
     checkpoint_number = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     register = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}))
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
 
     class Meta:
         model = simics_register_diff
