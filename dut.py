@@ -21,6 +21,7 @@ class dut:
                                       str(ssh_port)+'.log')
         self.output = ''
         self.paramiko_output = ''
+        self.default_timeout = timeout
         try:
             self.serial = Serial(port=serial_port, baudrate=baud_rate,
                                  timeout=timeout, rtscts=True)
@@ -166,9 +167,13 @@ class dut:
                 break
             for message in self.error_messages:
                 if buff[-len(message):] == message:
+                    if errors == 0:
+                        self.serial.timeout = 30
                     errors += 1
             if errors > 5:
                 break
+        if self.serial.timeout != self.default_timeout:
+            self.serial.timeout = self.default_timeout
         if self.debug:
             print()
         if 'drseus_sighandler:' in buff:

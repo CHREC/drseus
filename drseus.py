@@ -247,7 +247,7 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
     drseus = load_campaign(campaign_data, options)
 
     def interrupt_handler(signum, frame):
-        drseus.log_result('Interrupted', 'Incomplete', None, None)
+        drseus.log_result('Interrupted', 'Incomplete')
         if os.path.exists('campaign-data/results/' +
                           str(campaign_data['campaign_number'])+'/' +
                           str(drseus.iteration)):

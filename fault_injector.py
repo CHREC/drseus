@@ -216,7 +216,6 @@ class fault_injector:
 
     def check_output(self, output_file, use_aux_output):
         missing_output = False
-        data_diff = None
         os.makedirs('campaign-data/'+str(self.campaign_number)+'/results/' +
                     str(self.iteration))
         result_folder = ('campaign-data/'+str(self.campaign_number) +
@@ -236,9 +235,9 @@ class fault_injector:
                 solutionContents = solution.read()
             with open(output_location, 'r') as result:
                 resultContents = result.read()
-            data_diff = SequenceMatcher(None, solutionContents,
-                                        resultContents).quick_ratio()
-            if data_diff == 1.0:
+            self.data_diff = SequenceMatcher(None, solutionContents,
+                                             resultContents).quick_ratio()
+            if self.data_diff == 1.0:
                 os.remove(output_location)
                 if not os.listdir(result_folder):
                     os.rmdir(result_folder)
@@ -248,13 +247,10 @@ class fault_injector:
             self.debugger.dut.command('rm '+output_file)
         if missing_output:
             raise DrSEUsError(DrSEUsError.missing_output)
-        return data_diff
 
     def monitor_execution(self, latent_faults, output_file, use_aux_output):
         buff = ''
         aux_buff = ''
-        detected_errors = None
-        data_diff = None
         outcome = ''
         outcome_category = ''
         if self.use_aux:
@@ -274,20 +270,20 @@ class fault_injector:
             outcome_category = 'Execution error'
         for line in buff.split('\n'):
             if 'drseus_detected_errors:' in line:
-                detected_errors = int(line.replace(
-                                      'drseus_detected_errors:', ''))
+                self.detected_errors = int(line.replace(
+                                           'drseus_detected_errors:', ''))
                 break
         if self.use_aux:
             for line in aux_buff.split('\n'):
                 if 'drseus_detected_errors:' in line:
-                    if detected_errors is None:
-                        detected_errors = 0
-                    detected_errors += int(line.replace(
-                                           'drseus_detected_errors:', ''))
+                    if self.detected_errors is None:
+                        self.detected_errors = 0
+                    self.detected_errors += int(line.replace(
+                                                'drseus_detected_errors:', ''))
                     break
         if output_file and not outcome:
             try:
-                data_diff = self.check_output(output_file, use_aux_output)
+                self.data_diff = self.check_output(output_file, use_aux_output)
             except DrSEUsError as error:
                 if error.type == DrSEUsError.scp_error:
                     outcome = 'Error getting output file'
@@ -299,10 +295,10 @@ class fault_injector:
                     outcome = error.type
                     outcome_category = 'Post execution error'
         if not outcome:
-            if detected_errors > 0:
+            if self.detected_errors > 0:
                 outcome = 'Detected data error'
                 outcome_category = 'Data error'
-            elif data_diff and data_diff < 1.0:
+            elif self.data_diff and self.data_diff < 1.0:
                 outcome = 'Silent data error'
                 outcome_category = 'Data error'
             elif latent_faults:
@@ -311,13 +307,13 @@ class fault_injector:
             else:
                 outcome = 'Masked faults'
                 outcome_category = 'No error'
-        return outcome, outcome_category, detected_errors, data_diff
+        return outcome, outcome_category
 
-    def log_result(self, outcome, outcome_category, detected_errors, data_diff):
+    def log_result(self, outcome, outcome_category):
         print(colored('iteration '+str(self.iteration)+' outcome: ' +
                       outcome_category+' - '+outcome, 'blue'), end='')
-        if data_diff and data_diff < 1.0:
-            print(colored(', data diff: '+str(data_diff), 'blue'))
+        if self.data_diff and self.data_diff < 1.0:
+            print(colored(', data diff: '+str(self.data_diff), 'blue'))
         else:
             print()
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
@@ -327,7 +323,7 @@ class fault_injector:
             'data_diff=?,detected_errors=?,dut_output=?,aux_output=?,'
             'debugger_output=?,paramiko_output=?,aux_paramiko_output=?,'
             'timestamp=? WHERE id=?', (
-                outcome, outcome_category, data_diff, detected_errors,
+                outcome, outcome_category, self.data_diff, self.detected_errors,
                 self.debugger.dut.output.decode('utf-8', 'ignore') if
                 self.debugger.dut is not None else None,
                 self.debugger.aux.output.decode('utf-8', 'ignore') if
@@ -342,6 +338,8 @@ class fault_injector:
         )
         sql_db.commit()
         sql_db.close()
+        self.data_diff = None
+        self.detected_errors = None
         self.debugger.output = ''
         self.debugger.dut.output = ''
         self.debugger.dut.paramiko_output = ''
@@ -352,6 +350,8 @@ class fault_injector:
     def inject_and_monitor(self, iteration_counter, last_iteration,
                            num_injections, selected_targets, output_file,
                            use_aux_output, compare_all):
+        self.data_diff = None
+        self.detected_errors = None
         if self.use_aux and not self.use_simics:
             self.send_aux_files()
         while True:
@@ -361,16 +361,13 @@ class fault_injector:
             if self.iteration >= last_iteration:
                 break
             self.result_id = self.get_result_id(num_injections)
-            data_diff = None
-            detected_errors = None
             if not self.use_simics:
                 self.debugger.reset_dut()
                 self.debugger.dut.do_login()
                 try:
                     self.send_dut_files()
                 except DrSEUsError:
-                    self.log_result('Error sending files to DUT', 'SCP error',
-                                    detected_errors, data_diff)
+                    self.log_result('Error sending files to DUT', 'SCP error')
                     continue
             if self.use_aux and not self.use_simics:
                 self.debugger.aux.serial.write(str('./'+self.aux_command+'\n'))
@@ -398,9 +395,8 @@ class fault_injector:
                         except:
                             pass
             else:
-                (outcome, outcome_category, detected_errors,
-                 data_diff) = self.monitor_execution(latent_faults, output_file,
-                                                     use_aux_output)
+                outcome, outcome_category = self.monitor_execution(
+                    latent_faults, output_file, use_aux_output)
                 if outcome == 'Latent faults' or (not self.use_simics
                                                   and outcome ==
                                                   'Masked faults'):
@@ -427,12 +423,13 @@ class fault_injector:
                     shutil.rmtree('simics-workspace/injected-checkpoints/' +
                                   str(self.campaign_number)+'/' +
                                   str(self.iteration))
-            self.log_result(outcome, outcome_category, detected_errors,
-                            data_diff)
+            self.log_result(outcome, outcome_category)
         self.close()
 
     def supervise(self, starting_iteration, run_time, output_file,
                   use_aux_output, packet_capture):
+        self.data_diff = None
+        self.detected_errors = None
         iterations = int(run_time / self.exec_time)
         print(colored('performing '+str(iterations)+' iterations', 'blue'))
         if self.use_simics:
@@ -478,13 +475,10 @@ class fault_injector:
             if self.use_aux:
                 self.debugger.aux.serial.write(str('./'+self.aux_command+'\n'))
             self.debugger.dut.serial.write(str('./'+self.command+'\n'))
-            (outcome, outcome_category, detected_errors,
-             data_diff) = self.monitor_execution(0, output_file, use_aux_output)
-            self.log_result(outcome, outcome_category, detected_errors,
-                            data_diff)
+            outcome, outcome_category = self.monitor_execution(
+                0, output_file, use_aux_output)
+            self.log_result(outcome, outcome_category)
             if packet_capture:
-                import time
-                time.sleep(5)
                 os.system('ssh p2020 \'killall tshark\'')
                 capture_process.wait()
                 capture_file.close()
