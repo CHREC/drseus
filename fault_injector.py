@@ -104,13 +104,8 @@ class fault_injector:
         self.debugger.dut.command()
         if self.use_aux:
             aux_process.join()
-        if self.use_simics:
-            exec_time, num_cycles = self.debugger.time_application(
-                self.command, self.aux_command, iterations, self.kill_dut)
-        else:
-            exec_time = self.debugger.time_application(
-                self.command, self.aux_command, iterations, self.kill_dut)
-            num_cycles = None
+        exec_time, num_cycles = self.debugger.time_application(
+            self.command, self.aux_command, iterations, self.kill_dut)
         if output_file:
             if use_aux_output:
                 self.debugger.aux.get_file(output_file, 'campaign-data/' +

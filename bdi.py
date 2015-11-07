@@ -99,7 +99,7 @@ class bdi:
                 self.dut.serial.write('\x03')
             self.dut.read_until()
         end = time.time()
-        return (end - start) / iterations
+        return (end - start) / iterations, None
 
     def inject_fault(self, result_id, iteration, injection_times, command,
                      selected_targets):
