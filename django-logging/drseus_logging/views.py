@@ -20,7 +20,7 @@ navigation_items = (('Information', '../campaign'),
                     ('Charts (Grouped by Category)', '../category_charts/'),
                     ('Charts (Grouped by Outcome)', '../outcome_charts/'),
                     ('Table', '../results/'),
-                    ('Edit Results', '../edit/'))
+                    ('Edit Categories and Outcomes', '../edit/'))
 
 
 def category_charts_page(request, campaign_number):
@@ -166,13 +166,8 @@ def results_page(request, campaign_number):
 
 def result_page(request, campaign_number, iteration):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
-    navigation_items = (('Information', '../../campaign'),
-                        ('Charts (Grouped by Category)',
-                         '../../category_charts/'),
-                        ('Charts (Grouped by Outcome)',
-                         '../../outcome_charts/'),
-                        ('Table', '../../results/'),
-                        ('Edit Results', '../../edit'))
+    navigation_items_ = [(item[0], '../'+item[1])
+                         for item in navigation_items]
     page_items = [('Result', 'result'), ('Injections', 'injections')]
     output_file = ('../campaign-data/'+campaign_number+'/results/'+iteration +
                    '/'+campaign_data.output_file)
@@ -253,7 +248,8 @@ def result_page(request, campaign_number, iteration):
                                            'form': form,
                                            'injection_table': injection_table,
                                            'memory_table': memory_table,
-                                           'navigation_items': navigation_items,
+                                           'navigation_items':
+                                               navigation_items_,
                                            'output_image': output_image,
                                            'page_items': page_items,
                                            'register_table': register_table,

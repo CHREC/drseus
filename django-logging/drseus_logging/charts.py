@@ -967,7 +967,7 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
                         'click': 'count_chart_click'
                     }
                 },
-                'stacking': 'percent'
+                'stacking': True
             }
         },
         'series': [],
@@ -981,11 +981,8 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
             }
         },
         'yAxis': {
-            'labels': {
-                'format': '{value}%'
-            },
             'title': {
-                'text': 'Percent of Results'
+                'text': 'Total Results'
             }
         }
     }
@@ -998,6 +995,12 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
             filter_kwargs['num_injections'] = injection_count
             chart_data.append(result.objects.filter(**filter_kwargs).count())
         chart['series'].append({'data': chart_data, 'name': outcome})
+    chart_percent = deepcopy(chart)
+    chart_percent['chart']['renderTo'] += '_percent'
+    chart_percent['plotOptions']['series']['stacking'] = 'percent'
+    chart_percent['yAxis']['labels'] = {'format': '{value}%'}
+    chart_percent['yAxis']['title']['text'] = 'Percent of Results'
+    chart_array.append(dumps(chart_percent))
     chart = dumps(chart).replace('\"count_chart_click\"', """
     function(event) {
         window.location.assign('../results/?outcome='+this.series.name+

@@ -14,7 +14,9 @@ class dut:
                       'Segmentation fault', 'Illegal instruction',
                       'Call Trace:', 'detected stalls on CPU',
                       'malloc(): memory corruption', 'Bad swap file entry',
-                      'Unable to handle kernel paging request']
+                      'Unable to handle kernel paging request',
+                      'Alignment trap', 'Unhandled fault',
+                      'free(): invalid next size']
 
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
                  baud_rate=115200, ssh_port=22, color='green'):
