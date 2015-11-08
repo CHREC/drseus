@@ -10,11 +10,11 @@ from error import DrSEUsError
 
 
 class dut:
-    error_messages = ['Kernel panic', 'panic', 'Oops', 'Segmentation fault',
-                      'Illegal instruction', 'Call Trace:',
-                      'detected stalls on CPU', 'malloc(): memory corruption',
-                      'Unable to handle kernel paging request',
-                      'Bad swap file entry']
+    error_messages = ['drseus_sighandler', 'Kernel panic', 'panic', 'Oops',
+                      'Segmentation fault', 'Illegal instruction',
+                      'Call Trace:', 'detected stalls on CPU',
+                      'malloc(): memory corruption', 'Bad swap file entry',
+                      'Unable to handle kernel paging request']
 
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
                  baud_rate=115200, ssh_port=22, color='green'):
