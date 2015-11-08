@@ -230,11 +230,15 @@ def load_campaign(campaign_data, options):
             options.dut_ip_address = '10.42.0.21'
         if options.dut_serial_port is None:
             options.dut_serial_port = '/dev/ttyUSB1'
+        if options.dut_prompt is None:
+            options.dut_prompt = 'root@p2020rdb:~#'
     elif campaign_data['architecture'] == 'a9':
         if options.dut_ip_address is None:
             options.dut_ip_address = '10.42.0.30'
         if options.dut_serial_port is None:
             options.dut_serial_port = '/dev/ttyACM0'
+        if options.dut_prompt is None:
+            options.dut_prompt = '[root@ZED]#'
     drseus = fault_injector(campaign_data['campaign_number'],
                             options.dut_ip_address, options.aux_ip_address,
                             options.dut_serial_port, options.aux_serial_port,
