@@ -746,7 +746,6 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
 def time_chart(queryset, campaign_data, outcomes, group_categories,
                chart_array):
     if campaign_data.use_simics:
-        window_size = 10
         times = list(queryset.values_list(
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
@@ -797,12 +796,12 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             }
         }
     }
-    if campaign_data.use_simics:
-        chart_smoothed = deepcopy(chart)
-        chart_smoothed['chart']['type'] = 'area'
-        chart_smoothed['chart']['renderTo'] += '_smoothed'
-        chart_smoothed['title']['text'] += (' (Moving Average Window Size = ' +
-                                            str(window_size)+')')
+    window_size = 10
+    chart_smoothed = deepcopy(chart)
+    chart_smoothed['chart']['type'] = 'area'
+    chart_smoothed['chart']['renderTo'] += '_smoothed'
+    chart_smoothed['title']['text'] += (' (Moving Average Window Size = ' +
+                                        str(window_size)+')')
     for outcome in outcomes:
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
@@ -813,12 +812,6 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
                 ).values_list('count', flat=True))
-            chart_smoothed['series'].append({
-                'data': numpy.convolve(data,
-                                       numpy.ones(window_size)/window_size,
-                                       'same').tolist(),
-                'name': outcome,
-                'stacking': True})
         else:
             data = list(queryset.values_list('time_rounded').distinct(
                 ).order_by('time_rounded').annotate(
@@ -826,8 +819,14 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
                                    default=0, output_field=IntegerField()))
                 ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
-    if campaign_data.use_simics:
+        chart_smoothed['series'].append({
+            'data': numpy.convolve(data,
+                                   numpy.ones(window_size)/window_size,
+                                   'same').tolist(),
+            'name': outcome,
+            'stacking': True})
         chart_array.append(dumps(chart_smoothed))
+    if campaign_data.use_simics:
         chart = dumps(chart).replace('\"time_chart_click\"', """
         function(event) {
             window.location.assign('../results/?outcome='+this.series.name+
