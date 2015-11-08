@@ -18,8 +18,8 @@ class bdi:
                       'wrong state for requested command', 'read access failed']
 
     def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                 aux_ip_address, aux_serial_port, use_aux, dut_prompt, debug,
-                 timeout):
+                 aux_ip_address, aux_serial_port, use_aux, dut_prompt,
+                 aux_prompt, debug, timeout):
         self.timeout = 30
         self.debug = debug
         self.use_aux = use_aux
@@ -36,7 +36,7 @@ class bdi:
                        dut_serial_port, dut_prompt, debug, timeout)
         if self.use_aux:
             self.aux = dut(aux_ip_address, rsakey, aux_serial_port,
-                           'root@p2020rdb:~#', debug, timeout, color='cyan')
+                           aux_prompt, debug, timeout, color='cyan')
         else:
             self.aux = None
 

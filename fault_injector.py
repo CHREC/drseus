@@ -17,8 +17,9 @@ from simics import simics
 
 class fault_injector:
     def __init__(self, campaign_number, dut_ip_address, aux_ip_address,
-                 dut_serial_port, aux_serial_port, debugger_ip_address,
-                 architecture, use_aux, debug, use_simics, timeout):
+                 dut_serial_port, aux_serial_port, dut_prompt, aux_prompt,
+                 debugger_ip_address, architecture, use_aux, debug, use_simics,
+                 timeout):
         self.campaign_number = campaign_number
         self.use_simics = use_simics
         self.use_aux = use_aux
@@ -38,13 +39,14 @@ class fault_injector:
                                           dut_ip_address, self.rsakey,
                                           dut_serial_port, aux_ip_address,
                                           aux_serial_port, use_aux,
-                                          'root@p2020rdb:~#', debug, timeout)
+                                          dut_prompt, aux_prompt, debug,
+                                          timeout)
             elif architecture == 'a9':
                 self.debugger = bdi_arm(debugger_ip_address,
                                         dut_ip_address, self.rsakey,
                                         dut_serial_port, aux_ip_address,
-                                        aux_serial_port, use_aux, '[root@ZED]#',
-                                        debug, timeout)
+                                        aux_serial_port, use_aux, dut_prompt,
+                                        aux_prompt, debug, timeout)
 
     def close(self):
         if not self.use_simics:

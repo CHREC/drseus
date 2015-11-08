@@ -15,7 +15,6 @@ from fault_injector import fault_injector
 # TODO: add synchronization around injection logging and/or db access
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
-# TODO: add command line options for ip addresses, serial ports, serial prompts
 # TODO: change Exception in simics_checkpoints.py to DrSEUsError
 
 
@@ -82,12 +81,6 @@ def get_next_iteration(campaign_number):
         iteration = 0
     else:
         iteration = result_data['iteration']
-    # delete incomple injections
-    # sql.execute('DELETE FROM drseus_logging_injection WHERE result_id IN '
-    #             '(SELECT id FROM drseus_logging_result WHERE outcome=?)',
-    #             ('Incomplete',))
-    # sql.execute('DELETE FROM drseus_logging_result WHERE outcome=?',
-    #             ('Incomplete',))
     sql_db.commit()
     sql_db.close()
     return iteration + 1
@@ -142,11 +135,19 @@ def delete_campaign(campaign_number):
 def new_campaign(application, options):
     campaign_number = get_last_campaign() + 1
     if options.architecture == 'p2020':
-        dut_ip_address = '10.42.0.21'
-        dut_serial_port = '/dev/ttyUSB1'
+        if options.dut_ip_address is None:
+            options.dut_ip_address = '10.42.0.21'
+        if options.dut_serial_port is None:
+            options.dut_serial_port = '/dev/ttyUSB1'
+        if options.dut_prompt is None:
+            options.dut_prompt = 'root@p2020rdb:~#'
     elif options.architecture == 'a9':
-        dut_ip_address = '10.42.0.30'
-        dut_serial_port = '/dev/ttyACM0'
+        if options.dut_ip_address is None:
+            options.dut_ip_address = '10.42.0.30'
+        if options.dut_serial_port is None:
+            options.dut_serial_port = '/dev/ttyACM0'
+        if options.dut_prompt is None:
+            options.dut_prompt = '[root@ZED]#'
     else:
         raise Exception('invalid architecture: '+options.architecture)
     if options.aux_app:
@@ -187,8 +188,10 @@ def new_campaign(application, options):
         os.makedirs('campaign-data/'+str(campaign_number))
     if not os.path.exists('campaign-data/db.sqlite3'):
         os.system('./django-logging/manage.py migrate')
-    drseus = fault_injector(campaign_number, dut_ip_address, '10.42.0.20',
-                            dut_serial_port, '/dev/ttyUSB0', '10.42.0.50',
+    drseus = fault_injector(campaign_number, options.dut_ip_address,
+                            options.aux_ip_address, options.dut_serial_port,
+                            options.aux_serial_port, options.dut_prompt,
+                            options.aux_prompt, options.debugger_ip_address,
                             options.architecture, options.use_aux,
                             options.debug, options.use_simics, options.seconds)
     drseus.setup_campaign(options.directory, options.architecture, application,
@@ -223,14 +226,21 @@ def get_injection_data(campaign_data, iteration):
 
 def load_campaign(campaign_data, options):
     if campaign_data['architecture'] == 'p2020':
-        dut_ip_address = '10.42.0.21'
-        dut_serial_port = '/dev/ttyUSB1'
+        if options.dut_ip_address is None:
+            options.dut_ip_address = '10.42.0.21'
+        if options.dut_serial_port is None:
+            options.dut_serial_port = '/dev/ttyUSB1'
     elif campaign_data['architecture'] == 'a9':
-        dut_ip_address = '10.42.0.30'
-        dut_serial_port = '/dev/ttyACM0'
-    drseus = fault_injector(campaign_data['campaign_number'], dut_ip_address,
-                            '10.42.0.20', dut_serial_port, '/dev/ttyUSB0',
-                            '10.42.0.50', campaign_data['architecture'],
+        if options.dut_ip_address is None:
+            options.dut_ip_address = '10.42.0.30'
+        if options.dut_serial_port is None:
+            options.dut_serial_port = '/dev/ttyACM0'
+    drseus = fault_injector(campaign_data['campaign_number'],
+                            options.dut_ip_address, options.aux_ip_address,
+                            options.dut_serial_port, options.aux_serial_port,
+                            options.dut_prompt, options.aux_prompt,
+                            options.debugger_ip_address,
+                            campaign_data['architecture'],
                             campaign_data['use_aux'], options.debug,
                             campaign_data['use_simics'], options.seconds)
     drseus.command = campaign_data['command']
@@ -286,20 +296,49 @@ def view_logs(args):
     os.system('cd '+os.getcwd()+'/django-logging; ./manage.py runserver ' +
               str(port))
 
-parser = optparse.OptionParser('drseus.py {application} {options}')
+parser = optparse.OptionParser('drseus.py {mode} {options}')
 
-parser.add_option('-N', '--campaign', action='store', type='int', dest='number',
-                  default=0, help='campaign number to use, defaults to '
-                                  'last campaign created')
+parser.add_option('-N', '--campaign', action='store', type='int',
+                  dest='campaign_number', default=0,
+                  help='campaign number to use, defaults to last campaign '
+                  'created')
 parser.add_option('-g', '--debug', action='store_false', dest='debug',
                   default=True,
                   help='display device output')
 parser.add_option('-T', '--timeout', action='store', type='int',
                   dest='seconds', default=300,
                   help='device read timeout in seconds [default=300]')
+parser.add_option('--dut_ip', action='store', type='str',
+                  dest='dut_ip_address', default=None,
+                  help='dut ip address [p2020 default=10.42.0.21]              '
+                  '[a9 default=10.42.0.30] (overridden by simics)')
+parser.add_option('--dut_serial', action='store', type='str',
+                  dest='dut_serial_port', default=None,
+                  help='dut serial port [p2020 default=/dev/ttyUSB1]           '
+                  '[a9 default=/dev/ttyACM0] (overridden by simics)')
+parser.add_option('--dut_prompt', action='store', type='str',
+                  dest='dut_prompt', default=None,
+                  help='dut console prompt [p2020 default=root@p2020rdb:~#]    '
+                  '[a9 default=[root@ZED]#] (overridden by simics)')
+parser.add_option('--aux_ip', action='store', type='str',
+                  dest='aux_ip_address', default='10.42.0.20',
+                  help='aux ip address [default=10.42.0.20] '
+                  '(overridden by simics)')
+parser.add_option('--aux_serial', action='store', type='str',
+                  dest='aux_serial_port', default='/dev/ttyUSB0',
+                  help='aux serial port [default=/dev/ttyUSB0] '
+                  '(overridden by simics)')
+parser.add_option('--aux_prompt', action='store', type='str',
+                  dest='aux_prompt', default=None,
+                  help='aux console prompt [default=root@p2020rdb:~#]  '
+                  '(overridden by simics)')
+parser.add_option('--debugger_ip', action='store', type='str',
+                  dest='debugger_ip_address', default='10.42.0.50',
+                  help='debugger ip address [default=10.42.0.50] '
+                  '(ignored by simics)')
 
-mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes', 'Not specifying one '
-                                  'of these will create a new campaign')
+mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes', 'Specify the desired '
+                                  'operating mode')
 mode_group.add_option('-b', '--list_campaigns', action='store_true',
                       dest='list', help='list campaigns')
 mode_group.add_option('-d', '--delete_results', action='store_true',
@@ -313,6 +352,10 @@ mode_group.add_option('-D', '--delete_all', action='store_true',
                       dest='delete_all', default=False,
                       help='delete results and/or injected checkpoints for all '
                            'campaigns')
+mode_group.add_option('-c', '--create_campaign', action='store', type='str',
+                      dest='application', default=None,
+                      help='create a new campaign for the application '
+                      'specified')
 mode_group.add_option('-i', '--inject', action='store_true', dest='inject',
                       default=False,
                       help='perform fault injections on an existing campaign')
@@ -322,7 +365,7 @@ mode_group.add_option('-S', '--supervise', action='store_true',
 
 mode_group.add_option('-l', '--log', action='store_true',
                       dest='view_logs', default=False,
-                      help='open logs in browser')
+                      help='start the log server')
 parser.add_option_group(mode_group)
 
 simics_mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes (Simics only)',
@@ -346,16 +389,16 @@ new_group.add_option('-o', '--output', action='store', type='str',
 new_group.add_option('-a', '--args', action='store', type='str',
                      dest='arguments', default='',
                      help='arguments for application')
-new_group.add_option('-L', '--location', action='store', type='str',
+new_group.add_option('-L', '--directory', action='store', type='str',
                      dest='directory', default='fiapps',
-                     help='location to look for files [default=fiapps]')
+                     help='directory to look for files [default=fiapps]')
 new_group.add_option('-f', '--files', action='store', type='str', dest='files',
                      default='',
                      help='comma-separated list of files to copy to device')
 new_group.add_option('-F', '--aux_files', action='store', type='str',
                      dest='aux_files', default='',
                      help='comma-separated list of files to copy to aux device')
-new_group.add_option('-A', '--arch', action='store', type='str',
+new_group.add_option('-A', '--arch', action='store',  choices=['a9', 'p2020'],
                      dest='architecture', default='p2020',
                      help='target architecture [default=p2020]')
 new_group.add_option('-s', '--simics', action='store_true', dest='use_simics',
@@ -379,7 +422,7 @@ parser.add_option_group(new_group)
 new_simics_group = optparse.OptionGroup(parser, 'New Campaign Options '
                                         '(Simics only)', 'Use these for new '
                                         'Simics campaigns')
-new_simics_group.add_option('-c', '--checkpoints', action='store', type='int',
+new_simics_group.add_option('-C', '--checkpoints', action='store', type='int',
                             dest='num_checkpoints', default=50,
                             help='number of gold checkpoints to create '
                                  '[default=50]')
@@ -422,7 +465,7 @@ supervise_group = optparse.OptionGroup(parser, 'Supervisor Options', 'Use these'
                                        '(-S or --supervise)')
 supervise_group.add_option('-R', '--runtime', action='store', type='int',
                            dest='target_seconds', default=30,
-                           help='Desired time in seconds to run (calculates '
+                           help='desired time in seconds to run (calculates '
                                 'number of iterations to run) [default=30]')
 supervise_group.add_option('-w', '--wireshark', action='store_true',
                            dest='capture', help='run remote packet capture')
@@ -442,30 +485,31 @@ elif options.delete_all:
         shutil.rmtree('campaign-data')
         print('deleted campaign data')
 elif options.delete_campaign:
-    if not options.number:
-        options.number = get_last_campaign()
-    delete_campaign(options.number)
+    if not options.campaign_number:
+        options.campaign_number = get_last_campaign()
+    delete_campaign(options.campaign_number)
 elif options.delete_results:
-    if not options.number:
-        options.number = get_last_campaign()
-    delete_results(options.number)
-elif options.view_logs:
-    view_logs(args)
+    if not options.campaign_number:
+        options.campaign_number = get_last_campaign()
+    delete_results(options.campaign_number)
+elif options.application is not None:
+    new_campaign(options)
 elif options.inject:
-    if not options.number:
-        options.number = get_last_campaign()
-    campaign_data = get_campaign_data(options.number)
-    starting_iteration = get_next_iteration(options.number)
+    if not options.campaign_number:
+        options.campaign_number = get_last_campaign()
+    campaign_data = get_campaign_data(options.campaign_number)
+    starting_iteration = get_next_iteration(options.campaign_number)
     last_iteration = starting_iteration + options.num_iterations
     if campaign_data['use_simics']:
         if os.path.exists('simics-workspace/injected-checkpoints/' +
-                          str(options.number)):
+                          str(options.campaign_number)):
             shutil.rmtree('simics-workspace/injected-checkpoints/' +
-                          str(options.number))
+                          str(options.campaign_number))
         os.makedirs('simics-workspace/injected-checkpoints/' +
-                    str(options.number))
-    if not os.path.exists('campaign-data/'+str(options.number)+'/results'):
-        os.makedirs('campaign-data/'+str(options.number)+'/results')
+                    str(options.campaign_number))
+    if not os.path.exists('campaign-data/'+str(options.campaign_number) +
+                          '/results'):
+        os.makedirs('campaign-data/'+str(options.campaign_number)+'/results')
     iteration_counter = multiprocessing.Value('I', starting_iteration)
     if campaign_data['use_simics'] and options.num_processes > 1:
         options.debug = False
@@ -488,18 +532,20 @@ elif options.inject:
         perform_injections(campaign_data, iteration_counter, last_iteration,
                            options)
 elif options.supervise:
-    if not options.number:
-        options.number = get_last_campaign()
-    campaign_data = get_campaign_data(options.number)
-    iteration = get_next_iteration(options.number)
+    if not options.campaign_number:
+        options.campaign_number = get_last_campaign()
+    campaign_data = get_campaign_data(options.campaign_number)
+    iteration = get_next_iteration(options.campaign_number)
     drseus = load_campaign(campaign_data, options)
     drseus.supervise(iteration, options.target_seconds,
                      campaign_data['output_file'],
                      campaign_data['use_aux_output'], options.capture)
+elif options.view_logs:
+    view_logs(args)
 elif options.iteration >= 0:
-    if not options.number:
-        options.number = get_last_campaign()
-    campaign_data = get_campaign_data(options.number)
+    if not options.campaign_number:
+        options.campaign_number = get_last_campaign()
+    campaign_data = get_campaign_data(options.campaign_number)
     if not campaign_data['use_simics']:
         raise Exception('This feature is only available for Simics campaigns')
     drseus = load_campaign(campaign_data, options)
@@ -512,6 +558,4 @@ elif options.iteration >= 0:
                   str(campaign_data['campaign_number'])+'/' +
                   str(options.iteration))
 else:
-    if len(args) < 1:
-        parser.error('please specify a target application or mode')
-    new_campaign(args[0], options)
+    parser.error('please specify an operating mode (list options with --help)')
