@@ -253,6 +253,8 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
 
 def target_chart(queryset, campaign_data, outcomes, group_categories,
                  chart_array):
+    if not campaign_data.use_simics:
+        return
     targets = list(queryset.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
@@ -402,6 +404,8 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
 
 def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                            chart_array):
+    if not campaign_data.use_simics:
+        return
     targets = list(queryset.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
@@ -470,7 +474,7 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
         function(event) {
             var time = parseFloat(this.category)
             window.location.assign('../results/?injection__time_rounded='+
-                                   time.toFixed(1));
+                                   time.toFixed(2));
         }
         """)
     chart_array.append(chart)
@@ -836,7 +840,7 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
         function(event) {
             var time = parseFloat(this.category)
             window.location.assign('../results/?outcome='+this.series.name+
-                                   '&injection__time_rounded='+time.toFixed(1));
+                                   '&injection__time_rounded='+time.toFixed(2));
         }
         """)
     if group_categories:
@@ -926,7 +930,7 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
         function(event) {
             var time = parseFloat(this.category)
             window.location.assign('../results/?injection__time_rounded='+
-                                   time.toFixed(1));
+                                   time.toFixed(2));
         }
         """)
     chart_array.append(chart)

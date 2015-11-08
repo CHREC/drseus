@@ -145,7 +145,7 @@ class bdi:
                 'time_rounded,core,timestamp) VALUES (?,?,?,?,?,?,?,?,?,?)',
                 (
                     result_id, injection, register, bit, gold_value,
-                    injected_value, injection_time, round(injection_time, 1),
+                    injected_value, injection_time, round(injection_time, 2),
                     core, datetime.now()
                 )
             )

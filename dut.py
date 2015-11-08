@@ -12,7 +12,7 @@ from error import DrSEUsError
 class dut:
     error_messages = ['Kernel panic', 'panic', 'Oops', 'Segmentation fault',
                       'Illegal instruction', 'Call Trace:',
-                      'detected stalls on CPU',
+                      'detected stalls on CPU', 'malloc(): memory corruption',
                       'Unable to handle kernel paging request']
 
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,

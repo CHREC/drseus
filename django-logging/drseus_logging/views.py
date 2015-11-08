@@ -32,15 +32,17 @@ def outcome_charts_page(request, campaign_number):
 
 
 def charts_page(request, campaign_number, group_categories):
-    page_items = (('Overview', 'outcomes'),
-                  ('Injections By Target', 'targets'),
-                  ('Injections By Register', 'registers'),
-                  ('Injections By Bit', 'bits'),
-                  ('Injections By TLB Entries', 'tlbs'),
-                  ('Injections By Field', 'fields'),
-                  ('Injections Over Time', 'times'),
-                  ('Iterations By Injection Count', 'counts'))
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
+    page_items = [('Overview', 'outcomes')]
+    if campaign_data.use_simics:
+        page_items.append(('Injections By Target', 'targets'))
+    page_items.extend([('Injections By Register', 'registers'),
+                       ('Injections By Bit', 'bits')])
+    if campaign_data.use_simics:
+        page_items.extend([('Injections By TLB Entry', 'tlbs'),
+                          ('Injections By TLB Field', 'fields')])
+    page_items.extend([('Injections Over Time', 'times'),
+                       ('Iterations By Injection Count', 'counts')])
     injection_objects = injection.objects.filter(
         result__campaign__campaign_number=campaign_number)
     filter_ = injection_filter(request.GET, queryset=injection_objects,
