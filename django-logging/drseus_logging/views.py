@@ -137,7 +137,10 @@ def edit_page(request, campaign_number):
 
 
 def campaigns_page(request):
-    table = campaigns_table(campaign.objects.all())
+    campaigns = campaign.objects.all()
+    if len(campaigns) == 1:
+        return redirect('/'+str(campaigns[0].campaign_number)+'/results/')
+    table = campaigns_table(campaigns)
     chart_array = json_campaigns(result.objects.all())
     RequestConfig(request).configure(table)
     return render(request, 'campaigns.html', {'chart_array': chart_array,
