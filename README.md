@@ -20,7 +20,7 @@ Run drseus.py -h for usage information
 
 Usage Example:
 
-* drseus.py -s ppc_fi_2d_conv_fft_omp -a "lena.bmp out.bmp" -f lena.bmp -o out.bmp -c 1000
+* drseus.py -s -c ppc_fi_2d_conv_fft_omp -a "lena.bmp out.bmp" -f lena.bmp -o out.bmp -C 1000
     * Creates a Simics fault-injection campaign with 1000 checkpoints
     * Runs "ppc_fi_2d_conv_fft_omp lena.bmp out.bmp" on the device under test
     * Checks for output file "out.bmp"

@@ -132,7 +132,7 @@ def delete_campaign(campaign_number):
         print('deleted gold checkpoints')
 
 
-def new_campaign(application, options):
+def new_campaign(options):
     campaign_number = get_last_campaign() + 1
     if options.architecture == 'p2020':
         if options.dut_ip_address is None:
@@ -153,12 +153,12 @@ def new_campaign(application, options):
     if options.aux_app:
         aux_application = options.aux_app
     else:
-        aux_application = application
+        aux_application = options.application
     if options.directory == 'fiapps':
         if not os.path.exists('fiapps'):
             os.system('./setup_apps.sh')
-        if not os.path.exists('fiapps/'+application):
-            os.system('cd fiapps/; make '+application)
+        if not os.path.exists('fiapps/'+options.application):
+            os.system('cd fiapps/; make '+options.application)
     else:
         if not os.path.exits(options.directory):
             raise Exception('cannot find directory '+options.directory)
@@ -194,9 +194,9 @@ def new_campaign(application, options):
                             options.aux_prompt, options.debugger_ip_address,
                             options.architecture, options.use_aux,
                             options.debug, options.use_simics, options.seconds)
-    drseus.setup_campaign(options.directory, options.architecture, application,
-                          options.arguments, options.file, options.files,
-                          options.aux_files, options.iterations,
+    drseus.setup_campaign(options.directory, options.architecture,
+                          options.application, options.arguments, options.file,
+                          options.files, options.aux_files, options.iterations,
                           aux_application, options.aux_args,
                           options.use_aux_output, options.num_checkpoints,
                           options.kill_dut)
