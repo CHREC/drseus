@@ -87,11 +87,11 @@ class result_filter(django_filters.FilterSet):
             choices=target_index_choices)
         self.filters['injection__target_index'].widget.attrs['size'] = min(
             len(target_index_choices), 10)
-        time_rounded_choices = injection_choices(campaign, 'time_rounded')
-        self.filters['injection__time_rounded'].extra.update(
-            choices=time_rounded_choices)
-        self.filters['injection__time_rounded'].widget.attrs['size'] = min(
-            len(time_rounded_choices), 10)
+        # time_rounded_choices = injection_choices(campaign, 'time_rounded')
+        # self.filters['injection__time_rounded'].extra.update(
+        #     choices=time_rounded_choices)
+        # self.filters['injection__time_rounded'].widget.attrs['size'] = min(
+        #     len(time_rounded_choices), 10)
 
     aux_output = django_filters.CharFilter(
         label='AUX output',
@@ -132,9 +132,9 @@ class result_filter(django_filters.FilterSet):
     injection__target_index = django_filters.MultipleChoiceFilter(
         label='Target index',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    injection__time_rounded = django_filters.MultipleChoiceFilter(
-        label='Injection time',
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    # injection__time_rounded = django_filters.MultipleChoiceFilter(
+    #     label='Injection time',
+    #     widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     num_injections = django_filters.MultipleChoiceFilter(
         label='Number of injections',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
@@ -205,10 +205,10 @@ class injection_filter(django_filters.FilterSet):
         self.filters['target_index'].extra.update(choices=target_index_choices)
         self.filters['target_index'].widget.attrs['size'] = min(
             len(target_index_choices), 10)
-        time_rounded_choices = injection_choices(campaign, 'time_rounded')
-        self.filters['time_rounded'].extra.update(choices=time_rounded_choices)
-        self.filters['time_rounded'].widget.attrs['size'] = min(
-            len(time_rounded_choices), 10)
+        # time_rounded_choices = injection_choices(campaign, 'time_rounded')
+        # self.filters['time_rounded'].extra.update(choices=time_rounded_choices)
+        # self.filters['time_rounded'].widget.attrs['size'] = min(
+        #     len(time_rounded_choices), 10)
 
     bit = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
@@ -235,8 +235,8 @@ class injection_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     target_index = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    time_rounded = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    # time_rounded = django_filters.MultipleChoiceFilter(
+    #     widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
 
     class Meta:
         model = injection

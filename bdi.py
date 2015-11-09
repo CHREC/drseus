@@ -142,11 +142,10 @@ class bdi:
             sql.execute(
                 'INSERT INTO drseus_logging_injection (result_id,'
                 'injection_number,register,bit,gold_value,injected_value,time,'
-                'time_rounded,core,timestamp) VALUES (?,?,?,?,?,?,?,?,?,?)',
+                'core,timestamp) VALUES (?,?,?,?,?,?,?,?,?)',
                 (
                     result_id, injection, register, bit, gold_value,
-                    injected_value, injection_time, round(injection_time, 2),
-                    core, datetime.now()
+                    injected_value, injection_time, core, datetime.now()
                 )
             )
             sql_db.commit()

@@ -107,7 +107,7 @@ class simics_injection_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = injection
         exclude = ('config_object', 'config_type', 'core', 'id', 'result',
-                   'time', 'time_rounded')
+                   'time')
 
 
 class simics_register_diff_table(tables.Table):

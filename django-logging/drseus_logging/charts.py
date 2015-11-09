@@ -363,15 +363,6 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             'sourceHeight': 360,
             'scale': 2
         },
-        'plotOptions': {
-            'series': {
-                'point': {
-                    'events': {
-                        'click': 'target_chart_click'
-                    }
-                }
-            }
-        },
         'series': [],
         'title': {
             'text': 'Fault Propagation'
@@ -429,15 +420,6 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
         'legend': {
             'enabled': False
         },
-        'plotOptions': {
-            'series': {
-                'point': {
-                    'events': {
-                        'click': 'diff_time_chart_click'
-                    }
-                }
-            }
-        },
         'series': [],
         'title': {
             'text': 'Data Diff By Target'
@@ -464,22 +446,7 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                          default='result__data_diff'))
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 for x in data]})
-    if campaign_data.use_simics:
-        chart = dumps(chart).replace('\"diff_time_chart_click\"', """
-        function(event) {
-            window.location.assign('../results/?injection__checkpoint_number='+
-                                   this.category);
-        }
-        """)
-    else:
-        chart = dumps(chart).replace('\"diff_time_chart_click\"', """
-        function(event) {
-            var time = parseFloat(this.category)
-            window.location.assign('../results/?injection__time_rounded='+
-                                   time.toFixed(2));
-        }
-        """)
-    chart_array.append(chart)
+    chart_array.append(dumps(chart))
 
 
 def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
@@ -752,8 +719,9 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
-        times = list(queryset.values_list(
-            'time_rounded', flat=True).distinct().order_by('time_rounded'))
+        times = numpy.linspace(0, campaign_data.exec_time, 500,
+                               endpoint=False).tolist()
+        times = [round(time, 4) for time in times]
     if len(times) < 1:
         return
     extra_colors = list(colors_extra)
@@ -805,21 +773,28 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
     chart_smoothed['title']['text'] += (' (Moving Average Window Size = ' +
                                         str(window_size)+')')
     for outcome in outcomes:
-        when_kwargs = {'then': 1}
-        when_kwargs['result__outcome_category' if group_categories
-                    else 'result__outcome'] = outcome
         if campaign_data.use_simics:
+            when_kwargs = {'then': 1}
+            when_kwargs['result__outcome_category' if group_categories
+                        else 'result__outcome'] = outcome
             data = list(queryset.values_list('checkpoint_number').distinct(
                 ).order_by('checkpoint_number').annotate(
                     count=Sum(Case(When(**when_kwargs),
                                    default=0, output_field=IntegerField()))
                 ).values_list('count', flat=True))
         else:
-            data = list(queryset.values_list('time_rounded').distinct(
-                ).order_by('time_rounded').annotate(
-                    count=Sum(Case(When(**when_kwargs),
-                                   default=0, output_field=IntegerField()))
-                ).values_list('count', flat=True))
+            filter_kwargs = {}
+            filter_kwargs['result__outcome_category' if group_categories
+                          else 'result__outcome'] = outcome
+            data = []
+            for i in xrange(len(times)):
+                if i+1 < len(times):
+                    data.append(queryset.filter(time__gte=times[i],
+                                                time__lt=times[i+1],
+                                                **filter_kwargs).count())
+                else:
+                    data.append(queryset.filter(time__gte=times[i],
+                                                **filter_kwargs).count())
         chart['series'].append({'data': data, 'name': outcome})
         chart_smoothed['series'].append({
             'data': numpy.convolve(data,
@@ -837,13 +812,14 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
         }
         """)
     else:
-        chart = dumps(chart).replace('\"time_chart_click\"', """
-        function(event) {
-            var time = parseFloat(this.category)
-            window.location.assign('../results/?outcome='+this.series.name+
-                                   '&injection__time_rounded='+time.toFixed(2));
-        }
-        """)
+        # chart = dumps(chart).replace('\"time_chart_click\"', """
+        # function(event) {
+        #     var time = parseFloat(this.category)
+        #     window.location.assign('../results/?outcome='+this.series.name+
+        #                            '&injection__time_rounded='+time.toFixed(2));
+        # }
+        # """)
+        chart = dumps(chart)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
@@ -856,8 +832,9 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
-        times = list(queryset.values_list(
-            'time_rounded', flat=True).distinct().order_by('time_rounded'))
+        times = numpy.linspace(0, campaign_data.exec_time, 100,
+                               endpoint=False).tolist()
+        times = [round(time, 4) for time in times]
     if len(times) < 1:
         return
     chart = {
@@ -913,12 +890,19 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
                              default='result__data_diff'))
             ).values_list('avg', flat=True)
     else:
-        data = queryset.values_list('time_rounded').distinct().order_by(
-            'time_rounded').annotate(
-                avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
-                             default='result__data_diff'))
-            ).values_list('avg', flat=True)
-    chart['series'].append({'data': [x*100 for x in data]})
+        data = []
+        for i in xrange(len(times)):
+            if i+1 < len(times):
+                data.append(queryset.filter(time__gte=times[i],
+                                            time__lt=times[i+1]).aggregate(
+                    avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
+                                 default='result__data_diff')))['avg'])
+            else:
+                data.append(queryset.filter(time__gte=times[i]).aggregate(
+                    avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
+                                 default='result__data_diff')))['avg'])
+    chart['series'].append({'data': [x*100 if x is not None else 0
+                                     for x in data]})
     if campaign_data.use_simics:
         chart = dumps(chart).replace('\"diff_time_chart_click\"', """
         function(event) {
@@ -927,13 +911,14 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
         }
         """)
     else:
-        chart = dumps(chart).replace('\"diff_time_chart_click\"', """
-        function(event) {
-            var time = parseFloat(this.category)
-            window.location.assign('../results/?injection__time_rounded='+
-                                   time.toFixed(2));
-        }
-        """)
+        # chart = dumps(chart).replace('\"diff_time_chart_click\"', """
+        # function(event) {
+        #     var time = parseFloat(this.category)
+        #     window.location.assign('../results/?injection__time_rounded='+
+        #                            time.toFixed(2));
+        # }
+        # """)
+        chart = dumps(chart)
     chart_array.append(chart)
 
 

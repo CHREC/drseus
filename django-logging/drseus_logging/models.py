@@ -59,7 +59,6 @@ class injection(models.Model):
     injected_value = models.TextField(null=True)
     # hw fields
     time = models.FloatField(null=True)
-    time_rounded = models.FloatField(null=True)
     core = models.IntegerField(null=True)
     # simics fields
     checkpoint_number = models.IntegerField(null=True)
