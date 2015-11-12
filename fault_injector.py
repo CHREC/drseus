@@ -9,6 +9,7 @@ import sqlite3
 import subprocess
 from termcolor import colored
 from threading import Thread
+from time import sleep
 
 from bdi import bdi_p2020, bdi_arm
 from error import DrSEUsError
@@ -64,11 +65,7 @@ class fault_injector:
                 self.debugger.aux.serial.write('\x03')
                 aux_process = Thread(target=self.debugger.aux.do_login)
                 aux_process.start()
-            if self.debugger.telnet:
-                self.debugger.reset_dut()
-            else:
-                self.debugger.dut.serial.write('\x03')
-            self.debugger.dut.do_login()
+            self.debugger.reset_dut()
             if self.use_aux:
                 aux_process.join()
         if arguments:
@@ -368,8 +365,19 @@ class fault_injector:
                 break
             self.result_id = self.get_result_id(num_injections)
             if not self.use_simics:
-                self.debugger.reset_dut()
-                self.debugger.dut.do_login()
+                attempts = 5
+                for attempt in xrange(attempts):
+                    try:
+                        self.debugger.reset_dut()
+                    except DrSEUsError as error:
+                        if attempt < attempts-1:
+                            print(colored('error resetting DUT: '+error.message,
+                                          'red'))
+                        else:
+                            # fallback to power cycle
+                            raise DrSEUsError(error.message)
+                    else:
+                        break
                 try:
                     self.send_dut_files()
                 except DrSEUsError:
@@ -448,11 +456,7 @@ class fault_injector:
                 self.debugger.aux.serial.write('\x03')
                 aux_process = Thread(target=self.debugger.aux.do_login)
                 aux_process.start()
-            if self.debugger.telnet:
-                self.debugger.reset_dut()
-            else:
-                self.debugger.dut.serial.write('\x03')
-            self.debugger.dut.do_login()
+            self.debugger.reset_dut()
             if self.use_aux:
                 aux_process.join()
             self.send_dut_files()

@@ -5,7 +5,7 @@ import sqlite3
 import subprocess
 from termcolor import colored
 from threading import Thread
-from time import time
+import time
 
 from dut import dut
 from error import DrSEUsError
@@ -44,23 +44,25 @@ class simics:
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
         self.read_until()
-        if checkpoint is None:
-            try:
+        try:
+            if checkpoint is None:
                 self.command('$drseus=TRUE')
                 buff = self.command('run-command-file simics-'+self.board+'/' +
                                     self.board+'-linux'+('-ethernet' if
                                                          self.use_aux
                                                          else '') +
                                     '.simics')
-            except IOError:
-                raise Exception('lost contact with simics')
-        else:
-            buff = self.command('read-configuration '+checkpoint)
-            buff += self.command('connect-real-network-port-in ssh '
-                                 'ethernet_switch0 target-ip=10.10.0.100')
-            if self.use_aux:
+            else:
+                buff = self.command('read-configuration '+checkpoint)
                 buff += self.command('connect-real-network-port-in ssh '
-                                     'ethernet_switch0 target-ip=10.10.0.104')
+                                     'ethernet_switch0 target-ip=10.10.0.100')
+                if self.use_aux:
+                    buff += self.command('connect-real-network-port-in ssh '
+                                         'ethernet_switch0 '
+                                         'target-ip=10.10.0.104')
+        except IOError:
+            self.close()
+            raise DrSEUsError(DrSEUsError.launch_simics)
         found_settings = 0
         if checkpoint is None:
             serial_ports = []
@@ -85,7 +87,8 @@ class simics:
             elif self.use_aux and found_settings == 4:
                 break
         else:
-            raise Exception('could not find port or pseudoterminal to attach')
+            self.close()
+            raise DrSEUsError('Error finding port or pseudoterminal')
         if self.board == 'p2020rdb':
             self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
                            'root@p2020rdb:~#', self.debug, self.timeout, 38400,
@@ -284,7 +287,7 @@ class simics:
         num_cycles = 0
         self.halt_dut()
         start_cycles = self.command('print-time').split('\n')[-2].split()[2]
-        start_time = time()
+        start_time = time.time()
         self.continue_dut()
         for i in xrange(iterations):
             if self.use_aux:
@@ -303,7 +306,7 @@ class simics:
             num_cycles += int(end_cycles) - int(start_cycles)
             start_cycles = end_cycles
             self.continue_dut()
-        end_time = time()
+        end_time = time.time()
         return ((end_time - start_time) / iterations,
                 int(num_cycles / iterations))
 
@@ -355,7 +358,20 @@ class simics:
             injected_checkpoint = simics_checkpoints.inject_checkpoint(
                 self.campaign_number, result_id, iteration, injection_number,
                 checkpoint_number, self.board, selected_targets, self.debug)
-            self.launch_simics(injected_checkpoint)
+            attempts = 5
+            for attempt in xrange(attempts):
+                try:
+                    self.launch_simics(injected_checkpoint)
+                except DrSEUsError as error:
+                    if (error == DrSEUsError.launch_simics
+                            and attempt < attempts-1):
+                        print(colored('error launching Simics, '
+                                      'trying again in 60 seconds...', 'red'))
+                        time.sleep(60)
+                    else:
+                        raise DrSEUsError(error.message)
+                else:
+                    break
             injections_remaining = (injection_number + 1 <
                                     len(checkpoints_to_inject))
             if injections_remaining:

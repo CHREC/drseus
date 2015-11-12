@@ -11,6 +11,8 @@ import sys
 
 from fault_injector import fault_injector
 
+# TODO: add mode to redo injection iteration
+# TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
 # TODO: add synchronization around injection logging and/or db access
 # TODO: add telnet setup for bdi (firmware, configs, etc.)

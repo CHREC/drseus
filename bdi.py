@@ -182,21 +182,27 @@ class bdi_arm(bdi):
                      aux_prompt, debug, timeout)
 
     def reset_dut(self):
-        self.command('reset', ['- TARGET: processing reset request',
-                               '- TARGET: BDI removes TRST',
-                               '- TARGET: Bypass check',
-                               '- TARGET: JTAG exists check passed',
-                               '- Core#0: ID code', '- Core#0: DP-CSW',
-                               '- Core#0: DBG-AP', '- Core#0: DIDR',
-                               '- Core#1: ID code', '- Core#1: DP-CSW',
-                               '- Core#1: DBG-AP', '- Core#1: DIDR',
-                               '- TARGET: BDI removes RESET',
-                               '- TARGET: BDI waits for RESET inactive',
-                               '- TARGET: Reset sequence passed',
-                               '- TARGET: resetting target passed',
-                               '- TARGET: processing target startup',
-                               '- TARGET: processing target startup passed'],
-                     error_message='Error resetting DUT')
+        if self.debugger.telnet:
+            self.debugger.reset_dut()
+            self.command('reset', ['- TARGET: processing reset request',
+                                   '- TARGET: BDI removes TRST',
+                                   '- TARGET: Bypass check',
+                                   '- TARGET: JTAG exists check passed',
+                                   '- Core#0: ID code', '- Core#0: DP-CSW',
+                                   '- Core#0: DBG-AP', '- Core#0: DIDR',
+                                   '- Core#1: ID code', '- Core#1: DP-CSW',
+                                   '- Core#1: DBG-AP', '- Core#1: DIDR',
+                                   '- TARGET: BDI removes RESET',
+                                   '- TARGET: BDI waits for RESET inactive',
+                                   '- TARGET: Reset sequence passed',
+                                   '- TARGET: resetting target passed',
+                                   '- TARGET: processing target startup',
+                                   '- TARGET: processing target startup passed'
+                                   ],
+                         error_message='Error resetting DUT')
+        else:
+            self.debugger.dut.serial.write('\x03')
+        self.dut.do_login()
 
     def halt_dut(self):
         self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
@@ -350,8 +356,12 @@ class bdi_p2020(bdi):
                      aux_prompt, debug, timeout)
 
     def reset_dut(self):
-        self.telnet.write('reset')
-        self.telnet.write('\r')
+        if self.telnet:
+            self.telnet.write('reset')
+            self.telnet.write('\r')
+        else:
+            self.debugger.dut.serial.write('\x03')
+        self.dut.do_login()
 
     def halt_dut(self):
         self.command('halt 0; halt 1', ['Target CPU', 'Core state',
