@@ -182,8 +182,7 @@ class bdi_arm(bdi):
                      aux_prompt, debug, timeout)
 
     def reset_dut(self):
-        if self.debugger.telnet:
-            self.debugger.reset_dut()
+        if self.telnet:
             self.command('reset', ['- TARGET: processing reset request',
                                    '- TARGET: BDI removes TRST',
                                    '- TARGET: Bypass check',
@@ -201,7 +200,7 @@ class bdi_arm(bdi):
                                    ],
                          error_message='Error resetting DUT')
         else:
-            self.debugger.dut.serial.write('\x03')
+            self.dut.serial.write('\x03')
         self.dut.do_login()
 
     def halt_dut(self):
@@ -360,7 +359,7 @@ class bdi_p2020(bdi):
             self.telnet.write('reset')
             self.telnet.write('\r')
         else:
-            self.debugger.dut.serial.write('\x03')
+            self.dut.serial.write('\x03')
         self.dut.do_login()
 
     def halt_dut(self):
