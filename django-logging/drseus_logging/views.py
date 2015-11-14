@@ -7,8 +7,7 @@ from subprocess import Popen
 import os
 
 from .charts import json_campaign, json_campaigns, json_charts
-from .filters import (injection_filter, result_filter,
-                      simics_register_diff_filter)
+from .filters import (injection_filter, simics_register_diff_filter)
 from .forms import edit_form, result_form
 from .models import (campaign, result, injection, simics_register_diff,
                      simics_memory_diff)
@@ -151,11 +150,13 @@ def campaigns_page(request):
 
 def results_page(request, campaign_number):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
+    injection_objects = injection.objects.filter(
+        result__campaign__campaign_number=campaign_number)
+    filter_ = injection_filter(request.GET, queryset=injection_objects,
+                               campaign=campaign_number)
     result_objects = result.objects.filter(
-        campaign__campaign_number=campaign_number)
-    filter_ = result_filter(request.GET,  queryset=result_objects,
-                            campaign=campaign_number)
-    table = results_table(filter_.qs)
+        id__in=filter_.qs.values('result__id').distinct())
+    table = results_table(result_objects)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {'campaign_data': campaign_data,
                                             'filter': filter_,
