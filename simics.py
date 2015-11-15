@@ -15,7 +15,7 @@ import simics_checkpoints
 class simics:
     error_messages = ['Address not mapped', 'Illegal Instruction',
                       'Illegal instruction', 'Illegal memory mapping',
-                      'Illegal Memory Mapping',
+                      'Illegal Memory Mapping', 'Error setting attribute',
                       'dropping memop (peer attribute not set)',
                       'where nothing is mapped', 'Error']
 
