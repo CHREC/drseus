@@ -209,7 +209,7 @@ def result_page(request, campaign_number, iteration):
         simics_register_diff.objects.filter(result_id=result_object.id).delete()
         simics_memory_diff.objects.filter(result_id=result_object.id).delete()
         result_object.delete()
-        return redirect('../../results')
+        return HttpResponse('Result deleted.')
     if request.method == 'GET' and request.GET.get('launch'):
         drseus = '../drseus.py'
         if not os.path.exists('../drseus.py'):
