@@ -119,6 +119,12 @@ class fault_injector:
         campaign_data['exec_time'], campaign_data['num_cycles'] = \
             self.debugger.time_application(self.command, self.aux_command,
                                            iterations, self.kill_dut)
+        if self.use_simics:
+            (campaign_data['cycles_between'],
+             campaign_data['num_checkpoints']) = \
+                self.debugger.create_checkpoints(self.command, self.aux_command,
+                                                 campaign_data['num_cycles'],
+                                                 num_checkpoints, self.kill_dut)
         if output_file:
             if use_aux_output:
                 self.debugger.aux.get_file(output_file, 'campaign-data/' +
@@ -129,11 +135,7 @@ class fault_injector:
                                            str(self.campaign_number)+'/gold_' +
                                            output_file)
         if self.use_simics:
-            campaign_data['num_checkpoints'] = num_checkpoints
-            campaign_data['cycles_between'] = self.debugger.create_checkpoints(
-                self.command, self.aux_command, campaign_data['num_cycles'],
-                num_checkpoints, self.kill_dut)
-
+            self.debugger.close()
         campaign_data['dut_output'] = \
             self.debugger.dut.output.decode('utf-8', 'ignore')
         campaign_data['debugger_output'] = self.debugger.output

@@ -320,25 +320,28 @@ class simics:
         self.dut.serial.write('./'+command+'\n')
         read_thread = Thread(target=self.dut.read_until)
         read_thread.start()
-        for checkpoint in xrange(1, num_checkpoints+1):
+        checkpoint = 0
+        while True:
+            checkpoint += 1
             self.command('run-cycles '+str(step_cycles))
             self.dut.output += '***drseus_checkpoint: '+str(checkpoint)+'***\n'
             incremental_checkpoint = ('gold-checkpoints/' +
                                       str(self.campaign_number)+'/' +
                                       str(checkpoint))
             self.command('write-configuration '+incremental_checkpoint)
-            merged_checkpoint = incremental_checkpoint+'_merged'
-            if checkpoint == num_checkpoints:
+            if not read_thread.is_alive() or (checkpoint == num_checkpoints
+                                              and kill_dut):
+                merged_checkpoint = incremental_checkpoint+'_merged'
                 self.command('!bin/checkpoint-merge '+incremental_checkpoint +
                              ' '+merged_checkpoint)
+                break
         self.continue_dut()
         if self.use_aux:
             aux_process.join()
         if kill_dut:
             self.dut.serial.write('\x03')
         read_thread.join()
-        self.close()
-        return step_cycles
+        return step_cycles, checkpoint
 
     def inject_fault(self, result_id, iteration, checkpoints_to_inject,
                      selected_targets, cycles_between_checkpoints,

@@ -496,8 +496,9 @@ new_simics_group = optparse.OptionGroup(parser, 'New Campaign Options '
                                         'Simics campaigns')
 new_simics_group.add_option('-C', '--checkpoints', action='store', type='int',
                             dest='num_checkpoints', default=50,
-                            help='number of gold checkpoints to create '
-                                 '[default=50]')
+                            help='number of gold checkpoints to target for '
+                                 'creation (actual number of checkpoints may '
+                                 'be different) [default=50]')
 parser.add_option_group(new_simics_group)
 
 injection_group = optparse.OptionGroup(parser, 'Injection Options', 'Use these '
