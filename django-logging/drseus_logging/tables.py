@@ -55,8 +55,7 @@ class result_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = result
         exclude = ('aux_output', 'aux_paramiko_output', 'campaign',
-                   'debugger_output', 'dut_output', 'id', 'iteration',
-                   'paramiko_output')
+                   'debugger_output', 'dut_output', 'id', 'paramiko_output')
 
 
 class results_table(tables.Table):

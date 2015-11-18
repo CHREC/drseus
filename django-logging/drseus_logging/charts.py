@@ -122,7 +122,7 @@ def json_campaigns(queryset):
     chart['series'] = []
     for outcome in outcomes:
         data = list(queryset.values_list('campaign__command').distinct(
-            ).order_by('campaign__command').annotate(
+            ).order_by('campaign__campaign_number').annotate(
                 count=Sum(Case(When(outcome_category=outcome, then=1),
                                default=0, output_field=IntegerField()))
             ).values_list('count', flat=True))

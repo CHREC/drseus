@@ -212,9 +212,9 @@ def result_page(request, campaign_number, iteration):
         return HttpResponse('Result deleted.')
     if request.method == 'GET' and request.GET.get('launch'):
         drseus = '../drseus.py'
-        if not os.path.exists('../drseus.py'):
+        if not os.path.exists(drseus):
             drseus += 'c'
-        Popen([os.getcwd()+'/'+drseus, '-r '+iteration],
+        Popen([os.getcwd()+'/'+drseus, '--regenerate', iteration],
               cwd=os.getcwd()+'/../')
     injection_objects = \
         injection.objects.filter(

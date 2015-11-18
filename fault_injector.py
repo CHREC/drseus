@@ -14,6 +14,7 @@ from time import sleep
 from bdi import bdi_p2020, bdi_arm
 from error import DrSEUsError
 from simics import simics
+from sql import insert_dict, update_dict
 
 
 class fault_injector:
@@ -57,6 +58,15 @@ class fault_injector:
                        output_file, dut_files, aux_files, iterations,
                        aux_application, aux_arguments, use_aux_output,
                        num_checkpoints, kill_dut):
+        campaign_data = {'campaign_number': self.campaign_number,
+                         'application': application,
+                         'output_file': output_file,
+                         'use_aux': self.use_aux,
+                         'use_aux_output': use_aux_output,
+                         'architecture': architecture,
+                         'use_simics': self.use_simics,
+                         'timestamp': datetime.now(),
+                         'kill_dut': kill_dut}
         self.kill_dut = kill_dut
         if self.use_simics:
             self.debugger.launch_simics()
@@ -72,11 +82,13 @@ class fault_injector:
             self.command = application+' '+arguments
         else:
             self.command = application
+        campaign_data['command'] = self.command
         if self.use_aux:
             if aux_arguments:
                 self.aux_command = aux_application+' '+aux_arguments
             else:
                 self.aux_command = aux_application
+            campaign_data['aux_command'] = self.aux_command
         else:
             self.aux_command = ''
         files = []
@@ -104,8 +116,9 @@ class fault_injector:
         self.debugger.dut.command()
         if self.use_aux:
             aux_process.join()
-        exec_time, num_cycles = self.debugger.time_application(
-            self.command, self.aux_command, iterations, self.kill_dut)
+        campaign_data['exec_time'], campaign_data['num_cycles'] = \
+            self.debugger.time_application(self.command, self.aux_command,
+                                           iterations, self.kill_dut)
         if output_file:
             if use_aux_output:
                 self.debugger.aux.get_file(output_file, 'campaign-data/' +
@@ -116,35 +129,23 @@ class fault_injector:
                                            str(self.campaign_number)+'/gold_' +
                                            output_file)
         if self.use_simics:
-            cycles_between = self.debugger.create_checkpoints(
-                self.command, self.aux_command, num_cycles, num_checkpoints,
-                self.kill_dut)
-        else:
-            num_checkpoints = None
-            cycles_between = None
+            campaign_data['num_checkpoints'] = num_checkpoints
+            campaign_data['cycles_between'] = self.debugger.create_checkpoints(
+                self.command, self.aux_command, campaign_data['num_cycles'],
+                num_checkpoints, self.kill_dut)
+
+        campaign_data['dut_output'] = \
+            self.debugger.dut.output.decode('utf-8', 'ignore')
+        campaign_data['debugger_output'] = self.debugger.output
+        campaign_data['paramiko_output'] = self.debugger.dut.paramiko_output
+        if self.use_aux:
+            campaign_data['aux_output'] = \
+                self.debugger.aux.output.decode('utf-8', 'ignore')
+            campaign_data['aux_paramiko_output'] = \
+                self.debugger.aux.paramiko_output
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
-        sql.execute(
-            'INSERT INTO drseus_logging_campaign '
-            '(campaign_number,application,output_file,command,aux_command,'
-            'use_aux,use_aux_output,exec_time,architecture,'
-            'use_simics,dut_output,aux_output,debugger_output,paramiko_output,'
-            'aux_paramiko_output,num_cycles,num_checkpoints,cycles_between,'
-            'timestamp,kill_dut) VALUES '
-            '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-            (
-                self.campaign_number, application, output_file, self.command,
-                self.aux_command, self.use_aux, use_aux_output, exec_time,
-                architecture, self.use_simics,
-                self.debugger.dut.output.decode('utf-8', 'ignore'),
-                self.debugger.aux.output.decode('utf-8', 'ignore') if
-                self.use_aux else None, self.debugger.output,
-                self.debugger.dut.paramiko_output,
-                self.debugger.aux.paramiko_output if self.use_aux else None,
-                num_cycles, num_checkpoints, cycles_between, datetime.now(),
-                self.kill_dut
-            )
-        )
+        insert_dict(sql, 'campaign', campaign_data)
         sql_db.commit()
         sql_db.close()
         if not self.use_simics:
@@ -177,13 +178,15 @@ class fault_injector:
         self.debugger.aux.send_files(files)
 
     def get_result_id(self, num_injections=0):
+        result_data = {'campaign_id': self.campaign_number,
+                       'iteration': self.iteration,
+                       'num_injections': num_injections,
+                       'outcome': 'In progress',
+                       'outcome_category': 'Incomplete',
+                       'timestamp': datetime.now()}
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
-        sql.execute('INSERT INTO drseus_logging_result (campaign_id,iteration'
-                    ',num_injections,outcome,outcome_category,timestamp) '
-                    'VALUES (?,?,?,?,?,?)',
-                    (self.campaign_number, self.iteration, num_injections,
-                     'In progress', 'Incomplete', datetime.now()))
+        insert_dict(sql, 'result', result_data)
         sql_db.commit()
         result_id = sql.lastrowid
         sql_db.close()
@@ -191,7 +194,7 @@ class fault_injector:
 
     def inject_faults(self, num_injections, selected_targets, compare_all):
         if self.use_simics:
-            checkpoint_nums = range(self.num_checkpoints-1)
+            checkpoint_nums = range(1, self.num_checkpoints)
             injected_checkpoint_nums = []
             for i in xrange(num_injections):
                 checkpoint_num = random.choice(checkpoint_nums)
@@ -316,26 +319,23 @@ class fault_injector:
             print(colored(', data diff: '+str(self.data_diff), 'blue'))
         else:
             print()
+        result_data = {'outcome': outcome,
+                       'outcome_category': outcome_category,
+                       'data_diff': self.data_diff,
+                       'detected_errors': self.detected_errors,
+                       'dut_output': self.debugger.dut.output.decode(
+                           'utf-8', 'ignore'),
+                       'paramiko_output': self.debugger.dut.paramiko_output,
+                       'debugger_output': self.debugger.output,
+                       'timestamp': datetime.now()}
+        if self.use_aux:
+            result_data['aux_output'] = \
+                self.debugger.aux.output.decode('utf-8', 'ignore')
+            result_data['aux_paramiko_output'] = \
+                self.debugger.aux.paramiko_output
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
-        sql.execute(
-            'UPDATE drseus_logging_result SET outcome=?,outcome_category=?,'
-            'data_diff=?,detected_errors=?,dut_output=?,aux_output=?,'
-            'debugger_output=?,paramiko_output=?,aux_paramiko_output=?,'
-            'timestamp=? WHERE id=?', (
-                outcome, outcome_category, self.data_diff, self.detected_errors,
-                self.debugger.dut.output.decode('utf-8', 'ignore') if
-                self.debugger.dut is not None else None,
-                self.debugger.aux.output.decode('utf-8', 'ignore') if
-                self.use_aux and self.debugger.aux is not None else None,
-                self.debugger.output,
-                self.debugger.dut.paramiko_output if
-                self.debugger.dut is not None else None,
-                self.debugger.aux.paramiko_output if
-                self.use_aux and self.debugger.aux is not None else None,
-                datetime.now(), self.result_id
-            )
-        )
+        update_dict(sql, 'result', result_data, self.result_id)
         sql_db.commit()
         sql_db.close()
         self.data_diff = None
@@ -467,15 +467,12 @@ class fault_injector:
             self.iteration = iteration
             self.result_id = self.get_result_id()
             # create empty injection, used for injection charts in log viewer
+            injection_data = {'result_id': self.result_id,
+                              'injection_number': 0,
+                              'timestamp': datetime.now()}
             sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
-            sql.execute(
-                'INSERT INTO drseus_logging_injection (result_id,'
-                'injection_number,timestamp) VALUES (?,?,?)',
-                (
-                    self.result_id, 0, datetime.now()
-                )
-            )
+            insert_dict(sql, 'injection', injection_data)
             sql_db.commit()
             sql_db.close()
             if packet_capture:

@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from __future__ import print_function
+from datetime import datetime
 import multiprocessing
 import optparse
 import os
@@ -10,7 +11,10 @@ import sqlite3
 import sys
 
 from fault_injector import fault_injector
+from sql import dict_factory, insert_dict
 
+# TODO: add private key to campaign data in database
+# TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
@@ -75,9 +79,9 @@ def get_next_iteration(campaign_number):
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    sql.execute('SELECT * FROM drseus_logging_result WHERE '
-                'drseus_logging_result.campaign_id = '+str(campaign_number) +
-                ' ORDER BY iteration DESC LIMIT 1')
+    sql.execute('SELECT iteration FROM drseus_logging_result '
+                'WHERE drseus_logging_result.campaign_id=? '
+                'ORDER BY iteration DESC LIMIT 1', (campaign_number,))
     result_data = sql.fetchone()
     if result_data is None:
         iteration = 0
@@ -95,6 +99,9 @@ def delete_results(campaign_number):
     if os.path.exists('campaign-data/db.sqlite3'):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
+        sql.execute('DELETE FROM drseus_logging_simics_memory_diff WHERE '
+                    'result_id IN (SELECT id FROM drseus_logging_result WHERE '
+                    'campaign_id=?)', (campaign_number,))
         sql.execute('DELETE FROM drseus_logging_simics_register_diff WHERE '
                     'result_id IN (SELECT id FROM drseus_logging_result WHERE '
                     'campaign_id=?)', (campaign_number,))
@@ -119,8 +126,7 @@ def delete_campaign(campaign_number):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         sql.execute('DELETE FROM drseus_logging_campaign '
-                    'WHERE campaign_number=?',
-                    (campaign_number,))
+                    'WHERE campaign_number=?', (campaign_number,))
         sql_db.commit()
         sql_db.close()
         print('deleted campaign from database')
@@ -134,7 +140,7 @@ def delete_campaign(campaign_number):
         print('deleted gold checkpoints')
 
 
-def new_campaign(options):
+def create_campaign(options):
     campaign_number = get_last_campaign() + 1
     if options.architecture == 'p2020':
         if options.dut_ip_address is None:
@@ -302,6 +308,63 @@ def view_logs(args):
     os.system('cd '+os.getcwd()+'/django-logging; ./manage.py runserver ' +
               str(port))
 
+
+def merge_campaigns(merge_directory):
+    last_campaign_number = get_last_campaign()
+    if not os.path.exists(merge_directory+'/campaign-data/db.sqlite3'):
+        raise Exception('could not find campaign data in '+merge_directory)
+    db_backup = ('campaign-data/' +
+                 ''.join([str(i) for i in datetime.now().timetuple()[:6]]) +
+                 '.db.sqlite3')
+    shutil.copyfile('campaign-data/db.sqlite3', db_backup)
+    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
+    sql_db.row_factory = sqlite3.Row
+    sql = sql_db.cursor()
+    sql_db_new = sqlite3.connect(merge_directory+'/campaign-data/db.sqlite3',
+                                 timeout=60)
+    sql_db_new.row_factory = dict_factory
+    sql_new = sql_db_new.cursor()
+    sql_new.execute('SELECT * FROM drseus_logging_campaign')
+    new_campaigns = sql_new.fetchall()
+    for new_campaign in new_campaigns:
+        old_campaign_number = new_campaign['campaign_number']
+        new_campaign['campaign_number'] += last_campaign_number
+        if os.path.exists(merge_directory+'/campaign-data/' +
+                          str(old_campaign_number)):
+            shutil.copytree(merge_directory+'/campaign-data/' +
+                            str(old_campaign_number),
+                            'campaign-data/' +
+                            str(new_campaign['campaign_number']))
+        if os.path.exists(merge_directory+'/simics-workspace/gold-checkpoints'
+                          '/'+str(old_campaign_number)):
+            shutil.copytree(merge_directory+'/simics-workspace/gold-checkpoints'
+                            '/'+str(old_campaign_number),
+                            'simics-workspace/gold-checkpoints/' +
+                            str(new_campaign['campaign_number']))
+            # TODO: update checkpoint dependencies
+        insert_dict(sql, 'campaign', new_campaign)
+        sql_new.execute('SELECT * FROM drseus_logging_result WHERE '
+                        'campaign_id=?', (old_campaign_number,))
+        new_results = sql_new.fetchall()
+        for new_result in new_results:
+            old_result_id = new_result['id']
+            new_result['campaign_id'] += last_campaign_number
+            del new_result['id']
+            insert_dict(sql, 'result', new_result)
+            new_result_id = sql.lastrowid
+            for table in ['injection', 'simics_register_diff',
+                          'simics_memory_diff']:
+                sql_new.execute('SELECT * FROM drseus_logging_'+table+' '
+                                'WHERE result_id=?', (old_result_id,))
+                new_result_items = sql_new.fetchall()
+                for new_result_item in new_result_items:
+                    new_result_item['result_id'] = new_result_id
+                    del new_result_item['id']
+                    insert_dict(sql, table, new_result_item)
+    sql_db.commit()
+    sql_db.close()
+    sql_db_new.close()
+
 parser = optparse.OptionParser('drseus.py {mode} {options}')
 
 parser.add_option('-N', '--campaign', action='store', type='int',
@@ -317,31 +380,31 @@ parser.add_option('-T', '--timeout', action='store', type='int',
 parser.add_option('--dut_ip', action='store', type='str',
                   dest='dut_ip_address', default=None,
                   help='dut ip address [p2020 default=10.42.0.21]              '
-                  '[a9 default=10.42.0.30] (overridden by simics)')
+                       '[a9 default=10.42.0.30] (overridden by simics)')
 parser.add_option('--dut_serial', action='store', type='str',
                   dest='dut_serial_port', default=None,
                   help='dut serial port [p2020 default=/dev/ttyUSB1]           '
-                  '[a9 default=/dev/ttyACM0] (overridden by simics)')
+                       '[a9 default=/dev/ttyACM0] (overridden by simics)')
 parser.add_option('--dut_prompt', action='store', type='str',
                   dest='dut_prompt', default=None,
                   help='dut console prompt [p2020 default=root@p2020rdb:~#]    '
-                  '[a9 default=[root@ZED]#] (overridden by simics)')
+                       '[a9 default=[root@ZED]#] (overridden by simics)')
 parser.add_option('--aux_ip', action='store', type='str',
                   dest='aux_ip_address', default='10.42.0.20',
                   help='aux ip address [default=10.42.0.20] '
-                  '(overridden by simics)')
+                       '(overridden by simics)')
 parser.add_option('--aux_serial', action='store', type='str',
                   dest='aux_serial_port', default='/dev/ttyUSB0',
                   help='aux serial port [default=/dev/ttyUSB0] '
-                  '(overridden by simics)')
+                       '(overridden by simics)')
 parser.add_option('--aux_prompt', action='store', type='str',
                   dest='aux_prompt', default=None,
                   help='aux console prompt [default=root@p2020rdb:~#]  '
-                  '(overridden by simics)')
+                       '(overridden by simics)')
 parser.add_option('--debugger_ip', action='store', type='str',
                   dest='debugger_ip_address', default='10.42.0.50',
                   help='debugger ip address [default=10.42.0.50] '
-                  '(ignored by simics)')
+                       '(ignored by simics)')
 
 mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes', 'Specify the desired '
                                   'operating mode')
@@ -361,17 +424,20 @@ mode_group.add_option('-D', '--delete_all', action='store_true',
 mode_group.add_option('-c', '--create_campaign', action='store', type='str',
                       dest='application', default=None,
                       help='create a new campaign for the application '
-                      'specified')
+                           'specified')
 mode_group.add_option('-i', '--inject', action='store_true', dest='inject',
                       default=False,
                       help='perform fault injections on an existing campaign')
 mode_group.add_option('-S', '--supervise', action='store_true',
                       dest='supervise', default=False,
                       help='do not inject faults, only supervise devices')
-
 mode_group.add_option('-l', '--log', action='store_true',
                       dest='view_logs', default=False,
                       help='start the log server')
+mode_group.add_option('-M', '--merge', action='store', type='str',
+                      dest='merge_directory', default=None,
+                      help='merge campaigns from external DIRECTORY into the '
+                           'local directory')
 parser.add_option_group(mode_group)
 
 simics_mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes (Simics only)',
@@ -380,7 +446,7 @@ simics_mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes (Simics only)',
 simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
                              dest='iteration', default=-1,
                              help='regenerate a campaign iteration and '
-                             'launch in Simics')
+                                  'launch in Simics')
 parser.add_option_group(simics_mode_group)
 
 new_group = optparse.OptionGroup(parser, 'New Campaign Options',
@@ -457,7 +523,7 @@ simics_injection_group.add_option('-p', '--procs', action='store',
                                   type='int', dest='num_processes', default=1,
                                   help='number of simics injections to perform '
                                        'in parallel')
-simics_injection_group.add_option('-M', '--all', action='store_true',
+simics_injection_group.add_option('--compare_all', action='store_true',
                                   dest='compare_all', default=False,
                                   help='monitor all checkpoints (only last by '
                                        'default), IMPORTANT: do NOT use with '
@@ -499,7 +565,7 @@ elif options.delete_results:
         options.campaign_number = get_last_campaign()
     delete_results(options.campaign_number)
 elif options.application is not None:
-    new_campaign(options)
+    create_campaign(options)
 elif options.inject:
     if not options.campaign_number:
         options.campaign_number = get_last_campaign()
@@ -548,6 +614,8 @@ elif options.supervise:
                      campaign_data['use_aux_output'], options.capture)
 elif options.view_logs:
     view_logs(args)
+elif options.merge_directory is not None:
+    merge_campaigns(options.merge_directory)
 elif options.iteration >= 0:
     if not options.campaign_number:
         options.campaign_number = get_last_campaign()

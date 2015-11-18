@@ -24,8 +24,6 @@ class simics:
                  timeout):
         self.simics = None
         self.output = ''
-        self.dut = None
-        self.aux = None
         self.campaign_number = campaign_number
         self.debug = debug
         self.timeout = timeout
@@ -37,7 +35,7 @@ class simics:
         self.use_aux = use_aux
 
     def launch_simics(self, checkpoint=None):
-        self.output = ''
+        # self.output = ''
         self.simics = subprocess.Popen([os.getcwd()+'/simics-workspace/simics',
                                         '-no-win', '-no-gui', '-q'],
                                        cwd=os.getcwd()+'/simics-workspace',
@@ -108,17 +106,16 @@ class simics:
             self.continue_dut()
             self.do_uboot()
             if self.use_aux:
-                def aux_login():
-                    self.aux.do_login(change_prompt=True)
-                    self.aux.command('ifconfig eth0 10.10.0.104 '
-                                     'netmask 255.255.255.0 up')
-                aux_process = Thread(target=aux_login)
+                aux_process = Thread(target=self.aux.do_login,
+                                     kwargs={'change_prompt': True})
                 aux_process.start()
             self.dut.do_login(change_prompt=True)
             self.dut.command('ifconfig eth0 10.10.0.100 '
                              'netmask 255.255.255.0 up')
             if self.use_aux:
                 aux_process.join()
+                self.aux.command('ifconfig eth0 10.10.0.104 '
+                                 'netmask 255.255.255.0 up')
         else:
             self.dut.prompt = 'DrSEUs# '
             if self.use_aux:
@@ -323,7 +320,7 @@ class simics:
         self.dut.serial.write('./'+command+'\n')
         read_thread = Thread(target=self.dut.read_until)
         read_thread.start()
-        for checkpoint in xrange(num_checkpoints):
+        for checkpoint in xrange(1, num_checkpoints+1):
             self.command('run-cycles '+str(step_cycles))
             self.dut.output += '***drseus_checkpoint: '+str(checkpoint)+'***\n'
             incremental_checkpoint = ('gold-checkpoints/' +
@@ -331,7 +328,7 @@ class simics:
                                       str(checkpoint))
             self.command('write-configuration '+incremental_checkpoint)
             merged_checkpoint = incremental_checkpoint+'_merged'
-            if checkpoint == num_checkpoints-1:
+            if checkpoint == num_checkpoints:
                 self.command('!bin/checkpoint-merge '+incremental_checkpoint +
                              ' '+merged_checkpoint)
         self.continue_dut()
@@ -346,15 +343,15 @@ class simics:
     def inject_fault(self, result_id, iteration, checkpoints_to_inject,
                      selected_targets, cycles_between_checkpoints,
                      num_checkpoints, compare_all):
-        simics_output = ''
+        # simics_output = ''
         dut_output = ''
         paramiko_output = ''
         if self.use_aux:
             aux_output = ''
             aux_paramiko_output = ''
         latent_faults = 0
-        for injection_number in xrange(len(checkpoints_to_inject)):
-            checkpoint_number = checkpoints_to_inject[injection_number]
+        for injection_number in xrange(1, len(checkpoints_to_inject)+1):
+            checkpoint_number = checkpoints_to_inject[injection_number-1]
             injected_checkpoint = simics_checkpoints.inject_checkpoint(
                 self.campaign_number, result_id, iteration, injection_number,
                 checkpoint_number, self.board, selected_targets, self.debug)
@@ -372,12 +369,12 @@ class simics:
                         raise DrSEUsError(error.message)
                 else:
                     break
-            injections_remaining = (injection_number + 1 <
+            injections_remaining = (injection_number <
                                     len(checkpoints_to_inject))
             if injections_remaining:
-                next_checkpoint = checkpoints_to_inject[injection_number + 1]
+                next_checkpoint = checkpoints_to_inject[injection_number]
             else:
-                next_checkpoint = num_checkpoints - 1
+                next_checkpoint = num_checkpoints
             errors = self.compare_checkpoints(result_id, iteration,
                                               checkpoint_number,
                                               next_checkpoint,
@@ -387,13 +384,13 @@ class simics:
                 latent_faults = errors
             if injections_remaining:
                 self.close()
-            simics_output += self.output
+            # simics_output += self.output
             dut_output += self.dut.output
             paramiko_output += self.dut.paramiko_output
             if self.use_aux:
                 aux_output += self.aux.output
                 aux_paramiko_output += self.aux.paramiko_output
-        self.output = simics_output
+        # self.output = simics_output
         self.dut.output = dut_output
         self.dut.paramiko_output = paramiko_output
         if self.use_aux:
@@ -445,7 +442,7 @@ class simics:
             incremental_checkpoint = ('injected-checkpoints/' +
                                       str(self.campaign_number)+'/' +
                                       str(iteration)+'/'+str(checkpoint_number))
-            monitor = compare_all or checkpoint_number == num_checkpoints - 1
+            monitor = compare_all or checkpoint_number == num_checkpoints
             if monitor or checkpoint_number == last_checkpoint:
                 self.command('write-configuration '+incremental_checkpoint)
             if monitor:

@@ -9,6 +9,7 @@ from termcolor import colored
 
 from error import DrSEUsError
 from simics_targets import devices
+from sql import insert_dict
 
 
 def flip_bit(value_to_inject, num_bits_to_inject, bit_to_inject):
@@ -115,11 +116,10 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
         if 'count' in targets[target]['registers'][register]:
             register_index = []
             for dimension in targets[target]['registers'][register]['count']:
-                register_index.append(randrange(dimension))
-            injection_data['register_index'] = register_index
+                index = randrange(dimension)
+                register_index.append(index)
         else:
             register_index = None
-            injection_data['register_index'] = None
         # choose bit_to_inject and TLB field_to_inject
         if ('is_tlb' in targets[target]['registers'][register] and
                 targets[target]['registers'][register]['is_tlb']):
@@ -196,6 +196,15 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
             else:
                 injection_data['field'] = None
         injection_data['bit'] = bit_to_inject
+
+        if register_index is not None:
+            injection_data['register_index'] = ''
+            for index in register_index:
+                injection_data['register_index'] += str(index)+':'
+            injection_data['register_index'] = \
+                injection_data['register_index'][:-1]
+        else:
+            injection_data['register_index'] = None
     else:
         # use previous injection data
         config_object = previous_injection_data['config_object']
@@ -283,9 +292,8 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
                         register_buffer.index('))')
                     ].split('),(')
                 )
-                for register_index1 in xrange(len(register_list)):
-                    register_list[register_index1] = \
-                        register_list[register_index1].split(',')
+                for index1 in xrange(len(register_list)):
+                    register_list[index1] = register_list[index1].split(',')
                 gold_value = register_list[register_index[0]][register_index[1]]
                 if previous_injection_data is None:
                     injected_value = flip_bit(gold_value, num_bits_to_inject,
@@ -387,7 +395,7 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
             if target not in targets:
                 raise Exception('simics_checkpoints.py:inject_checkpoint():'
                                 ' invalid injection target: '+target)
-    if injection_number == 0:
+    if injection_number == 1:
         gold_checkpoint = ('simics-workspace/gold-checkpoints/' +
                            str(campaign_number)+'/'+str(checkpoint_number))
     else:
@@ -408,20 +416,21 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
     # choose injection target
     target = choose_target(selected_targets, targets)
     register = choose_register(target, targets)
+    injection_data = {'result_id': result_id,
+                      'injection_number': injection_number,
+                      'checkpoint_number': checkpoint_number,
+                      'register': register,
+                      'target': target,
+                      'timestamp': datetime.now()}
     try:
         # perform fault injection
-        injection_data = inject_register(gold_checkpoint, injected_checkpoint,
-                                         register, target, board, targets)
+        injection_data.update(inject_register(gold_checkpoint,
+                                              injected_checkpoint, register,
+                                              target, board, targets))
     except Exception as error:
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
-        sql.execute(
-            'INSERT INTO drseus_logging_injection (result_id,injection_number,'
-            'register,target,timestamp) VALUES (?,?,?,?,?)',
-            (
-                result_id, injection_number, register, target, datetime.now()
-            )
-        )
+        insert_dict(sql, 'injection', injection_data)
         sql_db.commit()
         sql_db.close()
         print(error)
@@ -429,34 +438,15 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
     # log injection data
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql = sql_db.cursor()
-    if injection_data['register_index'] is not None:
-        register_index = ''
-        for index in injection_data['register_index']:
-            register_index += str(index)+':'
-        register_index = register_index[:-1]
-    else:
-        register_index = injection_data['register_index']
-    sql.execute(
-        'INSERT INTO drseus_logging_injection (result_id,injection_number,'
-        'register,bit,gold_value,injected_value,checkpoint_number,target_index,'
-        'target,config_object,config_type,register_index,field,timestamp) '
-        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-        (
-            result_id, injection_number, injection_data['register'],
-            injection_data['bit'], injection_data['gold_value'],
-            injection_data['injected_value'], checkpoint_number,
-            injection_data['target_index'], injection_data['target'],
-            injection_data['config_object'], injection_data['config_type'],
-            register_index, injection_data['field'], datetime.now()
-        )
-    )
+    insert_dict(sql, 'injection', injection_data)
     sql_db.commit()
     sql_db.close()
     if debug:
         print(colored('iteration: '+str(iteration), 'magenta'))
         print(colored('injection number: '+str(injection_number), 'magenta'))
+        print(colored('checkpoint number: '+str(checkpoint_number), 'magenta'))
         print(colored('target: '+injection_data['target'], 'magenta'))
-        print(colored('register: '+register, 'magenta'))
+        print(colored('register: '+injection_data['register'], 'magenta'))
         print(colored('gold value: '+injection_data['gold_value'], 'magenta'))
         print(colored('injected value: ' +
                       injection_data['injected_value'], 'magenta'))
@@ -594,7 +584,9 @@ def compare_registers(result_id, checkpoint_number, gold_checkpoint,
                                           targets)
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql = sql_db.cursor()
-    errors = 0
+    diffs = 0
+    register_diff_data = {'result_id': result_id,
+                          'checkpoint_number': checkpoint_number}
     for target in targets:
         if target != 'TLB':
             if 'count' in targets[target]:
@@ -606,9 +598,9 @@ def compare_registers(result_id, checkpoint_number, gold_checkpoint,
                 if target_count > 1:
                     config_object += '['+str(target_index)+']'
                 if target == 'GPR':
-                    target_key = config_object + ':gprs'
+                    register_diff_data['config_object'] = config_object+':gprs'
                 else:
-                    target_key = config_object
+                    register_diff_data['config_object'] = config_object
                 for register in targets[target]['registers']:
                     if 'count' in targets[target]['registers'][register]:
                         register_count = (targets[target]['registers']
@@ -616,67 +608,53 @@ def compare_registers(result_id, checkpoint_number, gold_checkpoint,
                     else:
                         register_count = ()
                     if len(register_count) == 0:
-                        if (monitored_registers[target_key][register] !=
-                                gold_registers[target_key][register]):
-                            errors += 1
-                            sql.execute(
-                                'INSERT INTO ' +
-                                'drseus_logging_simics_register_diff '
-                                '(result_id,checkpoint_number,'
-                                'config_object,register,gold_value,'
-                                'monitored_value) VALUES (?,?,?,?,?,?)', (
-                                    result_id, checkpoint_number, target_key,
-                                    register,
-                                    gold_registers[target_key][register],
-                                    monitored_registers[target_key][register]
-                                )
-                            )
+                        register_diff_data['monitored_value'] = \
+                            monitored_registers[
+                                register_diff_data['config_object']
+                            ][register]
+                        register_diff_data['gold_value'] = gold_registers[
+                            register_diff_data['config_object']
+                        ][register]
+                        if (register_diff_data['monitored_value'] !=
+                                register_diff_data['gold_value']):
+                            diffs += 1
+                            register_diff_data['register'] = register
+                            insert_dict(sql, 'simics_register_diff',
+                                        register_diff_data)
                     elif len(register_count) == 1:
                         for index1 in xrange(register_count[0]):
-                            if (monitored_registers[target_key]
-                                                   [register][index1] !=
-                                gold_registers[target_key]
-                                              [register][index1]):
-                                errors += 1
-                                sql.execute(
-                                    'INSERT INTO '
-                                    'drseus_logging_simics_register_diff '
-                                    '(result_id,checkpoint_number,'
-                                    'config_object,register,gold_value,'
-                                    'monitored_value) VALUES (?,?,?,?,?,?)', (
-                                        result_id, checkpoint_number,
-                                        target_key, register+':'+str(index1),
-                                        gold_registers[target_key]
-                                                      [register][index1],
-                                        monitored_registers[target_key]
-                                                           [register][index1]
-                                    )
-                                )
+                            register_diff_data['monitored_value'] = \
+                                monitored_registers[
+                                    register_diff_data['config_object']
+                                ][register][index1]
+                            register_diff_data['gold_value'] = gold_registers[
+                                register_diff_data['config_object']
+                            ][register][index1]
+                            if (register_diff_data['monitored_value'] !=
+                                    register_diff_data['gold_value']):
+                                diffs += 1
+                                register_diff_data['register'] = (register+':' +
+                                                                  str(index1))
+                                insert_dict(sql, 'simics_register_diff',
+                                            register_diff_data)
                     elif len(register_count) == 2:
                         for index1 in xrange(register_count[0]):
                             for index2 in xrange(register_count[1]):
-                                if (monitored_registers[target_key][register]
-                                                       [index1][index2] !=
-                                    gold_registers[target_key][register]
-                                                  [index1][index2]):
-                                    errors += 1
-                                    sql.execute(
-                                        'INSERT INTO '
-                                        'drseus_logging_simics_register_diff '
-                                        '(result_id,checkpoint_number,'
-                                        'config_object,register,gold_value,'
-                                        'monitored_value) VALUES (?,?,?,?,?,?)',
-                                        (
-                                            result_id, checkpoint_number,
-                                            target_key, register+':' +
-                                            str(index1)+':'+str(index2),
-                                            gold_registers[target_key][register]
-                                                          [index1][index2],
-                                            monitored_registers[target_key]
-                                                               [register]
-                                                               [index1][index2]
-                                        )
-                                    )
+                                register_diff_data['monitored_value'] = \
+                                    monitored_registers[
+                                        register_diff_data['config_object']
+                                    ][register][index1][index2]
+                                register_diff_data['gold_value'] = \
+                                    gold_registers[
+                                        register_diff_data['config_object']
+                                    ][register][index1][index2]
+                                if (register_diff_data['monitored_value'] !=
+                                        register_diff_data['gold_value']):
+                                    register_diff_data['register'] = \
+                                        register+':'+str(index1)+':'+str(index2)
+                                    diffs += 1
+                                    insert_dict(sql, 'simics_register_diff',
+                                                register_diff_data)
                     else:
                         raise Exception('simics_checkpoints.py:'
                                         'compare_registers(): '
@@ -684,7 +662,7 @@ def compare_registers(result_id, checkpoint_number, gold_checkpoint,
                                         register+' in target: '+target)
     sql_db.commit()
     sql_db.close()
-    return errors
+    return diffs
 
 
 def parse_content_map(content_map, block_size):
@@ -754,8 +732,10 @@ def compare_memory(result_id, checkpoint_number, gold_checkpoint,
     diff_content_maps = [diff+'.content_map' for diff in ram_diffs]
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql = sql_db.cursor()
-    errors = 0
-    for (image_index, gold_ram, monitored_ram, ram_diff,
+    diffs = 0
+    memory_diff_data = {'result_id': result_id,
+                        'checkpoint_number': checkpoint_number}
+    for (memory_diff_data['image_index'], gold_ram, monitored_ram, ram_diff,
          diff_content_map) in zip(range(len(monitored_rams)), gold_rams,
                                   monitored_rams, ram_diffs, diff_content_maps):
         os.system('simics-workspace/bin/craff --diff '+gold_ram+' ' +
@@ -766,15 +746,13 @@ def compare_memory(result_id, checkpoint_number, gold_checkpoint,
                                    ram_diff, shell=True)
         block_size = int(findall(r'\d+', craffOutput.split('\n')[2])[1])
         changed_blocks = parse_content_map(diff_content_map, block_size)
-        errors += len(changed_blocks)
+        diffs += len(changed_blocks)
         if extract_blocks:
             extract_diff_blocks(gold_ram, monitored_ram, monitored_checkpoint,
                                 changed_blocks, block_size)
         for block in changed_blocks:
-            sql.execute('INSERT INTO drseus_logging_simics_memory_diff '
-                        '(result_id,checkpoint_number,image_index,block) '
-                        'VALUES (?,?,?,?)',
-                        (result_id, checkpoint_number, image_index, hex(block)))
+            memory_diff_data['block'] = hex(block)
+            insert_dict(sql, 'simics_memory_diff', memory_diff_data)
     sql_db.commit()
     sql_db.close()
-    return errors
+    return diffs

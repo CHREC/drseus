@@ -86,22 +86,22 @@ class injection_filter(django_filters.FilterSet):
         # self.filters['time_rounded'].widget.attrs['size'] = min(
         #     len(time_rounded_choices), 10)
 
-    aux_output = django_filters.CharFilter(
+    result__aux_output = django_filters.CharFilter(
         label='AUX output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
-    debugger_output = django_filters.CharFilter(
-        label='Simics output',
+    result__debugger_output = django_filters.CharFilter(
+        label='Debugger output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
-    dut_output = django_filters.CharFilter(
+    result__dut_output = django_filters.CharFilter(
         label='DUT output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
-    paramiko_output = django_filters.CharFilter(
+    result__paramiko_output = django_filters.CharFilter(
         label='SCP output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),

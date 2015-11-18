@@ -9,6 +9,7 @@ import sqlite3
 
 from dut import dut
 from error import DrSEUsError
+from sql import insert_dict
 
 # BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
 
@@ -112,46 +113,48 @@ class bdi:
                     if target in register:
                         registers.append(register)
                         break
-        for injection in xrange(len(injection_times)):
-            injection_time = injection_times[injection]
+        for injection in xrange(1, len(injection_times)+1):
+            injection_data = {'result_id': result_id,
+                              'injection_number': injection,
+                              'time': injection_times[injection],
+                              'timestamp': datetime.now()}
             if self.debug:
-                print(colored('injection time: '+str(injection_time),
+                print(colored('injection time: '+str(injection_data['time']),
                               'magenta'))
-            if injection == 0:
+            if injection == 1:
                 self.dut.serial.write(str('./'+command+'\n'))
             else:
                 self.continue_dut()
-            time.sleep(injection_time)
+            time.sleep(injection_data['time'])
             self.halt_dut()
-            core = random.randrange(2)
-            self.select_core(core)
-            register = random.choice(self.registers)
-            gold_value = self.get_register_value(register)
-            num_bits = len(gold_value.replace('0x', '')) * 4
-            bit = random.randrange(num_bits)
-            injected_value = '0x%x' % (int(gold_value, base=16) ^ (1 << bit))
+            injection_data['core'] = random.randrange(2)
+            self.select_core(injection_data['core'])
+            injection_data['register'] = random.choice(self.registers)
+            injection_data['gold_value'] = self.get_register_value(
+                injection_data['register'])
+            num_bits = len(injection_data['gold_value'].replace('0x', '')) * 4
+            injection_data['bit'] = random.randrange(num_bits)
+            injection_data['injected_value'] = '0x%x' % (
+                int(injection_data['gold_value'], base=16)
+                ^ (1 << injection_data['bit']))
             if self.debug:
-                print(colored('core: '+str(core), 'magenta'))
-                print(colored('register: '+register, 'magenta'))
-                print(colored('bit: '+str(bit), 'magenta'))
-                print(colored('gold value: '+gold_value, 'magenta'))
-                print(colored('injected value: '+injected_value, 'magenta'))
-            self.set_register_value(register, injected_value)
+                print(colored('core: '+str(injection_data['core']), 'magenta'))
+                print(colored('register: '+injection_data['register'],
+                              'magenta'))
+                print(colored('bit: '+str(injection_data['bit']), 'magenta'))
+                print(colored('gold value: '+injection_data['gold_value'],
+                              'magenta'))
+                print(colored('injected value: ' +
+                              injection_data['injected_value'], 'magenta'))
+            self.set_register_value(register, injection_data['injected_value'])
             sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
-            sql.execute(
-                'INSERT INTO drseus_logging_injection (result_id,'
-                'injection_number,register,bit,gold_value,injected_value,time,'
-                'core,timestamp) VALUES (?,?,?,?,?,?,?,?,?)',
-                (
-                    result_id, injection, register, bit, gold_value,
-                    injected_value, injection_time, core, datetime.now()
-                )
-            )
+            insert_dict(sql, 'injection', injection_data)
             sql_db.commit()
             sql_db.close()
-            if int(injected_value, base=16) != int(
-                    self.get_register_value(register), base=16):
+            if int(injection_data['injected_value'], base=16) != int(
+                    self.get_register_value(injection_data['register']),
+                    base=16):
                 raise DrSEUsError('Error injecting fault')
 
 
