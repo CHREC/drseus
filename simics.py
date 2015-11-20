@@ -338,8 +338,8 @@ class simics:
                                       str(self.campaign_number)+'/' +
                                       str(checkpoint))
             self.command('write-configuration '+incremental_checkpoint)
-            if not read_thread.is_alive() or (checkpoint == num_checkpoints
-                                              and kill_dut):
+            if not read_thread.is_alive() or (self.use_aux and kill_dut
+                                              and not aux_process.is_alive()):
                 merged_checkpoint = incremental_checkpoint+'_merged'
                 self.command('!bin/checkpoint-merge '+incremental_checkpoint +
                              ' '+merged_checkpoint)

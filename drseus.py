@@ -453,19 +453,6 @@ parser.add_option('--debugger_ip', action='store', type='str',
 
 mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes', 'Specify the desired '
                                   'operating mode')
-mode_group.add_option('-b', '--list_campaigns', action='store_true',
-                      dest='list', help='list campaigns')
-mode_group.add_option('-d', '--delete_results', action='store_true',
-                      dest='delete_results', default=False,
-                      help='delete results and/or injected checkpoints for a '
-                           'campaign')
-mode_group.add_option('-e', '--delete_campaign', action='store_true',
-                      dest='delete_campaign', default=False,
-                      help='delete campaign (results and campaign information)')
-mode_group.add_option('-D', '--delete_all', action='store_true',
-                      dest='delete_all', default=False,
-                      help='delete results and/or injected checkpoints for all '
-                           'campaigns')
 mode_group.add_option('-c', '--create_campaign', action='store', type='str',
                       dest='application', default=None,
                       help='create a new campaign for the application '
@@ -479,6 +466,18 @@ mode_group.add_option('-S', '--supervise', action='store_true',
 mode_group.add_option('-l', '--log', action='store_true',
                       dest='view_logs', default=False,
                       help='start the log server')
+mode_group.add_option('-b', '--list_campaigns', action='store_true',
+                      dest='list', help='list campaigns')
+mode_group.add_option('-d', '--delete_results', action='store_true',
+                      dest='delete_results', default=False,
+                      help='delete results for a campaign')
+mode_group.add_option('-e', '--delete_campaign', action='store_true',
+                      dest='delete_campaign', default=False,
+                      help='delete campaign (results and campaign information)')
+mode_group.add_option('-D', '--delete_all', action='store_true',
+                      dest='delete_all', default=False,
+                      help='delete results and/or injected checkpoints for all '
+                           'campaigns')
 mode_group.add_option('-M', '--merge', action='store', type='str',
                       dest='merge_directory', default=None,
                       help='merge campaigns from external DIRECTORY into the '
@@ -500,12 +499,14 @@ parser.add_option_group(simics_mode_group)
 new_group = optparse.OptionGroup(parser, 'New Campaign Options',
                                  'Use these to create a new campaign, they will'
                                  ' be saved')
+new_group.add_option('-s', '--simics', action='store_true', dest='use_simics',
+                     default=False, help='use simics simulator')
+new_group.add_option('-A', '--arch', action='store',  choices=['a9', 'p2020'],
+                     dest='architecture', default='p2020',
+                     help='target architecture [default=p2020]')
 new_group.add_option('-m', '--timing', action='store', type='int',
                      dest='iterations', default=5,
                      help='number of timing iterations to run [default=5]')
-new_group.add_option('-o', '--output', action='store', type='str',
-                     dest='file', default='result.dat',
-                     help='target application output file [default=result.dat]')
 new_group.add_option('-a', '--args', action='store', type='str',
                      dest='arguments', default='',
                      help='arguments for application')
@@ -515,14 +516,9 @@ new_group.add_option('-L', '--directory', action='store', type='str',
 new_group.add_option('-f', '--files', action='store', type='str', dest='files',
                      default='',
                      help='comma-separated list of files to copy to device')
-new_group.add_option('-F', '--aux_files', action='store', type='str',
-                     dest='aux_files', default='',
-                     help='comma-separated list of files to copy to aux device')
-new_group.add_option('-A', '--arch', action='store',  choices=['a9', 'p2020'],
-                     dest='architecture', default='p2020',
-                     help='target architecture [default=p2020]')
-new_group.add_option('-s', '--simics', action='store_true', dest='use_simics',
-                     default=False, help='use simics simulator')
+new_group.add_option('-o', '--output', action='store', type='str',
+                     dest='file', default='result.dat',
+                     help='target application output file [default=result.dat]')
 new_group.add_option('-x', '--aux', action='store_true', dest='use_aux',
                      default=False, help='use second device during testing')
 new_group.add_option('-y', '--aux_app', action='store',
@@ -531,6 +527,9 @@ new_group.add_option('-y', '--aux_app', action='store',
 new_group.add_option('-z', '--aux_args', action='store', type='str',
                      dest='aux_args', default='',
                      help='arguments for auxiliary application')
+new_group.add_option('-F', '--aux_files', action='store', type='str',
+                     dest='aux_files', default='',
+                     help='comma-separated list of files to copy to aux device')
 new_group.add_option('-O', '--aux_output', action='store_true',
                      dest='use_aux_output', default=False,
                      help='get output file from aux instead of dut')
@@ -552,13 +551,13 @@ parser.add_option_group(new_simics_group)
 injection_group = optparse.OptionGroup(parser, 'Injection Options', 'Use these '
                                        'when performing injections '
                                        '(-i or --inject)')
+injection_group.add_option('-n', '--iterations', action='store', type='int',
+                           dest='num_iterations', default=10,
+                           help='number of iterations to perform [default=10]')
 injection_group.add_option('-I', '--injections', action='store', type='int',
                            dest='num_injections', default=1,
                            help='number of injections per execution run '
                                 '[default=1]')
-injection_group.add_option('-n', '--iterations', action='store', type='int',
-                           dest='num_iterations', default=10,
-                           help='number of iterations to perform [default=10]')
 injection_group.add_option('-t', '--targets', action='store', type='str',
                            dest='selected_targets', default=None,
                            help='comma-seperated list of targets for injection')
