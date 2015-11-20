@@ -92,7 +92,18 @@ def get_next_iteration(campaign_number):
     return iteration + 1
 
 
+def backup_database():
+    print('backing up database...', end='')
+    db_backup = ('campaign-data/' +
+                 '-'.join([str(unit).zfill(2)
+                           for unit in datetime.now().timetuple()[:6]]) +
+                 '.db.sqlite3')
+    shutil.copyfile('campaign-data/db.sqlite3', db_backup)
+    print('done')
+
+
 def delete_results(campaign_number):
+    backup_database()
     if os.path.exists('campaign-data/'+str(campaign_number)+'/results'):
         shutil.rmtree('campaign-data/'+str(campaign_number)+'/results')
         print('deleted results')
@@ -314,13 +325,7 @@ def merge_campaigns(merge_directory):
     last_campaign_number = get_last_campaign()
     if not os.path.exists(merge_directory+'/campaign-data/db.sqlite3'):
         raise Exception('could not find campaign data in '+merge_directory)
-    print('backing up database...', end='')
-    db_backup = ('campaign-data/' +
-                 '-'.join([str(unit).zfill(2)
-                           for unit in datetime.now().timetuple()[:6]]) +
-                 '.db.sqlite3')
-    shutil.copyfile('campaign-data/db.sqlite3', db_backup)
-    print('done')
+    backup_database()
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
@@ -331,7 +336,8 @@ def merge_campaigns(merge_directory):
     sql_new.execute('SELECT * FROM drseus_logging_campaign')
     new_campaigns = sql_new.fetchall()
     for new_campaign in new_campaigns:
-        print('merging campaign: '+merge_directory+'/'+new_campaign['command'])
+        print('merging campaign: \"'+merge_directory+'/' +
+              new_campaign['command']+'\"')
         old_campaign_number = new_campaign['campaign_number']
         new_campaign['campaign_number'] += last_campaign_number
         if os.path.exists(merge_directory+'/campaign-data/' +
