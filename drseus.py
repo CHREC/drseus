@@ -321,6 +321,30 @@ def view_logs(args):
               str(port))
 
 
+def update_checkpoint_dependencies(campaign_number):
+    for checkpoint in os.listdir('simics-workspace/gold-checkpoints/' +
+                                 str(campaign_number)):
+        config = simics_config.read_configuration(
+            'simics-workspace/gold-checkpoints/' +
+            str(campaign_number)+'/'+checkpoint)
+        os.rename('simics-workspace/gold-checkpoints/' +
+                  str(campaign_number)+'/'+checkpoint+'/config',
+                  'simics-workspace/gold-checkpoints/' +
+                  str(campaign_number)+'/'+checkpoint+'/config.bak')
+        paths = simics_config.get_attr(config, 'sim', 'checkpoint_path')
+        new_paths = []
+        for path in paths:
+            path_list = path.split('/')
+            path_list = path_list[path_list.index('simics-workspace'):]
+            path_list[-2] = str(campaign_number)
+            new_paths.append('\"'+os.getcwd()+'/'+'/'.join(path_list))
+        simics_config.set_attr(config, 'sim', 'checkpoint_path',
+                               new_paths)
+        simics_config.write_configuration(
+            config, 'simics-workspace/gold-checkpoints/' +
+            str(campaign_number)+'/'+checkpoint, False)
+
+
 def merge_campaigns(merge_directory):
     last_campaign_number = get_last_campaign()
     if not os.path.exists(merge_directory+'/campaign-data/db.sqlite3'):
@@ -358,29 +382,7 @@ def merge_campaigns(merge_directory):
             print('done')
             print('\tupdating checkpoint dependency paths...', end='')
             sys.stdout.flush()
-            for checkpoint in os.listdir('simics-workspace/gold-checkpoints/' +
-                                         str(new_campaign['campaign_number'])):
-                config = simics_config.read_configuration(
-                    'simics-workspace/gold-checkpoints/' +
-                    str(new_campaign['campaign_number'])+'/'+checkpoint)
-                os.rename('simics-workspace/gold-checkpoints/' +
-                          str(new_campaign['campaign_number'])+'/' +
-                          checkpoint+'/config',
-                          'simics-workspace/gold-checkpoints/' +
-                          str(new_campaign['campaign_number'])+'/' +
-                          checkpoint+'/config.bak')
-                paths = simics_config.get_attr(config, 'sim', 'checkpoint_path')
-                new_paths = []
-                for path in paths:
-                    path_list = path.split('/')
-                    path_list = path_list[path_list.index('simics-workspace'):]
-                    path_list[-2] = str(new_campaign['campaign_number'])
-                    new_paths.append('\"'+os.getcwd()+'/'+'/'.join(path_list))
-                simics_config.set_attr(config, 'sim', 'checkpoint_path',
-                                       new_paths)
-                simics_config.write_configuration(
-                    config, 'simics-workspace/gold-checkpoints/' +
-                    str(new_campaign['campaign_number'])+'/'+checkpoint, False)
+            update_checkpoint_dependencies(new_campaign['campaign_number'])
             print('done')
 
         print('\tcopying results...', end='')
@@ -490,6 +492,9 @@ simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
                              dest='iteration', default=-1,
                              help='regenerate a campaign iteration and '
                                   'launch in Simics')
+simics_mode_group.add_option('-u', '--update', action='store_true',
+                             dest='dependencies', default=False,
+                             help='update gold checkpoint dependency paths')
 parser.add_option_group(simics_mode_group)
 
 new_group = optparse.OptionGroup(parser, 'New Campaign Options',
@@ -590,6 +595,12 @@ options, args = parser.parse_args()
 
 if options.list:
     list_campaigns()
+elif options.dependencies:
+    print('updating gold checkpoint path dependencies...', end='')
+    sys.stdout.flush()
+    for campaign in os.listdir('simics-workspace/gold-checkpoints'):
+        update_checkpoint_dependencies(campaign)
+    print('done')
 elif options.delete_all:
     if os.path.exists('simics-workspace/gold-checkpoints'):
         shutil.rmtree('simics-workspace/gold-checkpoints')
