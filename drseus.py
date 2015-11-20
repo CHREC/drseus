@@ -11,6 +11,7 @@ import sqlite3
 import sys
 
 from fault_injector import fault_injector
+import simics_config
 from sql import dict_factory, insert_dict
 
 # TODO: check for extra campaign data files (higher campaign number)
@@ -315,7 +316,8 @@ def merge_campaigns(merge_directory):
         raise Exception('could not find campaign data in '+merge_directory)
     print('backing up database...', end='')
     db_backup = ('campaign-data/' +
-                 ''.join([str(i) for i in datetime.now().timetuple()[:6]]) +
+                 '-'.join([str(unit).zfill(2)
+                           for unit in datetime.now().timetuple()[:6]]) +
                  '.db.sqlite3')
     shutil.copyfile('campaign-data/db.sqlite3', db_backup)
     print('done')
@@ -348,7 +350,33 @@ def merge_campaigns(merge_directory):
                             'simics-workspace/gold-checkpoints/' +
                             str(new_campaign['campaign_number']))
             print('done')
-            # TODO: update checkpoint dependencies
+            print('\tupdating checkpoint dependency paths...', end='')
+            sys.stdout.flush()
+            for checkpoint in os.listdir('simics-workspace/gold-checkpoints/' +
+                                         str(new_campaign['campaign_number'])):
+                config = simics_config.read_configuration(
+                    'simics-workspace/gold-checkpoints/' +
+                    str(new_campaign['campaign_number'])+'/'+checkpoint)
+                os.rename('simics-workspace/gold-checkpoints/' +
+                          str(new_campaign['campaign_number'])+'/' +
+                          checkpoint+'/config',
+                          'simics-workspace/gold-checkpoints/' +
+                          str(new_campaign['campaign_number'])+'/' +
+                          checkpoint+'/config.bak')
+                paths = simics_config.get_attr(config, 'sim', 'checkpoint_path')
+                new_paths = []
+                for path in paths:
+                    path_list = path.split('/')
+                    path_list = path_list[path_list.index('simics-workspace'):]
+                    path_list[-2] = str(new_campaign['campaign_number'])
+                    new_paths.append('\"'+os.getcwd()+'/'+'/'.join(path_list))
+                simics_config.set_attr(config, 'sim', 'checkpoint_path',
+                                       new_paths)
+                simics_config.write_configuration(
+                    config, 'simics-workspace/gold-checkpoints/' +
+                    str(new_campaign['campaign_number'])+'/'+checkpoint, False)
+            print('done')
+
         print('\tcopying results...', end='')
         insert_dict(sql, 'campaign', new_campaign)
         sql_new.execute('SELECT * FROM drseus_logging_result WHERE '
@@ -379,7 +407,7 @@ parser = optparse.OptionParser('drseus.py {mode} {options}')
 parser.add_option('-N', '--campaign', action='store', type='int',
                   dest='campaign_number', default=0,
                   help='campaign number to use, defaults to last campaign '
-                  'created')
+                       'created')
 parser.add_option('-g', '--debug', action='store_false', dest='debug',
                   default=True,
                   help='display device output')
