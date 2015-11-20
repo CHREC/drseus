@@ -29,6 +29,7 @@ class campaign(models.Model):
     cycles_between = models.IntegerField(null=True)
     timestamp = models.DateTimeField()
     kill_dut = models.BooleanField()
+    rsakey = models.TextField()
     objects = campaign_manager()
 
 

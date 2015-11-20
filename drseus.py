@@ -13,7 +13,6 @@ import sys
 from fault_injector import fault_injector
 from sql import dict_factory, insert_dict
 
-# TODO: add private key to campaign data in database
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
@@ -254,7 +253,8 @@ def load_campaign(campaign_data, options):
                             options.debugger_ip_address,
                             campaign_data['architecture'],
                             campaign_data['use_aux'], options.debug,
-                            campaign_data['use_simics'], options.seconds)
+                            campaign_data['use_simics'], options.seconds,
+                            campaign_data['rsakey'])
     drseus.command = campaign_data['command']
     drseus.aux_command = campaign_data['aux_command']
     drseus.num_checkpoints = campaign_data['num_checkpoints']
@@ -313,10 +313,12 @@ def merge_campaigns(merge_directory):
     last_campaign_number = get_last_campaign()
     if not os.path.exists(merge_directory+'/campaign-data/db.sqlite3'):
         raise Exception('could not find campaign data in '+merge_directory)
+    print('backing up database...', end='')
     db_backup = ('campaign-data/' +
                  ''.join([str(i) for i in datetime.now().timetuple()[:6]]) +
                  '.db.sqlite3')
     shutil.copyfile('campaign-data/db.sqlite3', db_backup)
+    print('done')
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
@@ -327,21 +329,27 @@ def merge_campaigns(merge_directory):
     sql_new.execute('SELECT * FROM drseus_logging_campaign')
     new_campaigns = sql_new.fetchall()
     for new_campaign in new_campaigns:
+        print('merging campaign: '+merge_directory+'/'+new_campaign['command'])
         old_campaign_number = new_campaign['campaign_number']
         new_campaign['campaign_number'] += last_campaign_number
         if os.path.exists(merge_directory+'/campaign-data/' +
                           str(old_campaign_number)):
+            print('\tcopying campaign data...', end='')
             shutil.copytree(merge_directory+'/campaign-data/' +
                             str(old_campaign_number),
                             'campaign-data/' +
                             str(new_campaign['campaign_number']))
+            print('done')
         if os.path.exists(merge_directory+'/simics-workspace/gold-checkpoints'
                           '/'+str(old_campaign_number)):
+            print('\tcopying gold checkpoints...', end='')
             shutil.copytree(merge_directory+'/simics-workspace/gold-checkpoints'
                             '/'+str(old_campaign_number),
                             'simics-workspace/gold-checkpoints/' +
                             str(new_campaign['campaign_number']))
+            print('done')
             # TODO: update checkpoint dependencies
+        print('\tcopying results...', end='')
         insert_dict(sql, 'campaign', new_campaign)
         sql_new.execute('SELECT * FROM drseus_logging_result WHERE '
                         'campaign_id=?', (old_campaign_number,))
@@ -361,6 +369,7 @@ def merge_campaigns(merge_directory):
                     new_result_item['result_id'] = new_result_id
                     del new_result_item['id']
                     insert_dict(sql, table, new_result_item)
+        print('done')
     sql_db.commit()
     sql_db.close()
     sql_db_new.close()

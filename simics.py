@@ -33,6 +33,15 @@ class simics:
             self.board = 'a9x2'
         self.rsakey = rsakey
         self.use_aux = use_aux
+        self.dut = None
+        self.aux = None
+
+    def set_rsakey(self, rsakey):
+        self.rsakey = rsakey
+        if self.dut is not None:
+            self.dut.rsakey = rsakey
+        if self.aux is not None:
+            self.aux.rsakey = rsakey
 
     def launch_simics(self, checkpoint=None):
         # self.output = ''

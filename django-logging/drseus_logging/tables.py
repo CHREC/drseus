@@ -11,15 +11,14 @@ class campaign_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = campaign
-        exclude = ('application', 'aux_output', 'aux_paramiko_output',
-                   'cycles_between', 'debugger_output', 'dut_output',
-                   'num_cycles', 'paramiko_output', 'use_aux', 'use_aux_output')
+        exclude = ('aux_output', 'aux_paramiko_output', 'debugger_output',
+                   'dut_output', 'paramiko_output', 'rsakey')
 
 
 class campaigns_table(tables.Table):
     campaign_number = tables.TemplateColumn(
         '{% if record.results > 0 %}'
-        '<a href="/{{ value}}/results">'
+        '<a href="/{{ value }}/results">'
         '{% else %}'
         '<a href="/{{ value }}/campaign">'
         '{% endif %}'
@@ -35,7 +34,7 @@ class campaigns_table(tables.Table):
         exclude = ('application', 'aux_application', 'aux_output',
                    'aux_paramiko_output', 'cycles_between', 'debugger_output',
                    'dut_output', 'output_file', 'num_cycles', 'num_checkpoints',
-                   'paramiko_output', 'use_aux', 'use_aux_output')
+                   'paramiko_output', 'use_aux', 'use_aux_output', 'rsakey')
 
 
 class result_table(tables.Table):

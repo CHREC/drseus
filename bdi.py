@@ -41,6 +41,11 @@ class bdi:
         else:
             self.aux = None
 
+    def set_rsakey(self, rsakey):
+        self.dut.rsakey = rsakey
+        if self.aux is not None:
+            self.aux.rsakey = rsakey
+
     def close(self):
         if self.telnet:
             self.telnet.write('quit\r')
@@ -69,7 +74,7 @@ class bdi:
                                                     timeout=self.timeout)
             self.output += buff
             return_buffer += buff
-            print (colored(buff, 'yellow'), end='')
+            print(colored(buff, 'yellow'), end='')
             if index < 0:
                 raise DrSEUsError(error_message)
         else:

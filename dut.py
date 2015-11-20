@@ -46,7 +46,7 @@ class dut:
         fallback = False
         fallback_failed = False
         if self.debug:
-            print(colored('sending files...', 'blue'))
+            print(colored('sending files', 'blue'))
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -60,7 +60,7 @@ class dut:
             print(error)
             fallback = True
             if self.debug:
-                print(colored('falling back to scp...', 'blue'))
+                print(colored('falling back to scp', 'blue'))
             for file_ in files:
                 scp_process = Process(target=os.system,
                                       args=('scp -P '+str(self.ssh_port) +
@@ -94,7 +94,7 @@ class dut:
         fallback = False
         fallback_failed = False
         if self.debug:
-            print(colored('getting file...', 'blue'))
+            print(colored('getting file', 'blue'))
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -104,11 +104,13 @@ class dut:
             dut_scp.get(file_, local_path=local_path)
             dut_scp.close()
             ssh.close()
+            if self.debug:
+                print(colored('file received', 'blue'))
         except Exception as error:
             print(error)
             fallback = True
             if self.debug:
-                print(colored('falling back to scp...', 'blue'))
+                print(colored('falling back to scp', 'blue'))
             scp_process = Process(target=os.system,
                                   args=('scp -P '+str(self.ssh_port) +
                                         ' -i campaign-data/private.key '
@@ -133,8 +135,6 @@ class dut:
             if fallback_failed:
                 self.paramiko_output += ', but failed'
                 raise DrSEUsError(DrSEUsError.scp_error)
-        if self.debug:
-            print(colored('file received', 'blue'))
 
     def is_logged_in(self):
         self.serial.write('\n')
