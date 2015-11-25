@@ -382,6 +382,7 @@ class fault_injector:
                         if attempt < attempts-1:
                             print(colored('error resetting DUT: '+error.message,
                                           'red'))
+                            sleep(30)
                         else:
                             # fallback to power cycle
                             raise DrSEUsError(error.message)
