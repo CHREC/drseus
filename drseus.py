@@ -14,6 +14,7 @@ from fault_injector import fault_injector
 import simics_config
 from sql import dict_factory, insert_dict
 
+# TODO: fix scp fallback (key in db)
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut

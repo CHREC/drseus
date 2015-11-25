@@ -14,6 +14,7 @@ from time import sleep
 
 from bdi import bdi_p2020, bdi_arm
 from error import DrSEUsError
+from openocd import openocd
 from simics import simics
 from sql import insert_dict, update_dict
 
@@ -44,7 +45,7 @@ class fault_injector:
                                           use_aux, dut_prompt, aux_prompt,
                                           debug, timeout)
             elif architecture == 'a9':
-                self.debugger = bdi_arm(debugger_ip_address, dut_ip_address,
+                self.debugger = openocd(debugger_ip_address, dut_ip_address,
                                         rsakey, dut_serial_port, aux_ip_address,
                                         aux_serial_port, use_aux, dut_prompt,
                                         aux_prompt, debug, timeout)

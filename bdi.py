@@ -121,7 +121,7 @@ class bdi:
         for injection in xrange(1, len(injection_times)+1):
             injection_data = {'result_id': result_id,
                               'injection_number': injection,
-                              'time': injection_times[injection],
+                              'time': injection_times[injection-1],
                               'timestamp': datetime.now()}
             if self.debug:
                 print(colored('injection time: '+str(injection_data['time']),
@@ -151,7 +151,8 @@ class bdi:
                               'magenta'))
                 print(colored('injected value: ' +
                               injection_data['injected_value'], 'magenta'))
-            self.set_register_value(register, injection_data['injected_value'])
+            self.set_register_value(injection_data['register'],
+                                    injection_data['injected_value'])
             sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
             insert_dict(sql, 'injection', injection_data)
