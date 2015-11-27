@@ -84,23 +84,33 @@ class openocd:
         if self.debug:
             print(colored(buff, 'yellow'))
         if command:
-            command = command+'\n'
-            self.telnet.write(command)
+            self.telnet.write(command+'\n')
+            index, match, buff = self.telnet.expect([command],
+                                                    timeout=self.timeout)
+            self.output += buff
+            return_buffer += buff
+            if self.debug:
+                print(colored(buff, 'yellow'))
+            if index < 0:
+                raise DrSEUsError(error_message)
         for i in xrange(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
             self.output += buff
             return_buffer += buff
-            print(colored(buff, 'yellow'), end='')
+            if self.debug:
+                print(colored(buff, 'yellow'), end='')
             if index < 0:
                 raise DrSEUsError(error_message)
         else:
-            print()
+            if self.debug:
+                print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
         self.output += buff
         return_buffer += buff
-        print(colored(buff, 'yellow'))
+        if self.debug:
+            print(colored(buff, 'yellow'))
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:

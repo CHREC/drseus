@@ -74,16 +74,19 @@ class bdi:
                                                     timeout=self.timeout)
             self.output += buff
             return_buffer += buff
-            print(colored(buff, 'yellow'), end='')
+            if self.debug:
+                print(colored(buff, 'yellow'), end='')
             if index < 0:
                 raise DrSEUsError(error_message)
         else:
-            print()
+            if self.debug:
+                print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
         self.output += buff
         return_buffer += buff
-        print(colored(buff, 'yellow'))
+        if self.debug:
+            print(colored(buff, 'yellow'))
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
