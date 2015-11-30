@@ -20,7 +20,7 @@ class openocd:
 
     def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
                  aux_ip_address, aux_serial_port, use_aux, dut_prompt,
-                 aux_prompt, debug, timeout):
+                 aux_prompt, debug, timeout, campaign_number):
         self.timeout = 30
         self.openocd = subprocess.Popen(['openocd',
                                          '-f', 'board/digilent_zedboard.cfg'],
@@ -53,10 +53,12 @@ class openocd:
         self.use_aux = use_aux
         self.output = ''
         self.dut = dut(dut_ip_address, rsakey,
-                       dut_serial_port, dut_prompt, debug, timeout)
+                       dut_serial_port, dut_prompt, debug, timeout,
+                       campaign_number)
         if self.use_aux:
             self.aux = dut(aux_ip_address, rsakey, aux_serial_port,
-                           aux_prompt, debug, timeout, color='cyan')
+                           aux_prompt, debug, timeout, campaign_number,
+                           color='cyan')
         else:
             self.aux = None
         self.command('', error_message='Debugger not ready')
@@ -201,14 +203,16 @@ class openocd:
         self.dut.do_login()
 
     def halt_dut(self):
-        self.command('halt',  # 'targets zynq.cpu0; halt; targets zynq.cpu1; halt;',
+        self.command('halt',
+                     # 'targets zynq.cpu0; halt; targets zynq.cpu1; halt;',
                      ['target state: halted',
                       'target halted in ARM state due to debug-request,'
                       ' current mode:', 'cpsr:', 'MMU:']*2,
                      'Error halting DUT')
 
     def continue_dut(self):
-        self.command('resume',  # 'targets zynq.cpu0; resume; targets zynq.cpu1; resume;',
+        self.command('resume',
+                     # 'targets zynq.cpu0; resume; targets zynq.cpu1; resume;',
                      # ['dscr'],
                      error_message='Error continuing DUT')
 

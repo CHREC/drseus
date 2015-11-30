@@ -113,6 +113,16 @@
         <div align="center">
             {% render_table injection_table %}
         </div>
+        {% if output_image %}
+        <h3 align="center">
+            <a name="output_image">
+            </a>
+            Output Image
+        </h3>
+        <div align="center">
+            <img src="/output-images/{{ campaign_data.campaign_number }}/{{ result.iteration }}" alt="Gold Output">
+        </div>
+        {% endif %}
         <h3 align="center">
             <a name="dut_output">
             </a>

@@ -19,7 +19,7 @@ class dut:
                       'free(): invalid next size']
 
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
-                 baud_rate=115200, ssh_port=22, color='green'):
+                 campaign_number, baud_rate=115200, ssh_port=22, color='green'):
         if debug:
             paramiko.util.log_to_file('campaign-data/paramiko_'+ip_address+'_' +
                                       str(ssh_port)+'.log')
@@ -37,6 +37,7 @@ class dut:
         self.ssh_port = ssh_port
         self.debug = debug
         self.rsakey = rsakey
+        self.campaign_number = campaign_number
         self.color = color
 
     def close(self):
@@ -64,7 +65,9 @@ class dut:
             for file_ in files:
                 scp_process = Process(target=os.system,
                                       args=('scp -P '+str(self.ssh_port) +
-                                            ' -i campaign-data/private.key '
+                                            ' -i campaign-data/' +
+                                            str(self.campaign_number) +
+                                            '/private.key '
                                             '-o StrictHostKeyChecking=no ' +
                                             file_+' root@' +
                                             str(self.ip_address)+':',))
@@ -113,7 +116,9 @@ class dut:
                 print(colored('falling back to scp', 'blue'))
             scp_process = Process(target=os.system,
                                   args=('scp -P '+str(self.ssh_port) +
-                                        ' -i campaign-data/private.key '
+                                        ' -i campaign-data/' +
+                                        str(self.campaign_number) +
+                                        '/private.key '
                                         '-o StrictHostKeyChecking=no '
                                         'root@'+str(self.ip_address)+':'+file_ +
                                         ' ./'+local_path,))

@@ -12,7 +12,7 @@ class campaign_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = campaign
         exclude = ('aux_output', 'aux_paramiko_output', 'debugger_output',
-                   'dut_output', 'paramiko_output', 'rsakey')
+                   'dut_output', 'paramiko_output')
 
 
 class campaigns_table(tables.Table):

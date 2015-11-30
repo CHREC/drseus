@@ -14,7 +14,8 @@ from fault_injector import fault_injector
 import simics_config
 from sql import dict_factory, insert_dict
 
-# TODO: fix scp fallback (key in db)
+# TODO: add interactive mode for rad tests
+# TODO: add core selection to openocd
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
@@ -266,8 +267,7 @@ def load_campaign(campaign_data, options):
                             options.debugger_ip_address,
                             campaign_data['architecture'],
                             campaign_data['use_aux'], options.debug,
-                            campaign_data['use_simics'], options.seconds,
-                            campaign_data['rsakey'])
+                            campaign_data['use_simics'], options.seconds)
     drseus.command = campaign_data['command']
     drseus.aux_command = campaign_data['aux_command']
     drseus.num_checkpoints = campaign_data['num_checkpoints']

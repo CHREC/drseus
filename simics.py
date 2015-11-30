@@ -33,15 +33,6 @@ class simics:
             self.board = 'a9x2'
         self.rsakey = rsakey
         self.use_aux = use_aux
-        self.dut = None
-        self.aux = None
-
-    def set_rsakey(self, rsakey):
-        self.rsakey = rsakey
-        if self.dut is not None:
-            self.dut.rsakey = rsakey
-        if self.aux is not None:
-            self.aux.rsakey = rsakey
 
     def launch_simics(self, checkpoint=None):
         # self.output = ''
@@ -98,19 +89,22 @@ class simics:
             raise DrSEUsError('Error finding port or pseudoterminal')
         if self.board == 'p2020rdb':
             self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
-                           'root@p2020rdb:~#', self.debug, self.timeout, 38400,
-                           ssh_ports[0])
+                           'root@p2020rdb:~#', self.debug, self.timeout,
+                           self.campaign_number, 38400, ssh_ports[0])
             if self.use_aux:
                 self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
                                'root@p2020rdb:~#', self.debug, self.timeout,
-                               38400, ssh_ports[1], 'cyan')
+                               self.campaign_number, 38400, ssh_ports[1],
+                               'cyan')
         elif self.board == 'a9x2':
             self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
-                           '#', self.debug, self.timeout, 38400, ssh_ports[0])
+                           '#', self.debug, self.timeout, self.campaign_number,
+                           38400, ssh_ports[0])
             if self.use_aux:
                 self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
-                               '#', self.debug, self.timeout, 38400,
-                               ssh_ports[1], 'cyan')
+                               '#', self.debug, self.timeout,
+                               self.campaign_number, 38400, ssh_ports[1],
+                               'cyan')
         if checkpoint is None:
             self.continue_dut()
             self.do_uboot()

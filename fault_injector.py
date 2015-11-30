@@ -6,7 +6,6 @@ from paramiko import RSAKey
 import random
 import shutil
 import sqlite3
-from StringIO import StringIO
 import subprocess
 from termcolor import colored
 from threading import Thread
@@ -23,32 +22,36 @@ class fault_injector:
     def __init__(self, campaign_number, dut_ip_address, aux_ip_address,
                  dut_serial_port, aux_serial_port, dut_prompt, aux_prompt,
                  debugger_ip_address, architecture, use_aux, debug, use_simics,
-                 timeout, rsakey_string=None):
+                 timeout):
         self.campaign_number = campaign_number
         self.use_simics = use_simics
         self.use_aux = use_aux
         self.debug = debug
-        if rsakey_string is not None:
-            rsakey_file = StringIO(rsakey_string)
-            rsakey = RSAKey.from_private_key(rsakey_file)
-            rsakey_file.close()
+        if os.path.exists('campaign-data/'+str(campaign_number)+'/private.key'):
+            self.rsakey = RSAKey.from_private_key_file('campaign-data/' +
+                                                       str(campaign_number) +
+                                                       '/private.key')
         else:
-            rsakey = None
+            self.rsakey = RSAKey.generate(1024)
+            self.rsakey.write_private_key_file('campaign-data/' +
+                                               str(campaign_number) +
+                                               '/private.key')
         if self.use_simics:
-            self.debugger = simics(campaign_number, architecture, rsakey,
+            self.debugger = simics(campaign_number, architecture, self.rsakey,
                                    use_aux, debug, timeout)
         else:
             if architecture == 'p2020':
                 self.debugger = bdi_p2020(debugger_ip_address, dut_ip_address,
-                                          rsakey, dut_serial_port,
+                                          self.rsakey, dut_serial_port,
                                           aux_ip_address, aux_serial_port,
                                           use_aux, dut_prompt, aux_prompt,
-                                          debug, timeout)
+                                          debug, timeout, campaign_number)
             elif architecture == 'a9':
                 self.debugger = openocd(debugger_ip_address, dut_ip_address,
-                                        rsakey, dut_serial_port, aux_ip_address,
-                                        aux_serial_port, use_aux, dut_prompt,
-                                        aux_prompt, debug, timeout)
+                                        self.rsakey, dut_serial_port,
+                                        aux_ip_address, aux_serial_port,
+                                        use_aux, dut_prompt, aux_prompt, debug,
+                                        timeout, campaign_number)
 
     def close(self):
         if not self.use_simics:
@@ -58,12 +61,6 @@ class fault_injector:
                        output_file, dut_files, aux_files, iterations,
                        aux_application, aux_arguments, use_aux_output,
                        num_checkpoints, kill_dut):
-        rsakey_file = StringIO()
-        rsakey = RSAKey.generate(1024)
-        self.debugger.set_rsakey(rsakey)
-        rsakey.write_private_key(rsakey_file)
-        rsakey_string = rsakey_file.getvalue()
-        rsakey_file.close()
         campaign_data = {'campaign_number': self.campaign_number,
                          'application': application,
                          'output_file': output_file,
@@ -72,8 +69,7 @@ class fault_injector:
                          'architecture': architecture,
                          'use_simics': self.use_simics,
                          'timestamp': datetime.now(),
-                         'kill_dut': kill_dut,
-                         'rsakey': rsakey_string}
+                         'kill_dut': kill_dut}
         self.kill_dut = kill_dut
         if self.use_simics:
             self.debugger.launch_simics()
