@@ -132,7 +132,7 @@ def json_campaigns(queryset):
     function(event) {
         var campaign_numbers = campaign_number_list;
         window.location.assign(''+campaign_numbers[this.x]+'/results/?'+
-                               'outcome_category='+this.series.name);
+                               'result__outcome_category='+this.series.name);
     }
     """.replace('campaign_number_list', campaign_numbers))
     return '['+chart+']'
@@ -238,11 +238,11 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
     chart = dumps(chart).replace('\"outcome_chart_click\"', """
     function(event) {
         var outcomes = outcome_list;
-        window.location.assign('../results/?outcome='+outcomes[this.x]);
+        window.location.assign('../results/?result__outcome='+outcomes[this.x]);
     }
     """.replace('outcome_list', outcome_list))
     if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+        chart = chart.replace('?result__outcome=', '?result__outcome_category=')
     chart = chart.replace('\"outcome_percentage_formatter\"', """
     function() {
         var outcomes = outcome_list;
@@ -324,20 +324,39 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             'text': 'Percent of Injections'
         }
     }
-    chart_array.append(dumps(chart_percent))
-    chart_log = deepcopy(chart)
-    if len(outcomes) == 1:
-        chart_log['chart']['renderTo'] = 'target_log_chart'
-        chart_log['yAxis']['type'] = 'logarithmic'
-        chart_array.append(dumps(chart_log))
-    chart = dumps(chart).replace('\"target_chart_click\"', """
+    chart_percent = dumps(chart_percent).replace('\"target_chart_click\"', """
     function(event) {
-        window.location.assign('../results/?outcome='+this.series.name+
-                               '&injection__target='+this.category);
+        window.location.assign('../results/?result__outcome='+this.series.name+
+                               '&target='+this.category);
     }
     """)
     if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+        chart_percent = chart_percent.replace('?result__outcome=',
+                                              '?result__outcome_category=')
+    chart_array.append(chart_percent)
+    if len(outcomes) == 1:
+        chart_log = deepcopy(chart)
+        chart_log['chart']['renderTo'] = 'target_log_chart'
+        chart_log['yAxis']['type'] = 'logarithmic'
+        chart_log = dumps(chart_log).replace('\"target_chart_click\"', """
+        function(event) {
+            window.location.assign('../results/?result__outcome='+
+                                   this.series.name+
+                                   '&target='+this.category);
+        }
+        """)
+        if group_categories:
+            chart_log = chart_log.replace('?result__outcome=',
+                                          '?result__outcome_category=')
+        chart_array.append(chart_log)
+    chart = dumps(chart).replace('\"target_chart_click\"', """
+    function(event) {
+        window.location.assign('../results/?result__outcome='+this.series.name+
+                               '&target='+this.category);
+    }
+    """)
+    if group_categories:
+        chart = chart.replace('?result__outcome=', '?result__outcome_category=')
     chart_array.append(chart)
 
 
@@ -362,6 +381,15 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'target_chart_click'
+                    }
+                }
+            }
         },
         'series': [],
         'title': {
@@ -392,7 +420,12 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
         mem_diff_list.append(mem_diff_count/count)
     chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
-    chart_array.append(dumps(chart))
+    chart = dumps(chart).replace('\"target_chart_click\"', """
+    function(event) {
+        window.location.assign('../results/?target='+this.category);
+    }
+    """)
+    chart_array.append(chart)
 
 
 def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
@@ -420,6 +453,15 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
         'legend': {
             'enabled': False
         },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'target_chart_click'
+                    }
+                }
+            }
+        },
         'series': [],
         'title': {
             'text': 'Data Diff By Target'
@@ -446,7 +488,12 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                          default='result__data_diff'))
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 for x in data]})
-    chart_array.append(dumps(chart))
+    chart = dumps(chart).replace('\"target_chart_click\"', """
+    function(event) {
+        window.location.assign('../results/?target='+this.category);
+    }
+    """)
+    chart_array.append(chart)
 
 
 def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
@@ -550,17 +597,19 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
         var register = reg[0];
         var index = reg[1];
         if (index) {
-            window.location.assign('../results/?outcome='+this.series.name+
-                                   '&injection__register='+register+
-                                   '&injection__register_index='+index);
+            window.location.assign('../results/?result__outcome='+
+                                   this.series.name+
+                                   '&register='+register+
+                                   '&register_index='+index);
         } else {
-            window.location.assign('../results/?outcome='+this.series.name+
-                                   '&injection__register='+register);
+            window.location.assign('../results/?result__outcome='+
+                                   this.series.name+
+                                   '&register='+register);
         }
     }
     """)
     if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+        chart = chart.replace('?result__outcome=', '?result__outcome_category=')
     chart_array.append(chart)
 
 
@@ -635,12 +684,12 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
         chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart).replace('\"field_chart_click\"', """
     function(event) {
-        window.location.assign('../results/?outcome='+this.series.name+
-                               '&injection__field='+this.category);
+        window.location.assign('../results/?result__outcome='+this.series.name+
+                               '&field='+this.category);
     }
     """)
     if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+        chart = chart.replace('?result__outcome=', '?result__outcome_category=')
     chart_array.append(chart)
 
 
@@ -703,12 +752,12 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
         chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart).replace('\"bit_chart_click\"', """
     function(event) {
-        window.location.assign('../results/?outcome='+this.series.name+
-                               '&injection__bit='+this.category);
+        window.location.assign('../results/?result__outcome='+this.series.name+
+                               '&bit='+this.category);
     }
     """)
     if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+        chart = chart.replace('?result__outcome=', '?result__outcome_category=')
     chart_array.append(chart)
 
 
@@ -806,8 +855,9 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
     if campaign_data.use_simics:
         chart = dumps(chart).replace('\"time_chart_click\"', """
         function(event) {
-            window.location.assign('../results/?outcome='+this.series.name+
-                                   '&injection__checkpoint_number='+
+            window.location.assign('../results/?result__outcome='+
+                                   this.series.name+
+                                   '&checkpoint_number='+
                                    this.category);
         }
         """)
@@ -815,13 +865,14 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
         # chart = dumps(chart).replace('\"time_chart_click\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
-        #     window.location.assign('../results/?outcome='+this.series.name+
-        #                            '&injection__time_rounded='+time.toFixed(2));
+        #     window.location.assign('../results/?result__outcome='+
+        #                            this.series.name+
+        #                            '&time_rounded='+time.toFixed(2));
         # }
         # """)
         chart = dumps(chart)
     if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+        chart = chart.replace('?result__outcome=', '?result__outcome_category=')
     chart_array.append(chart)
 
 
@@ -906,7 +957,7 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
     if campaign_data.use_simics:
         chart = dumps(chart).replace('\"diff_time_chart_click\"', """
         function(event) {
-            window.location.assign('../results/?injection__checkpoint_number='+
+            window.location.assign('../results/?checkpoint_number='+
                                    this.category);
         }
         """)
@@ -914,7 +965,7 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
         # chart = dumps(chart).replace('\"diff_time_chart_click\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
-        #     window.location.assign('../results/?injection__time_rounded='+
+        #     window.location.assign('../results/?time_rounded='+
         #                            time.toFixed(2));
         # }
         # """)
@@ -988,12 +1039,12 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(dumps(chart_percent))
     chart = dumps(chart).replace('\"count_chart_click\"', """
     function(event) {
-        window.location.assign('../results/?outcome='+this.series.name+
-                               '&num_injections='+this.category);
+        window.location.assign('../results/?result__outcome='+this.series.name+
+                               '&result__num_injections='+this.category);
     }
     """)
     if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+        chart = chart.replace('?result__outcome=', '?result__outcome_category=')
     chart_array.append(chart)
 
 
