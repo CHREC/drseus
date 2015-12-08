@@ -558,8 +558,6 @@ def parse_registers(config_file, board, targets):
                         current_line = config.readline()
                 if (len(registers[target_key]) !=
                         len(targets[target]['registers'])):
-                    print registers[target_key]
-                    print targets[target]['registers']
                     missing_registers = []
                     for register in targets[target]['registers']:
                         if register not in registers[target_key]:

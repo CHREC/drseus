@@ -199,7 +199,7 @@ class simics:
             string = 'simics> '
         buff = ''
         while True:
-            char = self.simics.stdout.read(1)
+            char = self.simics.stdout.read(1).decode('utf-8', 'replace')
             if not char:
                 break
             self.output += char

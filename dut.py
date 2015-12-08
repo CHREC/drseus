@@ -145,7 +145,7 @@ class dut:
         self.serial.write('\n')
         buff = ''
         while True:
-            char = self.serial.read()
+            char = self.serial.read().decode('utf-8', 'replace')
             self.output += char
             if self.debug:
                 print(colored(char, self.color), end='')
@@ -164,7 +164,7 @@ class dut:
         hanging = False
         errors = 0
         while True:
-            char = self.serial.read()
+            char = self.serial.read().decode('utf-8', 'replace')
             if not char:
                 hanging = True
                 break

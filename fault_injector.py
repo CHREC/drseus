@@ -139,13 +139,11 @@ class fault_injector:
                                            output_file)
         if self.use_simics:
             self.debugger.close()
-        campaign_data['dut_output'] = \
-            self.debugger.dut.output.decode('utf-8', 'ignore')
+        campaign_data['dut_output'] = self.debugger.dut.output
         campaign_data['debugger_output'] = self.debugger.output
         campaign_data['paramiko_output'] = self.debugger.dut.paramiko_output
         if self.use_aux:
-            campaign_data['aux_output'] = \
-                self.debugger.aux.output.decode('utf-8', 'ignore')
+            campaign_data['aux_output'] = self.debugger.aux.output
             campaign_data['aux_paramiko_output'] = \
                 self.debugger.aux.paramiko_output
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
@@ -328,14 +326,12 @@ class fault_injector:
                        'outcome_category': outcome_category,
                        'data_diff': self.data_diff,
                        'detected_errors': self.detected_errors,
-                       'dut_output': self.debugger.dut.output.decode(
-                           'utf-8', 'ignore'),
+                       'dut_output': self.debugger.dut.output,
                        'paramiko_output': self.debugger.dut.paramiko_output,
                        'debugger_output': self.debugger.output,
                        'timestamp': datetime.now()}
         if self.use_aux:
-            result_data['aux_output'] = \
-                self.debugger.aux.output.decode('utf-8', 'ignore')
+            result_data['aux_output'] = self.debugger.aux.output
             result_data['aux_paramiko_output'] = \
                 self.debugger.aux.paramiko_output
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
