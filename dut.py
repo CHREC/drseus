@@ -232,3 +232,5 @@ class dut:
         self.command('touch ~/.ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
                      '\" > ~/.ssh/authorized_keys')
+        # ip_info = self.command('ip addr')
+        # print(ip_info)

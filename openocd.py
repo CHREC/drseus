@@ -8,10 +8,19 @@ import random
 from signal import SIGINT
 import sqlite3
 import subprocess
+import usb.core
 
 from dut import dut
 from error import DrSEUsError
 from sql import insert_dict
+
+
+def find_debuggers():
+    devs = usb.core.find(find_all=True, idVendor=0x0403, idProduct=0x6014)
+    serials = []
+    for dev in devs:
+        serials.append(dev[0].device.serial_number)
+    return serials
 
 
 class openocd:
@@ -22,6 +31,7 @@ class openocd:
                  aux_ip_address, aux_serial_port, use_aux, dut_prompt,
                  aux_prompt, debug, timeout, campaign_number):
         self.timeout = 30
+        # openocd -c "gdb_port 0; tcl_port 0; telnet_port 64000; interface ftdi; ftdi_serial 210248585809" -f openocd_zedboard.cfg
         self.openocd = subprocess.Popen(['openocd',
                                          '-f', 'board/digilent_zedboard.cfg'],
                                         cwd='/usr/share/openocd/scripts',
