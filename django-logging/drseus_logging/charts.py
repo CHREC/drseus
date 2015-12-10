@@ -7,9 +7,9 @@ from simplejson import dumps
 from threading import Thread
 from .filters import fix_sort, fix_sort_list
 from .models import result
-import sys
-sys.path.append('../')
-from simics_targets import devices
+# import sys
+# sys.path.append('../')
+from .simics_targets import devices
 
 colors = {
     'Data error': '#ba79f2',

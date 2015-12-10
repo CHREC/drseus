@@ -208,7 +208,7 @@ def create_campaign(options):
     if not os.path.exists('campaign-data/'+str(campaign_number)):
         os.makedirs('campaign-data/'+str(campaign_number))
     if not os.path.exists('campaign-data/db.sqlite3'):
-        os.system('./django-logging/manage.py migrate')
+        os.system('./django-logging/manage.py migrate --run-syncdb')
     drseus = fault_injector(campaign_number, options.dut_ip_address,
                             options.aux_ip_address, options.dut_serial_port,
                             options.aux_serial_port, options.dut_prompt,

@@ -14,22 +14,21 @@ Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
-from django.conf.urls import patterns
+from django.conf.urls import url
+from .views import (campaigns_page, campaign_page, edit_page,
+                    category_charts_page, outcome_charts_page, results_page,
+                    result_page, output_image)
 
-charts_and_tables = [
-    (r'', 'campaigns_page'),
-    (r'(?P<campaign_number>[0-9]+)/campaign/', 'campaign_page'),
-    (r'(?P<campaign_number>[0-9]+)/edit/', 'edit_page'),
-    (r'(?P<campaign_number>[0-9]+)/category_charts/', 'category_charts_page'),
-    (r'(?P<campaign_number>[0-9]+)/outcome_charts/', 'outcome_charts_page'),
-    (r'(?P<campaign_number>[0-9]+)/results/', 'results_page'),
-    (r'(?P<campaign_number>[0-9]+)/result/(?P<iteration>[0-9]+)/',
-     'result_page'),
-    (r'output-images/(?P<campaign_number>[0-9]+)/(?P<iteration>[0-9]+)',
-     'output_image')
+urlpatterns = [
+    url(r'^$', campaigns_page),
+    url(r'^(?P<campaign_number>[0-9]+)/campaign/$', campaign_page),
+    url(r'^(?P<campaign_number>[0-9]+)/edit/$', edit_page),
+    url(r'^(?P<campaign_number>[0-9]+)/category_charts/$',
+        category_charts_page),
+    url(r'^(?P<campaign_number>[0-9]+)/outcome_charts/$', outcome_charts_page),
+    url(r'^(?P<campaign_number>[0-9]+)/results/$', results_page),
+    url(r'^(?P<campaign_number>[0-9]+)/result/(?P<iteration>[0-9]+)/$',
+        result_page),
+    url(r'^output-images/(?P<campaign_number>[0-9]+)/(?P<iteration>[0-9]+)$',
+        output_image)
 ]
-
-chart_pattern_tuples = [(r'^' + myurl + r'$', view)
-                        for (myurl, view) in charts_and_tables]
-
-urlpatterns = patterns('drseus_logging.views', *chart_pattern_tuples)
