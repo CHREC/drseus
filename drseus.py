@@ -14,6 +14,7 @@ from fault_injector import fault_injector
 import simics_config
 from sql import dict_factory, insert_dict
 
+# TODO: check exit code for scp fallback
 # TODO: add interactive mode for rad tests
 # TODO: add core selection to openocd
 # TODO: check for extra campaign data files (higher campaign number)

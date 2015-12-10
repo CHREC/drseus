@@ -110,15 +110,12 @@ class simics:
             self.do_uboot()
             if self.use_aux:
                 aux_process = Thread(target=self.aux.do_login,
-                                     kwargs={'change_prompt': True})
+                                     kwargs={'ip_address': '10.10.0.104',
+                                             'change_prompt': True})
                 aux_process.start()
-            self.dut.do_login(change_prompt=True)
-            self.dut.command('ifconfig eth0 10.10.0.100 '
-                             'netmask 255.255.255.0 up')
+            self.dut.do_login(ip_address='10.10.0.100', change_prompt=True)
             if self.use_aux:
                 aux_process.join()
-                self.aux.command('ifconfig eth0 10.10.0.104 '
-                                 'netmask 255.255.255.0 up')
         else:
             self.dut.prompt = 'DrSEUs# '
             if self.use_aux:

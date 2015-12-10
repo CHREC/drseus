@@ -5,6 +5,7 @@ import paramiko
 from scp import SCPClient
 from serial import Serial
 from termcolor import colored
+from time import sleep
 
 from error import DrSEUsError
 
@@ -20,9 +21,9 @@ class dut:
 
     def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
                  campaign_number, baud_rate=115200, ssh_port=22, color='green'):
-        if debug:
-            paramiko.util.log_to_file('campaign-data/paramiko_'+ip_address+'_' +
-                                      str(ssh_port)+'.log')
+        # if debug:
+        #     paramiko.util.log_to_file('campaign-data/paramiko_'+ip_address+'_' +
+        #                               str(ssh_port)+'.log')
         self.output = ''
         self.paramiko_output = ''
         self.default_timeout = timeout
@@ -79,12 +80,12 @@ class dut:
                     if self.debug:
                         print(colored('fallback failed', 'blue'))
                     break
-        paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
-                        str(self.ssh_port)+'.log')
-        if os.path.exists(paramiko_log):
-            with open(paramiko_log) as log_file:
-                self.paramiko_output += log_file.read()
-            os.remove(paramiko_log)
+        # paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
+        #                 str(self.ssh_port)+'.log')
+        # if os.path.exists(paramiko_log):
+        #     with open(paramiko_log) as log_file:
+        #         self.paramiko_output += log_file.read()
+        #     os.remove(paramiko_log)
         if fallback:
             self.paramiko_output += '\nFallback to SCP used'
             if fallback_failed:
@@ -129,12 +130,12 @@ class dut:
                 fallback_failed = True
                 if self.debug:
                     print(colored('fallback failed', 'blue'))
-        paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
-                        str(self.ssh_port)+'.log')
-        if os.path.exists(paramiko_log):
-            with open(paramiko_log) as log_file:
-                self.paramiko_output += log_file.read()
-            os.remove(paramiko_log)
+        # paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
+        #                 str(self.ssh_port)+'.log')
+        # if os.path.exists(paramiko_log):
+        #     with open(paramiko_log) as log_file:
+        #         self.paramiko_output += log_file.read()
+        #     os.remove(paramiko_log)
         if fallback:
             self.paramiko_output += '\nFallback to SCP used'
             if fallback_failed:
@@ -206,7 +207,7 @@ class dut:
         self.serial.write(str(command+'\n'))
         return self.read_until()
 
-    def do_login(self, change_prompt=False):
+    def do_login(self, ip_address=None, change_prompt=False):
         if not self.is_logged_in():
             self.serial.write('root\n')
             buff = ''
@@ -232,5 +233,22 @@ class dut:
         self.command('touch ~/.ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
                      '\" > ~/.ssh/authorized_keys')
-        # ip_info = self.command('ip addr')
-        # print(ip_info)
+        if ip_address is None:
+            attempts = 5
+            for attempt in xrange(attempts):
+                for line in self.command('ip addr show').split('\n'):
+                    line = line.strip().split()
+                    if line[0] == 'inet':
+                        ip_address = line[1].split('/')[0]
+                        if ip_address != '127.0.0.1':
+                            self.ip_address = ip_address
+                            break
+                else:
+                    if attempt < attempts-1:
+                        sleep(5)
+                    else:
+                        raise DrSEUsError('Error finding device ip address')
+        else:
+            # self.ip_address = ip_address
+            self.command('ip addr add '+ip_address+'/24 dev eth0')
+            self.command('ip link set eth0 up')

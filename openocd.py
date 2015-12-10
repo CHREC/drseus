@@ -31,7 +31,8 @@ class openocd:
                  aux_ip_address, aux_serial_port, use_aux, dut_prompt,
                  aux_prompt, debug, timeout, campaign_number):
         self.timeout = 30
-        # openocd -c "gdb_port 0; tcl_port 0; telnet_port 64000; interface ftdi; ftdi_serial 210248585809" -f openocd_zedboard.cfg
+        # openocd -c "gdb_port 0; tcl_port 0; telnet_port 64000; interface ftdi;
+        #             ftdi_serial 210248585809" -f openocd_zedboard.cfg
         self.openocd = subprocess.Popen(['openocd',
                                          '-f', 'board/digilent_zedboard.cfg'],
                                         cwd='/usr/share/openocd/scripts',
@@ -62,13 +63,11 @@ class openocd:
         self.debug = debug
         self.use_aux = use_aux
         self.output = ''
-        self.dut = dut(dut_ip_address, rsakey,
-                       dut_serial_port, dut_prompt, debug, timeout,
-                       campaign_number)
+        self.dut = dut(None, rsakey, dut_serial_port, dut_prompt, debug,
+                       timeout, campaign_number)
         if self.use_aux:
-            self.aux = dut(aux_ip_address, rsakey, aux_serial_port,
-                           aux_prompt, debug, timeout, campaign_number,
-                           color='cyan')
+            self.aux = dut(None, rsakey, aux_serial_port, aux_prompt, debug,
+                           timeout, campaign_number, color='cyan')
         else:
             self.aux = None
         self.command('', error_message='Debugger not ready')
