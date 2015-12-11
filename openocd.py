@@ -231,9 +231,8 @@ class openocd:
 
     def reset_dut(self):
         if self.telnet:
-            self.command('reset', ['Polling target zynq.cpu0 succeeded again',
-                                   'Polling target zynq.cpu1 succeeded again'
-                                   ]*2,
+            self.command('reset',
+                         ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'],
                          'Error resetting DUT')
         else:
             self.dut.serial.write('\x03')
