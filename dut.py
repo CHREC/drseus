@@ -211,7 +211,7 @@ class dut:
             self.serial.write('root\n')
             buff = ''
             while True:
-                char = self.serial.read()
+                char = self.serial.read().decode('utf-8', 'replace')
                 self.output += char
                 if self.debug:
                     print(colored(char, self.color), end='')
@@ -248,7 +248,6 @@ class dut:
                     else:
                         raise DrSEUsError('Error finding device ip address')
         else:
-            # self.ip_address = ip_address
             self.command('ip addr add '+ip_address+'/24 dev eth0')
             self.command('ip link set eth0 up')
         if simics:
