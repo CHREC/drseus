@@ -18,9 +18,9 @@ class bdi:
     error_messages = ['timeout while waiting for halt',
                       'wrong state for requested command', 'read access failed']
 
-    def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                 aux_ip_address, aux_serial_port, use_aux, dut_prompt,
-                 aux_prompt, debug, timeout, campaign_number):
+    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
+                 use_aux, dut_prompt, aux_prompt, debug, timeout,
+                 campaign_number):
         self.timeout = 30
         self.debug = debug
         self.use_aux = use_aux
@@ -33,13 +33,11 @@ class bdi:
                   'running in supervisor-only mode')
         else:
             self.command('', error_message='Debugger not ready')
-        self.dut = dut(dut_ip_address, rsakey,
-                       dut_serial_port, dut_prompt, debug, timeout,
+        self.dut = dut(rsakey, dut_serial_port, dut_prompt, debug, timeout,
                        campaign_number)
         if self.use_aux:
-            self.aux = dut(aux_ip_address, rsakey, aux_serial_port,
-                           aux_prompt, debug, timeout, campaign_number,
-                           color='cyan')
+            self.aux = dut(rsakey, aux_serial_port, aux_prompt, debug, timeout,
+                           campaign_number, color='cyan')
         else:
             self.aux = None
 
@@ -170,9 +168,9 @@ class bdi:
 
 
 class bdi_arm(bdi):
-    def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                 aux_ip_address, aux_serial_port, use_aux, dut_prompt,
-                 aux_prompt, debug, timeout, campaign_number):
+    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
+                 use_aux, dut_prompt, aux_prompt, debug, timeout,
+                 campaign_number):
         self.prompts = ['A9#0>', 'A9#1>']
         # TODO: ttb1 cannot inject into bits 2, 8, 9, 11
         self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
@@ -191,9 +189,9 @@ class bdi_arm(bdi):
                           'dfar', 'ifar',  # 'fcsepid',
                           'context'
                           ]
-        bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                     aux_ip_address, aux_serial_port, use_aux, dut_prompt,
-                     aux_prompt, debug, timeout, campaign_number)
+        bdi.__init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
+                     use_aux, dut_prompt, aux_prompt, debug, timeout,
+                     campaign_number)
 
     def reset_dut(self):
         if self.telnet:
@@ -264,9 +262,9 @@ class bdi_arm(bdi):
 
 
 class bdi_p2020(bdi):
-    def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                 aux_ip_address, aux_serial_port, use_aux, dut_prompt,
-                 aux_prompt, debug, timeout, campaign_number):
+    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
+                 use_aux, dut_prompt, aux_prompt, debug, timeout,
+                 campaign_number):
         self.prompts = ['P2020>']
         # TODO: add pmr, spr, L2 TLB
         # TODO: check if only certain bits are read only (some partially worked)
@@ -364,9 +362,9 @@ class bdi_p2020(bdi):
                                'egpr20', 'egpr21', 'egpr22', 'egpr23', 'egpr24',
                                'egpr25', 'egpr26', 'egpr27', 'egpr28', 'egpr29',
                                'egpr30', 'egpr31'])
-        bdi.__init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                     aux_ip_address, aux_serial_port, use_aux, dut_prompt,
-                     aux_prompt, debug, timeout, campaign_number)
+        bdi.__init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
+                     use_aux, dut_prompt, aux_prompt, debug, timeout,
+                     campaign_number)
 
     def reset_dut(self):
         if self.telnet:

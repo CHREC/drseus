@@ -7,6 +7,7 @@ from threading import Thread
 import time
 import random
 from signal import SIGINT
+import socket
 import sqlite3
 import subprocess
 
@@ -14,13 +15,18 @@ from dut import dut
 from error import DrSEUsError
 from sql import insert_dict
 
+# zedboards[uart_serial] = ftdi_serial
+zedboards = {'844301CF3718': '210248585809',
+             '8410A3D8431C': '210248657631'}
 
-def find_debugger_serials():
+
+def find_ftdi_serials():
     context = pyudev.Context()
     debuggers = context.list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6014')
     serials = []
     for debugger in debuggers:
-        serials.append(debugger['ID_SERIAL_SHORT'])
+        if 'DEVLINKS' not in debugger:
+            serials.append(debugger['ID_SERIAL_SHORT'])
     return serials
 
 
@@ -34,23 +40,34 @@ def find_uart_serials():
     return serials
 
 
+def find_open_port():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(('', 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    return port
+
+
 class openocd:
     error_messages = ['timeout while waiting for halt',
                       'wrong state for requested command', 'read access failed']
 
-    def __init__(self, ip_address, dut_ip_address, rsakey, dut_serial_port,
-                 aux_ip_address, aux_serial_port, use_aux, dut_prompt,
-                 aux_prompt, debug, timeout, campaign_number):
+    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
+                 use_aux, dut_prompt, aux_prompt, debug, timeout,
+                 campaign_number):
         self.timeout = 30
-        # openocd -c "gdb_port 0; tcl_port 0; telnet_port 64000; interface ftdi;
-        #             ftdi_serial 210248585809" -f openocd_zedboard.cfg
-        self.openocd = subprocess.Popen(['openocd',
-                                         '-f', 'board/digilent_zedboard.cfg'],
-                                        cwd='/usr/share/openocd/scripts',
+        serial = zedboards[find_uart_serials()[dut_serial_port]]
+        port = find_open_port()
+        self.openocd = subprocess.Popen(['openocd', '-c',
+                                         '\"gdb_port 0; tcl_port 0; '
+                                         'telnet_port '+port+'; '
+                                         'interface ftdi; '
+                                         'ftdi_serial '+serial+'\"'
+                                         '-f', 'openocd_zedboard.cfg'],
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE)
         time.sleep(5)
-        self.telnet = Telnet('127.0.0.1', 4444, timeout=self.timeout)
+        self.telnet = Telnet('127.0.0.1', port, timeout=self.timeout)
         self.prompts = ['>']
         # TODO: ttb1 cannot inject into bits 2, 8, 9, 11
         self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
@@ -74,11 +91,11 @@ class openocd:
         self.debug = debug
         self.use_aux = use_aux
         self.output = ''
-        self.dut = dut(None, rsakey, dut_serial_port, dut_prompt, debug,
-                       timeout, campaign_number)
+        self.dut = dut(rsakey, dut_serial_port, dut_prompt, debug, timeout,
+                       campaign_number)
         if self.use_aux:
-            self.aux = dut(None, rsakey, aux_serial_port, aux_prompt, debug,
-                           timeout, campaign_number, color='cyan')
+            self.aux = dut(rsakey, aux_serial_port, aux_prompt, debug, timeout,
+                           campaign_number, color='cyan')
         else:
             self.aux = None
         self.command('', error_message='Debugger not ready')

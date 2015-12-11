@@ -19,10 +19,9 @@ from sql import insert_dict, update_dict
 
 
 class fault_injector:
-    def __init__(self, campaign_number, dut_ip_address, aux_ip_address,
-                 dut_serial_port, aux_serial_port, dut_prompt, aux_prompt,
-                 debugger_ip_address, architecture, use_aux, debug, use_simics,
-                 timeout):
+    def __init__(self, campaign_number, dut_serial_port, aux_serial_port,
+                 dut_prompt, aux_prompt, debugger_ip_address, architecture,
+                 use_aux, debug, use_simics, timeout):
         self.campaign_number = campaign_number
         self.use_simics = use_simics
         self.use_aux = use_aux
@@ -41,15 +40,13 @@ class fault_injector:
                                    use_aux, debug, timeout)
         else:
             if architecture == 'p2020':
-                self.debugger = bdi_p2020(debugger_ip_address, dut_ip_address,
-                                          self.rsakey, dut_serial_port,
-                                          aux_ip_address, aux_serial_port,
+                self.debugger = bdi_p2020(debugger_ip_address, self.rsakey,
+                                          dut_serial_port, aux_serial_port,
                                           use_aux, dut_prompt, aux_prompt,
                                           debug, timeout, campaign_number)
             elif architecture == 'a9':
-                self.debugger = openocd(debugger_ip_address, dut_ip_address,
-                                        self.rsakey, dut_serial_port,
-                                        aux_ip_address, aux_serial_port,
+                self.debugger = openocd(debugger_ip_address, self.rsakey,
+                                        dut_serial_port, aux_serial_port,
                                         use_aux, dut_prompt, aux_prompt, debug,
                                         timeout, campaign_number)
 

@@ -19,7 +19,7 @@ class dut:
                       'Alignment trap', 'Unhandled fault',
                       'free(): invalid next size', 'double free or corruption']
 
-    def __init__(self, ip_address, rsakey, serial_port, prompt, debug, timeout,
+    def __init__(self, rsakey, serial_port, prompt, debug, timeout,
                  campaign_number, baud_rate=115200, ssh_port=22, color='green'):
         # if debug:
         #     paramiko.util.log_to_file('campaign-data/paramiko_'+ip_address+'_' +
@@ -34,7 +34,6 @@ class dut:
             raise Exception('error opening serial port', serial_port,
                             ', are you a member of dialout?')
         self.prompt = prompt+' '
-        self.ip_address = ip_address
         self.ssh_port = ssh_port
         self.debug = debug
         self.rsakey = rsakey

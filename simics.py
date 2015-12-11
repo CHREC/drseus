@@ -88,23 +88,15 @@ class simics:
             self.close()
             raise DrSEUsError('Error finding port or pseudoterminal')
         if self.board == 'p2020rdb':
-            self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
-                           'root@p2020rdb:~#', self.debug, self.timeout,
-                           self.campaign_number, 38400, ssh_ports[0])
-            if self.use_aux:
-                self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
-                               'root@p2020rdb:~#', self.debug, self.timeout,
-                               self.campaign_number, 38400, ssh_ports[1],
-                               'cyan')
+            prompt = 'root@p2020rdb:~#'
         elif self.board == 'a9x2':
-            self.dut = dut('127.0.0.1', self.rsakey, serial_ports[0],
-                           '#', self.debug, self.timeout, self.campaign_number,
-                           38400, ssh_ports[0])
-            if self.use_aux:
-                self.aux = dut('127.0.0.1', self.rsakey, serial_ports[1],
-                               '#', self.debug, self.timeout,
-                               self.campaign_number, 38400, ssh_ports[1],
-                               'cyan')
+            prompt = '#'
+        self.dut = dut(self.rsakey, serial_ports[0], prompt, self.debug,
+                       self.timeout, self.campaign_number, 38400, ssh_ports[0])
+        if self.use_aux:
+            self.aux = dut(self.rsakey, serial_ports[1], prompt, self.debug,
+                           self.timeout, self.campaign_number, 38400,
+                           ssh_ports[1], 'cyan')
         if checkpoint is None:
             self.continue_dut()
             self.do_uboot()
@@ -119,8 +111,10 @@ class simics:
             if self.use_aux:
                 aux_process.join()
         else:
+            self.dut.ip_address = '127.0.0.1'
             self.dut.prompt = 'DrSEUs# '
             if self.use_aux:
+                self.aux.ip_address = '127.0.0.1'
                 self.aux.prompt = 'DrSEUs# '
 
     def launch_simics_gui(self, checkpoint):

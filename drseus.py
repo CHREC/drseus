@@ -11,6 +11,7 @@ import sqlite3
 import sys
 
 from fault_injector import fault_injector
+from openocd import find_ftdi_serials, find_uart_serials
 import simics_config
 from sql import dict_factory, insert_dict
 
@@ -25,6 +26,18 @@ from sql import dict_factory, insert_dict
 # TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: change Exception in simics_checkpoints.py to DrSEUsError
+
+
+def print_zedboard_info():
+    ftdis = find_ftdi_serials()
+    uarts = find_uart_serials()
+    print('Attached ZedBoard Information')
+    print('FTDI JTAG device serial numbers: ')
+    for serial in ftdis:
+        print('\t'+serial)
+    print('Cypress UART device serial numbers:')
+    for uart, serial in uarts.iteritems():
+        print('\t'+uart+': '+serial)
 
 
 def list_campaigns():
@@ -157,15 +170,11 @@ def delete_campaign(campaign_number):
 def create_campaign(options):
     campaign_number = get_last_campaign() + 1
     if options.architecture == 'p2020':
-        if options.dut_ip_address is None:
-            options.dut_ip_address = '10.42.0.21'
         if options.dut_serial_port is None:
             options.dut_serial_port = '/dev/ttyUSB1'
         if options.dut_prompt is None:
             options.dut_prompt = 'root@p2020rdb:~#'
     elif options.architecture == 'a9':
-        if options.dut_ip_address is None:
-            options.dut_ip_address = '10.42.0.30'
         if options.dut_serial_port is None:
             options.dut_serial_port = '/dev/ttyACM0'
         if options.dut_prompt is None:
@@ -210,8 +219,7 @@ def create_campaign(options):
         os.makedirs('campaign-data/'+str(campaign_number))
     if not os.path.exists('campaign-data/db.sqlite3'):
         os.system('./django-logging/manage.py migrate --run-syncdb')
-    drseus = fault_injector(campaign_number, options.dut_ip_address,
-                            options.aux_ip_address, options.dut_serial_port,
+    drseus = fault_injector(campaign_number, options.dut_serial_port,
                             options.aux_serial_port, options.dut_prompt,
                             options.aux_prompt, options.debugger_ip_address,
                             options.architecture, options.use_aux,
@@ -248,21 +256,16 @@ def get_injection_data(campaign_data, iteration):
 
 def load_campaign(campaign_data, options):
     if campaign_data['architecture'] == 'p2020':
-        if options.dut_ip_address is None:
-            options.dut_ip_address = '10.42.0.21'
         if options.dut_serial_port is None:
             options.dut_serial_port = '/dev/ttyUSB1'
         if options.dut_prompt is None:
             options.dut_prompt = 'root@p2020rdb:~#'
     elif campaign_data['architecture'] == 'a9':
-        if options.dut_ip_address is None:
-            options.dut_ip_address = '10.42.0.30'
         if options.dut_serial_port is None:
             options.dut_serial_port = '/dev/ttyACM0'
         if options.dut_prompt is None:
             options.dut_prompt = '[root@ZED]#'
     drseus = fault_injector(campaign_data['campaign_number'],
-                            options.dut_ip_address, options.aux_ip_address,
                             options.dut_serial_port, options.aux_serial_port,
                             options.dut_prompt, options.aux_prompt,
                             options.debugger_ip_address,
@@ -424,10 +427,6 @@ parser.add_option('-g', '--debug', action='store_false', dest='debug',
 parser.add_option('-T', '--timeout', action='store', type='int',
                   dest='seconds', default=300,
                   help='device read timeout in seconds [default=300]')
-parser.add_option('--dut_ip', action='store', type='str',
-                  dest='dut_ip_address', default=None,
-                  help='dut ip address [p2020 default=10.42.0.21]              '
-                       '[a9 default=10.42.0.30] (overridden by simics)')
 parser.add_option('--dut_serial', action='store', type='str',
                   dest='dut_serial_port', default=None,
                   help='dut serial port [p2020 default=/dev/ttyUSB1]           '
@@ -436,10 +435,6 @@ parser.add_option('--dut_prompt', action='store', type='str',
                   dest='dut_prompt', default=None,
                   help='dut console prompt [p2020 default=root@p2020rdb:~#]    '
                        '[a9 default=[root@ZED]#] (overridden by simics)')
-parser.add_option('--aux_ip', action='store', type='str',
-                  dest='aux_ip_address', default='10.42.0.20',
-                  help='aux ip address [default=10.42.0.20] '
-                       '(overridden by simics)')
 parser.add_option('--aux_serial', action='store', type='str',
                   dest='aux_serial_port', default='/dev/ttyUSB0',
                   help='aux serial port [default=/dev/ttyUSB0] '
@@ -468,6 +463,9 @@ mode_group.add_option('-S', '--supervise', action='store_true',
 mode_group.add_option('-l', '--log', action='store_true',
                       dest='view_logs', default=False,
                       help='start the log server')
+mode_group.add_option('-Z', '--zedboard_info', action='store_true',
+                      dest='zedboards', default=False,
+                      help='print information about attached ZedBoards')
 mode_group.add_option('-b', '--list_campaigns', action='store_true',
                       dest='list', help='list campaigns')
 mode_group.add_option('-d', '--delete_results', action='store_true',
@@ -594,7 +592,9 @@ supervise_group.add_option('-w', '--wireshark', action='store_true',
 parser.add_option_group(supervise_group)
 options, args = parser.parse_args()
 
-if options.list:
+if options.zedboards:
+    print_zedboard_info()
+elif options.list:
     list_campaigns()
 elif options.dependencies:
     print('updating gold checkpoint path dependencies...', end='')
