@@ -59,10 +59,10 @@ class openocd:
         serial = zedboards[find_uart_serials()[dut_serial_port]]
         port = find_open_port()
         self.openocd = subprocess.Popen(['openocd', '-c',
-                                         '\"gdb_port 0; tcl_port 0; '
+                                         'gdb_port 0; tcl_port 0; '
                                          'telnet_port '+str(port)+'; '
                                          'interface ftdi; '
-                                         'ftdi_serial '+serial+'\"'
+                                         'ftdi_serial '+serial+';',
                                          '-f', 'openocd_zedboard.cfg'],
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE)
