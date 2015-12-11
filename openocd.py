@@ -1,5 +1,6 @@
 from __future__ import print_function
 from datetime import datetime
+import pyudev
 from telnetlib import Telnet
 from termcolor import colored
 from threading import Thread
@@ -8,18 +9,28 @@ import random
 from signal import SIGINT
 import sqlite3
 import subprocess
-import usb.core
 
 from dut import dut
 from error import DrSEUsError
 from sql import insert_dict
 
 
-def find_debuggers():
-    devs = usb.core.find(find_all=True, idVendor=0x0403, idProduct=0x6014)
+def find_debugger_serials():
+    context = pyudev.Context()
+    debuggers = context.list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6014')
     serials = []
-    for dev in devs:
-        serials.append(dev[0].device.serial_number)
+    for debugger in debuggers:
+        serials.append(debugger['ID_SERIAL_SHORT'])
+    return serials
+
+
+def find_uart_serials():
+    context = pyudev.Context()
+    uarts = context.list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
+    serials = {}
+    for uart in uarts:
+        if 'DEVLINKS' in uart:
+            serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
     return serials
 
 

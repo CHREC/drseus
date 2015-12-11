@@ -111,9 +111,11 @@ class simics:
             if self.use_aux:
                 aux_process = Thread(target=self.aux.do_login,
                                      kwargs={'ip_address': '10.10.0.104',
-                                             'change_prompt': True})
+                                             'change_prompt': True,
+                                             'simics': True})
                 aux_process.start()
-            self.dut.do_login(ip_address='10.10.0.100', change_prompt=True)
+            self.dut.do_login(ip_address='10.10.0.100', change_prompt=True,
+                              simics=True)
             if self.use_aux:
                 aux_process.join()
         else:

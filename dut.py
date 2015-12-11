@@ -207,7 +207,7 @@ class dut:
         self.serial.write(str(command+'\n'))
         return self.read_until()
 
-    def do_login(self, ip_address=None, change_prompt=False):
+    def do_login(self, ip_address=None, change_prompt=False, simics=False):
         if not self.is_logged_in():
             self.serial.write('root\n')
             buff = ''
@@ -239,9 +239,9 @@ class dut:
                 for line in self.command('ip addr show').split('\n'):
                     line = line.strip().split()
                     if line[0] == 'inet':
-                        ip_address = line[1].split('/')[0]
-                        if ip_address != '127.0.0.1':
-                            self.ip_address = ip_address
+                        addr = line[1].split('/')[0]
+                        if addr != '127.0.0.1':
+                            ip_address = addr
                             break
                 else:
                     if attempt < attempts-1:
@@ -252,3 +252,7 @@ class dut:
             # self.ip_address = ip_address
             self.command('ip addr add '+ip_address+'/24 dev eth0')
             self.command('ip link set eth0 up')
+        if simics:
+            self.ip_address = '127.0.0.1'
+        else:
+            self.ip_address = ip_address
