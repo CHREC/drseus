@@ -422,8 +422,8 @@ parser.add_option('-N', '--campaign', action='store', type='int',
                   help='campaign number to use, defaults to last campaign '
                        'created')
 parser.add_option('-g', '--debug', action='store_false', dest='debug',
-                  default=True,
-                  help='display device output')
+                  default=False,
+                  help='display device output for parallel injections')
 parser.add_option('-T', '--timeout', action='store', type='int',
                   dest='seconds', default=300,
                   help='device read timeout in seconds [default=300]')
@@ -641,7 +641,6 @@ elif options.inject:
     iteration_counter = multiprocessing.Value('I', starting_iteration)
     if options.num_processes > 1 and (campaign_data['use_simics'] or
                                       campaign_data['architecture'] == 'a9'):
-        options.debug = True  # TODO: update handling of this
         if not campaign_data['use_simics'] and \
                 campaign_data['architecture'] == 'a9':
             zedboards = find_uart_serials().keys()
@@ -667,6 +666,7 @@ elif options.inject:
                 os.kill(process.pid, signal.SIGINT)
                 process.join()
     else:
+        options.debug = True
         perform_injections(campaign_data, iteration_counter, last_iteration,
                            options)
 elif options.supervise:
