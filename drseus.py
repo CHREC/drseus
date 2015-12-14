@@ -419,7 +419,7 @@ parser.add_option('-N', '--campaign', action='store', type='int',
                   dest='campaign_number', default=0,
                   help='campaign number to use, defaults to last campaign '
                        'created')
-parser.add_option('-g', '--debug', action='store_false', dest='debug',
+parser.add_option('-g', '--debug', action='store_true', dest='debug',
                   default=False,
                   help='display device output for parallel injections')
 parser.add_option('-T', '--timeout', action='store', type='int',
