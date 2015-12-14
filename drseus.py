@@ -639,10 +639,20 @@ elif options.inject:
                           '/results'):
         os.makedirs('campaign-data/'+str(options.campaign_number)+'/results')
     iteration_counter = multiprocessing.Value('I', starting_iteration)
-    if campaign_data['use_simics'] and options.num_processes > 1:
-        options.debug = False
+    if options.num_processes > 1 and (campaign_data['use_simics'] or
+                                      campaign_data['architecture'] == 'a9'):
+        options.debug = True  # TODO: update handling of this
+        if not campaign_data['use_simics'] and \
+                campaign_data['architecture'] == 'a9':
+            zedboards = find_uart_serials().keys()
         processes = []
         for i in xrange(options.num_processes):
+            if not campaign_data['use_simics'] and \
+                    campaign_data['architecture'] == 'a9':
+                if i < len(zedboards):
+                    options.dut_serial_port = zedboards[i]
+                else:
+                    break
             process = multiprocessing.Process(target=perform_injections,
                                               args=(campaign_data,
                                                     iteration_counter,
