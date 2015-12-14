@@ -365,7 +365,7 @@ class simics:
                                       'trying again in 60 seconds...', 'red'))
                         time.sleep(60)
                     else:
-                        raise DrSEUsError(error.message)
+                        raise DrSEUsError(error.type)
                 else:
                     break
             injections_remaining = (injection_number <

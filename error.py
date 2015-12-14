@@ -6,3 +6,6 @@ class DrSEUsError(Exception):
 
     def __init__(self, error_type):
         self.type = error_type
+
+    def __str__(self):
+        return str(self.type)

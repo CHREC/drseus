@@ -369,12 +369,12 @@ class fault_injector:
                         self.debugger.reset_dut()
                     except DrSEUsError as error:
                         if attempt < attempts-1:
-                            print(colored('error resetting DUT: '+error.message,
+                            print(colored('error resetting DUT: '+error.type,
                                           'red'))
                             sleep(30)
                         else:
                             # fallback to power cycle
-                            raise DrSEUsError(error.message)
+                            raise DrSEUsError(error.type)
                     else:
                         break
                 try:

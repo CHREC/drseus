@@ -15,6 +15,7 @@ from openocd import find_ftdi_serials, find_uart_serials
 import simics_config
 from sql import dict_factory, insert_dict
 
+# TODO: replace iteration numbers with result_ids
 # TODO: check exit code for scp fallback
 # TODO: add interactive mode for rad tests
 # TODO: check for extra campaign data files (higher campaign number)
@@ -460,7 +461,8 @@ mode_group.add_option('-S', '--supervise', action='store_true',
                       help='do not inject faults, only supervise devices')
 mode_group.add_option('-l', '--log', action='store_true',
                       dest='view_logs', default=False,
-                      help='start the log server')
+                      help='start the log server, optionally specify server '
+                           'port [default=8000]')
 mode_group.add_option('-Z', '--zedboard_info', action='store_true',
                       dest='zedboards', default=False,
                       help='print information about attached ZedBoards')
@@ -486,7 +488,7 @@ simics_mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes (Simics only)',
                                          'These modes are only available for '
                                          'Simics campaigns')
 simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
-                             dest='iteration', default=-1,
+                             dest='iteration', default=0,
                              help='regenerate a campaign iteration and '
                                   'launch in Simics')
 simics_mode_group.add_option('-u', '--update', action='store_true',
@@ -590,35 +592,26 @@ supervise_group.add_option('-w', '--wireshark', action='store_true',
 parser.add_option_group(supervise_group)
 options, args = parser.parse_args()
 
-if options.zedboards:
-    print_zedboard_info()
-elif options.list:
-    list_campaigns()
-elif options.dependencies:
-    print('updating gold checkpoint path dependencies...', end='')
-    sys.stdout.flush()
-    for campaign in os.listdir('simics-workspace/gold-checkpoints'):
-        update_checkpoint_dependencies(campaign)
-    print('done')
-elif options.delete_all:
-    if os.path.exists('simics-workspace/gold-checkpoints'):
-        shutil.rmtree('simics-workspace/gold-checkpoints')
-        print('deleted gold checkpoints')
-    if os.path.exists('simics-workspace/injected-checkpoints'):
-        shutil.rmtree('simics-workspace/injected-checkpoints')
-        print('deleted injected checkpoints')
-    if os.path.exists('campaign-data'):
-        shutil.rmtree('campaign-data')
-        print('deleted campaign data')
-elif options.delete_campaign:
-    if not options.campaign_number:
-        options.campaign_number = get_last_campaign()
-    delete_campaign(options.campaign_number)
-elif options.delete_results:
-    if not options.campaign_number:
-        options.campaign_number = get_last_campaign()
-    delete_results(options.campaign_number)
-elif options.application is not None:
+modes = 0
+for mode in (options.application, options.inject, options.supervise,
+             options.view_logs, options.zedboards, options.list,
+             options.delete_results, options.delete_campaign,
+             options.delete_all, options.merge_directory, options.iteration,
+             options.dependencies):
+    if mode:
+        modes += 1
+if modes == 0:
+    parser.error('please specify a mode (list options with --help)')
+elif modes > 1:
+    parser.error('only one mode can be used at a time')
+if options.view_logs:
+    if len(args) > 1:
+        parser.error('extra arguments: '+' '.join(args[1:]))
+else:
+    if len(args) > 0:
+        parser.error('extra arguments: '+' '.join(args))
+
+if options.application:
     create_campaign(options)
 elif options.inject:
     if not options.campaign_number:
@@ -678,9 +671,31 @@ elif options.supervise:
                      campaign_data['use_aux_output'], options.capture)
 elif options.view_logs:
     view_logs(args)
-elif options.merge_directory is not None:
+elif options.zedboards:
+    print_zedboard_info()
+elif options.list:
+    list_campaigns()
+elif options.delete_results:
+    if not options.campaign_number:
+        options.campaign_number = get_last_campaign()
+    delete_results(options.campaign_number)
+elif options.delete_campaign:
+    if not options.campaign_number:
+        options.campaign_number = get_last_campaign()
+    delete_campaign(options.campaign_number)
+elif options.delete_all:
+    if os.path.exists('simics-workspace/gold-checkpoints'):
+        shutil.rmtree('simics-workspace/gold-checkpoints')
+        print('deleted gold checkpoints')
+    if os.path.exists('simics-workspace/injected-checkpoints'):
+        shutil.rmtree('simics-workspace/injected-checkpoints')
+        print('deleted injected checkpoints')
+    if os.path.exists('campaign-data'):
+        shutil.rmtree('campaign-data')
+        print('deleted campaign data')
+elif options.merge_directory:
     merge_campaigns(options.merge_directory)
-elif options.iteration >= 0:
+elif options.iteration:
     if not options.campaign_number:
         options.campaign_number = get_last_campaign()
     campaign_data = get_campaign_data(options.campaign_number)
@@ -695,5 +710,9 @@ elif options.iteration >= 0:
     shutil.rmtree('simics-workspace/injected-checkpoints/' +
                   str(campaign_data['campaign_number'])+'/' +
                   str(options.iteration))
-else:
-    parser.error('please specify an operating mode (list options with --help)')
+elif options.dependencies:
+    print('updating gold checkpoint path dependencies...', end='')
+    sys.stdout.flush()
+    for campaign in os.listdir('simics-workspace/gold-checkpoints'):
+        update_checkpoint_dependencies(campaign)
+    print('done')
