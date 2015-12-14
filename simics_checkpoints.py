@@ -477,7 +477,6 @@ def parse_registers(config_file, board, targets):
     simics_targets.py for the specified checkpoint config_file and returns a
     dictionary with all the values.
     """
-    # TODO: consider saving pickle of parsed registers for gold checkpoints
     registers = {}
     for target in targets:
         if target != 'TLB':

@@ -17,15 +17,13 @@ from sql import dict_factory, insert_dict
 
 # TODO: check exit code for scp fallback
 # TODO: add interactive mode for rad tests
-# TODO: add core selection to openocd
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
-# TODO: add synchronization around injection logging and/or db access
-# TODO: add telnet setup for bdi (firmware, configs, etc.)
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: change Exception in simics_checkpoints.py to DrSEUsError
+# TODO: update simics_checkpoints to use simics_config
 
 
 def print_zedboard_info():

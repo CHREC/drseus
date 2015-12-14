@@ -69,25 +69,8 @@ class openocd:
         time.sleep(5)
         self.telnet = Telnet('127.0.0.1', port, timeout=self.timeout)
         self.prompts = ['>']
-        # TODO: ttb1 cannot inject into bits 2, 8, 9, 11
         self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
-                          'r9', 'r10', 'r11', 'r12',  # 'r13', 'r14',
-                          'pc', 'cpsr',
-                          'sp', 'lr',
-                          # 'spsr', 'mainid', 'cachetype', 'tcmstatus',
-                          # 'tlbtype', 'mputype', 'multipid', 'procfeature0',
-                          # 'procfeature1', 'dbgfeature0', auxfeature0',
-                          # 'memfeature0', 'memfeature1', 'memfeature2',
-                          # 'memfeature3', 'instrattr0', 'instrattr1',
-                          # 'instrattr2', 'instrattr3', 'instrattr4',
-                          # 'instrattr5', 'instrattr6', 'instrattr7', 'control',
-                          # 'auxcontrol', 'cpaccess', 'securecfg', 'securedbg',
-                          # 'nonsecure',
-                          # 'ttb0', 'ttb1',  # 'ttbc',
-                          # 'dac',  # 'dfsr', 'ifsr', 'dauxfsr', 'iaucfsr',
-                          # 'dfar', 'ifar',  # 'fcsepid',
-                          # 'context'
-                          ]
+                          'r9', 'r10', 'r11', 'r12',  'pc', 'cpsr', 'sp', 'lr']
         self.debug = debug
         self.use_aux = use_aux
         self.output = ''
