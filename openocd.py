@@ -58,14 +58,14 @@ class openocd:
         self.timeout = 30
         serial = zedboards[find_uart_serials()[dut_serial_port]]
         port = find_open_port()
+        self.dev_null = open('/dev/null', 'w')
         self.openocd = subprocess.Popen(['openocd', '-c',
                                          'gdb_port 0; tcl_port 0; '
                                          'telnet_port '+str(port)+'; '
                                          'interface ftdi; '
                                          'ftdi_serial '+serial+';',
                                          '-f', 'openocd_zedboard.cfg'],
-                                        # stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
+                                        stderr=self.dev_null)
         time.sleep(1)
         self.telnet = Telnet('127.0.0.1', port, timeout=self.timeout)
         self.prompts = ['>']
@@ -93,6 +93,7 @@ class openocd:
         self.telnet.close()
         self.openocd.send_signal(SIGINT)
         self.openocd.wait()
+        self.dev_null.close()
         self.dut.close()
         if self.use_aux:
             self.aux.close()

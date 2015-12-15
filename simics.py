@@ -448,15 +448,19 @@ class simics:
                 monitored_checkpoint = incremental_checkpoint+'_merged'
                 self.command('!bin/checkpoint-merge '+incremental_checkpoint +
                              ' '+monitored_checkpoint)
+                # dev_null = open('/dev/null', 'w')
                 # merge = subprocess.Popen([os.getcwd()+'/simics-workspace/'
                 #                           '/bin/checkpoint-merge',
                 #                           incremental_checkpoint,
-                #                           monitored_checkpoint],
+                #                           monitored_checkpoint,
+                #                           '--jobs', '4'],
                 #                          cwd=(os.getcwd() +
                 #                               '/simics-workspace'),
-                #                          stdout=subprocess.PIPE)
+                #                          stdout=dev_null, stderr=dev_null)
                 # if merge.wait():
+                #     dev_null.close()
                 #     raise DrSEUsError('Error merging checkpoint')
+                # dev_null.close()
                 gold_incremental_checkpoint = ('gold-checkpoints/' +
                                                str(self.campaign_number)+'/' +
                                                str(checkpoint_number))
@@ -467,15 +471,18 @@ class simics:
                     self.command('!bin/checkpoint-merge ' +
                                  gold_incremental_checkpoint+' ' +
                                  gold_checkpoint)
+                    # dev_null = open('/dev/null', 'w')
                     # merge = subprocess.Popen([os.getcwd()+'/simics-workspace/'
                     #                           '/bin/checkpoint-merge',
                     #                           gold_incremental_checkpoint,
-                    #                           gold_checkpoint],
+                    #                           gold_checkpoint, '--jobs', '4'],
                     #                          cwd=(os.getcwd() +
                     #                               '/simics-workspace'),
-                    #                          stdout=subprocess.PIPE)
+                    #                          stdout=dev_null, stderr=dev_null)
                     # if merge.wait():
+                    #     dev_null.close()
                     #     raise DrSEUsError('Error merging checkpoint')
+                    # dev_null.close()
                 gold_checkpoint = 'simics-workspace/'+gold_checkpoint
                 monitored_checkpoint = 'simics-workspace/'+monitored_checkpoint
                 errors = simics_checkpoints.compare_registers(
