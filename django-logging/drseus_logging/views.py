@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django_tables2 import RequestConfig
@@ -47,7 +48,9 @@ def charts_page(request, campaign_number, group_categories):
     filter_ = injection_filter(request.GET, queryset=injection_objects,
                                campaign=campaign_number)
     if filter_.qs.count() > 0:
-        chart_array = json_charts(filter_.qs, campaign_data, group_categories)
+        chart_array = json_charts(
+            filter_.qs.exclude(result__outcome_category='Incomplete'),
+            campaign_data, group_categories)
     else:
         chart_array = None
     return render(request, 'charts.html', {'campaign_data': campaign_data,
@@ -151,11 +154,24 @@ def results_page(request, campaign_number):
         result__campaign__campaign_number=campaign_number)
     filter_ = injection_filter(request.GET, queryset=injection_objects,
                                campaign=campaign_number)
-    if len(request.GET) > 0:
+    filter_kwargs = {}
+    if 'result__outcome' in request.GET:
+        filter_kwargs['outcome'] = request.GET['result__outcome']
+    if 'result__outcome_category' in request.GET:
+        filter_kwargs['outcome_category'] = \
+            request.GET['result__outcome_category']
+    filter_result = True
+    for item in request.GET.keys():
+        if 'result__' not in item:
+            filter_result = False
+    if filter_result:
         result_objects = result.objects.filter(
-            id__in=filter_.qs.values('result__id').distinct())
+            Q(id__in=filter_.qs.values('result__id').distinct()) |
+            ~Q(id__in=injection_objects.values('result__id').distinct()),
+            **filter_kwargs)
     else:
-        result_objects = result.objects.all()
+        result_objects = result.objects.filter(
+            Q(id__in=filter_.qs.values('result__id').distinct()))
     table = results_table(result_objects)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {'campaign_data': campaign_data,
