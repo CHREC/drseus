@@ -162,7 +162,7 @@ def results_page(request, campaign_number):
             request.GET['result__outcome_category']
     filter_result = True
     for item in request.GET.keys():
-        if 'result__' not in item:
+        if 'result__' not in item and 'sort' not in item and 'page' not in item:
             filter_result = False
     if filter_result:
         result_objects = result.objects.filter(
