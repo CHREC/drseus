@@ -69,7 +69,11 @@ class fault_injector:
                          'kill_dut': kill_dut}
         self.kill_dut = kill_dut
         if self.use_simics:
-            self.debugger.launch_simics()
+            try:
+                self.debugger.launch_simics()
+            except DrSEUsError:
+                raise Exception('error launching simics, check your license '
+                                'connection')
         else:
             if self.use_aux:
                 self.debugger.aux.serial.write('\x03')
@@ -320,22 +324,25 @@ class fault_injector:
                        'outcome_category': outcome_category,
                        'data_diff': self.data_diff,
                        'detected_errors': self.detected_errors,
-                       'dut_output': self.debugger.dut.output,
                        'debugger_output': self.debugger.output,
                        'timestamp': datetime.now()}
-        if self.use_aux:
-            result_data['aux_output'] = self.debugger.aux.output
+        self.data_diff = None
+        self.detected_errors = None
+        self.debugger.output = ''
+        try:
+            result_data['dut_output'] = self.debugger.dut.output
+            if self.use_aux:
+                result_data['aux_output'] = self.debugger.aux.output
+            self.debugger.dut.output = ''
+            if self.use_aux:
+                self.debugger.aux.output = ''
+        except AttributeError:
+            pass
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         update_dict(sql, 'result', result_data, self.result_id)
         sql_db.commit()
         sql_db.close()
-        self.data_diff = None
-        self.detected_errors = None
-        self.debugger.output = ''
-        self.debugger.dut.output = ''
-        if self.use_aux:
-            self.debugger.aux.output = ''
 
     def inject_and_monitor(self, iteration_counter, last_iteration,
                            num_injections, selected_targets, output_file,

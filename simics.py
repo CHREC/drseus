@@ -19,7 +19,6 @@ class simics:
                       'dropping memop (peer attribute not set)',
                       'where nothing is mapped', 'Error']
 
-    # create simics instance and boot device
     def __init__(self, campaign_number, architecture, rsakey, use_aux, debug,
                  timeout):
         self.simics = None
@@ -35,32 +34,41 @@ class simics:
         self.use_aux = use_aux
 
     def launch_simics(self, checkpoint=None):
-        # self.output = ''
-        self.simics = subprocess.Popen([os.getcwd()+'/simics-workspace/simics',
-                                        '-no-win', '-no-gui', '-q'],
-                                       cwd=os.getcwd()+'/simics-workspace',
-                                       stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE)
-        self.read_until()
-        try:
-            if checkpoint is None:
-                self.command('$drseus=TRUE')
-                buff = self.command('run-command-file simics-'+self.board+'/' +
-                                    self.board+'-linux'+('-ethernet' if
-                                                         self.use_aux
-                                                         else '') +
-                                    '.simics')
+        attempts = 5
+        for attempt in xrange(attempts):
+            self.simics = subprocess.Popen([os.getcwd()+'/simics-workspace/'
+                                            'simics', '-no-win', '-no-gui',
+                                            '-q'],
+                                           cwd=os.getcwd()+'/simics-workspace',
+                                           stdin=subprocess.PIPE,
+                                           stdout=subprocess.PIPE)
+            try:
+                self.read_until()
+            except DrSEUsError:
+                self.simics.kill()
+                print(colored('error launching simics (attempt ' +
+                              str(attempt+1)+'/'+str(attempts)+')', 'red'))
+                if attempt < attempts-1:
+                    time.sleep(30)
+                elif attempt == attempts-1:
+                    raise Exception('error launching simics, check your '
+                                    'license connection')
             else:
-                buff = self.command('read-configuration '+checkpoint)
+                break
+        if checkpoint is None:
+            self.command('$drseus=TRUE')
+            buff = self.command('run-command-file simics-'+self.board+'/' +
+                                self.board+'-linux'+('-ethernet' if
+                                                     self.use_aux
+                                                     else '') +
+                                '.simics')
+        else:
+            buff = self.command('read-configuration '+checkpoint)
+            buff += self.command('connect-real-network-port-in ssh '
+                                 'ethernet_switch0 target-ip=10.10.0.100')
+            if self.use_aux:
                 buff += self.command('connect-real-network-port-in ssh '
-                                     'ethernet_switch0 target-ip=10.10.0.100')
-                if self.use_aux:
-                    buff += self.command('connect-real-network-port-in ssh '
-                                         'ethernet_switch0 '
-                                         'target-ip=10.10.0.104')
-        except IOError:
-            self.close()
-            raise DrSEUsError(DrSEUsError.launch_simics)
+                                     'ethernet_switch0 target-ip=10.10.0.104')
         found_settings = 0
         if checkpoint is None:
             serial_ports = []
@@ -144,9 +152,12 @@ class simics:
                   './simics-gui -e \"'+simics_commands+'\"')
 
     def close(self):
-        self.dut.close()
-        if self.use_aux:
-            self.aux.close()
+        try:
+            self.dut.close()
+            if self.use_aux:
+                self.aux.close()
+        except AttributeError:
+            pass
         if self.simics:
             self.simics.send_signal(SIGINT)
             try:
@@ -186,13 +197,24 @@ class simics:
         if self.debug:
             print(colored('run\n', 'yellow'), end='')
 
+    def read_char_worker(self):
+        self.char = None
+        self.char = self.simics.stdout.read(1).decode('utf-8', 'replace')
+
+    def read_char(self):
+        read_thread = Thread(target=self.read_char_worker)
+        read_thread.start()
+        read_thread.join(timeout=10)  # must be longer than timeout in close
+        if read_thread.is_alive():
+            raise DrSEUsError('Error reading from simics')
+        return self.char
+
     def read_until(self, string=None):
-        # TODO: add timeout
         if string is None:
             string = 'simics> '
         buff = ''
         while True:
-            char = self.simics.stdout.read(1).decode('utf-8', 'replace')
+            char = self.read_char()
             if not char:
                 break
             self.output += char
@@ -342,7 +364,6 @@ class simics:
     def inject_fault(self, result_id, iteration, checkpoints_to_inject,
                      selected_targets, cycles_between_checkpoints,
                      num_checkpoints, compare_all):
-        # simics_output = ''
         dut_output = ''
         if self.use_aux:
             aux_output = ''
@@ -352,20 +373,7 @@ class simics:
             injected_checkpoint = simics_checkpoints.inject_checkpoint(
                 self.campaign_number, result_id, iteration, injection_number,
                 checkpoint_number, self.board, selected_targets, self.debug)
-            attempts = 5
-            for attempt in xrange(attempts):
-                try:
-                    self.launch_simics(injected_checkpoint)
-                except DrSEUsError as error:
-                    if (error == DrSEUsError.launch_simics
-                            and attempt < attempts-1):
-                        print(colored('error launching Simics, '
-                                      'trying again in 60 seconds...', 'red'))
-                        time.sleep(60)
-                    else:
-                        raise DrSEUsError(error.type)
-                else:
-                    break
+            self.launch_simics(injected_checkpoint)
             injections_remaining = (injection_number <
                                     len(checkpoints_to_inject))
             if injections_remaining:
@@ -381,11 +389,9 @@ class simics:
                 latent_faults = errors
             if injections_remaining:
                 self.close()
-            # simics_output += self.output
             dut_output += self.dut.output
             if self.use_aux:
                 aux_output += self.aux.output
-        # self.output = simics_output
         self.dut.output = dut_output
         if self.use_aux:
             self.aux.output = aux_output
