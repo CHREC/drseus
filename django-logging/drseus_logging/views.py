@@ -151,8 +151,11 @@ def results_page(request, campaign_number):
         result__campaign__campaign_number=campaign_number)
     filter_ = injection_filter(request.GET, queryset=injection_objects,
                                campaign=campaign_number)
-    result_objects = result.objects.filter(
-        id__in=filter_.qs.values('result__id').distinct())
+    if len(request.GET) > 0:
+        result_objects = result.objects.filter(
+            id__in=filter_.qs.values('result__id').distinct())
+    else:
+        result_objects = result.objects.all()
     table = results_table(result_objects)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {'campaign_data': campaign_data,
