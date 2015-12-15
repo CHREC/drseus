@@ -197,7 +197,7 @@ class dut:
             for attempt in xrange(attempts):
                 for line in self.command('ip addr show').split('\n'):
                     line = line.strip().split()
-                    if line[0] == 'inet':
+                    if len(line) > 0 and line[0] == 'inet':
                         addr = line[1].split('/')[0]
                         if addr != '127.0.0.1':
                             ip_address = addr
