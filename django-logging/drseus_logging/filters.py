@@ -101,11 +101,6 @@ class injection_filter(django_filters.FilterSet):
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
-    result__paramiko_output = django_filters.CharFilter(
-        label='SCP output',
-        lookup_type='icontains',
-        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
-        help_text='')
     bit = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     core = django_filters.MultipleChoiceFilter(

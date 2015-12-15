@@ -138,11 +138,8 @@ class fault_injector:
             self.debugger.close()
         campaign_data['dut_output'] = self.debugger.dut.output
         campaign_data['debugger_output'] = self.debugger.output
-        campaign_data['paramiko_output'] = self.debugger.dut.paramiko_output
         if self.use_aux:
             campaign_data['aux_output'] = self.debugger.aux.output
-            campaign_data['aux_paramiko_output'] = \
-                self.debugger.aux.paramiko_output
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         insert_dict(sql, 'campaign', campaign_data)
@@ -324,13 +321,10 @@ class fault_injector:
                        'data_diff': self.data_diff,
                        'detected_errors': self.detected_errors,
                        'dut_output': self.debugger.dut.output,
-                       'paramiko_output': self.debugger.dut.paramiko_output,
                        'debugger_output': self.debugger.output,
                        'timestamp': datetime.now()}
         if self.use_aux:
             result_data['aux_output'] = self.debugger.aux.output
-            result_data['aux_paramiko_output'] = \
-                self.debugger.aux.paramiko_output
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         update_dict(sql, 'result', result_data, self.result_id)
@@ -340,10 +334,8 @@ class fault_injector:
         self.detected_errors = None
         self.debugger.output = ''
         self.debugger.dut.output = ''
-        self.debugger.dut.paramiko_output = ''
         if self.use_aux:
             self.debugger.aux.output = ''
-            self.debugger.aux.paramiko_output = ''
 
     def inject_and_monitor(self, iteration_counter, last_iteration,
                            num_injections, selected_targets, output_file,

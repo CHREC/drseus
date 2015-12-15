@@ -22,8 +22,6 @@ class campaign(models.Model):
     dut_output = models.TextField()
     aux_output = models.TextField(null=True)
     debugger_output = models.TextField()
-    paramiko_output = models.TextField()
-    aux_paramiko_output = models.TextField(null=True)
     num_cycles = models.IntegerField(null=True)
     num_checkpoints = models.IntegerField(null=True)
     cycles_between = models.IntegerField(null=True)
@@ -43,8 +41,6 @@ class result(models.Model):
     dut_output = models.TextField(null=True)
     aux_output = models.TextField(null=True)
     debugger_output = models.TextField(null=True)
-    paramiko_output = models.TextField(null=True)
-    aux_paramiko_output = models.TextField(null=True)
     timestamp = models.DateTimeField()
 
 

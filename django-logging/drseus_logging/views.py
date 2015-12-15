@@ -75,10 +75,7 @@ def campaign_page(request, campaign_number):
     page_items.append(('DUT Output', 'dut_output'))
     if campaign_data.use_aux:
         page_items.append(('AUX Output', 'aux_output'))
-    page_items.extend([('Debugger Output', 'debugger_output'),
-                       ('SCP Log', 'paramiko_output')])
-    if campaign_data.use_aux:
-        page_items.append(('AUX SCP Log', 'aux_paramiko_output'))
+    page_items.append(('Debugger Output', 'debugger_output'))
     table = campaign_table(campaign.objects.filter(
         campaign_number=campaign_number))
     RequestConfig(request, paginate=False).configure(table)
@@ -180,10 +177,7 @@ def result_page(request, campaign_number, iteration):
     page_items.append(('DUT Output', 'dut_output'))
     if campaign_data.use_aux:
         page_items.append(('AUX Output', 'aux_output'))
-    page_items.extend([('Debugger Output', 'debugger_output'),
-                       ('SCP Log', 'paramiko_output')])
-    if campaign_data.use_aux:
-        page_items.append(('AUX SCP Log', 'aux_paramiko_output'))
+    page_items.append(('Debugger Output', 'debugger_output'))
     if campaign_data.use_simics:
         page_items.extend([('Register Diffs', 'register_diffs'),
                            ('Memory Diffs', 'memory_diffs')])

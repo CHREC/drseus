@@ -344,10 +344,8 @@ class simics:
                      num_checkpoints, compare_all):
         # simics_output = ''
         dut_output = ''
-        paramiko_output = ''
         if self.use_aux:
             aux_output = ''
-            aux_paramiko_output = ''
         latent_faults = 0
         for injection_number in xrange(1, len(checkpoints_to_inject)+1):
             checkpoint_number = checkpoints_to_inject[injection_number-1]
@@ -385,16 +383,12 @@ class simics:
                 self.close()
             # simics_output += self.output
             dut_output += self.dut.output
-            paramiko_output += self.dut.paramiko_output
             if self.use_aux:
                 aux_output += self.aux.output
-                aux_paramiko_output += self.aux.paramiko_output
         # self.output = simics_output
         self.dut.output = dut_output
-        self.dut.paramiko_output = paramiko_output
         if self.use_aux:
             self.aux.output = aux_output
-            self.aux.paramiko_output = aux_paramiko_output
         return latent_faults
 
     def regenerate_checkpoints(self, iteration, cycles_between, injection_data):

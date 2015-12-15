@@ -17,15 +17,12 @@ class dut:
                       'malloc(): memory corruption', 'Bad swap file entry',
                       'Unable to handle kernel paging request',
                       'Alignment trap', 'Unhandled fault',
-                      'free(): invalid next size', 'double free or corruption']
+                      'free(): invalid next size', 'double free or corruption',
+                      'can\'t get kernel image']
 
     def __init__(self, rsakey, serial_port, prompt, debug, timeout,
                  campaign_number, baud_rate=115200, ssh_port=22, color='green'):
-        # if debug:
-        #     paramiko.util.log_to_file('campaign-data/paramiko_'+ip_address+'_' +
-        #                               str(ssh_port)+'.log')
         self.output = ''
-        self.paramiko_output = ''
         self.default_timeout = timeout
         try:
             self.serial = Serial(port=serial_port, baudrate=baud_rate,
@@ -44,10 +41,8 @@ class dut:
         self.serial.close()
 
     def send_files(self, files):
-        fallback = False
-        fallback_failed = False
         if self.debug:
-            print(colored('sending files', 'blue'))
+            print(colored('sending file(s)', 'blue'))
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -59,9 +54,6 @@ class dut:
             ssh.close()
         except Exception as error:
             print(error)
-            fallback = True
-            if self.debug:
-                print(colored('falling back to scp', 'blue'))
             for file_ in files:
                 scp_process = Process(target=os.system,
                                       args=('scp -P '+str(self.ssh_port) +
@@ -73,29 +65,13 @@ class dut:
                                             str(self.ip_address)+':',))
                 scp_process.start()
                 scp_process.join(timeout=30)
-                if scp_process.is_alive():
+                if scp_process.exitcode != 0:
                     scp_process.terminate()
-                    fallback_failed = True
-                    if self.debug:
-                        print(colored('fallback failed', 'blue'))
-                    break
-        # paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
-        #                 str(self.ssh_port)+'.log')
-        # if os.path.exists(paramiko_log):
-        #     with open(paramiko_log) as log_file:
-        #         self.paramiko_output += log_file.read()
-        #     os.remove(paramiko_log)
-        if fallback:
-            self.paramiko_output += '\nFallback to SCP used'
-            if fallback_failed:
-                self.paramiko_output += ', but failed'
-                raise DrSEUsError(DrSEUsError.scp_error)
+                    raise DrSEUsError(DrSEUsError.scp_error)
         if self.debug:
             print(colored('files sent', 'blue'))
 
     def get_file(self, file_, local_path=''):
-        fallback = False
-        fallback_failed = False
         if self.debug:
             print(colored('getting file', 'blue'))
         try:
@@ -107,13 +83,8 @@ class dut:
             dut_scp.get(file_, local_path=local_path)
             dut_scp.close()
             ssh.close()
-            if self.debug:
-                print(colored('file received', 'blue'))
         except Exception as error:
             print(error)
-            fallback = True
-            if self.debug:
-                print(colored('falling back to scp', 'blue'))
             scp_process = Process(target=os.system,
                                   args=('scp -P '+str(self.ssh_port) +
                                         ' -i campaign-data/' +
@@ -124,22 +95,11 @@ class dut:
                                         ' ./'+local_path,))
             scp_process.start()
             scp_process.join(timeout=30)
-            if scp_process.is_alive():
+            if scp_process.exitcode != 0:
                 scp_process.terminate()
-                fallback_failed = True
-                if self.debug:
-                    print(colored('fallback failed', 'blue'))
-        # paramiko_log = ('campaign-data/paramiko_'+self.ip_address+'_' +
-        #                 str(self.ssh_port)+'.log')
-        # if os.path.exists(paramiko_log):
-        #     with open(paramiko_log) as log_file:
-        #         self.paramiko_output += log_file.read()
-        #     os.remove(paramiko_log)
-        if fallback:
-            self.paramiko_output += '\nFallback to SCP used'
-            if fallback_failed:
-                self.paramiko_output += ', but failed'
                 raise DrSEUsError(DrSEUsError.scp_error)
+        if self.debug:
+            print(colored('file received', 'blue'))
 
     def is_logged_in(self):
         self.serial.write('\n')

@@ -16,7 +16,6 @@ import simics_config
 from sql import dict_factory, insert_dict
 
 # TODO: replace iteration numbers with result_ids
-# TODO: check exit code for scp fallback
 # TODO: add interactive mode for rad tests
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration

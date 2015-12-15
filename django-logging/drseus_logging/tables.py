@@ -11,8 +11,7 @@ class campaign_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = campaign
-        exclude = ('aux_output', 'aux_paramiko_output', 'debugger_output',
-                   'dut_output', 'paramiko_output')
+        exclude = ('aux_output', 'debugger_output', 'dut_output')
 
 
 class campaigns_table(tables.Table):
@@ -32,9 +31,9 @@ class campaigns_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = campaign
         exclude = ('application', 'aux_application', 'aux_output',
-                   'aux_paramiko_output', 'cycles_between', 'debugger_output',
-                   'dut_output', 'output_file', 'num_cycles', 'num_checkpoints',
-                   'paramiko_output', 'use_aux', 'use_aux_output', 'rsakey')
+                   'cycles_between', 'debugger_output', 'dut_output',
+                   'output_file', 'num_cycles', 'num_checkpoints', 'use_aux',
+                   'use_aux_output', 'rsakey')
 
 
 class result_table(tables.Table):
@@ -53,8 +52,8 @@ class result_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = result
-        exclude = ('aux_output', 'aux_paramiko_output', 'campaign',
-                   'debugger_output', 'dut_output', 'id', 'paramiko_output')
+        exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output',
+                   'id')
 
 
 class results_table(tables.Table):
@@ -84,8 +83,8 @@ class results_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = result
-        exclude = ('aux_output', 'aux_paramiko_output', 'campaign',
-                   'debugger_output', 'dut_output', 'id', 'paramiko_output')
+        exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output',
+                   'id')
 
 
 class hw_injection_table(tables.Table):

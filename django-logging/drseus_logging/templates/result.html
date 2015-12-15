@@ -54,20 +54,6 @@
                         Debugger Output
                     </h3>
                     {{ result.debugger_output|linebreaksbr }}
-                    <h3 align="center">
-                        <a name="paramiko_output">
-                        </a>
-                        SCP Log
-                    </h3>
-                    {{ result.paramiko_output|linebreaksbr }}
-                    {% if campaign_data.use_aux %}
-                    <h3 align="center">
-                        <a name="aux_paramiko_output">
-                        </a>
-                        AUX SCP Log
-                    </h3>
-                    {{ result.aux_paramiko_output|linebreaksbr }}
-                    {% endif %}
                 </div>
             </td>
             <td valign="top">
@@ -143,20 +129,6 @@
             Debugger Output
         </h3>
         {{ result.debugger_output|linebreaksbr }}
-        <h3 align="center">
-            <a name="paramiko_output">
-            </a>
-            SCP Log
-        </h3>
-        {{ campaign_data.paramiko_output|linebreaksbr }}
-        {% if campaign_data.use_aux %}
-        <h3 align="center">
-            <a name="aux_paramiko_output">
-            </a>
-            AUX SCP Log
-        </h3>
-        {{ campaign_data.aux_paramiko_output|linebreaksbr }}
-        {% endif %}
     </div>
 </div>
 {% endif %}
