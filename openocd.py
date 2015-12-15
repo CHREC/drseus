@@ -64,9 +64,9 @@ class openocd:
                                          'interface ftdi; '
                                          'ftdi_serial '+serial+';',
                                          '-f', 'openocd_zedboard.cfg'],
-                                        stdout=subprocess.PIPE,
+                                        # stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE)
-        time.sleep(5)
+        time.sleep(1)
         self.telnet = Telnet('127.0.0.1', port, timeout=self.timeout)
         self.prompts = ['>']
         self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',

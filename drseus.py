@@ -291,6 +291,15 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
             shutil.rmtree('campaign-data/results/' +
                           str(campaign_data['campaign_number'])+'/' +
                           str(drseus.iteration))
+        if not drseus.use_simics:
+            try:
+                drseus.debugger.continue_dut()
+            except:
+                pass
+        try:
+            drseus.debugger.close()
+        except:
+            pass
         if drseus.use_simics:
             if os.path.exists('simics-workspace/injected-checkpoints/' +
                               str(campaign_data['campaign_number'])+'/' +
@@ -298,9 +307,6 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
                 shutil.rmtree('simics-workspace/injected-checkpoints/' +
                               str(campaign_data['campaign_number'])+'/' +
                               str(drseus.iteration))
-        else:
-            drseus.debugger.continue_dut()
-        drseus.debugger.close()
         sys.exit()
     signal.signal(signal.SIGINT, interrupt_handler)
 
