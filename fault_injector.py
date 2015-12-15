@@ -299,9 +299,13 @@ class fault_injector:
                     outcome = error.type
                     outcome_category = 'Post execution error'
         if not outcome:
-            if self.detected_errors is not None and self.detected_errors > 0:
-                outcome = 'Detected data error'
-                outcome_category = 'Data error'
+            if self.detected_errors:
+                if self.data_diff is None or self.data_diff < 1.0:
+                    outcome = 'Detected data error'
+                    outcome_category = 'Data error'
+                elif self.data_diff is not None and self.data_diff == 1:
+                    outcome = 'Corrected data error'
+                    outcome_category = 'Data error'
             elif self.data_diff is not None and self.data_diff < 1.0:
                 outcome = 'Silent data error'
                 outcome_category = 'Data error'
