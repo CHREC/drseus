@@ -617,6 +617,7 @@ else:
         parser.error('extra arguments: '+' '.join(args))
 
 if options.application:
+    options.debug = True
     create_campaign(options)
 elif options.inject:
     if not options.campaign_number:
@@ -666,6 +667,7 @@ elif options.inject:
         perform_injections(campaign_data, iteration_counter, last_iteration,
                            options)
 elif options.supervise:
+    options.debug = True
     if not options.campaign_number:
         options.campaign_number = get_last_campaign()
     campaign_data = get_campaign_data(options.campaign_number)
