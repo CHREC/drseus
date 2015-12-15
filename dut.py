@@ -195,7 +195,7 @@ class dut:
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
                      '\" > ~/.ssh/authorized_keys')
         if ip_address is None:
-            attempts = 5
+            attempts = 10
             for attempt in xrange(attempts):
                 for line in self.command('ip addr show').split('\n'):
                     line = line.strip().split()

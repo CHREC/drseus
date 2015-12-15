@@ -362,7 +362,7 @@ class fault_injector:
                 break
             self.result_id = self.get_result_id(num_injections)
             if not self.use_simics:
-                attempts = 5
+                attempts = 10
                 for attempt in xrange(attempts):
                     try:
                         self.debugger.reset_dut()

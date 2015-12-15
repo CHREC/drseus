@@ -34,7 +34,7 @@ class simics:
         self.use_aux = use_aux
 
     def launch_simics(self, checkpoint=None):
-        attempts = 5
+        attempts = 10
         for attempt in xrange(attempts):
             self.simics = subprocess.Popen([os.getcwd()+'/simics-workspace/'
                                             'simics', '-no-win', '-no-gui',
