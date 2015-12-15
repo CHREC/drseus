@@ -17,8 +17,7 @@ class dut:
                       'malloc(): memory corruption', 'Bad swap file entry',
                       'Unable to handle kernel paging request',
                       'Alignment trap', 'Unhandled fault',
-                      'free(): invalid next size', 'double free or corruption',
-                      'can\'t get kernel image']
+                      'free(): invalid next size', 'double free or corruption']
 
     def __init__(self, rsakey, serial_port, prompt, debug, timeout,
                  campaign_number, baud_rate=115200, ssh_port=22, color='green'):
@@ -116,6 +115,9 @@ class dut:
                 return True
             elif buff[-len('login: '):] == 'login: ':
                 return False
+            elif buff[-len('can\'t get kernel image'):] == \
+                    'can\'t get kernel image':
+                raise DrSEUsError('error booting')
 
     def read_until(self, string=None):
         if string is None:
