@@ -7,8 +7,6 @@ from simplejson import dumps
 from threading import Thread
 from .filters import fix_sort, fix_sort_list
 from .models import result
-# import sys
-# sys.path.append('../')
 from .simics_targets import devices
 
 colors = {
@@ -768,7 +766,8 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
-        times = numpy.linspace(0, campaign_data.exec_time, 500,
+        xaxis_length = queryset.count() / 25
+        times = numpy.linspace(0, campaign_data.exec_time, xaxis_length,
                                endpoint=False).tolist()
         times = [round(time, 4) for time in times]
     if len(times) < 1:
@@ -883,7 +882,8 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
-        times = numpy.linspace(0, campaign_data.exec_time, 100,
+        xaxis_length = queryset.count() / 25
+        times = numpy.linspace(0, campaign_data.exec_time, xaxis_length,
                                endpoint=False).tolist()
         times = [round(time, 4) for time in times]
     if len(times) < 1:
