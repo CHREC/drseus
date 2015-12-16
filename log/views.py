@@ -196,7 +196,7 @@ def result_page(request, campaign_number, iteration):
     navigation_items_ = [(item[0], '../'+item[1])
                          for item in navigation_items]
     page_items = [('Result', 'result'), ('Injections', 'injections')]
-    output_file = ('../campaign-data/'+campaign_number+'/results/'+iteration +
+    output_file = ('campaign-data/'+campaign_number+'/results/'+iteration +
                    '/'+campaign_data.output_file)
     if os.path.exists(output_file) and what(output_file) is not None:
         output_image = True
