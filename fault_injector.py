@@ -318,6 +318,10 @@ class fault_injector:
         return outcome, outcome_category
 
     def log_result(self, outcome, outcome_category):
+        try:
+            print(colored(self.debugger.dut.serial.port+' ', 'blue'), end='')
+        except:
+            pass
         print(colored('iteration '+str(self.iteration)+' outcome: ' +
                       outcome_category+' - '+outcome, 'blue'), end='')
         if self.data_diff is not None and self.data_diff < 1.0:

@@ -1,6 +1,6 @@
 from __future__ import print_function
-from multiprocessing import Process
-import os
+# from multiprocessing import Process
+# import os
 import paramiko
 from scp import SCPClient
 from serial import Serial
@@ -42,61 +42,113 @@ class dut:
     def send_files(self, files):
         if self.debug:
             print(colored('sending file(s)', 'blue'))
-        try:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(self.ip_address, port=self.ssh_port, username='root',
-                        pkey=self.rsakey, look_for_keys=False)
-            dut_scp = SCPClient(ssh.get_transport())
-            dut_scp.put(files)
-            dut_scp.close()
-            ssh.close()
-        except Exception as error:
-            print(error)
-            for file_ in files:
-                scp_process = Process(target=os.system,
-                                      args=('scp -P '+str(self.ssh_port) +
-                                            ' -i campaign-data/' +
-                                            str(self.campaign_number) +
-                                            '/private.key '
-                                            '-o StrictHostKeyChecking=no ' +
-                                            file_+' root@' +
-                                            str(self.ip_address)+':',))
-                scp_process.start()
-                scp_process.join(timeout=30)
-                if scp_process.exitcode != 0:
-                    scp_process.terminate()
+        attempts = 10
+        for attempt in xrange(attempts):
+            try:
+                ssh = paramiko.SSHClient()
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.connect(self.ip_address, port=self.ssh_port,
+                            username='root', pkey=self.rsakey,
+                            look_for_keys=False)
+                dut_scp = SCPClient(ssh.get_transport())
+                dut_scp.put(files)
+                dut_scp.close()
+                ssh.close()
+            except Exception:
+                try:
+                    dut_scp.close()
+                    ssh.close()
+                except:
+                    pass
+                print(colored('error sending file(s) (attempt ' +
+                              str(attempt+1)+'/'+str(attempts)+')', 'red'))
+                if attempt < attempts-1:
+                    sleep(30)
+                else:
                     raise DrSEUsError(DrSEUsError.scp_error)
+            else:
+                break
+        # try:
+        #     ssh = paramiko.SSHClient()
+        #     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        #     ssh.connect(self.ip_address, port=self.ssh_port, username='root',
+        #                 pkey=self.rsakey, look_for_keys=False)
+        #     dut_scp = SCPClient(ssh.get_transport())
+        #     dut_scp.put(files)
+        #     dut_scp.close()
+        #     ssh.close()
+        # except Exception as error:
+        #     print(error)
+        #     for file_ in files:
+        #         scp_process = Process(target=os.system,
+        #                               args=('scp -P '+str(self.ssh_port) +
+        #                                     ' -i campaign-data/' +
+        #                                     str(self.campaign_number) +
+        #                                     '/private.key '
+        #                                     '-o StrictHostKeyChecking=no ' +
+        #                                     file_+' root@' +
+        #                                     str(self.ip_address)+':',))
+        #         scp_process.start()
+        #         scp_process.join(timeout=30)
+        #         if scp_process.exitcode != 0:
+        #             scp_process.terminate()
+        #             raise DrSEUsError(DrSEUsError.scp_error)
         if self.debug:
             print(colored('files sent', 'blue'))
 
     def get_file(self, file_, local_path=''):
         if self.debug:
             print(colored('getting file', 'blue'))
-        try:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(self.ip_address, port=self.ssh_port, username='root',
-                        pkey=self.rsakey, look_for_keys=False)
-            dut_scp = SCPClient(ssh.get_transport())
-            dut_scp.get(file_, local_path=local_path)
-            dut_scp.close()
-            ssh.close()
-        except Exception as error:
-            print(error)
-            scp_process = Process(target=os.system,
-                                  args=('scp -P '+str(self.ssh_port) +
-                                        ' -i campaign-data/' +
-                                        str(self.campaign_number) +
-                                        '/private.key '
-                                        '-o StrictHostKeyChecking=no '
-                                        'root@'+str(self.ip_address)+':'+file_ +
-                                        ' ./'+local_path,))
-            scp_process.start()
-            scp_process.join(timeout=30)
-            if scp_process.exitcode != 0:
-                scp_process.terminate()
-                raise DrSEUsError(DrSEUsError.scp_error)
+        attempts = 10
+        for attempt in xrange(attempts):
+            try:
+                ssh = paramiko.SSHClient()
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.connect(self.ip_address, port=self.ssh_port,
+                            username='root', pkey=self.rsakey,
+                            look_for_keys=False)
+                dut_scp = SCPClient(ssh.get_transport())
+                dut_scp.get(file_, local_path=local_path)
+                dut_scp.close()
+                ssh.close()
+            except Exception:
+                try:
+                    dut_scp.close()
+                    ssh.close()
+                except:
+                    pass
+                print(colored('error getting file (attempt ' +
+                              str(attempt+1)+'/'+str(attempts)+')', 'red'))
+                if attempt < attempts-1:
+                    sleep(30)
+                else:
+                    raise DrSEUsError(DrSEUsError.scp_error)
+            else:
+                break
+        # try:
+        #     ssh = paramiko.SSHClient()
+        #     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        #     ssh.connect(self.ip_address, port=self.ssh_port, username='root',
+        #                 pkey=self.rsakey, look_for_keys=False)
+        #     dut_scp = SCPClient(ssh.get_transport())
+        #     dut_scp.get(file_, local_path=local_path)
+        #     dut_scp.close()
+        #     ssh.close()
+        # except Exception as error:
+        #     print(error)
+        #     scp_process = Process(target=os.system,
+        #                           args=('scp -P '+str(self.ssh_port) +
+        #                                 ' -i campaign-data/' +
+        #                                 str(self.campaign_number) +
+        #                                 '/private.key '
+        #                                 '-o StrictHostKeyChecking=no '
+        #                                 'root@'+str(self.ip_address)+':'+file_ +
+        #                                 ' ./'+local_path,))
+        #     scp_process.start()
+        #     scp_process.join(timeout=30)
+        #     if scp_process.exitcode != 0:
+        #         scp_process.terminate()
+        #         raise DrSEUsError(DrSEUsError.scp_error)
         if self.debug:
             print(colored('file received', 'blue'))
 
