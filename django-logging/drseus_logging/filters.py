@@ -81,26 +81,7 @@ class injection_filter(django_filters.FilterSet):
         self.filters['target_index'].extra.update(choices=target_index_choices)
         self.filters['target_index'].widget.attrs['size'] = min(
             len(target_index_choices), 10)
-        # time_rounded_choices = injection_choices(campaign, 'time_rounded')
-        # self.filters['time_rounded'].extra.update(choices=time_rounded_choices)
-        # self.filters['time_rounded'].widget.attrs['size'] = min(
-        #     len(time_rounded_choices), 10)
 
-    result__aux_output = django_filters.CharFilter(
-        label='AUX output',
-        lookup_type='icontains',
-        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
-        help_text='')
-    result__debugger_output = django_filters.CharFilter(
-        label='Debugger output',
-        lookup_type='icontains',
-        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
-        help_text='')
-    result__dut_output = django_filters.CharFilter(
-        label='DUT output',
-        lookup_type='icontains',
-        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
-        help_text='')
     bit = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     core = django_filters.MultipleChoiceFilter(
@@ -113,6 +94,27 @@ class injection_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     register_index = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    result__aux_output = django_filters.CharFilter(
+        label='AUX output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
+    result__data_diff_lt = django_filters.NumberFilter(
+        name='result__data_diff', label='Data diff (<)', lookup_type='lt',
+        help_text='')
+    result__data_diff_gt = django_filters.NumberFilter(
+        name='result__data_diff', label='Data diff (>)', lookup_type='gt',
+        help_text='')
+    result__debugger_output = django_filters.CharFilter(
+        label='Debugger output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
+    result__dut_output = django_filters.CharFilter(
+        label='DUT output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
     result__num_injections = django_filters.MultipleChoiceFilter(
         label='Number of injections',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
@@ -126,8 +128,10 @@ class injection_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     target_index = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    # time_rounded = django_filters.MultipleChoiceFilter(
-    #     widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    time_lt = django_filters.NumberFilter(
+        name='time', label='Time (<)', lookup_type='lt', help_text='')
+    time_gt = django_filters.NumberFilter(
+        name='time', label='Time (>)', lookup_type='gt', help_text='')
 
     class Meta:
         model = injection
