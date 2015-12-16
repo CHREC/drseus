@@ -284,10 +284,10 @@ def result_page(request, campaign_number, iteration):
 def output_image(request, campaign_number, iteration):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
     if iteration == '0':
-        output_file = ('../campaign-data/'+campaign_number+'/'
+        output_file = ('campaign-data/'+campaign_number+'/'
                        'gold_'+campaign_data.output_file)
     else:
-        output_file = ('../campaign-data/'+campaign_number+'/results/' +
+        output_file = ('campaign-data/'+campaign_number+'/results/' +
                        iteration+'/'+campaign_data.output_file)
     if os.path.exists(output_file):
         return HttpResponse(open(output_file, 'rb').read(),

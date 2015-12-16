@@ -45,7 +45,7 @@ def list_campaigns():
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
     sql.execute('SELECT campaign_number, application, architecture, use_simics '
-                'FROM drseus_logging_campaign')
+                'FROM log_campaign')
     campaign_list = sql.fetchall()
     sql_db.close()
     print('DrSEUs Campaigns:')
@@ -63,7 +63,7 @@ def get_last_campaign():
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    sql.execute('SELECT campaign_number FROM drseus_logging_campaign ORDER BY '
+    sql.execute('SELECT campaign_number FROM log_campaign ORDER BY '
                 'campaign_number DESC LIMIT 1')
     campaign_data = sql.fetchone()
     if campaign_data is None:
@@ -80,7 +80,7 @@ def get_campaign_data(campaign_number):
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    sql.execute('SELECT * FROM drseus_logging_campaign WHERE campaign_number=?',
+    sql.execute('SELECT * FROM log_campaign WHERE campaign_number=?',
                 (campaign_number,))
     campaign_data = sql.fetchone()
     sql_db.close()
@@ -93,8 +93,8 @@ def get_next_iteration(campaign_number):
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql_db.row_factory = sqlite3.Row
     sql = sql_db.cursor()
-    sql.execute('SELECT iteration FROM drseus_logging_result '
-                'WHERE drseus_logging_result.campaign_id=? '
+    sql.execute('SELECT iteration FROM log_result '
+                'WHERE log_result.campaign_id=? '
                 'ORDER BY iteration DESC LIMIT 1', (campaign_number,))
     result_data = sql.fetchone()
     if result_data is None:
@@ -124,16 +124,16 @@ def delete_results(campaign_number):
     if os.path.exists('campaign-data/db.sqlite3'):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
-        sql.execute('DELETE FROM drseus_logging_simics_memory_diff WHERE '
-                    'result_id IN (SELECT id FROM drseus_logging_result WHERE '
+        sql.execute('DELETE FROM log_simics_memory_diff WHERE '
+                    'result_id IN (SELECT id FROM log_result WHERE '
                     'campaign_id=?)', (campaign_number,))
-        sql.execute('DELETE FROM drseus_logging_simics_register_diff WHERE '
-                    'result_id IN (SELECT id FROM drseus_logging_result WHERE '
+        sql.execute('DELETE FROM log_simics_register_diff WHERE '
+                    'result_id IN (SELECT id FROM log_result WHERE '
                     'campaign_id=?)', (campaign_number,))
-        sql.execute('DELETE FROM drseus_logging_injection WHERE '
-                    'result_id IN (SELECT id FROM drseus_logging_result WHERE '
+        sql.execute('DELETE FROM log_injection WHERE '
+                    'result_id IN (SELECT id FROM log_result WHERE '
                     'campaign_id=?)', (campaign_number,))
-        sql.execute('DELETE FROM drseus_logging_result WHERE campaign_id=?',
+        sql.execute('DELETE FROM log_result WHERE campaign_id=?',
                     (campaign_number,))
         sql_db.commit()
         sql_db.close()
@@ -150,7 +150,7 @@ def delete_campaign(campaign_number):
     if os.path.exists('campaign-data/db.sqlite3'):
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
-        sql.execute('DELETE FROM drseus_logging_campaign '
+        sql.execute('DELETE FROM log_campaign '
                     'WHERE campaign_number=?', (campaign_number,))
         sql_db.commit()
         sql_db.close()
@@ -216,7 +216,7 @@ def create_campaign(options):
     if not os.path.exists('campaign-data/'+str(campaign_number)):
         os.makedirs('campaign-data/'+str(campaign_number))
     if not os.path.exists('campaign-data/db.sqlite3'):
-        os.system('./django-logging/manage.py migrate --run-syncdb')
+        initialize_database()
     drseus = fault_injector(campaign_number, options.dut_serial_port,
                             options.aux_serial_port, options.dut_prompt,
                             options.aux_prompt, options.debugger_ip_address,
@@ -239,11 +239,11 @@ def get_injection_data(campaign_data, iteration):
     sql = sql_db.cursor()
     sql.execute('SELECT register,gold_value,injected_value,checkpoint_number,'
                 'bit,target_index,target,config_object,config_type,'
-                'register_index,field FROM drseus_logging_injection '
-                'INNER JOIN drseus_logging_result ON '
-                '(drseus_logging_injection.result_id=drseus_logging_result.id) '
-                'WHERE drseus_logging_result.iteration=? AND '
-                'drseus_logging_result.campaign_id=?',
+                'register_index,field FROM log_injection '
+                'INNER JOIN log_result ON '
+                '(log_injection.result_id=log_result.id) '
+                'WHERE log_result.iteration=? AND '
+                'log_result.campaign_id=?',
                 (iteration, campaign_data['campaign_number']))
     injection_data = sql.fetchall()
     sql_db.close()
@@ -321,13 +321,20 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
                               options.compare_all)
 
 
+def initialize_database():
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
+    from django.core.management import execute_from_command_line
+    execute_from_command_line([sys.argv[0], 'migrate', '--run-syncdb'])
+
+
 def view_logs(args):
     try:
         port = int(args[0])
     except:
         port = 8000
-    os.system('cd '+os.getcwd()+'/django-logging; ./manage.py runserver ' +
-              str(port))
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
+    from django.core.management import execute_from_command_line
+    execute_from_command_line([sys.argv[0], 'runserver', str(port)])
 
 
 def update_checkpoint_dependencies(campaign_number):
@@ -366,7 +373,7 @@ def merge_campaigns(merge_directory):
                                  timeout=60)
     sql_db_new.row_factory = dict_factory
     sql_new = sql_db_new.cursor()
-    sql_new.execute('SELECT * FROM drseus_logging_campaign')
+    sql_new.execute('SELECT * FROM log_campaign')
     new_campaigns = sql_new.fetchall()
     for new_campaign in new_campaigns:
         print('merging campaign: \"'+merge_directory+'/' +
@@ -396,7 +403,7 @@ def merge_campaigns(merge_directory):
 
         print('\tcopying results...', end='')
         insert_dict(sql, 'campaign', new_campaign)
-        sql_new.execute('SELECT * FROM drseus_logging_result WHERE '
+        sql_new.execute('SELECT * FROM log_result WHERE '
                         'campaign_id=?', (old_campaign_number,))
         new_results = sql_new.fetchall()
         for new_result in new_results:
@@ -407,7 +414,7 @@ def merge_campaigns(merge_directory):
             new_result_id = sql.lastrowid
             for table in ['injection', 'simics_register_diff',
                           'simics_memory_diff']:
-                sql_new.execute('SELECT * FROM drseus_logging_'+table+' '
+                sql_new.execute('SELECT * FROM log_'+table+' '
                                 'WHERE result_id=?', (old_result_id,))
                 new_result_items = sql_new.fetchall()
                 for new_result_item in new_result_items:

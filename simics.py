@@ -502,13 +502,13 @@ class simics:
         sql_db.row_factory = sqlite3.Row
         sql = sql_db.cursor()
         sql.execute('SELECT config_object,register,register_index,'
-                    'injected_value FROM drseus_logging_injection WHERE '
+                    'injected_value FROM log_injection WHERE '
                     'result_id=?', (result_id,))
         injections = sql.fetchall()
-        sql.execute('SELECT * FROM drseus_logging_simics_register_diff WHERE '
+        sql.execute('SELECT * FROM log_simics_register_diff WHERE '
                     'result_id=?', (result_id,))
         register_diffs = sql.fetchall()
-        sql.execute('SELECT * FROM drseus_logging_simics_memory_diff WHERE '
+        sql.execute('SELECT * FROM log_simics_memory_diff WHERE '
                     'result_id=?', (result_id,))
         memory_diffs = sql.fetchall()
         sql_db.close()

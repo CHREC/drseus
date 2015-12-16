@@ -1,1 +1,0 @@
-../../simics_targets.py
