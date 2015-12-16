@@ -17,7 +17,8 @@ class dut:
                       'malloc(): memory corruption', 'Bad swap file entry',
                       'Unable to handle kernel paging request',
                       'Alignment trap', 'Unhandled fault',
-                      'free(): invalid next size', 'double free or corruption']
+                      'free(): invalid next size', 'double free or corruption',
+                      '????????']
 
     def __init__(self, rsakey, serial_port, prompt, debug, timeout,
                  campaign_number, baud_rate=115200, ssh_port=22, color='green'):
