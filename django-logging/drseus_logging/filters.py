@@ -99,11 +99,11 @@ class injection_filter(django_filters.FilterSet):
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
-    result__data_diff_lt = django_filters.NumberFilter(
-        name='result__data_diff', label='Data diff (<)', lookup_type='lt',
-        help_text='')
     result__data_diff_gt = django_filters.NumberFilter(
         name='result__data_diff', label='Data diff (>)', lookup_type='gt',
+        help_text='')
+    result__data_diff_lt = django_filters.NumberFilter(
+        name='result__data_diff', label='Data diff (<)', lookup_type='lt',
         help_text='')
     result__debugger_output = django_filters.CharFilter(
         label='Debugger output',
@@ -128,10 +128,10 @@ class injection_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     target_index = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    time_lt = django_filters.NumberFilter(
-        name='time', label='Time (<)', lookup_type='lt', help_text='')
     time_gt = django_filters.NumberFilter(
         name='time', label='Time (>)', lookup_type='gt', help_text='')
+    time_lt = django_filters.NumberFilter(
+        name='time', label='Time (<)', lookup_type='lt', help_text='')
 
     class Meta:
         model = injection
