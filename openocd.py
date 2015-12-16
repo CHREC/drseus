@@ -17,7 +17,8 @@ from sql import insert_dict
 
 # zedboards[uart_serial] = ftdi_serial
 zedboards = {'844301CF3718': '210248585809',
-             '8410A3D8431C': '210248657631'}
+             '8410A3D8431C': '210248657631',
+             '036801551E13': '210248691084'}
 
 
 def find_ftdi_serials():
