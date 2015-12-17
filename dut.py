@@ -11,14 +11,23 @@ from error import DrSEUsError
 
 
 class dut:
-    error_messages = ['drseus_sighandler', 'Kernel panic', 'panic', 'Oops',
-                      'Segmentation fault', 'Illegal instruction',
-                      'Call Trace:', 'detected stalls on CPU',
-                      'malloc(): memory corruption', 'Bad swap file entry',
-                      'Unable to handle kernel paging request',
-                      'Alignment trap', 'Unhandled fault',
-                      'free(): invalid next size', 'double free or corruption',
-                      '????????']
+    error_messages = {'drseus_sighandler': 'Signal raised',
+                      'Kernel panic': 'Kernel error',
+                      'panic': 'Kernel error',
+                      'Oops': 'Kernel error',
+                      'Segmentation fault': 'Segmentation fault',
+                      'Illegal instruction': 'Illegal instruction',
+                      'Call Trace:': 'Kernel error',
+                      'detected stalls on CPU': 'Stall detected',
+                      'malloc(): memory corruption': 'Kernel error',
+                      'Bad swap file entry': 'Kernel error',
+                      'Unable to handle kernel paging request': 'Kernel error',
+                      'Alignment trap': 'Kernel error',
+                      'Unhandled fault': 'Kernel error',
+                      'free(): invalid next size': 'Kernel error',
+                      'double free or corruption': 'Kernel error',
+                      '????????': '????????',
+                      'login: ': 'Reboot'}
 
     def __init__(self, rsakey, serial_port, prompt, debug, timeout,
                  campaign_number, baud_rate=115200, ssh_port=22, color='green'):
@@ -143,8 +152,8 @@ class dut:
         #                                 str(self.campaign_number) +
         #                                 '/private.key '
         #                                 '-o StrictHostKeyChecking=no '
-        #                                 'root@'+str(self.ip_address)+':'+file_ +
-        #                                 ' ./'+local_path,))
+        #                                 'root@'+str(self.ip_address)+':' +
+        #                                 file_+' ./'+local_path,))
         #     scp_process.start()
         #     scp_process.join(timeout=30)
         #     if scp_process.exitcode != 0:
@@ -189,7 +198,7 @@ class dut:
             buff += char
             if buff[-len(string):] == string:
                 break
-            for message in self.error_messages:
+            for message in self.error_messages.keys():
                 if buff[-len(message):] == message:
                     if errors == 0:
                         self.serial.timeout = 30
@@ -209,9 +218,9 @@ class dut:
                     break
             raise DrSEUsError('Signal '+signal)
         else:
-            for message in self.error_messages:
+            for message in self.error_messages.keys():
                 if message in buff:
-                    raise DrSEUsError(message)
+                    raise DrSEUsError(self.error_messages[message])
         if hanging:
             raise DrSEUsError(DrSEUsError.hanging)
         else:
