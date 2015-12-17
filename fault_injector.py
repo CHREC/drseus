@@ -446,31 +446,18 @@ class fault_injector:
             self.log_result(outcome, outcome_category)
         self.close()
 
-    def supervise(self, starting_iteration, run_time, output_file,
+    def supervise(self, iteration_counter, iterations, output_file,
                   use_aux_output, packet_capture):
-        self.data_diff = None
-        self.detected_errors = None
-        iterations = int(run_time / self.exec_time)
-        print(colored('performing '+str(iterations)+' iterations', 'blue'))
-        if self.use_simics:
-            self.debugger.launch_simics('gold-checkpoints/' +
-                                        str(self.campaign_number)+'/' +
-                                        str(self.num_checkpoints-1)+'_merged')
-            self.debugger.continue_dut()
-        else:
-            if self.use_aux:
-                self.debugger.aux.serial.write('\x03')
-                aux_process = Thread(target=self.debugger.aux.do_login)
-                aux_process.start()
-            self.debugger.reset_dut()
-            if self.use_aux:
-                aux_process.join()
-            self.send_dut_files()
-            if self.use_aux:
-                self.send_aux_files()
-        for iteration in xrange(starting_iteration,
-                                starting_iteration + iterations):
-            self.iteration = iteration
+        with iteration_counter.get_lock():
+            last_iteration = iteration_counter.value + iterations
+        while True:
+            with iteration_counter.get_lock():
+                self.iteration = iteration_counter.value
+                iteration_counter.value += 1
+            if self.iteration >= last_iteration:
+                break
+            self.data_diff = None
+            self.detected_errors = None
             self.result_id = self.get_result_id()
             # create empty injection, used for injection charts in log viewer
             injection_data = {'result_id': self.result_id,
@@ -506,6 +493,3 @@ class fault_injector:
                 os.system('ssh p2020 \'killall tshark\'')
                 capture_process.wait()
                 capture_file.close()
-        if self.use_simics:
-            self.debugger.close()
-        self.close()

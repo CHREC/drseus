@@ -2,21 +2,25 @@
 
 from __future__ import print_function
 from datetime import datetime
+from django.core.management import execute_from_command_line as django_command
 import multiprocessing
 import optparse
 import os
+import pdb
+from select import select
 import shutil
 import signal
 import sqlite3
 import sys
+from threading import Thread
 
+from error import DrSEUsError
 from fault_injector import fault_injector
 from openocd import find_ftdi_serials, find_uart_serials
 import simics_config
 from sql import dict_factory, insert_dict
 
 # TODO: replace iteration numbers with result_ids
-# TODO: add interactive mode for rad tests
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
@@ -280,7 +284,7 @@ def load_campaign(campaign_data, options):
 
 
 def perform_injections(campaign_data, iteration_counter, last_iteration,
-                       options):
+                       options, interactive=False):
     drseus = load_campaign(campaign_data, options)
 
     def interrupt_handler(signum, frame):
@@ -307,7 +311,8 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
                 shutil.rmtree('simics-workspace/injected-checkpoints/' +
                               str(campaign_data['campaign_number'])+'/' +
                               str(drseus.iteration))
-        sys.exit()
+        if not interactive:
+            sys.exit()
     signal.signal(signal.SIGINT, interrupt_handler)
 
     if options.selected_targets is not None:
@@ -321,10 +326,117 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
                               options.compare_all)
 
 
+def supervisor(campaign_data, iteration_counter, options):
+    prompt = 'DrSEUs> '
+    drseus = load_campaign(campaign_data, options)
+    if campaign_data['use_simics']:
+        checkpoint = ('gold-checkpoints/' +
+                      str(campaign_data['campaign_number'])+'/' +
+                      str(campaign_data['num_checkpoints'])+'_merged')
+        drseus.debugger.launch_simics(checkpoint)
+        drseus.debugger.continue_dut()
+    # else:
+    #     if self.use_aux:
+    #         self.debugger.aux.serial.write('\x03')
+    #         aux_process = Thread(target=self.debugger.aux.do_login)
+    #         aux_process.start()
+    #     self.debugger.reset_dut()
+    #     if self.use_aux:
+    #         aux_process.join()
+    #     self.send_dut_files()
+    #     if self.use_aux:
+    #         self.send_aux_files()
+
+    def print_help():
+        print('Commands:')
+        for command, properties in commands.iteritems():
+            print('\t', command, ': ', properties[0], sep='')
+
+    def aux_command():
+        dut_command(aux=True)
+
+    def dut_command(aux=False):
+        with iteration_counter.get_lock():
+            drseus.iteration = iteration_counter.value
+            iteration_counter.value += 1
+        drseus.result_id = drseus.get_result_id(0)
+        drseus.data_diff = None
+        drseus.detected_errors = None
+        if aux:
+            print('Enter command for AUX:')
+        else:
+            print('Enter command for DUT:')
+        command = raw_input(prompt)
+        print()
+        if aux:
+            drseus.debugger.aux.serial.write(command+'\n')
+        else:
+            drseus.debugger.dut.serial.write(command+'\n')
+
+        def read_thread_worker():
+            try:
+                if aux:
+                    drseus.debugger.aux.read_until()
+                else:
+                    drseus.debugger.dut.read_until()
+            except DrSEUsError:
+                pass
+        read_thread = Thread(target=read_thread_worker)
+        read_thread.start()
+        while read_thread.is_alive():
+            if select([sys.stdin], [], [], 1)[0]:
+                if aux:
+                    drseus.debugger.aux.serial.write(sys.stdin.readline()+'\n')
+                else:
+                    drseus.debugger.dut.serial.write(sys.stdin.readline()+'\n')
+        if aux:
+            drseus.log_result(command, 'AUX command')
+        else:
+            drseus.log_result(command, 'DUT command')
+
+    def supervise():
+        print('Enter iterations to perform or run time in seconds:')
+        iterations = raw_input(prompt)
+        if 's' in iterations:
+            run_time = int(iterations.replace('s', ''))
+            iterations = int(run_time / campaign_data['exec_time'])
+        else:
+            iterations = int(iterations)
+        print('Performing '+str(iterations)+' iterations...\n')
+        drseus.supervise(iteration_counter, iterations,
+                         campaign_data['output_file'],
+                         campaign_data['use_aux_output'], options.capture)
+
+    def quit():
+        if campaign_data['use_simics']:
+            drseus.debugger.close()
+        drseus.close()
+        sys.exit()
+
+    commands = {'h': ('Help', print_help),
+                'c': ('Send DUT command', dut_command),
+                's': ('Supervise', supervise),
+                'q': ('Quit', quit)}
+    if campaign_data['use_aux']:
+        commands['a'] = ('Send AUX command', aux_command)
+    print()
+    print('DrSEUs Supervisor')
+    print_help()
+    while True:
+        print()
+        command = raw_input(prompt)
+        if command in commands:
+            print()
+            commands[command][1]()
+        elif command == 'debug':
+            pdb.set_trace()
+        else:
+            print('Unknown command, enter "h" for help')
+
+
 def initialize_database():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
-    from django.core.management import execute_from_command_line
-    execute_from_command_line([sys.argv[0], 'migrate', '--run-syncdb'])
+    django_command([sys.argv[0], 'migrate', '--run-syncdb'])
 
 
 def view_logs(args):
@@ -333,8 +445,7 @@ def view_logs(args):
     except:
         port = 8000
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
-    from django.core.management import execute_from_command_line
-    execute_from_command_line([sys.argv[0], 'runserver', str(port)])
+    django_command([sys.argv[0], 'runserver', str(port)])
 
 
 def update_checkpoint_dependencies(campaign_number):
@@ -595,10 +706,6 @@ parser.add_option_group(simics_injection_group)
 supervise_group = optparse.OptionGroup(parser, 'Supervisor Options', 'Use these'
                                        ' options for supervising '
                                        '(-S or --supervise)')
-supervise_group.add_option('-R', '--runtime', action='store', type='int',
-                           dest='target_seconds', default=30,
-                           help='desired time in seconds to run (calculates '
-                                'number of iterations to run) [default=30]')
 supervise_group.add_option('-w', '--wireshark', action='store_true',
                            dest='capture', help='run remote packet capture')
 parser.add_option_group(supervise_group)
@@ -678,11 +785,9 @@ elif options.supervise:
     if not options.campaign_number:
         options.campaign_number = get_last_campaign()
     campaign_data = get_campaign_data(options.campaign_number)
-    iteration = get_next_iteration(options.campaign_number)
-    drseus = load_campaign(campaign_data, options)
-    drseus.supervise(iteration, options.target_seconds,
-                     campaign_data['output_file'],
-                     campaign_data['use_aux_output'], options.capture)
+    starting_iteration = get_next_iteration(options.campaign_number)
+    iteration_counter = multiprocessing.Value('I', starting_iteration)
+    supervisor(campaign_data, iteration_counter, options)
 elif options.view_logs:
     view_logs(args)
 elif options.zedboards:
