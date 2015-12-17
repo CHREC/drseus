@@ -172,7 +172,7 @@ class simics:
                     pass
             read_thread = Thread(target=read_worker)
             read_thread.start()
-            read_thread.join(timeout=5)
+            read_thread.join(timeout=5)  # must be shorter than timeout in read
             if read_thread.is_alive():
                 self.simics.kill()
                 self.output += '\nkilled unresponsive simics process\n'
@@ -204,9 +204,9 @@ class simics:
     def read_char(self):
         read_thread = Thread(target=self.read_char_worker)
         read_thread.start()
-        read_thread.join(timeout=10)  # must be longer than timeout in close
+        read_thread.join(timeout=30)  # must be longer than timeout in close
         if read_thread.is_alive():
-            raise DrSEUsError('Error reading from simics')
+            raise DrSEUsError('Timeout reading from simics')
         return self.char
 
     def read_until(self, string=None):
