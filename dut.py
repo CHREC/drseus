@@ -76,7 +76,7 @@ class dut:
                 dut_scp.put(files)
                 dut_scp.close()
                 ssh.close()
-            except Exception:
+            except:
                 try:
                     dut_scp.close()
                     ssh.close()
@@ -133,7 +133,7 @@ class dut:
                 dut_scp.get(file_, local_path=local_path)
                 dut_scp.close()
                 ssh.close()
-            except Exception:
+            except:
                 try:
                     dut_scp.close()
                     ssh.close()
@@ -285,7 +285,8 @@ class dut:
                         sleep(5)
                     else:
                         raise DrSEUsError('Error finding device ip address')
-                break
+                if ip_address is not None:
+                    break
         else:
             self.command('ip addr add '+ip_address+'/24 dev eth0')
             self.command('ip link set eth0 up')

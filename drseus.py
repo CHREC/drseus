@@ -334,6 +334,8 @@ def supervisor(options):
     iteration_counter = multiprocessing.Value(
         'I', get_next_iteration(options.campaign_number))
     drseus = load_campaign(campaign_data, options)
+    drseus.data_diff = None
+    drseus.detected_errors = None
     if drseus.use_simics:
         checkpoint = ('gold-checkpoints/' +
                       str(drseus.campaign_number)+'/' +
@@ -345,7 +347,14 @@ def supervisor(options):
             drseus.debugger.aux.serial.write('\x03')
             aux_process = Thread(target=drseus.debugger.aux.do_login)
             aux_process.start()
-        drseus.debugger.reset_dut()
+        booted = False
+        while not booted:
+            try:
+                drseus.debugger.reset_dut()
+            except DrSEUsError:
+                continue
+            else:
+                booted = True
         if drseus.use_aux:
             aux_process.join()
             drseus.send_aux_files()
@@ -387,8 +396,6 @@ def supervisor(options):
             drseus.iteration = iteration_counter.value
             iteration_counter.value += 1
         drseus.result_id = drseus.get_result_id(0)
-        drseus.data_diff = None
-        drseus.detected_errors = None
         if aux:
             print('Enter command for AUX:')
         else:
@@ -441,8 +448,6 @@ def supervisor(options):
             drseus.iteration = iteration_counter.value
             iteration_counter.value += 1
         drseus.result_id = drseus.get_result_id(0)
-        drseus.data_diff = None
-        drseus.detected_errors = None
         try:
             if aux:
                 drseus.debugger.aux.read_until('toinfinityandbeyond!')
@@ -469,16 +474,19 @@ def supervisor(options):
               ' (none for campaign files):')
         user_files = raw_input(prompt)
         print()
-        if user_files:
-            files = []
-            for item in user_files.split(','):
-                files.append(options.directory+'/'+item.lstrip().rstrip())
-            if aux:
-                drseus.debugger.aux.send_files(files)
+        try:
+            if user_files:
+                files = []
+                for item in user_files.split(','):
+                    files.append(options.directory+'/'+item.lstrip().rstrip())
+                if aux:
+                    drseus.debugger.aux.send_files(files)
+                else:
+                    drseus.debugger.dut.send_files(files)
             else:
-                drseus.debugger.dut.send_files(files)
-        else:
-            drseus.send_dut_files(aux)
+                drseus.send_dut_files(aux)
+        except KeyboardInterrupt:
+            print('Transfer interrupted')
 
     def get_aux_file():
         get_dut_file(aux=True)
@@ -488,20 +496,22 @@ def supervisor(options):
             drseus.iteration = iteration_counter.value
             iteration_counter.value += 1
         drseus.result_id = drseus.get_result_id(0)
-        drseus.data_diff = None
-        drseus.detected_errors = None
         os.makedirs('campaign-data/'+str(drseus.campaign_number)+'/results/' +
                     str(drseus.iteration))
         directory = ('campaign-data/'+str(drseus.campaign_number) +
                      '/results/'+str(drseus.iteration)+'/')
         print('Enter file to get (file will be saved to '+directory+'):')
         file_ = raw_input(prompt)
-        if aux:
-            drseus.debugger.aux.get_file(file_, directory)
-            drseus.log_result(file_, 'Get AUX file')
+        try:
+            if aux:
+                drseus.debugger.aux.get_file(file_, directory)
+            else:
+                drseus.debugger.dut.get_file(file_, directory)
+        except KeyboardInterrupt:
+            drseus.log_result(file_, 'Get '+('AUX' if aux else 'DUT') +
+                                     ' file interrupted')
         else:
-            drseus.debugger.dut.get_file(file_, directory)
-            drseus.log_result(file_, 'Get DUT file')
+            drseus.log_result(file_, 'Get '+('AUX' if aux else 'DUT')+' file')
 
     def supervise():
         print('Enter iterations to perform or targeted run time in seconds:')
@@ -530,6 +540,7 @@ def supervisor(options):
                 ('f', 'Send DUT files', send_dut_files),
                 ('g', 'Get DUT file', get_dut_file),
                 ('s', 'Supervise', supervise),
+                ('R', 'Reset DUT', drseus.debugger.reset_dut),
                 ('d', 'Debug with the Python Debugger', pdb.set_trace),
                 ('q', 'Quit DrSEUs Supervisor', quit)]
     if drseus.use_aux:

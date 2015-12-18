@@ -59,7 +59,7 @@ class fault_injector:
                    str(self.campaign_number)+'\n\t\tDUT Command: '+self.command)
         if self.use_aux:
             string += '\n\t\tAUX Command: '+self.aux_command
-        string += ('\n\t\tAverage Execution Time: '+str(self.exec_time) +
+        string += ('\n\t\tExecution Time: '+str(self.exec_time) +
                    ' seconds')
         return string
 
