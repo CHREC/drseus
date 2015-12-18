@@ -154,34 +154,8 @@ def results_page(request, campaign_number):
         result__campaign__campaign_number=campaign_number)
     filter_ = injection_filter(request.GET, queryset=injection_objects,
                                campaign=campaign_number)
-    get_dict = dict(request.GET)
-    filter_kwargs = {}
-    if 'result__outcome' in get_dict:
-        filter_kwargs['outcome__in'] = get_dict['result__outcome']
-    if 'result__outcome_category' in get_dict:
-        filter_kwargs['outcome_category__in'] = \
-            get_dict['result__outcome_category']
-    filter_result = True
-    if (('time_gt' in get_dict and get_dict['time_gt'][0])
-        or ('time_lt' in get_dict and get_dict['time_lt'][0])
-        or ('result__data_diff_gt' in get_dict and
-            get_dict['result__data_diff_gt'][0])
-        or ('result__data_diff_lt' in get_dict and
-            get_dict['result__data_diff_lt'][0])):
-        filter_result = False
-    else:
-        for item in get_dict.keys():
-            if ('result__' not in item and 'time' not in item and
-                    'sort' not in item and 'page' not in item):
-                filter_result = False
-    if filter_result:
-        result_objects = result.objects.filter(
-            Q(id__in=filter_.qs.values('result__id').distinct()) |
-            ~Q(id__in=injection_objects.values('result__id').distinct()),
-            **filter_kwargs)
-    else:
-        result_objects = result.objects.filter(
-            Q(id__in=filter_.qs.values('result__id').distinct()))
+    result_objects = result.objects.filter(
+        id__in=filter_.qs.values('result__id').distinct())
     table = results_table(result_objects)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {'campaign_data': campaign_data,

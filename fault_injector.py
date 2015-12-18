@@ -50,6 +50,20 @@ class fault_injector:
                                         use_aux, dut_prompt, aux_prompt, debug,
                                         timeout, campaign_number)
 
+    def __str__(self):
+        string = ('DrSEUs Attributes:\n\tDebugger: '+str(self.debugger) +
+                  '\n\tDUT:\t'+str(self.debugger.dut).replace('\n\t', '\n\t\t'))
+        if self.use_aux:
+            string += '\n\tAUX:\t'+str(self.debugger.aux).replace('\n\t',
+                                                                  '\n\t\t')
+        string += ('\n\tCampaign Information:\n\t\tCampaign Number: ' +
+                   str(self.campaign_number)+'\n\t\tDUT Command: '+self.command)
+        if self.use_aux:
+            string += '\n\t\tAUX Command: '+self.aux_command
+        string += ('\n\t\tAverage Execution Time: '+str(self.exec_time) +
+                   ' seconds')
+        return string
+
     def close(self):
         if not self.use_simics:
             self.debugger.close()
@@ -149,34 +163,31 @@ class fault_injector:
         insert_dict(sql, 'campaign', campaign_data)
         sql_db.commit()
         sql_db.close()
-        if not self.use_simics:
-            os.makedirs('campaign-data/'+str(self.campaign_number)+'/dut-files')
-            for item in files:
-                shutil.copy(item, 'campaign-data/'+str(self.campaign_number) +
-                                  '/dut-files/')
-            if self.use_aux:
-                os.makedirs('campaign-data/'+str(self.campaign_number) +
-                            '/aux-files')
-                for item in files_aux:
-                    shutil.copy(item, 'campaign-data/' +
-                                      str(self.campaign_number)+'/aux-files/')
+        os.makedirs('campaign-data/'+str(self.campaign_number)+'/dut-files')
+        for item in files:
+            shutil.copy(item, 'campaign-data/'+str(self.campaign_number) +
+                              '/dut-files/')
+        if self.use_aux:
+            os.makedirs('campaign-data/'+str(self.campaign_number) +
+                        '/aux-files')
+            for item in files_aux:
+                shutil.copy(item, 'campaign-data/' +
+                                  str(self.campaign_number)+'/aux-files/')
         self.close()
 
-    def send_dut_files(self):
+    def send_dut_files(self, aux=False):
+        location = 'campaign-data/'+str(self.campaign_number)
+        if aux:
+            location += '/aux-files/'
+        else:
+            location += '/dut-files/'
         files = []
-        for item in os.listdir('campaign-data/'+str(self.campaign_number) +
-                               '/dut-files'):
-            files.append('campaign-data/'+str(self.campaign_number) +
-                         '/dut-files/'+item)
-        self.debugger.dut.send_files(files)
-
-    def send_aux_files(self):
-        files = []
-        for item in os.listdir('campaign-data/'+str(self.campaign_number) +
-                               '/aux-files'):
-            files.append('campaign-data/'+str(self.campaign_number) +
-                         '/aux-files/'+item)
-        self.debugger.aux.send_files(files)
+        for item in os.listdir(location):
+            files.append(location+item)
+        if aux:
+            self.debugger.aux.send_files(files)
+        else:
+            self.debugger.dut.send_files(files)
 
     def get_result_id(self, num_injections=0):
         result_data = {'campaign_id': self.campaign_number,
@@ -188,8 +199,12 @@ class fault_injector:
         sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
         sql = sql_db.cursor()
         insert_dict(sql, 'result', result_data)
-        sql_db.commit()
         result_id = sql.lastrowid
+        injection_data = {'result_id': result_id,
+                          'injection_number': 0,
+                          'timestamp': datetime.now()}
+        insert_dict(sql, 'injection', injection_data)
+        sql_db.commit()
         sql_db.close()
         return result_id
 
@@ -361,7 +376,7 @@ class fault_injector:
             if self.use_aux:
                 self.debugger.aux.serial.write('\x03')
                 self.debugger.aux.do_login()
-                self.send_aux_files()
+                self.send_dut_files(aux=True)
         while True:
             with iteration_counter.get_lock():
                 self.iteration = iteration_counter.value
@@ -450,7 +465,8 @@ class fault_injector:
                   use_aux_output, packet_capture):
         with iteration_counter.get_lock():
             last_iteration = iteration_counter.value + iterations
-        while True:
+        interrupted = False
+        while not interrupted:
             with iteration_counter.get_lock():
                 self.iteration = iteration_counter.value
                 iteration_counter.value += 1
@@ -459,15 +475,6 @@ class fault_injector:
             self.data_diff = None
             self.detected_errors = None
             self.result_id = self.get_result_id()
-            # create empty injection, used for injection charts in log viewer
-            injection_data = {'result_id': self.result_id,
-                              'injection_number': 0,
-                              'timestamp': datetime.now()}
-            sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-            sql = sql_db.cursor()
-            insert_dict(sql, 'injection', injection_data)
-            sql_db.commit()
-            sql_db.close()
             if packet_capture:
                 data_dir = ('campaign-data/'+str(self.campaign_number) +
                             '/results/'+str(self.iteration))
@@ -486,8 +493,19 @@ class fault_injector:
             if self.use_aux:
                 self.debugger.aux.serial.write(str('./'+self.aux_command+'\n'))
             self.debugger.dut.serial.write(str('./'+self.command+'\n'))
-            outcome, outcome_category = self.monitor_execution(
-                0, output_file, use_aux_output)
+            try:
+                outcome, outcome_category = self.monitor_execution(
+                    0, output_file, use_aux_output)
+            except KeyboardInterrupt:
+                if self.use_simics:
+                    self.debugger.continue_dut()
+                self.debugger.dut.serial.write('\x03')
+                self.debugger.dut.read_until()
+                if self.use_aux:
+                    self.debugger.aux.serial.write('\x03')
+                    self.debugger.aux.read_until()
+                outcome, outcome_category = ('Interrupted', 'Incomplete')
+                interrupted = True
             self.log_result(outcome, outcome_category)
             if packet_capture:
                 os.system('ssh p2020 \'killall tshark\'')

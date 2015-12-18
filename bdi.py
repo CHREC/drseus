@@ -21,12 +21,13 @@ class bdi:
     def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
                  campaign_number):
+        self.ip_address = ip_address
         self.timeout = 30
         self.debug = debug
         self.use_aux = use_aux
         self.output = ''
         try:
-            self.telnet = Telnet(ip_address, timeout=self.timeout)
+            self.telnet = Telnet(self.ip_address, timeout=self.timeout)
         except:
             self.telnet = None
             print('Could not connect to debugger, '
@@ -40,6 +41,10 @@ class bdi:
                            campaign_number, color='cyan')
         else:
             self.aux = None
+
+    def __str__(self):
+        string = 'BDI3000 at '+self.ip_address
+        return string
 
     def set_rsakey(self, rsakey):
         self.dut.rsakey = rsakey
@@ -159,6 +164,8 @@ class bdi:
             sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
             insert_dict(sql, 'injection', injection_data)
+            sql.execute('DELETE FROM log_injection WHERE '
+                        'result_id=? AND injection_number=0', (result_id,))
             sql_db.commit()
             sql_db.close()
             if int(injection_data['injected_value'], base=16) != int(

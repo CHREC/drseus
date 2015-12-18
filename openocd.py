@@ -50,25 +50,24 @@ def find_open_port():
 
 
 class openocd:
-    error_messages = ['timeout while waiting for halt',
-                      'wrong state for requested command', 'read access failed']
+    error_messages = []
 
     def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
                  campaign_number):
         self.timeout = 30
         serial = zedboards[find_uart_serials()[dut_serial_port]]
-        port = find_open_port()
+        self.port = find_open_port()
         self.dev_null = open('/dev/null', 'w')
         self.openocd = subprocess.Popen(['openocd', '-c',
                                          'gdb_port 0; tcl_port 0; '
-                                         'telnet_port '+str(port)+'; '
+                                         'telnet_port '+str(self.port)+'; '
                                          'interface ftdi; '
                                          'ftdi_serial '+serial+';',
                                          '-f', 'openocd_zedboard.cfg'],
                                         stderr=self.dev_null)
         time.sleep(1)
-        self.telnet = Telnet('127.0.0.1', port, timeout=self.timeout)
+        self.telnet = Telnet('127.0.0.1', self.port, timeout=self.timeout)
         self.prompts = ['>']
         self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
                           'r9', 'r10', 'r11', 'r12',  'pc', 'cpsr', 'sp', 'lr']
@@ -83,6 +82,10 @@ class openocd:
         else:
             self.aux = None
         self.command('', error_message='Debugger not ready')
+
+    def __str__(self):
+        string = 'OpenOCD at localhost port '+self.port
+        return string
 
     def set_rsakey(self, rsakey):
         self.dut.rsakey = rsakey
@@ -207,6 +210,8 @@ class openocd:
             sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
             insert_dict(sql, 'injection', injection_data)
+            sql.execute('DELETE FROM log_injection WHERE '
+                        'result_id=? AND injection_number=0', (result_id,))
             sql_db.commit()
             sql_db.close()
             if int(injection_data['injected_value'], base=16) != int(

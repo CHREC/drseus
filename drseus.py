@@ -20,6 +20,7 @@ from openocd import find_ftdi_serials, find_uart_serials
 import simics_config
 from sql import dict_factory, insert_dict
 
+# TODO: merge bdi and openocd into jtag
 # TODO: replace iteration numbers with result_ids
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration
@@ -326,31 +327,59 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
                               options.compare_all)
 
 
-def supervisor(campaign_data, iteration_counter, options):
+def supervisor(options):
     prompt = 'DrSEUs> '
+    if not options.campaign_number:
+        options.campaign_number = get_last_campaign()
+    campaign_data = get_campaign_data(options.campaign_number)
+    iteration_counter = multiprocessing.Value(
+        'I', get_next_iteration(options.campaign_number))
     drseus = load_campaign(campaign_data, options)
-    if campaign_data['use_simics']:
+    if drseus.use_simics:
         checkpoint = ('gold-checkpoints/' +
-                      str(campaign_data['campaign_number'])+'/' +
-                      str(campaign_data['num_checkpoints'])+'_merged')
+                      str(drseus.campaign_number)+'/' +
+                      str(drseus.num_checkpoints)+'_merged')
         drseus.debugger.launch_simics(checkpoint)
         drseus.debugger.continue_dut()
     # else:
-    #     if self.use_aux:
-    #         self.debugger.aux.serial.write('\x03')
-    #         aux_process = Thread(target=self.debugger.aux.do_login)
+    #     if drseus.use_aux:
+    #         drseus.debugger.aux.serial.write('\x03')
+    #         aux_process = Thread(target=drseus.debugger.aux.do_login)
     #         aux_process.start()
-    #     self.debugger.reset_dut()
-    #     if self.use_aux:
+    #     drseus.debugger.reset_dut()
+    #     if drseus.use_aux:
     #         aux_process.join()
-    #     self.send_dut_files()
-    #     if self.use_aux:
-    #         self.send_aux_files()
+    #     drseus.send_dut_files()
+    #     if drseus.use_aux:
+    #         drseus.send_aux_files()
 
     def print_help():
-        print('Commands:')
-        for command, properties in commands.iteritems():
-            print('\t', command, ': ', properties[0], sep='')
+        print('DrSEUS Supervisor Commands:')
+        for command in commands:
+            print('\t', command[0], ':\t', command[1], sep='')
+
+    def print_info():
+        print(str(drseus))
+
+    def change_aux_timeout():
+        change_dut_timeout(aux=True)
+
+    def change_dut_timeout(aux=False):
+        print('Enter new device timeout in seconds:')
+        new_timeout = raw_input(prompt)
+        try:
+            new_timeout = int(new_timeout)
+        except:
+            print('Invalid value entered')
+            return
+        if drseus.use_simics:
+            drseus.debugger.timeout = new_timeout
+        if aux:
+            drseus.debugger.aux.default_timeout = new_timeout
+            drseus.debugger.aux.serial.timeout = new_timeout
+        else:
+            drseus.debugger.dut.default_timeout = new_timeout
+            drseus.debugger.dut.serial.timeout = new_timeout
 
     def aux_command():
         dut_command(aux=True)
@@ -367,7 +396,7 @@ def supervisor(campaign_data, iteration_counter, options):
         else:
             print('Enter command for DUT:')
         command = raw_input(prompt)
-        print()
+        print('\nYou can interact with the device, interrupt with ctrl-c')
         if aux:
             drseus.debugger.aux.serial.write(command+'\n')
         else:
@@ -383,55 +412,143 @@ def supervisor(campaign_data, iteration_counter, options):
                 pass
         read_thread = Thread(target=read_thread_worker)
         read_thread.start()
-        while read_thread.is_alive():
-            if select([sys.stdin], [], [], 1)[0]:
-                if aux:
-                    drseus.debugger.aux.serial.write(sys.stdin.readline()+'\n')
-                else:
-                    drseus.debugger.dut.serial.write(sys.stdin.readline()+'\n')
+        try:
+            while read_thread.is_alive():
+                if select([sys.stdin], [], [], 0.1)[0]:
+                    if aux:
+                        drseus.debugger.aux.serial.write(
+                            sys.stdin.readline()+'\n')
+                    else:
+                        drseus.debugger.dut.serial.write(
+                            sys.stdin.readline()+'\n')
+        except KeyboardInterrupt:
+            if drseus.use_simics:
+                drseus.debugger.continue_dut()
+            if aux:
+                drseus.debugger.aux.serial.write('\x03')
+            else:
+                drseus.debugger.dut.serial.write('\x03')
+            read_thread.join()
         if aux:
             drseus.log_result(command, 'AUX command')
         else:
             drseus.log_result(command, 'DUT command')
 
+    def aux_read():
+        dut_read(aux=True)
+
+    def dut_read(aux=False):
+        print('Reading from device, interrupt with ctrl-c')
+        with iteration_counter.get_lock():
+            drseus.iteration = iteration_counter.value
+            iteration_counter.value += 1
+        drseus.result_id = drseus.get_result_id(0)
+        drseus.data_diff = None
+        drseus.detected_errors = None
+        try:
+            if aux:
+                drseus.debugger.aux.read_until('toinfinityandbeyond!')
+            else:
+                drseus.debugger.dut.read_until('toinfinityandbeyond!')
+        except KeyboardInterrupt:
+            if drseus.use_simics:
+                drseus.debugger.continue_dut()
+            if aux:
+                drseus.log_result('read serial', 'AUX command')
+            else:
+                drseus.log_result('read serial', 'DUT command')
+
+    def send_aux_files():
+        send_dut_files(aux=True)
+
+    def send_dut_files(aux=False):
+        print('Enter files to send from '+options.directory +
+              ' (none for campaign files):')
+        user_files = raw_input(prompt)
+        print()
+        if user_files:
+            files = []
+            for item in user_files.split(','):
+                files.append(options.directory+'/'+item.lstrip().rstrip())
+            if aux:
+                drseus.debugger.aux.send_files(files)
+            else:
+                drseus.debugger.dut.send_files(files)
+        else:
+            drseus.send_dut_files(aux)
+
+    def get_aux_file():
+        get_dut_file(aux=True)
+
+    def get_dut_file(aux=False):
+        with iteration_counter.get_lock():
+            drseus.iteration = iteration_counter.value
+            iteration_counter.value += 1
+        drseus.result_id = drseus.get_result_id(0)
+        drseus.data_diff = None
+        drseus.detected_errors = None
+        os.makedirs('campaign-data/'+str(drseus.campaign_number)+'/results/' +
+                    str(drseus.iteration))
+        directory = ('campaign-data/'+str(drseus.campaign_number) +
+                     '/results/'+str(drseus.iteration)+'/')
+        print('Enter file to get (file will be saved to '+directory+'):')
+        file_ = raw_input(prompt)
+        if aux:
+            drseus.debugger.aux.get_file(file_, directory)
+            drseus.log_result(file_, 'Get AUX file')
+        else:
+            drseus.debugger.dut.get_file(file_, directory)
+            drseus.log_result(file_, 'Get DUT file')
+
     def supervise():
-        print('Enter iterations to perform or run time in seconds:')
+        print('Enter iterations to perform or targeted run time in seconds:')
         iterations = raw_input(prompt)
         if 's' in iterations:
             run_time = int(iterations.replace('s', ''))
-            iterations = int(run_time / campaign_data['exec_time'])
+            iterations = int(run_time / drseus.exec_time)
         else:
             iterations = int(iterations)
-        print('Performing '+str(iterations)+' iterations...\n')
+        print('Performing '+str(iterations)+' iteration(s)...\n')
         drseus.supervise(iteration_counter, iterations,
                          campaign_data['output_file'],
                          campaign_data['use_aux_output'], options.capture)
 
     def quit():
-        if campaign_data['use_simics']:
+        if drseus.use_simics:
             drseus.debugger.close()
         drseus.close()
         sys.exit()
 
-    commands = {'h': ('Help', print_help),
-                'c': ('Send DUT command', dut_command),
-                's': ('Supervise', supervise),
-                'q': ('Quit', quit)}
-    if campaign_data['use_aux']:
-        commands['a'] = ('Send AUX command', aux_command)
+    commands = [('h', 'Print these commands', print_help),
+                ('i', 'Print DrSEUs information', print_info),
+                ('t', 'Change DUT serial timeout', change_dut_timeout),
+                ('c', 'Send DUT command', dut_command),
+                ('r', 'Read from DUT serial', dut_read),
+                ('f', 'Send DUT files', send_dut_files),
+                ('g', 'Get DUT file', get_dut_file),
+                ('s', 'Supervise', supervise),
+                ('d', 'Debug with the Python Debugger', pdb.set_trace),
+                ('q', 'Quit DrSEUs Supervisor', quit)]
+    if drseus.use_aux:
+        commands.extend(('at', 'Change AUX serial timeout', change_aux_timeout),
+                        ('ac', 'Send AUX command', aux_command),
+                        ('ar', 'Read from DUT serial', aux_read),
+                        ('af', 'Send AUX files', send_aux_files),
+                        ('ag', 'Get AUX file', get_aux_file))
+    print('\nWelcome to DrSEUs Supervisor\n')
+    print_info()
     print()
-    print('DrSEUs Supervisor')
     print_help()
     while True:
         print()
-        command = raw_input(prompt)
-        if command in commands:
-            print()
-            commands[command][1]()
-        elif command == 'debug':
-            pdb.set_trace()
+        user_command = raw_input(prompt)
+        for command in commands:
+            if command[0] == user_command:
+                print()
+                command[2]()
+                break
         else:
-            print('Unknown command, enter "h" for help')
+            print('Unknown command \"'+user_command+'\", enter "h" for help')
 
 
 def initialize_database():
@@ -782,12 +899,7 @@ elif options.inject:
                            options)
 elif options.supervise:
     options.debug = True
-    if not options.campaign_number:
-        options.campaign_number = get_last_campaign()
-    campaign_data = get_campaign_data(options.campaign_number)
-    starting_iteration = get_next_iteration(options.campaign_number)
-    iteration_counter = multiprocessing.Value('I', starting_iteration)
-    supervisor(campaign_data, iteration_counter, options)
+    supervisor(options)
 elif options.view_logs:
     view_logs(args)
 elif options.zedboards:

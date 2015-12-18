@@ -439,6 +439,8 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
     sql = sql_db.cursor()
     insert_dict(sql, 'injection', injection_data)
+    sql.execute('DELETE FROM log_injection WHERE '
+                'result_id=? AND injection_number=0', (result_id,))
     sql_db.commit()
     sql_db.close()
     if debug:

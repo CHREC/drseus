@@ -4,6 +4,7 @@ from __future__ import print_function
 import paramiko
 from scp import SCPClient
 from serial import Serial
+import sys
 from termcolor import colored
 from time import sleep
 
@@ -45,6 +46,17 @@ class dut:
         self.rsakey = rsakey
         self.campaign_number = campaign_number
         self.color = color
+
+    def __str__(self):
+        string = ('Serial Port: '+self.serial.port+'\n\tTimeout: ' +
+                  str(self.serial.timeout)+' seconds\n\tPrompt: \"' +
+                  self.prompt+'\"')
+        try:
+            string += '\n\tIP Address: '+self.ip_address
+        except AttributeError:
+            pass
+        string += '\n\tSCP Port: '+str(self.ssh_port)
+        return string
 
     def close(self):
         self.serial.close()
@@ -195,6 +207,7 @@ class dut:
             self.output += char
             if self.debug:
                 print(colored(char, self.color), end='')
+                sys.stdout.flush()
             buff += char
             if buff[-len(string):] == string:
                 break
@@ -239,6 +252,7 @@ class dut:
                 self.output += char
                 if self.debug:
                     print(colored(char, self.color), end='')
+                    sys.stdout.flush()
                 buff += char
                 if not char:
                     raise DrSEUsError(DrSEUsError.hanging)

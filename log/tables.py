@@ -75,6 +75,9 @@ class results_table(tables.Table):
                            injection.objects.filter(result=record.id)]
         else:
             targets = []
+        for index in xrange(len(targets)):
+            if targets[index] is None:
+                targets[index] = '-'
         if len(targets) > 0:
             return ', '.join(targets)
         else:

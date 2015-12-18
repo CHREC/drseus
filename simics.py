@@ -3,6 +3,7 @@ import os
 from signal import SIGINT
 import sqlite3
 import subprocess
+import sys
 from termcolor import colored
 from threading import Thread
 import time
@@ -32,6 +33,10 @@ class simics:
             self.board = 'a9x2'
         self.rsakey = rsakey
         self.use_aux = use_aux
+
+    def __str__(self):
+        string = 'Simics simulation of '+self.board
+        return string
 
     def launch_simics(self, checkpoint=None):
         attempts = 10
@@ -177,12 +182,12 @@ class simics:
                 self.simics.kill()
                 self.output += '\nkilled unresponsive simics process\n'
                 if self.debug:
-                    print(colored('killed unresponsive simics process\n',
-                                  'yellow'), end='')
+                    print(colored('killed unresponsive simics process',
+                                  'yellow'))
             else:
                 self.output += 'quit\n'
                 if self.debug:
-                    print(colored('quit\n', 'yellow'), end='')
+                    print(colored('quit', 'yellow'))
                 self.simics.wait()
         self.simics = None
 
@@ -195,7 +200,7 @@ class simics:
         self.simics.stdin.write('run\n')
         self.output += 'run\n'
         if self.debug:
-            print(colored('run\n', 'yellow'), end='')
+            print(colored('run', 'yellow'))
 
     def read_char_worker(self):
         self.char = None
@@ -220,6 +225,7 @@ class simics:
             self.output += char
             if self.debug:
                 print(colored(char, 'yellow'), end='')
+                sys.stdout.flush()
             buff += char
             if buff[-len(string):] == string:
                 break
@@ -232,7 +238,7 @@ class simics:
         self.simics.stdin.write(command+'\n')
         self.output += command+'\n'
         if self.debug:
-            print(colored(command+'\n', 'yellow'), end='')
+            print(colored(command, 'yellow'))
         return self.read_until()
 
     def do_uboot(self):
