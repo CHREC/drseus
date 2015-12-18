@@ -11,9 +11,8 @@ from termcolor import colored
 from threading import Thread
 from time import sleep
 
-from bdi import bdi_p2020, bdi_arm
 from error import DrSEUsError
-from openocd import openocd
+from jtag import bdi_p2020, openocd
 from simics import simics
 from sql import insert_dict, update_dict
 

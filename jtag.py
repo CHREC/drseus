@@ -1,33 +1,67 @@
 from __future__ import print_function
 from datetime import datetime
+import pyudev
 from telnetlib import Telnet
 from termcolor import colored
 from threading import Thread
 import time
 import random
+from signal import SIGINT
+import socket
 import sqlite3
+import subprocess
 
 from dut import dut
 from error import DrSEUsError
 from sql import insert_dict
 
-# BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
+# zedboards[uart_serial] = ftdi_serial
+zedboards = {'844301CF3718': '210248585809',
+             '8410A3D8431C': '210248657631',
+             '036801551E13': '210248691084'}
 
 
-class bdi:
-    error_messages = ['timeout while waiting for halt',
-                      'wrong state for requested command', 'read access failed']
+def find_ftdi_serials():
+    context = pyudev.Context()
+    debuggers = context.list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6014')
+    serials = []
+    for debugger in debuggers:
+        if 'DEVLINKS' not in debugger:
+            serials.append(debugger['ID_SERIAL_SHORT'])
+    return serials
 
-    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
-                 use_aux, dut_prompt, aux_prompt, debug, timeout,
-                 campaign_number):
+
+def find_uart_serials():
+    context = pyudev.Context()
+    uarts = context.list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
+    serials = {}
+    for uart in uarts:
+        if 'DEVLINKS' in uart:
+            serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
+    return serials
+
+
+def find_open_port():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(('', 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    return port
+
+
+class jtag:
+    def __init__(self, ip_address, port, rsakey, dut_serial_port,
+                 aux_serial_port, use_aux, dut_prompt, aux_prompt, debug,
+                 timeout, campaign_number):
         self.ip_address = ip_address
+        self.port = port
         self.timeout = 30
         self.debug = debug
         self.use_aux = use_aux
         self.output = ''
         try:
-            self.telnet = Telnet(self.ip_address, timeout=self.timeout)
+            self.telnet = Telnet(self.ip_address, self.port,
+                                 timeout=self.timeout)
         except:
             self.telnet = None
             print('Could not connect to debugger, '
@@ -39,65 +73,26 @@ class bdi:
         if self.use_aux:
             self.aux = dut(rsakey, aux_serial_port, aux_prompt, debug, timeout,
                            campaign_number, color='cyan')
-        else:
-            self.aux = None
+        # else:
+        #     self.aux = None
 
     def __str__(self):
-        string = 'BDI3000 at '+self.ip_address
+        string = ('JTAG Debugger at '+self.ip_address+' port '+str(self.port))
         return string
-
-    def set_rsakey(self, rsakey):
-        self.dut.rsakey = rsakey
-        if self.aux is not None:
-            self.aux.rsakey = rsakey
 
     def close(self):
         if self.telnet:
-            self.telnet.write('quit\r')
             self.telnet.close()
         self.dut.close()
         if self.use_aux:
             self.aux.close()
 
-    def command(self, command, expected_output=[], error_message=None):
-        return_buffer = ''
-        if error_message is None:
-            error_message = command
-        buff = self.telnet.read_very_lazy()
-        self.output += buff
-        if self.debug:
-            print(colored(buff, 'yellow'))
-        if command:
-            command = command+'\r'
-            self.telnet.write(command)
-            self.telnet.write('\r')
-            self.output += command
-            if self.debug:
-                print(colored(command, 'yellow'))
-        for i in xrange(len(expected_output)):
-            index, match, buff = self.telnet.expect(expected_output,
-                                                    timeout=self.timeout)
-            self.output += buff
-            return_buffer += buff
-            if self.debug:
-                print(colored(buff, 'yellow'), end='')
-            if index < 0:
-                raise DrSEUsError(error_message)
+    def reset_dut(self, expected_output):
+        if self.telnet:
+            self.command('reset', expected_output, 'Error resetting DUT')
         else:
-            if self.debug:
-                print()
-        index, match, buff = self.telnet.expect(self.prompts,
-                                                timeout=self.timeout)
-        self.output += buff
-        return_buffer += buff
-        if self.debug:
-            print(colored(buff, 'yellow'))
-        if index < 0:
-            raise DrSEUsError(error_message)
-        for message in self.error_messages:
-            if message in buff:
-                raise DrSEUsError(error_message)
-        return return_buffer
+            self.dut.serial.write('\x03')
+        self.dut.do_login()
 
     def time_application(self, command, aux_command, iterations, kill_dut):
         start = time.time()
@@ -174,7 +169,69 @@ class bdi:
                 raise DrSEUsError('Error injecting fault')
 
 
+class bdi(jtag):
+    error_messages = ['timeout while waiting for halt',
+                      'wrong state for requested command', 'read access failed']
+
+    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
+                 use_aux, dut_prompt, aux_prompt, debug, timeout,
+                 campaign_number):
+        jtag.__init__(self, ip_address, 23, rsakey, dut_serial_port,
+                      aux_serial_port, use_aux, dut_prompt, aux_prompt, debug,
+                      timeout, campaign_number)
+
+    def __str__(self):
+        string = 'BDI3000 at '+self.ip_address+' port '+self.port
+        return string
+
+    def close(self):
+        if self.telnet:
+            self.telnet.write('quit\r')
+        jtag.close()
+
+    def command(self, command, expected_output=[], error_message=None):
+        return_buffer = ''
+        if error_message is None:
+            error_message = command
+        buff = self.telnet.read_very_lazy()
+        self.output += buff
+        if self.debug:
+            print(colored(buff, 'yellow'))
+        if command:
+            command = command+'\r'
+            self.telnet.write(command)
+            self.telnet.write('\r')
+            self.output += command
+            if self.debug:
+                print(colored(command, 'yellow'))
+        for i in xrange(len(expected_output)):
+            index, match, buff = self.telnet.expect(expected_output,
+                                                    timeout=self.timeout)
+            self.output += buff
+            return_buffer += buff
+            if self.debug:
+                print(colored(buff, 'yellow'), end='')
+            if index < 0:
+                raise DrSEUsError(error_message)
+        else:
+            if self.debug:
+                print()
+        index, match, buff = self.telnet.expect(self.prompts,
+                                                timeout=self.timeout)
+        self.output += buff
+        return_buffer += buff
+        if self.debug:
+            print(colored(buff, 'yellow'))
+        if index < 0:
+            raise DrSEUsError(error_message)
+        for message in self.error_messages:
+            if message in buff:
+                raise DrSEUsError(error_message)
+        return return_buffer
+
+
 class bdi_arm(bdi):
+    # BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
     def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
                  campaign_number):
@@ -201,26 +258,20 @@ class bdi_arm(bdi):
                      campaign_number)
 
     def reset_dut(self):
-        if self.telnet:
-            self.command('reset', ['- TARGET: processing reset request',
-                                   '- TARGET: BDI removes TRST',
-                                   '- TARGET: Bypass check',
-                                   '- TARGET: JTAG exists check passed',
-                                   '- Core#0: ID code', '- Core#0: DP-CSW',
-                                   '- Core#0: DBG-AP', '- Core#0: DIDR',
-                                   '- Core#1: ID code', '- Core#1: DP-CSW',
-                                   '- Core#1: DBG-AP', '- Core#1: DIDR',
-                                   '- TARGET: BDI removes RESET',
-                                   '- TARGET: BDI waits for RESET inactive',
-                                   '- TARGET: Reset sequence passed',
-                                   '- TARGET: resetting target passed',
-                                   '- TARGET: processing target startup',
-                                   '- TARGET: processing target startup passed'
-                                   ],
-                         error_message='Error resetting DUT')
-        else:
-            self.dut.serial.write('\x03')
-        self.dut.do_login()
+        jtag.reset_dut(['- TARGET: processing reset request',
+                        '- TARGET: BDI removes TRST',
+                        '- TARGET: Bypass check',
+                        '- TARGET: JTAG exists check passed',
+                        '- Core#0: ID code', '- Core#0: DP-CSW',
+                        '- Core#0: DBG-AP', '- Core#0: DIDR',
+                        '- Core#1: ID code', '- Core#1: DP-CSW',
+                        '- Core#1: DBG-AP', '- Core#1: DIDR',
+                        '- TARGET: BDI removes RESET',
+                        '- TARGET: BDI waits for RESET inactive',
+                        '- TARGET: Reset sequence passed',
+                        '- TARGET: resetting target passed',
+                        '- TARGET: processing target startup',
+                        '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
         self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
@@ -374,24 +425,18 @@ class bdi_p2020(bdi):
                      campaign_number)
 
     def reset_dut(self):
-        if self.telnet:
-            self.command('reset', ['- TARGET: processing user reset request',
-                                   '- BDI asserts HRESET',
-                                   '- Reset JTAG controller passed',
-                                   '- JTAG exists check passed',
-                                   '- IDCODE',
-                                   '- SVR',
-                                   '- PVR',
-                                   '- CCSRBAR',
-                                   '- BDI removes HRESET',
-                                   '- TARGET: resetting target passed',
-                                   # '- TARGET: processing target startup',
-                                   '- TARGET: processing target startup passed'
-                                   ],
-                         error_message='Error resetting DUT')
-        else:
-            self.dut.serial.write('\x03')
-        self.dut.do_login()
+        jtag.reset_dut(['- TARGET: processing user reset request',
+                        '- BDI asserts HRESET',
+                        '- Reset JTAG controller passed',
+                        '- JTAG exists check passed',
+                        '- IDCODE',
+                        '- SVR',
+                        '- PVR',
+                        '- CCSRBAR',
+                        '- BDI removes HRESET',
+                        '- TARGET: resetting target passed',
+                        # '- TARGET: processing target startup',
+                        '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
         self.command('halt 0; halt 1', ['Target CPU', 'Core state',
@@ -438,3 +483,109 @@ class bdi_p2020(bdi):
     #                         regs[core][register] = value
     #                         break
     #     return regs
+
+
+class openocd(jtag):
+    # error_messages = []
+
+    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
+                 use_aux, dut_prompt, aux_prompt, debug, timeout,
+                 campaign_number):
+        self.prompts = ['>']
+        self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
+                          'r9', 'r10', 'r11', 'r12',  'pc', 'cpsr', 'sp', 'lr']
+        serial = zedboards[find_uart_serials()[dut_serial_port]]
+        port = find_open_port()
+        self.dev_null = open('/dev/null', 'w')
+        self.openocd = subprocess.Popen(['openocd', '-c',
+                                         'gdb_port 0; tcl_port 0; '
+                                         'telnet_port '+str(port)+'; '
+                                         'interface ftdi; '
+                                         'ftdi_serial '+serial+';',
+                                         '-f', 'openocd_zedboard.cfg'],
+                                        stderr=self.dev_null)
+        time.sleep(1)
+        jtag.__init__(self, '127.0.0.1', port, rsakey, dut_serial_port,
+                      aux_serial_port, use_aux, dut_prompt, aux_prompt, debug,
+                      timeout, campaign_number)
+
+    def __str__(self):
+        string = 'OpenOCD at localhost port '+self.port
+        return string
+
+    def close(self):
+        self.telnet.write('shutdown\n')
+        jtag.close()
+        self.openocd.send_signal(SIGINT)
+        self.openocd.wait()
+        self.dev_null.close()
+
+    def command(self, command, expected_output=[], error_message=None):
+        return_buffer = ''
+        if error_message is None:
+            error_message = command
+        buff = self.telnet.read_very_lazy()
+        self.output += buff
+        if self.debug:
+            print(colored(buff, 'yellow'))
+        if command:
+            self.telnet.write(command+'\n')
+            index, match, buff = self.telnet.expect([command],
+                                                    timeout=self.timeout)
+            self.output += buff
+            return_buffer += buff
+            if self.debug:
+                print(colored(buff, 'yellow'))
+            if index < 0:
+                raise DrSEUsError(error_message)
+        for i in xrange(len(expected_output)):
+            index, match, buff = self.telnet.expect(expected_output,
+                                                    timeout=self.timeout)
+            self.output += buff
+            return_buffer += buff
+            if self.debug:
+                print(colored(buff, 'yellow'), end='')
+            if index < 0:
+                raise DrSEUsError(error_message)
+        else:
+            if self.debug:
+                print()
+        index, match, buff = self.telnet.expect(self.prompts,
+                                                timeout=self.timeout)
+        self.output += buff
+        return_buffer += buff
+        if self.debug:
+            print(colored(buff, 'yellow'))
+        if index < 0:
+            raise DrSEUsError(error_message)
+        # for message in self.error_messages:
+        #     if message in buff:
+        #         raise DrSEUsError(error_message)
+        return return_buffer
+
+    def reset_dut(self):
+        jtag.reset_dut(['JTAG tap: zynq.dap tap/device found: 0x4ba00477'])
+
+    def halt_dut(self):
+        self.command('halt',
+                     # 'targets zynq.cpu0; halt; targets zynq.cpu1; halt;',
+                     ['target state: halted',
+                      'target halted in ARM state due to debug-request,'
+                      'current mode:', 'cpsr:', 'MMU:']*2,
+                     'Error halting DUT')
+
+    def continue_dut(self):
+        self.command('resume', error_message='Error continuing DUT')
+
+    def select_core(self, core):
+        self.command('targets zynq.cpu'+str(core),
+                     error_message='Error selecting core')
+
+    def get_register_value(self, register):
+        buff = self.command('reg '+register, [':'],
+                            error_message='Error getting register value')
+        return buff.split('\n')[1].split(':')[1].strip().split(' ')[0].strip()
+
+    def set_register_value(self, register, value):
+        self.command('reg '+register+' '+value, error_message='Error setting '
+                                                              'register value')

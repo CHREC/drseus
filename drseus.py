@@ -20,7 +20,6 @@ from openocd import find_ftdi_serials, find_uart_serials
 import simics_config
 from sql import dict_factory, insert_dict
 
-# TODO: merge bdi and openocd into jtag
 # TODO: replace iteration numbers with result_ids
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration
