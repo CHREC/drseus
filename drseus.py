@@ -341,17 +341,16 @@ def supervisor(options):
                       str(drseus.num_checkpoints)+'_merged')
         drseus.debugger.launch_simics(checkpoint)
         drseus.debugger.continue_dut()
-    # else:
-    #     if drseus.use_aux:
-    #         drseus.debugger.aux.serial.write('\x03')
-    #         aux_process = Thread(target=drseus.debugger.aux.do_login)
-    #         aux_process.start()
-    #     drseus.debugger.reset_dut()
-    #     if drseus.use_aux:
-    #         aux_process.join()
-    #     drseus.send_dut_files()
-    #     if drseus.use_aux:
-    #         drseus.send_aux_files()
+    else:
+        if drseus.use_aux:
+            drseus.debugger.aux.serial.write('\x03')
+            aux_process = Thread(target=drseus.debugger.aux.do_login)
+            aux_process.start()
+        drseus.debugger.reset_dut()
+        if drseus.use_aux:
+            aux_process.join()
+            drseus.send_aux_files()
+        drseus.send_dut_files()
 
     def print_help():
         print('DrSEUS Supervisor Commands:')
@@ -450,13 +449,18 @@ def supervisor(options):
                 drseus.debugger.aux.read_until('toinfinityandbeyond!')
             else:
                 drseus.debugger.dut.read_until('toinfinityandbeyond!')
+        except DrSEUsError as error:
+            outcome = error.type
         except KeyboardInterrupt:
+            outcome = 'Interrupted'
             if drseus.use_simics:
                 drseus.debugger.continue_dut()
-            if aux:
-                drseus.log_result('read serial', 'AUX command')
-            else:
-                drseus.log_result('read serial', 'DUT command')
+        else:
+            outcome = 'No error'
+        if aux:
+            drseus.log_result(outcome, 'Read AUX')
+        else:
+            drseus.log_result(outcome, 'Read DUT')
 
     def send_aux_files():
         send_dut_files(aux=True)
@@ -541,14 +545,16 @@ def supervisor(options):
     print_help()
     while True:
         print()
-        user_command = raw_input(prompt)
-        for command in commands:
-            if command[0] == user_command:
-                print()
-                command[2]()
-                break
-        else:
-            print('Unknown command \"'+user_command+'\", enter "h" for help')
+        user_commands = raw_input(prompt)
+        for user_command in user_commands.split(';'):
+            for command in commands:
+                if command[0] == user_command.strip():
+                    print()
+                    command[2]()
+                    break
+            else:
+                print('Unknown command \"'+user_command +
+                      '\", enter "h" for help')
 
 
 def initialize_database():

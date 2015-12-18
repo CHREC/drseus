@@ -285,6 +285,7 @@ class dut:
                         sleep(5)
                     else:
                         raise DrSEUsError('Error finding device ip address')
+                break
         else:
             self.command('ip addr add '+ip_address+'/24 dev eth0')
             self.command('ip link set eth0 up')

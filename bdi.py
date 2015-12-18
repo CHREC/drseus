@@ -375,8 +375,20 @@ class bdi_p2020(bdi):
 
     def reset_dut(self):
         if self.telnet:
-            self.telnet.write('reset')
-            self.telnet.write('\r')
+            self.command('reset', ['- TARGET: processing user reset request',
+                                   '- BDI asserts HRESET',
+                                   '- Reset JTAG controller passed',
+                                   '- JTAG exists check passed',
+                                   '- IDCODE',
+                                   '- SVR',
+                                   '- PVR',
+                                   '- CCSRBAR',
+                                   '- BDI removes HRESET',
+                                   '- TARGET: resetting target passed',
+                                   # '- TARGET: processing target startup',
+                                   '- TARGET: processing target startup passed'
+                                   ],
+                         error_message='Error resetting DUT')
         else:
             self.dut.serial.write('\x03')
         self.dut.do_login()
