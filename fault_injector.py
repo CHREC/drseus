@@ -56,9 +56,10 @@ class fault_injector:
             string += '\n\tAUX:\t'+str(self.debugger.aux).replace('\n\t',
                                                                   '\n\t\t')
         string += ('\n\tCampaign Information:\n\t\tCampaign Number: ' +
-                   str(self.campaign_number)+'\n\t\tDUT Command: '+self.command)
+                   str(self.campaign_number)+'\n\t\tDUT Command: \"' +
+                   self.command+'\"')
         if self.use_aux:
-            string += '\n\t\tAUX Command: '+self.aux_command
+            string += '\n\t\tAUX Command: \"'+self.aux_command+'\"'
         string += ('\n\t\tExecution Time: '+str(self.exec_time) +
                    ' seconds')
         return string
