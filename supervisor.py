@@ -1,4 +1,8 @@
+#!/usr/bin/python
+
 from __future__ import print_function
+from cmd import Cmd
+import multiprocessing
 import os
 import pdb
 from select import select
@@ -6,37 +10,21 @@ import sys
 from threading import Thread
 
 from error import DrSEUsError
+from options import options
+import utilities
 
 
-class supervisor():
-    def __init__(self, campaign_data, drseus, options, iteration_counter):
-        self.campaign_data = campaign_data
-        self.drseus = drseus
+class supervisor(Cmd):
+    def __init__(self, options):
         self.options = options
-        self.iteration_counter = iteration_counter
-        self.prompt = 'DrSEUs> '
-        self.commands = [('h', 'Print these commands', self.print_help),
-                         ('i', 'Print DrSEUs information', self.print_info),
-                         ('t', 'Change DUT serial timeout',
-                          self.change_dut_timeout),
-                         ('c', 'Send DUT command', self.dut_command),
-                         ('r', 'Read from DUT serial', self.dut_read),
-                         ('f', 'Send DUT files', self.send_dut_files),
-                         ('g', 'Get DUT file', self.get_dut_file),
-                         ('s', 'Supervise', self.supervise)]
-        if not self.drseus.use_simics:
-            self.commands.append(('R', 'Reset DUT',
-                                  self.drseus.debugger.reset_dut))
-        self.commands.extend([('d', 'Debug with the Python Debugger',
-                               pdb.set_trace),
-                              ('q', 'Quit DrSEUs Supervisor', self.quit)])
-        if self.drseus.use_aux:
-            self.commands.extend([('at', 'Change AUX serial timeout',
-                                   self.change_aux_timeout),
-                                  ('ac', 'Send AUX command', self.aux_command),
-                                  ('ar', 'Read from DUT serial', self.aux_read),
-                                  ('af', 'Send AUX files', self.send_aux_files),
-                                  ('ag', 'Get AUX file', self.get_aux_file)])
+        self.options.debug = True
+        if not self.options.campaign_number:
+            self.options.campaign_number = utilities.get_last_campaign()
+        self.campaign_data = utilities.get_campaign_data(
+            options.campaign_number)
+        self.iteration_counter = multiprocessing.Value(
+            'I', utilities.get_next_iteration(options.campaign_number))
+        self.drseus = utilities.load_campaign(self.campaign_data, options)
         self.drseus.data_diff = None
         self.drseus.detected_errors = None
         if self.drseus.use_simics:
@@ -62,6 +50,16 @@ class supervisor():
                 aux_process.join()
                 self.drseus.send_aux_files()
             self.drseus.send_dut_files()
+        self.prompt = 'DrSEUs> '
+        Cmd.__init__(self)
+        if self.drseus.use_aux:
+            self.__class__ = aux_supervisor
+
+    def preloop(self):
+        print('Welcome to DrSEUs!\n')
+        self.do_info()
+        self.do_help(None)
+        Cmd.preloop(self)
 
     def next_result(self):
         with self.iteration_counter.get_lock():
@@ -69,22 +67,14 @@ class supervisor():
             self.iteration_counter.value += 1
         self.drseus.result_id = self.drseus.get_result_id(0)
 
-    def print_help(self):
-        print('DrSEUS Supervisor Commands:')
-        for command in self.commands:
-            print('\t', command[0], ':\t', command[1], sep='')
-
-    def print_info(self):
+    def do_info(self, arg=None):
+        """Print information about the current campaign"""
         print(str(self.drseus))
 
-    def change_aux_timeout(self):
-        self.change_dut_timeout(aux=True)
-
-    def change_dut_timeout(self, aux=False):
-        print('Enter new device timeout in seconds:')
-        new_timeout = raw_input(self.prompt)
+    def do_update_dut_timeout(self, arg, aux=False):
+        """Update DUT serial timeout (in seconds)"""
         try:
-            new_timeout = int(new_timeout)
+            new_timeout = int(arg)
         except:
             print('Invalid value entered')
             return
@@ -97,21 +87,13 @@ class supervisor():
             self.drseus.debugger.dut.default_timeout = new_timeout
             self.drseus.debugger.dut.serial.timeout = new_timeout
 
-    def aux_command(self):
-        self.dut_command(aux=True)
-
-    def dut_command(self, aux=False):
+    def do_command_dut(self, arg, aux=False):
+        """Send DUT device a command and interact, interrupt with ctrl-c"""
         self.next_result()
         if aux:
-            print('Enter command for AUX:')
+            self.drseus.debugger.aux.serial.write(arg+'\n')
         else:
-            print('Enter command for DUT:')
-        command = raw_input(self.prompt)
-        print('\nYou can interact with the device, interrupt with ctrl-c')
-        if aux:
-            self.drseus.debugger.aux.serial.write(command+'\n')
-        else:
-            self.drseus.debugger.dut.serial.write(command+'\n')
+            self.drseus.debugger.dut.serial.write(arg+'\n')
 
         def read_thread_worker():
             try:
@@ -141,15 +123,12 @@ class supervisor():
                 self.drseus.debugger.dut.serial.write('\x03')
             read_thread.join()
         if aux:
-            self.drseus.log_result(command, 'AUX command')
+            self.drseus.log_result(arg, 'AUX command')
         else:
-            self.drseus.log_result(command, 'DUT command')
+            self.drseus.log_result(arg, 'DUT command')
 
-    def aux_read(self):
-        self.dut_read(aux=True)
-
-    def dut_read(self, aux=False):
-        print('Reading from device, interrupt with ctrl-c')
+    def do_read_dut(self, arg=None, aux=False):
+        """Read from DUT, interrupt with ctrl-c"""
         self.next_result()
         try:
             if aux:
@@ -169,18 +148,12 @@ class supervisor():
         else:
             self.drseus.log_result(outcome, 'Read DUT')
 
-    def send_aux_files(self):
-        self.send_dut_files(aux=True)
-
-    def send_dut_files(self, aux=False):
-        print('Enter files to send from '+self.options.directory +
-              ' (none for campaign files):')
-        user_files = raw_input(self.prompt)
-        print()
+    def do_send_dut_files(self, arg, aux=False):
+        """Send (comma-seperated) files to DUT, defaults to campaign files"""
         try:
-            if user_files:
+            if arg:
                 files = []
-                for item in user_files.split(','):
+                for item in arg.split(','):
                     files.append(self.options.directory+'/' +
                                  item.lstrip().rstrip())
                 if aux:
@@ -192,64 +165,84 @@ class supervisor():
         except KeyboardInterrupt:
             print('Transfer interrupted')
 
-    def get_aux_file(self):
-        self.get_dut_file(aux=True)
-
-    def get_dut_file(self, aux=False):
+    def do_get_dut_file(self, arg, aux=False):
+        """Retrieve file from DUT device"""
         self.next_result()
         self.drseus.result_id = self.drseus.get_result_id(0)
         os.makedirs('campaign-data/'+str(self.drseus.campaign_number) +
                     '/results/'+str(self.drseus.iteration))
         directory = ('campaign-data/'+str(self.drseus.campaign_number) +
                      '/results/'+str(self.drseus.iteration)+'/')
-        print('Enter file to get (file will be saved to '+directory+'):')
-        file_ = raw_input(self.prompt)
         try:
             if aux:
-                self.drseus.debugger.aux.get_file(file_, directory)
+                self.drseus.debugger.aux.get_file(arg, directory)
             else:
-                self.drseus.debugger.dut.get_file(file_, directory)
+                self.drseus.debugger.dut.get_file(arg, directory)
         except KeyboardInterrupt:
-            self.drseus.log_result(file_, 'Get '+('AUX' if aux else 'DUT') +
-                                          ' file interrupted')
+            self.drseus.log_result(arg, 'Get '+('AUX' if aux else 'DUT') +
+                                        ' file interrupted')
         else:
-            self.drseus.log_result(file_, 'Get '+('AUX' if aux else 'DUT') +
-                                          ' file')
+            self.drseus.log_result(arg, 'Get '+('AUX' if aux else 'DUT') +
+                                        ' file')
+            print('File saved to '+directory)
 
-    def supervise(self):
-        print('Enter iterations to perform or targeted run time in seconds:')
-        iterations = raw_input(self.prompt)
-        if 's' in iterations:
-            run_time = int(iterations.replace('s', ''))
-            iterations = int(run_time / self.drseus.exec_time)
+    def do_supervise(self, arg):
+        """Supervise for targeted runtime (in seconds) or iterations"""
+        if 's' in arg:
+            try:
+                run_time = int(arg.replace('s', ''))
+            except:
+                print('Invalid value entered')
+                return
+            iterations = max(int(run_time / self.drseus.exec_time), 1)
         else:
-            iterations = int(iterations)
+            try:
+                iterations = int(arg)
+            except:
+                print('Invalid value entered')
+                return
         print('Performing '+str(iterations)+' iteration(s)...\n')
         self.drseus.supervise(self.iteration_counter, iterations,
                               self.campaign_data['output_file'],
                               self.campaign_data['use_aux_output'],
                               self.options.capture)
 
-    def quit(self):
+    def do_debug(self, arg=None):
+        """Start PDB"""
+        pdb.set_trace()
+
+    def do_shell(self, arg):
+        """Pass command to a system shell when line begins with \"!\""""
+        os.system(arg)
+
+    def do_exit(self, arg=None):
+        """Exit DrSEUs"""
         if self.drseus.use_simics:
             self.drseus.debugger.close()
         self.drseus.close()
         sys.exit()
 
-    def main(self):
-        print('\nWelcome to DrSEUs Supervisor\n')
-        self.print_info()
-        print()
-        self.print_help()
-        while True:
-            print()
-            user_commands = raw_input(self.prompt)
-            for user_command in user_commands.split(';'):
-                for command in self.commands:
-                    if command[0] == user_command.strip():
-                        print()
-                        command[2]()
-                        break
-                else:
-                    print('Unknown command \"'+user_command +
-                          '\", enter "h" for help')
+
+class aux_supervisor(supervisor):
+    def do_update_aux_timeout(self, arg):
+        """Update AUX serial timeout (in seconds)"""
+        self.do_update_dut_timeout(arg, aux=True)
+
+    def do_command_aux(self, arg):
+        """Send AUX device a command and interact, interrupt with ctrl-c"""
+        self.do_dut_command(arg, aux=True)
+
+    def do_read_aux(self, arg):
+        """Read from AUX, interrupt with ctrl-c"""
+        self.do_read_dut(arg, aux=True)
+
+    def send_aux_files(self, arg):
+        """Send (comma-seperated) files to AUX, defaults to campaign files"""
+        self.do_send_dut_files(arg, aux=True)
+
+    def do_get_aux_file(self, arg):
+        """Retrieve file from AUX device"""
+        self.do_get_dut_file(arg, aux=True)
+
+if __name__ == '__main__':
+    supervisor(options).cmdloop()

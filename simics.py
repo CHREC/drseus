@@ -119,16 +119,19 @@ class simics:
                                              'change_prompt': True,
                                              'simics': True})
                 aux_process.start()
-            self.dut.do_login(ip_address='10.10.0.100', change_prompt=True,
+            self.dut.do_login(ip_address='10.10.0.100',
+                              change_prompt=(prompt == '#'),
                               simics=True)
             if self.use_aux:
                 aux_process.join()
         else:
             self.dut.ip_address = '127.0.0.1'
-            self.dut.prompt = 'DrSEUs# '
+            if prompt == '#':
+                self.dut.prompt = 'DrSEUs# '
             if self.use_aux:
                 self.aux.ip_address = '127.0.0.1'
-                self.aux.prompt = 'DrSEUs# '
+                if prompt == '#':
+                    self.aux.prompt = 'DrSEUs# '
 
     def launch_simics_gui(self, checkpoint):
         dut_board = 'DUT_'+self.board

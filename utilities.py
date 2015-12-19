@@ -71,6 +71,8 @@ def get_campaign_data(campaign_number):
                 (campaign_number,))
     campaign_data = sql.fetchone()
     sql_db.close()
+    if campaign_data is None:
+        raise Exception('could not find campaign number '+str(campaign_number))
     return campaign_data
 
 
