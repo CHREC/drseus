@@ -164,6 +164,8 @@ class supervisor(Cmd):
                 self.drseus.send_dut_files(aux)
         except KeyboardInterrupt:
             print('Transfer interrupted')
+            if self.drseus.use_simics:
+                self.drseus.debugger.continue_dut()
 
     def do_get_dut_file(self, arg, aux=False):
         """Retrieve file from DUT device"""
@@ -181,6 +183,8 @@ class supervisor(Cmd):
         except KeyboardInterrupt:
             self.drseus.log_result(arg, 'Get '+('AUX' if aux else 'DUT') +
                                         ' file interrupted')
+            if self.drseus.use_simics:
+                self.drseus.debugger.continue_dut()
         else:
             self.drseus.log_result(arg, 'Get '+('AUX' if aux else 'DUT') +
                                         ' file')

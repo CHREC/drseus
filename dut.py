@@ -1,4 +1,5 @@
 from __future__ import print_function
+from collections import OrderedDict
 # from multiprocessing import Process
 # import os
 import paramiko
@@ -12,23 +13,25 @@ from error import DrSEUsError
 
 
 class dut:
-    error_messages = {'drseus_sighandler': 'Signal raised',
-                      'Kernel panic': 'Kernel error',
-                      'panic': 'Kernel error',
-                      'Oops': 'Kernel error',
-                      'Segmentation fault': 'Segmentation fault',
-                      'Illegal instruction': 'Illegal instruction',
-                      'Call Trace:': 'Kernel error',
-                      'detected stalls on CPU': 'Stall detected',
-                      'malloc(): memory corruption': 'Kernel error',
-                      'Bad swap file entry': 'Kernel error',
-                      'Unable to handle kernel paging request': 'Kernel error',
-                      'Alignment trap': 'Kernel error',
-                      'Unhandled fault': 'Kernel error',
-                      'free(): invalid next size': 'Kernel error',
-                      'double free or corruption': 'Kernel error',
-                      '????????': '????????',
-                      'login: ': 'Reboot'}
+    error_messages = OrderedDict(
+        [('drseus_sighandler', 'Signal raised'),
+         ('Kernel panic', 'Kernel error'),
+         ('panic', 'Kernel error'),
+         ('Oops', 'Kernel error'),
+         ('Segmentation fault', 'Segmentation fault'),
+         ('Illegal instruction', 'Illegal instruction'),
+         ('Call Trace:', 'Kernel error'),
+         ('detected stalls on CPU', 'Stall detected'),
+         ('malloc(), memory corruption', 'Kernel error'),
+         ('Bad swap file entry', 'Kernel error'),
+         ('Unable to handle kernel paging request', 'Kernel error'),
+         ('Alignment trap', 'Kernel error'),
+         ('Unhandled fault', 'Kernel error'),
+         ('free(), invalid next size', 'Kernel error'),
+         ('double free or corruption', 'Kernel error'),
+         ('????????', '????????'),
+         ('login: ', 'Reboot')]
+    )
 
     def __init__(self, rsakey, serial_port, prompt, debug, timeout,
                  campaign_number, baud_rate=115200, ssh_port=22, color='green'):
