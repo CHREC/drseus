@@ -271,8 +271,7 @@ class bdi_arm(bdi):
                               '- TARGET: Reset sequence passed',
                               '- TARGET: resetting target passed',
                               '- TARGET: processing target startup',
-                              '- TARGET: processing target startup passed'],
-                       'Error resetting DUT')
+                              '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
         self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
@@ -437,8 +436,7 @@ class bdi_p2020(bdi):
                               '- BDI removes HRESET',
                               '- TARGET: resetting target passed',
                               # '- TARGET: processing target startup',
-                              '- TARGET: processing target startup passed'],
-                       'Error resetting DUT')
+                              '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
         self.command('halt 0; halt 1', ['Target CPU', 'Core state',
@@ -568,8 +566,7 @@ class openocd(jtag):
 
     def reset_dut(self):
         jtag.reset_dut(self,
-                       ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'],
-                       'Error resetting DUT')
+                       ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'])
 
     def halt_dut(self):
         self.command('halt',
