@@ -486,7 +486,7 @@ class bdi_p2020(bdi):
 
 
 class openocd(jtag):
-    # error_messages = []
+    error_messages = ['Target not examined yet']
 
     def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
@@ -559,9 +559,9 @@ class openocd(jtag):
             print(colored(buff, 'yellow'))
         if index < 0:
             raise DrSEUsError(error_message)
-        # for message in self.error_messages:
-        #     if message in buff:
-        #         raise DrSEUsError(error_message)
+        for message in self.error_messages:
+            if message in buff:
+                raise DrSEUsError(error_message)
         return return_buffer
 
     def reset_dut(self):
