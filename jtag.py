@@ -193,7 +193,7 @@ class bdi(jtag):
         return_buffer = ''
         if error_message is None:
             error_message = command
-        buff = self.telnet.read_very_lazy()
+        buff = self.telnet.read_very_eager()
         self.output += buff
         if self.debug:
             print(colored(buff, 'yellow'))
@@ -525,7 +525,7 @@ class openocd(jtag):
         return_buffer = ''
         if error_message is None:
             error_message = command
-        buff = self.telnet.read_very_lazy()
+        buff = self.telnet.read_very_eager()
         self.output += buff
         if self.debug:
             print(colored(buff, 'yellow'))
@@ -570,7 +570,6 @@ class openocd(jtag):
 
     def halt_dut(self):
         self.command('halt',
-                     # 'targets zynq.cpu0; halt; targets zynq.cpu1; halt;',
                      ['target state: halted',
                       'target halted in ARM state due to debug-request, '
                       'current mode:', 'cpsr:', 'MMU:']*2,
