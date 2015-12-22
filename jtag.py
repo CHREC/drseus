@@ -59,15 +59,6 @@ class jtag:
         self.debug = debug
         self.use_aux = use_aux
         self.output = ''
-        try:
-            self.telnet = Telnet(self.ip_address, self.port,
-                                 timeout=self.timeout)
-        except:
-            self.telnet = None
-            print('Could not connect to debugger, '
-                  'running in supervisor-only mode')
-        else:
-            self.command('', error_message='Debugger not ready')
         self.dut = dut(rsakey, dut_serial_port, dut_prompt, debug, timeout,
                        campaign_number)
         if self.use_aux:
@@ -179,6 +170,15 @@ class bdi(jtag):
         jtag.__init__(self, ip_address, 23, rsakey, dut_serial_port,
                       aux_serial_port, use_aux, dut_prompt, aux_prompt, debug,
                       timeout, campaign_number)
+        try:
+            self.telnet = Telnet(self.ip_address, self.port,
+                                 timeout=self.timeout)
+        except:
+            self.telnet = None
+            print('Could not connect to debugger, '
+                  'running in supervisor-only mode')
+        else:
+            self.command('', error_message='Debugger not ready')
 
     def __str__(self):
         string = 'BDI3000 at '+self.ip_address+' port '+str(self.port)
@@ -504,10 +504,11 @@ class openocd(jtag):
                                          'ftdi_serial '+serial+';',
                                          '-f', 'openocd_zedboard.cfg'],
                                         stderr=self.dev_null)
-        time.sleep(1)
         jtag.__init__(self, '127.0.0.1', port, rsakey, dut_serial_port,
                       aux_serial_port, use_aux, dut_prompt, aux_prompt, debug,
                       timeout, campaign_number)
+        time.sleep(1)
+        self.telnet = Telnet(self.ip_address, self.port, timeout=self.timeout)
 
     def __str__(self):
         string = 'OpenOCD at localhost port '+str(self.port)
