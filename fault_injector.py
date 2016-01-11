@@ -192,6 +192,7 @@ class fault_injector:
     def create_result(self, num_injections=0):
         self.data_diff = None
         self.detected_errors = None
+        self.logged = False
         result_data = {'campaign_id': self.campaign_number,
                        'num_injections': num_injections,
                        'outcome': 'In progress',
@@ -333,6 +334,8 @@ class fault_injector:
         return outcome, outcome_category
 
     def log_result(self, outcome, outcome_category):
+        if self.logged:
+            return
         try:
             print(colored(self.debugger.dut.serial.port+' ', 'blue'), end='')
         except:
@@ -364,6 +367,7 @@ class fault_injector:
         update_dict(sql, 'result', result_data, self.result_id)
         sql_db.commit()
         sql_db.close()
+        self.logged = True
 
     def inject_and_monitor(self, iteration_counter, num_injections,
                            selected_targets, output_file, use_aux_output,
@@ -376,9 +380,10 @@ class fault_injector:
         while True:
             with iteration_counter.get_lock():
                 iteration = iteration_counter.value
-                iteration_counter.value -= 1
-            if iteration <= 0:
-                break
+                if iteration:
+                    iteration_counter.value -= 1
+                else:
+                    break
             self.create_result(num_injections)
             if not self.use_simics:
                 attempts = 10
@@ -466,9 +471,10 @@ class fault_injector:
         while not interrupted:
             with iteration_counter.get_lock():
                 iteration = iteration_counter.value
-                iteration_counter.value -= 1
-            if iteration <= 0:
-                break
+                if iteration:
+                    iteration_counter.value -= 1
+                else:
+                    break
             self.create_result()
             if packet_capture:
                 data_dir = ('campaign-data/'+str(self.campaign_number) +

@@ -56,7 +56,7 @@ elif options.inject:
     if not os.path.exists('campaign-data/'+str(options.campaign_number) +
                           '/results'):
         os.makedirs('campaign-data/'+str(options.campaign_number)+'/results')
-    iteration_counter = multiprocessing.Value('I', options.injection_iterations)
+    iteration_counter = multiprocessing.Value('L', options.injection_iterations)
     if options.num_processes > 1 and (campaign_data['use_simics'] or
                                       campaign_data['architecture'] == 'a9'):
         if not campaign_data['use_simics'] and \

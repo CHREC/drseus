@@ -194,7 +194,7 @@ class supervisor(Cmd):
                 print('Invalid value entered')
                 return
         print('Performing '+str(supervise_iterations)+' iteration(s)...\n')
-        iteration_counter = multiprocessing.Value('I', supervise_iterations)
+        iteration_counter = multiprocessing.Value('L', supervise_iterations)
         self.drseus.supervise(iteration_counter,
                               self.campaign_data['output_file'],
                               self.campaign_data['use_aux_output'],
