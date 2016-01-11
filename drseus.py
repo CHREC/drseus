@@ -11,9 +11,9 @@ from options import arguments, options, parser
 from supervisor import supervisor
 import utilities
 
+# TODO: add boot commands option
 # TODO: fix inconsistent reloading when editing outcomes on result table page
 # TODO: add modes to backup database and delete backups
-# TODO: replace iteration numbers with result_ids
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
@@ -26,7 +26,7 @@ modes = 0
 for mode in (options.application, options.inject, options.supervise,
              options.view_logs, options.zedboards, options.list,
              options.delete_results, options.delete_campaign,
-             options.delete_all, options.merge_directory, options.iteration,
+             options.delete_all, options.merge_directory, options.result_id,
              options.dependencies):
     if mode:
         modes += 1
@@ -48,19 +48,15 @@ elif options.inject:
     if not options.campaign_number:
         options.campaign_number = utilities.get_last_campaign()
     campaign_data = utilities.get_campaign_data(options.campaign_number)
-    starting_iteration = utilities.get_next_iteration(options.campaign_number)
-    last_iteration = starting_iteration + options.num_iterations
     if campaign_data['use_simics']:
-        if os.path.exists('simics-workspace/injected-checkpoints/' +
-                          str(options.campaign_number)):
-            shutil.rmtree('simics-workspace/injected-checkpoints/' +
-                          str(options.campaign_number))
-        os.makedirs('simics-workspace/injected-checkpoints/' +
-                    str(options.campaign_number))
+        if not os.path.exists('simics-workspace/injected-checkpoints/' +
+                              str(options.campaign_number)):
+            os.makedirs('simics-workspace/injected-checkpoints/' +
+                        str(options.campaign_number))
     if not os.path.exists('campaign-data/'+str(options.campaign_number) +
                           '/results'):
         os.makedirs('campaign-data/'+str(options.campaign_number)+'/results')
-    iteration_counter = multiprocessing.Value('I', starting_iteration)
+    iteration_counter = multiprocessing.Value('I', options.injection_iterations)
     if options.num_processes > 1 and (campaign_data['use_simics'] or
                                       campaign_data['architecture'] == 'a9'):
         if not campaign_data['use_simics'] and \
@@ -76,7 +72,7 @@ elif options.inject:
                     break
             process = multiprocessing.Process(
                 target=utilities.perform_injections,
-                args=(campaign_data, iteration_counter, last_iteration, options)
+                args=(campaign_data, iteration_counter, options)
             )
             processes.append(process)
             process.start()
@@ -89,8 +85,7 @@ elif options.inject:
                 process.join()
     else:
         options.debug = True
-        utilities.perform_injections(campaign_data, iteration_counter,
-                                     last_iteration, options)
+        utilities.perform_injections(campaign_data, iteration_counter, options)
 elif options.supervise:
     supervisor(options).cmdloop()
 elif options.view_logs:
@@ -119,7 +114,7 @@ elif options.delete_all:
         print('deleted campaign data')
 elif options.merge_directory:
     utilities.merge_campaigns(options.merge_directory)
-elif options.iteration:
+elif options.result_id:
     if not options.campaign_number:
         options.campaign_number = utilities.get_last_campaign()
     campaign_data = utilities.get_campaign_data(options.campaign_number)
@@ -127,14 +122,14 @@ elif options.iteration:
         raise Exception('This feature is only available for Simics campaigns')
     drseus = utilities.load_campaign(campaign_data, options)
     injection_data = utilities.get_injection_data(campaign_data,
-                                                  options.iteration)
-    checkpoint = drseus.debugger.regenerate_checkpoints(options.iteration,
+                                                  options.result_id)
+    checkpoint = drseus.debugger.regenerate_checkpoints(options.result_id,
                                                         drseus.cycles_between,
                                                         injection_data)
     drseus.debugger.launch_simics_gui(checkpoint)
     shutil.rmtree('simics-workspace/injected-checkpoints/' +
                   str(campaign_data['campaign_number'])+'/' +
-                  str(options.iteration))
+                  str(options.result_id))
 elif options.dependencies:
     print('updating gold checkpoint path dependencies...', end='')
     sys.stdout.flush()

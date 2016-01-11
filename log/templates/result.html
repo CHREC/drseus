@@ -29,7 +29,7 @@
         </a>
         Output Image
     </h3>
-    <img src="/output-images/{{ campaign_data.campaign_number }}/{{ result.iteration }}" alt="Gold Output">
+    <img src="/output-images/{{ campaign_data.campaign_number }}/{{ result.id }}" alt="Gold Output">
     {% endif %}
     <table>
         <tr>
@@ -40,27 +40,21 @@
                         </a>
                         DUT Output
                     </h3>
-                    <code class="console">
-                        {{ result.dut_output }}
-                    </code>
+                    <code class="console">{{ result.dut_output }}</code>
                     {% if campaign_data.use_aux %}
                     <h3 align="center">
                         <a name="aux_output">
                         </a>
                         AUX Output
                     </h3>
-                    <code class="console">
-                        {{ result.aux_output }}
-                    </code>
+                    <code class="console">{{ result.aux_output }}</code>
                     {% endif %}
                     <h3 align="center">
                         <a name="debugger_output">
                         </a>
                         Debugger Output
                     </h3>
-                    <code class="console">
-                        {{ result.debugger_output }}
-                    </code>
+                    <code class="console">{{ result.debugger_output }}</code>
                 </div>
             </td>
             <td valign="top">
@@ -113,7 +107,7 @@
             Output Image
         </h3>
         <div align="center">
-            <img src="/output-images/{{ campaign_data.campaign_number }}/{{ result.iteration }}" alt="Gold Output">
+            <img src="/output-images/{{ campaign_data.campaign_number }}/{{ result.id }}" alt="Gold Output">
         </div>
         {% endif %}
         <h3 align="center">
@@ -121,27 +115,21 @@
             </a>
             DUT Output
         </h3>
-        <code class="console">
-            {{ result.dut_output }}
-        </code>
+        <code class="console">{{ result.dut_output }}</code>
         {% if campaign_data.use_aux %}
         <h3 align="center">
             <a name="aux_output">
             </a>
             AUX Output
         </h3>
-        <code class="console">
-            {{ result.aux_output }}
-        </code>
+        <code class="console">{{ result.aux_output }}</code>
         {% endif %}
         <h3 align="center">
             <a name="debugger_output">
             </a>
             Debugger Output
         </h3>
-        <code class="console">
-            {{ result.debugger_output }}
-        </code>
+        <code class="console">{{ result.debugger_output }}</code>
     </div>
 </div>
 {% endif %}

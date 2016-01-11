@@ -381,7 +381,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
     return injection_data
 
 
-def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
+def inject_checkpoint(campaign_number, result_id, injection_number,
                       checkpoint_number, board, selected_targets, debug):
     """
     Create a new injected checkpoint (only performing injection on the
@@ -400,10 +400,10 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
                            str(campaign_number)+'/'+str(checkpoint_number))
     else:
         gold_checkpoint = ('simics-workspace/injected-checkpoints/' +
-                           str(campaign_number)+'/'+str(iteration)+'/' +
+                           str(campaign_number)+'/'+str(result_id)+'/' +
                            str(checkpoint_number))
     injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
-                           str(campaign_number)+'/'+str(iteration)+'/' +
+                           str(campaign_number)+'/'+str(result_id)+'/' +
                            str(checkpoint_number)+'_injected')
     os.makedirs(injected_checkpoint)
     # copy gold checkpoint files
@@ -444,7 +444,7 @@ def inject_checkpoint(campaign_number, result_id, iteration, injection_number,
     sql_db.commit()
     sql_db.close()
     if debug:
-        print(colored('iteration: '+str(iteration), 'magenta'))
+        print(colored('result id: '+str(result_id), 'magenta'))
         print(colored('injection number: '+str(injection_number), 'magenta'))
         print(colored('checkpoint number: '+str(checkpoint_number), 'magenta'))
         print(colored('target: '+injection_data['target'], 'magenta'))

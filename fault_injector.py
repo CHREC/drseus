@@ -69,7 +69,7 @@ class fault_injector:
             self.debugger.close()
 
     def setup_campaign(self, directory, architecture, application, arguments,
-                       output_file, dut_files, aux_files, iterations,
+                       output_file, dut_files, aux_files, timing_iterations,
                        aux_application, aux_arguments, use_aux_output,
                        num_checkpoints, kill_dut):
         campaign_data = {'campaign_number': self.campaign_number,
@@ -136,7 +136,7 @@ class fault_injector:
             aux_process.join()
         campaign_data['exec_time'], campaign_data['num_cycles'] = \
             self.debugger.time_application(self.command, self.aux_command,
-                                           iterations, self.kill_dut)
+                                           timing_iterations, self.kill_dut)
         if self.use_simics:
             (campaign_data['cycles_between'],
              campaign_data['num_checkpoints']) = \
@@ -189,9 +189,10 @@ class fault_injector:
         else:
             self.debugger.dut.send_files(files)
 
-    def get_result_id(self, num_injections=0):
+    def create_result(self, num_injections=0):
+        self.data_diff = None
+        self.detected_errors = None
         result_data = {'campaign_id': self.campaign_number,
-                       'iteration': self.iteration,
                        'num_injections': num_injections,
                        'outcome': 'In progress',
                        'outcome_category': 'Incomplete',
@@ -206,7 +207,7 @@ class fault_injector:
         insert_dict(sql, 'injection', injection_data)
         sql_db.commit()
         sql_db.close()
-        return result_id
+        self.result_id = result_id
 
     def inject_faults(self, num_injections, selected_targets, compare_all):
         if self.use_simics:
@@ -217,7 +218,7 @@ class fault_injector:
                 checkpoint_nums.remove(checkpoint_num)
                 injected_checkpoint_nums.append(checkpoint_num)
             injected_checkpoint_nums = sorted(injected_checkpoint_nums)
-            return self.debugger.inject_fault(self.result_id, self.iteration,
+            return self.debugger.inject_fault(self.result_id,
                                               injected_checkpoint_nums,
                                               selected_targets,
                                               self.cycles_between,
@@ -228,17 +229,16 @@ class fault_injector:
             for i in xrange(num_injections):
                 injection_times.append(random.uniform(0, self.exec_time))
             injection_times = sorted(injection_times)
-            self.debugger.inject_fault(self.result_id, self.iteration,
-                                       injection_times, self.command,
-                                       selected_targets)
+            self.debugger.inject_fault(self.result_id, injection_times,
+                                       self.command, selected_targets)
             return 0
 
     def check_output(self, output_file, use_aux_output):
         missing_output = False
         os.makedirs('campaign-data/'+str(self.campaign_number)+'/results/' +
-                    str(self.iteration))
+                    str(self.result_id))
         result_folder = ('campaign-data/'+str(self.campaign_number) +
-                         '/results/'+str(self.iteration))
+                         '/results/'+str(self.result_id))
         output_location = result_folder+'/'+output_file
         gold_location = ('campaign-data/'+str(self.campaign_number)+'/gold_' +
                          output_file)
@@ -337,7 +337,7 @@ class fault_injector:
             print(colored(self.debugger.dut.serial.port+' ', 'blue'), end='')
         except:
             pass
-        print(colored('iteration '+str(self.iteration)+' outcome: ' +
+        print(colored('result id '+str(self.result_id)+' outcome: ' +
                       outcome_category+' - '+outcome, 'blue'), end='')
         if self.data_diff is not None and self.data_diff < 1.0:
             print(colored(', data diff: '+str(self.data_diff), 'blue'))
@@ -349,8 +349,6 @@ class fault_injector:
                        'detected_errors': self.detected_errors,
                        'debugger_output': self.debugger.output,
                        'timestamp': datetime.now()}
-        self.data_diff = None
-        self.detected_errors = None
         self.debugger.output = ''
         try:
             result_data['dut_output'] = self.debugger.dut.output
@@ -367,11 +365,9 @@ class fault_injector:
         sql_db.commit()
         sql_db.close()
 
-    def inject_and_monitor(self, iteration_counter, last_iteration,
-                           num_injections, selected_targets, output_file,
-                           use_aux_output, compare_all):
-        self.data_diff = None
-        self.detected_errors = None
+    def inject_and_monitor(self, iteration_counter, num_injections,
+                           selected_targets, output_file, use_aux_output,
+                           compare_all):
         if self.use_aux and not self.use_simics:
             if self.use_aux:
                 self.debugger.aux.serial.write('\x03')
@@ -379,11 +375,11 @@ class fault_injector:
                 self.send_dut_files(aux=True)
         while True:
             with iteration_counter.get_lock():
-                self.iteration = iteration_counter.value
-                iteration_counter.value += 1
-            if self.iteration >= last_iteration:
+                iteration = iteration_counter.value
+                iteration_counter.value -= 1
+            if iteration <= 0:
                 break
-            self.result_id = self.get_result_id(num_injections)
+            self.create_result(num_injections)
             if not self.use_simics:
                 attempts = 10
                 for attempt in xrange(attempts):
@@ -460,27 +456,23 @@ class fault_injector:
                 finally:
                     shutil.rmtree('simics-workspace/injected-checkpoints/' +
                                   str(self.campaign_number)+'/' +
-                                  str(self.iteration))
+                                  str(self.result_id))
             self.log_result(outcome, outcome_category)
         self.close()
 
-    def supervise(self, iteration_counter, iterations, output_file,
-                  use_aux_output, packet_capture):
-        with iteration_counter.get_lock():
-            last_iteration = iteration_counter.value + iterations
+    def supervise(self, iteration_counter, output_file, use_aux_output,
+                  packet_capture):
         interrupted = False
         while not interrupted:
             with iteration_counter.get_lock():
-                self.iteration = iteration_counter.value
-                iteration_counter.value += 1
-            if self.iteration >= last_iteration:
+                iteration = iteration_counter.value
+                iteration_counter.value -= 1
+            if iteration <= 0:
                 break
-            self.data_diff = None
-            self.detected_errors = None
-            self.result_id = self.get_result_id()
+            self.create_result()
             if packet_capture:
                 data_dir = ('campaign-data/'+str(self.campaign_number) +
-                            '/results/'+str(self.iteration))
+                            '/results/'+str(self.result_id))
                 os.makedirs(data_dir)
                 capture_file = open(data_dir+'/capture.pcap', 'w')
                 capture_process = subprocess.Popen(['ssh', 'p2020', 'tshark '

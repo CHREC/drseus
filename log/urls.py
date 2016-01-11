@@ -11,8 +11,8 @@ urlpatterns = [
         category_charts_page),
     url(r'^(?P<campaign_number>[0-9]+)/outcome_charts/$', outcome_charts_page),
     url(r'^(?P<campaign_number>[0-9]+)/results/$', results_page),
-    url(r'^(?P<campaign_number>[0-9]+)/result/(?P<iteration>[0-9]+)/$',
+    url(r'^(?P<campaign_number>[0-9]+)/result/(?P<result_id>[0-9]+)/$',
         result_page),
-    url(r'^output-images/(?P<campaign_number>[0-9]+)/(?P<iteration>[0-9]+)$',
+    url(r'^output-images/(?P<campaign_number>[0-9]+)/(?P<result_id>[0-9]+)$',
         output_image)
 ]

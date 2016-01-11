@@ -85,9 +85,10 @@ class jtag:
             self.dut.serial.write('\x03')
         self.dut.do_login()
 
-    def time_application(self, command, aux_command, iterations, kill_dut):
+    def time_application(self, command, aux_command, timing_iterations,
+                         kill_dut):
         start = time.time()
-        for i in xrange(iterations):
+        for i in xrange(timing_iterations):
             if self.use_aux:
                 aux_process = Thread(target=self.aux.command,
                                      args=('./'+aux_command, ))
@@ -99,9 +100,9 @@ class jtag:
                 self.dut.serial.write('\x03')
             self.dut.read_until()
         end = time.time()
-        return (end - start) / iterations, None
+        return (end - start) / timing_iterations, None
 
-    def inject_fault(self, result_id, iteration, injection_times, command,
+    def inject_fault(self, result_id, injection_times, command,
                      selected_targets):
         if selected_targets is None:
             registers = self.registers

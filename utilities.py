@@ -8,7 +8,7 @@ import sqlite3
 import sys
 
 from fault_injector import fault_injector
-from openocd import find_ftdi_serials, find_uart_serials
+from jtag import find_ftdi_serials, find_uart_serials
 import simics_config
 from sql import dict_factory, insert_dict
 
@@ -74,25 +74,6 @@ def get_campaign_data(campaign_number):
     if campaign_data is None:
         raise Exception('could not find campaign number '+str(campaign_number))
     return campaign_data
-
-
-def get_next_iteration(campaign_number):
-    if not os.path.exists('campaign-data/db.sqlite3'):
-        raise Exception('could not find campaign data')
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-    sql_db.row_factory = sqlite3.Row
-    sql = sql_db.cursor()
-    sql.execute('SELECT iteration FROM log_result '
-                'WHERE log_result.campaign_id=? '
-                'ORDER BY iteration DESC LIMIT 1', (campaign_number,))
-    result_data = sql.fetchone()
-    if result_data is None:
-        iteration = 0
-    else:
-        iteration = result_data['iteration']
-    sql_db.commit()
-    sql_db.close()
-    return iteration + 1
 
 
 def backup_database():
@@ -213,14 +194,14 @@ def create_campaign(options):
                             options.debug, options.use_simics, options.seconds)
     drseus.setup_campaign(options.directory, options.architecture,
                           options.application, options.arguments, options.file,
-                          options.files, options.aux_files, options.iterations,
-                          aux_application, options.aux_args,
-                          options.use_aux_output, options.num_checkpoints,
-                          options.kill_dut)
+                          options.files, options.aux_files,
+                          options.timing_iterations, aux_application,
+                          options.aux_args, options.use_aux_output,
+                          options.num_checkpoints, options.kill_dut)
     print('\nsuccessfully setup campaign')
 
 
-def get_injection_data(campaign_data, iteration):
+def get_injection_data(campaign_data, result_id):
     if not os.path.exists('campaign-data/db.sqlite3'):
         raise Exception('could not find campaign data')
     sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
@@ -231,9 +212,7 @@ def get_injection_data(campaign_data, iteration):
                 'register_index,field FROM log_injection '
                 'INNER JOIN log_result ON '
                 '(log_injection.result_id=log_result.id) '
-                'WHERE log_result.iteration=? AND '
-                'log_result.campaign_id=?',
-                (iteration, campaign_data['campaign_number']))
+                'WHERE log_result.id=?', (result_id,))
     injection_data = sql.fetchall()
     sql_db.close()
     injection_data = sorted(injection_data,
@@ -268,18 +247,18 @@ def load_campaign(campaign_data, options):
     return drseus
 
 
-def perform_injections(campaign_data, iteration_counter, last_iteration,
-                       options, interactive=False):
+def perform_injections(campaign_data, iteration_counter, options,
+                       interactive=False):
     drseus = load_campaign(campaign_data, options)
 
     def interrupt_handler(signum, frame):
         drseus.log_result('Interrupted', 'Incomplete')
         if os.path.exists('campaign-data/results/' +
                           str(campaign_data['campaign_number'])+'/' +
-                          str(drseus.iteration)):
+                          str(drseus.result_id)):
             shutil.rmtree('campaign-data/results/' +
                           str(campaign_data['campaign_number'])+'/' +
-                          str(drseus.iteration))
+                          str(drseus.result_id))
         if not drseus.use_simics:
             try:
                 drseus.debugger.continue_dut()
@@ -292,10 +271,10 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
         if drseus.use_simics:
             if os.path.exists('simics-workspace/injected-checkpoints/' +
                               str(campaign_data['campaign_number'])+'/' +
-                              str(drseus.iteration)):
+                              str(drseus.result_id)):
                 shutil.rmtree('simics-workspace/injected-checkpoints/' +
                               str(campaign_data['campaign_number'])+'/' +
-                              str(drseus.iteration))
+                              str(drseus.result_id))
         if not interactive:
             sys.exit()
     signal.signal(signal.SIGINT, interrupt_handler)
@@ -304,9 +283,8 @@ def perform_injections(campaign_data, iteration_counter, last_iteration,
         selected_targets = options.selected_targets.split(',')
     else:
         selected_targets = None
-    drseus.inject_and_monitor(iteration_counter, last_iteration,
-                              options.num_injections, selected_targets,
-                              campaign_data['output_file'],
+    drseus.inject_and_monitor(iteration_counter, options.num_injections,
+                              selected_targets, campaign_data['output_file'],
                               campaign_data['use_aux_output'],
                               options.compare_all)
 

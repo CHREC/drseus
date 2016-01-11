@@ -32,7 +32,6 @@ class campaign(models.Model):
 
 class result(models.Model):
     campaign = models.ForeignKey(campaign)
-    iteration = models.IntegerField()
     num_injections = models.IntegerField()
     outcome = models.TextField()
     outcome_category = models.TextField()

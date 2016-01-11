@@ -52,18 +52,17 @@ class result_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = result
-        exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output',
-                   'id')
+        exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output')
 
 
 class results_table(tables.Table):
-    iteration = tables.TemplateColumn(  # LinkColumn()
+    id = tables.TemplateColumn(  # LinkColumn()
         '<a href="../result/{{ value }}">{{ value }}</a>')
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
     targets = tables.Column(empty_values=())
     select = tables.TemplateColumn(
         '<input type="checkbox" name="select_box" '
-        'value="{{ record.iteration }}">', orderable=False)
+        'value="{{ record.id }}">', orderable=False)
 
     def render_targets(self, record):
         if record is not None:
@@ -88,8 +87,7 @@ class results_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = result
-        exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output',
-                   'id')
+        exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output')
 
 
 class hw_injection_table(tables.Table):

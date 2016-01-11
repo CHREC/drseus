@@ -74,7 +74,7 @@ simics_mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes (Simics only)',
                                          'These modes are only available for '
                                          'Simics campaigns')
 simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
-                             dest='iteration', default=0,
+                             dest='result_id', default=0,
                              help='regenerate a campaign iteration and '
                                   'launch in Simics')
 simics_mode_group.add_option('-u', '--update', action='store_true',
@@ -91,7 +91,7 @@ new_group.add_option('-A', '--arch', action='store',  choices=['a9', 'p2020'],
                      dest='architecture', default='p2020',
                      help='target architecture [default=p2020]')
 new_group.add_option('-m', '--timing', action='store', type='int',
-                     dest='iterations', default=5,
+                     dest='timing_iterations', default=5,
                      help='number of timing iterations to run [default=5]')
 new_group.add_option('-a', '--args', action='store', type='str',
                      dest='arguments', default='',
@@ -138,7 +138,7 @@ injection_group = optparse.OptionGroup(parser, 'Injection Options', 'Use these '
                                        'when performing injections '
                                        '(-i or --inject)')
 injection_group.add_option('-n', '--iterations', action='store', type='int',
-                           dest='num_iterations', default=10,
+                           dest='injection_iterations', default=10,
                            help='number of iterations to perform [default=10]')
 injection_group.add_option('-I', '--injections', action='store', type='int',
                            dest='num_injections', default=1,

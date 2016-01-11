@@ -32,7 +32,7 @@ def outcome_charts_page(request, campaign_number):
 
 def charts_page(request, campaign_number, group_categories):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
-    page_items = [('Overview', 'outcomes')]
+    page_items = [('Results Overview', 'outcomes')]
     if campaign_data.use_simics:
         page_items.append(('Injections By Target', 'targets'))
     page_items.extend([('Injections By Register', 'registers'),
@@ -41,7 +41,7 @@ def charts_page(request, campaign_number, group_categories):
         page_items.extend([('Injections By TLB Entry', 'tlbs'),
                           ('Injections By TLB Field', 'fields')])
     page_items.extend([('Injections Over Time', 'times'),
-                       ('Iterations By Injection Count', 'counts')])
+                       ('Results By Injection Count', 'counts')])
     injection_objects = injection.objects.filter(
         result__campaign__campaign_number=campaign_number)
     filter_ = injection_filter(request.GET, queryset=injection_objects,
@@ -160,30 +160,22 @@ def campaigns_page(request):
 def results_page(request, campaign_number):
     if request.method == 'POST' and 'delete' in request.POST:
         if 'select_box' in request.POST:
-            iterations = [int(iteration) for iteration
+            result_ids = [int(result_id) for result_id
                           in dict(request.POST)['select_box']]
-            injection.objects.filter(
-                result__campaign__campaign_number=campaign_number,
-                result__iteration__in=iterations).delete()
+            injection.objects.filter(result__id__in=result_ids).delete()
             simics_memory_diff.objects.filter(
-                result__campaign__campaign_number=campaign_number,
-                result__iteration__in=iterations).delete()
+                result__id__in=result_ids).delete()
             simics_register_diff.objects.filter(
-                result__campaign__campaign_number=campaign_number,
-                result__iteration__in=iterations).delete()
-            result.objects.filter(
-                campaign__campaign_number=campaign_number,
-                iteration__in=iterations).delete()
+                result__id__in=result_ids).delete()
+            result.objects.filter(id__in=result_ids).delete()
     elif request.method == 'POST' and 'view_output' in request.POST:
         if 'select_box' in request.POST:
-            iterations = []
+            result_ids = []
             page_items = []
-            for iteration in dict(request.POST)['select_box']:
-                iterations.append(int(iteration))
-                page_items.append(('Iteration '+iteration, iteration))
-            results = result.objects.filter(
-                campaign__campaign_number=campaign_number,
-                iteration__in=iterations)
+            for result_id in dict(request.POST)['select_box']:
+                result_ids.append(int(result_id))
+                page_items.append(('Result ID '+result_id, result_id))
+            results = result.objects.filter(id__in=result_ids)
             return render(request, 'output.html', {'results': results,
                                                    'navigation_items':
                                                        navigation_items,
@@ -202,8 +194,8 @@ def results_page(request, campaign_number):
         return redirect('/'+str(campaign_number)+'/results/')
     result_objects = result.objects.filter(id__in=result_ids)
     if request.method == 'POST' and 'view_output_all' in request.POST:
-        page_items = [('Iteration '+str(iteration), iteration) for iteration
-                      in result_objects.values_list('iteration', flat=True)]
+        page_items = [('Result ID '+str(result_id), result_id) for result_id
+                      in result_objects.values_list('id', flat=True)]
         return render(request, 'output.html', {'results': result_objects,
                                                'navigation_items':
                                                    navigation_items,
@@ -224,12 +216,12 @@ def results_page(request, campaign_number):
                                             'table': table})
 
 
-def result_page(request, campaign_number, iteration):
+def result_page(request, campaign_number, result_id):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
     navigation_items_ = [(item[0], '../'+item[1])
                          for item in navigation_items]
     page_items = [('Result', 'result'), ('Injections', 'injections')]
-    output_file = ('campaign-data/'+campaign_number+'/results/'+iteration +
+    output_file = ('campaign-data/'+campaign_number+'/results/'+result_id +
                    '/'+campaign_data.output_file)
     if os.path.exists(output_file) and what(output_file) is not None:
         output_image = True
@@ -244,9 +236,9 @@ def result_page(request, campaign_number, iteration):
         page_items.extend([('Register Diffs', 'register_diffs'),
                            ('Memory Diffs', 'memory_diffs')])
     result_object = result.objects.get(
-        campaign__campaign_number=campaign_number, iteration=iteration)
+        campaign__campaign_number=campaign_number, id=result_id)
     table = result_table(result.objects.filter(
-        campaign__campaign_number=campaign_number, iteration=iteration))
+        campaign__campaign_number=campaign_number, id=result_id))
     if request.method == 'POST' and 'save' in request.POST:
         form = result_form(request.POST)
         if form.is_valid():
@@ -267,20 +259,19 @@ def result_page(request, campaign_number, iteration):
         result_object.delete()
         return HttpResponse('Result deleted.')
     if request.method == 'GET' and request.GET.get('launch'):
-        drseus = '../drseus.py'
+        drseus = 'drseus.py'
         if not os.path.exists(drseus):
-            drseus += 'c'
-        Popen([os.getcwd()+'/'+drseus, '--regenerate', iteration],
-              cwd=os.getcwd()+'/../')
+            drseus = 'drseus.sh'
+        Popen(['./'+drseus, '--regenerate', result_id])
     injection_objects = \
         injection.objects.filter(
             result__campaign__campaign_number=campaign_number,
-            result__iteration=iteration)
+            result__id=result_id)
     if campaign_data.use_simics:
         injection_table = simics_injection_table(injection_objects)
         register_objects = simics_register_diff.objects.filter(
             result__campaign__campaign_number=campaign_number,
-            result__iteration=iteration)
+            result__id=result_id)
         register_filter = \
             simics_register_diff_filter(request.GET, queryset=register_objects,
                                         campaign=campaign_number)
@@ -289,7 +280,7 @@ def result_page(request, campaign_number, iteration):
                       paginate={'per_page': 25}).configure(register_table)
         memory_objects = simics_memory_diff.objects.filter(
             result__campaign__campaign_number=campaign_number,
-            result__iteration=iteration)
+            result__id=result_id)
         memory_table = simics_memory_diff_table(memory_objects)
         RequestConfig(request,
                       paginate={'per_page': 25}).configure(memory_table)
@@ -314,14 +305,14 @@ def result_page(request, campaign_number, iteration):
                                            'table': table})
 
 
-def output_image(request, campaign_number, iteration):
+def output_image(request, campaign_number, result_id):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
-    if iteration == '0':
+    if result_id == '0':
         output_file = ('campaign-data/'+campaign_number+'/'
                        'gold_'+campaign_data.output_file)
     else:
         output_file = ('campaign-data/'+campaign_number+'/results/' +
-                       iteration+'/'+campaign_data.output_file)
+                       result_id+'/'+campaign_data.output_file)
     if os.path.exists(output_file):
         return HttpResponse(open(output_file, 'rb').read(),
                             content_type=guess_type(output_file))

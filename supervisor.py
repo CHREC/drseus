@@ -22,11 +22,7 @@ class supervisor(Cmd):
             self.options.campaign_number = utilities.get_last_campaign()
         self.campaign_data = utilities.get_campaign_data(
             options.campaign_number)
-        self.iteration_counter = multiprocessing.Value(
-            'I', utilities.get_next_iteration(options.campaign_number))
         self.drseus = utilities.load_campaign(self.campaign_data, options)
-        self.drseus.data_diff = None
-        self.drseus.detected_errors = None
         if self.drseus.use_simics:
             checkpoint = ('gold-checkpoints/' +
                           str(self.drseus.campaign_number)+'/' +
@@ -61,12 +57,6 @@ class supervisor(Cmd):
         self.do_help(None)
         Cmd.preloop(self)
 
-    def next_result(self):
-        with self.iteration_counter.get_lock():
-            self.drseus.iteration = self.iteration_counter.value
-            self.iteration_counter.value += 1
-        self.drseus.result_id = self.drseus.get_result_id(0)
-
     def do_info(self, arg=None):
         """Print information about the current campaign"""
         print(str(self.drseus))
@@ -89,7 +79,7 @@ class supervisor(Cmd):
 
     def do_command_dut(self, arg, aux=False):
         """Send DUT device a command and interact, interrupt with ctrl-c"""
-        self.next_result()
+        self.drseus.create_result()
         if aux:
             self.drseus.debugger.aux.serial.write(arg+'\n')
         else:
@@ -129,7 +119,7 @@ class supervisor(Cmd):
 
     def do_read_dut(self, arg=None, aux=False):
         """Read from DUT, interrupt with ctrl-c"""
-        self.next_result()
+        self.drseus.create_result()
         try:
             if aux:
                 self.drseus.debugger.aux.read_until('toinfinityandbeyond!')
@@ -169,12 +159,10 @@ class supervisor(Cmd):
 
     def do_get_dut_file(self, arg, aux=False):
         """Retrieve file from DUT device"""
-        self.next_result()
-        self.drseus.result_id = self.drseus.get_result_id(0)
-        os.makedirs('campaign-data/'+str(self.drseus.campaign_number) +
-                    '/results/'+str(self.drseus.iteration))
+        self.drseus.create_result()
         directory = ('campaign-data/'+str(self.drseus.campaign_number) +
-                     '/results/'+str(self.drseus.iteration)+'/')
+                     '/results/'+str(self.drseus.result_id)+'/')
+        os.makedirs(directory)
         try:
             if aux:
                 self.drseus.debugger.aux.get_file(arg, directory)
@@ -198,15 +186,16 @@ class supervisor(Cmd):
             except:
                 print('Invalid value entered')
                 return
-            iterations = max(int(run_time / self.drseus.exec_time), 1)
+            supervise_iterations = max(int(run_time / self.drseus.exec_time), 1)
         else:
             try:
-                iterations = int(arg)
+                supervise_iterations = int(arg)
             except:
                 print('Invalid value entered')
                 return
-        print('Performing '+str(iterations)+' iteration(s)...\n')
-        self.drseus.supervise(self.iteration_counter, iterations,
+        print('Performing '+str(supervise_iterations)+' iteration(s)...\n')
+        iteration_counter = multiprocessing.Value('I', supervise_iterations)
+        self.drseus.supervise(iteration_counter,
                               self.campaign_data['output_file'],
                               self.campaign_data['use_aux_output'],
                               self.options.capture)
