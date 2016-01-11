@@ -67,7 +67,7 @@ def campaign_page(request, campaign_number):
     chart_array = json_campaign(campaign_data)
     if chart_array != '[]':
         page_items.append(('Injection Targets', 'device_targets'))
-    output_file = ('../campaign-data/'+str(campaign_number) +
+    output_file = ('campaign-data/'+str(campaign_number) +
                    '/gold_'+campaign_data.output_file)
     if os.path.exists(output_file) and what(output_file) is not None:
         output_image = True
