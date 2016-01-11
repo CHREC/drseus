@@ -47,7 +47,7 @@ class result_table(tables.Table):
     delete = tables.TemplateColumn('<input type="submit" name="delete" '
                                    'value="Delete" onclick="return confirm('
                                    '\'Are you sure you want to delete this '
-                                   'iteration?\')" />')
+                                   'result?\')" />')
 
     class Meta:
         attrs = {"class": "paleblue"}
@@ -57,11 +57,13 @@ class result_table(tables.Table):
 
 
 class results_table(tables.Table):
-    num_injections = tables.Column()
-    iteration = tables.TemplateColumn(
+    iteration = tables.TemplateColumn(  # LinkColumn()
         '<a href="../result/{{ value }}">{{ value }}</a>')
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
     targets = tables.Column(empty_values=())
+    select = tables.TemplateColumn(
+        '<input type="checkbox" name="select_box" '
+        'value="{{ record.iteration }}">', orderable=False)
 
     def render_targets(self, record):
         if record is not None:

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
-{% load django_tables2 %}
+
 {% block body %}
+{% load django_tables2 %}
 {% if campaign_data.use_simics %}
 <div class="source" align="center">
     <h2>
@@ -39,21 +40,27 @@
                         </a>
                         DUT Output
                     </h3>
-                    {{ result.dut_output|linebreaksbr }}
+                    <code class="console">
+                        {{ result.dut_output }}
+                    </code>
                     {% if campaign_data.use_aux %}
                     <h3 align="center">
                         <a name="aux_output">
                         </a>
                         AUX Output
                     </h3>
-                    {{ result.aux_output|linebreaksbr }}
+                    <code class="console">
+                        {{ result.aux_output }}
+                    </code>
                     {% endif %}
                     <h3 align="center">
                         <a name="debugger_output">
                         </a>
                         Debugger Output
                     </h3>
-                    {{ result.debugger_output|linebreaksbr }}
+                    <code class="console">
+                        {{ result.debugger_output }}
+                    </code>
                 </div>
             </td>
             <td valign="top">
@@ -114,21 +121,27 @@
             </a>
             DUT Output
         </h3>
-        {{ result.dut_output|linebreaksbr }}
+        <code class="console">
+            {{ result.dut_output }}
+        </code>
         {% if campaign_data.use_aux %}
         <h3 align="center">
             <a name="aux_output">
             </a>
             AUX Output
         </h3>
-        {{ result.aux_output|linebreaksbr }}
+        <code class="console">
+            {{ result.aux_output }}
+        </code>
         {% endif %}
         <h3 align="center">
             <a name="debugger_output">
             </a>
             Debugger Output
         </h3>
-        {{ result.debugger_output|linebreaksbr }}
+        <code class="console">
+            {{ result.debugger_output }}
+        </code>
     </div>
 </div>
 {% endif %}

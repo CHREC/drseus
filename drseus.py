@@ -11,6 +11,8 @@ from options import arguments, options, parser
 from supervisor import supervisor
 import utilities
 
+# TODO: fix inconsistent reloading when editing outcomes on result table page
+# TODO: add modes to backup database and delete backups
 # TODO: replace iteration numbers with result_ids
 # TODO: check for extra campaign data files (higher campaign number)
 # TODO: add mode to redo injection iteration

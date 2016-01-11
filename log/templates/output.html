@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="source">
+    {% for result in results %}
+        <h2 align="center">
+            <a href="../result/{{ result.iteration }}" name="{{ result.iteration }}">
+                Iteration {{ result.iteration }}
+            </a>
+             | {{ result.timestamp|date:"m/d/Y H:i:s.u" }} | {{ result.outcome_category }} - {{ result.outcome }}
+        </h2>
+        {% if campaign_data.use_aux %}
+        <h3 align="center">
+            <a name="dut_output">
+            </a>
+            DUT Output
+        </h3>
+        {% endif %}
+        <code class="console">
+            {{ result.dut_output }}
+        </code>
+        {% if campaign_data.use_aux %}
+        <h3 align="center">
+            <a name="aux_output">
+            </a>
+            AUX Output
+        </h3>
+        <code class="console">
+            {{ result.aux_output }}
+        </code>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}

@@ -11,6 +11,14 @@
         <link rel="shortcut icon" type="image/png" href="{{STATIC_URL}}img/favicon.png"/>
         <link rel="stylesheet" type="text/css" href="{% get_static_prefix %}css/nature.css">
         <link rel="stylesheet" type="text/css" href="{% get_static_prefix %}css/table.css">
+        <style>
+            code.console {
+                display: block;
+                white-space: pre-wrap;
+                overflow: auto;
+                max-height: 500px;
+            }
+        </style>
         <script src="{% get_static_prefix %}js/jquery-2.1.4.min.js" type="text/javascript">
         </script>
         <script src="{% get_static_prefix %}js/jspdf.min.js" type="text/javascript">
@@ -31,12 +39,12 @@
         <script type="text/javascript">
             {% autoescape off %}
             chart_array = {{ chart_array }}
+            {% endautoescape %}
             $(document).ready(function() {
                 $.each(chart_array, function(index, chartoptions) {
                     chart = new Highcharts.Chart(chartoptions);
                 });
             });
-            {% endautoescape %}
         </script>
         {% endif %}
     </head>
@@ -117,5 +125,11 @@
         <div class="footer">
             DrSEUs was created by Ed Carlisle IV
         </div>
+        <script type="text/javascript">
+            var consoles = document.getElementsByClassName("console");
+            for(var i=0, n=consoles.length; i<n; i++) {
+                consoles[i].scrollTop = consoles[i].scrollHeight;
+            }
+        </script>
     </body>
 </html>
