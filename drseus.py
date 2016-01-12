@@ -7,6 +7,7 @@ import shutil
 import signal
 import sys
 
+from jtag import openocd
 from options import arguments, options, parser
 from supervisor import supervisor
 import utilities
@@ -27,7 +28,7 @@ for mode in (options.application, options.inject, options.supervise,
              options.view_logs, options.zedboards, options.list,
              options.delete_results, options.delete_campaign,
              options.delete_all, options.merge_directory, options.result_id,
-             options.dependencies):
+             options.dependencies, options.openocd):
     if mode:
         modes += 1
 if modes == 0:
@@ -136,3 +137,10 @@ elif options.dependencies:
     for campaign in os.listdir('simics-workspace/gold-checkpoints'):
         utilities.update_checkpoint_dependencies(campaign)
     print('done')
+elif options.openocd:
+    if options.dut_serial_port is None:
+        options.dut_serial_port = '/dev/ttyACM0'
+    debugger = openocd(None, None, options.dut_serial_port, None, None, None,
+                       None, None, None, None, standalone=True)
+    print('Launched '+str(debugger))
+    debugger.openocd.wait()

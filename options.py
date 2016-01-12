@@ -68,6 +68,9 @@ mode_group.add_option('-M', '--merge', action='store', type='str',
                       dest='merge_directory', default=None,
                       help='merge campaigns from external DIRECTORY into the '
                            'local directory')
+mode_group.add_option('--openocd', action='store_true', dest='openocd',
+                      default=False,
+                      help='launch openocd for dut (zedboard support only)')
 parser.add_option_group(mode_group)
 
 simics_mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes (Simics only)',

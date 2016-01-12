@@ -492,25 +492,31 @@ class openocd(jtag):
 
     def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
-                 campaign_number):
+                 campaign_number, standalone=False):
         self.prompts = ['>']
         self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
                           'r9', 'r10', 'r11', 'r12',  'pc', 'cpsr', 'sp', 'lr']
         serial = zedboards[find_uart_serials()[dut_serial_port]]
         port = find_open_port()
-        self.dev_null = open('/dev/null', 'w')
+        if not standalone:
+            self.dev_null = open('/dev/null', 'w')
         self.openocd = subprocess.Popen(['openocd', '-c',
                                          'gdb_port 0; tcl_port 0; '
                                          'telnet_port '+str(port)+'; '
                                          'interface ftdi; '
                                          'ftdi_serial '+serial+';',
                                          '-f', 'openocd_zedboard.cfg'],
-                                        stderr=self.dev_null)
-        jtag.__init__(self, '127.0.0.1', port, rsakey, dut_serial_port,
-                      aux_serial_port, use_aux, dut_prompt, aux_prompt, debug,
-                      timeout, campaign_number)
-        time.sleep(1)
-        self.telnet = Telnet(self.ip_address, self.port, timeout=self.timeout)
+                                        stderr=(self.dev_null if not standalone
+                                                else None))
+        if not standalone:
+            jtag.__init__(self, '127.0.0.1', port, rsakey, dut_serial_port,
+                          aux_serial_port, use_aux, dut_prompt, aux_prompt,
+                          debug, timeout, campaign_number)
+            time.sleep(1)
+            self.telnet = Telnet(self.ip_address, self.port,
+                                 timeout=self.timeout)
+        else:
+            self.port = port
 
     def __str__(self):
         string = 'OpenOCD at localhost port '+str(self.port)

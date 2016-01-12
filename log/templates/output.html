@@ -7,7 +7,12 @@
             <a href="../result/{{ result.id }}" name="{{ result.id }}">
                 Result ID {{ result.id }}
             </a>
-             | {{ result.timestamp|date:"m/d/Y H:i:s.u" }} | {{ result.outcome_category }} - {{ result.outcome }}
+             | {{ result.timestamp|date:"m/d/Y H:i:s.u" }} | {{ result.outcome_category }} -
+             {% if result.outcome_category == "Data error" %}
+             {{ result.outcome }}, data diff: {{ result.data_diff }}
+             {% else %}
+             {{ result.outcome }}
+             {% endif %}
         </h2>
         {% if image %}
         <div align="center">
