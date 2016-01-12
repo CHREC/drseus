@@ -43,6 +43,7 @@ class dut:
         except:
             raise Exception('error opening serial port', serial_port,
                             ', are you a member of dialout?')
+        self.serial.reset_input_buffer()
         self.prompt = prompt+' '
         self.ssh_port = ssh_port
         self.debug = debug
@@ -74,7 +75,7 @@ class dut:
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 ssh.connect(self.ip_address, port=self.ssh_port,
                             username='root', pkey=self.rsakey,
-                            look_for_keys=False)
+                            allow_agent=False, look_for_keys=False)
                 dut_scp = SCPClient(ssh.get_transport())
                 dut_scp.put(files)
                 dut_scp.close()
@@ -131,7 +132,7 @@ class dut:
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 ssh.connect(self.ip_address, port=self.ssh_port,
                             username='root', pkey=self.rsakey,
-                            look_for_keys=False)
+                            allow_agent=False, look_for_keys=False)
                 dut_scp = SCPClient(ssh.get_transport())
                 dut_scp.get(file_, local_path=local_path)
                 dut_scp.close()
