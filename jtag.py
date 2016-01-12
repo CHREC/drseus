@@ -13,6 +13,7 @@ import subprocess
 
 from dut import dut
 from error import DrSEUsError
+from hardware_targets import devices
 from sql import insert_dict
 
 # zedboards[uart_serial] = ftdi_serial
@@ -65,8 +66,6 @@ class jtag:
         if self.use_aux:
             self.aux = dut(rsakey, aux_serial_port, aux_prompt, debug, timeout,
                            campaign_number, color='cyan')
-        # else:
-        #     self.aux = None
 
     def __str__(self):
         string = ('JTAG Debugger at '+self.ip_address+' port '+str(self.port))
@@ -238,23 +237,8 @@ class bdi_arm(bdi):
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
                  campaign_number):
         self.prompts = ['A9#0>', 'A9#1>']
-        # TODO: ttb1 cannot inject into bits 2, 8, 9, 11
-        self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
-                          'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'pc', 'cpsr',
-                          # 'spsr', 'mainid', 'cachetype', 'tcmstatus',
-                          # 'tlbtype', 'mputype', 'multipid', 'procfeature0',
-                          # 'procfeature1', 'dbgfeature0', auxfeature0',
-                          # 'memfeature0', 'memfeature1', 'memfeature2',
-                          # 'memfeature3', 'instrattr0', 'instrattr1',
-                          # 'instrattr2', 'instrattr3', 'instrattr4',
-                          # 'instrattr5', 'instrattr6', 'instrattr7', 'control',
-                          # 'auxcontrol', 'cpaccess', 'securecfg', 'securedbg',
-                          # 'nonsecure',
-                          'ttb0', 'ttb1',  # 'ttbc',
-                          'dac',  # 'dfsr', 'ifsr', 'dauxfsr', 'iaucfsr',
-                          'dfar', 'ifar',  # 'fcsepid',
-                          'context'
-                          ]
+        self.registers = devices['a9_bdi']['GPR']
+        self.registers.extend(devices['a9_bdi']['CPU'])
         bdi.__init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                      use_aux, dut_prompt, aux_prompt, debug, timeout,
                      campaign_number)
@@ -299,129 +283,14 @@ class bdi_arm(bdi):
         self.command('rm '+register+' '+value, error_message='Error setting '
                                                              'register value')
 
-    # def get_dut_regs(self, selected_targets):
-    #     # TODO: get GPRs
-    #     # TODO: check for unused registers ttbc? iaucfsr?
-    #     regs = [{}, {}]
-    #     for core in xrange(2):
-    #         self.select_core(core)
-    #         debug_reglist = self.command('rdump')
-    #         for line in debug_reglist.split('\r')[:-1]:
-    #             line = line.split(': ')
-    #             register = line[0].strip()
-    #             if selected_targets is None:
-    #                 value = line[1].split(' ')[0].strip()
-    #                 regs[core][register] = value
-    #             else:
-    #                 for target in selected_targets:
-    #                     if target in register:
-    #                         value = line[1].split(' ')[0].strip()
-    #                         regs[core][register] = value
-    #                         break
-    #     return regs
-
 
 class bdi_p2020(bdi):
     def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
                  campaign_number):
         self.prompts = ['P2020>']
-        # TODO: add pmr, spr, L2 TLB
-        # TODO: check if only certain bits are read only (some partially worked)
-        # TODO: ccsrbar, tsr reset after read/write?
-        self.registers = ['bbear', 'bbtar',  # 'altcar', 'altcbar', 'autorstsr',
-                          # 'bptr', 'br0', 'br1', 'br2',
-                          'br3',  # 'br4',
-                          'br5',  # 'br6',
-                          'br7',  # 'bucsr',
-                          'cap_addr',  # 'cap_attr',
-                          'cap_data_hi', 'cap_data_lo', 'cap_ecc',
-                          # 'cap_ext_addr', 'ccsrbar', 'clkocr', 'cs0_bnds',
-                          # 'cs0_config', 'cs0_config_2', 'cs1_bnds',
-                          # 'cs1_config', 'cs1_config_2', 'cs2_bnds',
-                          # 'cs2_config', 'cs2_config_2', 'cs3_bnds',
-                          # 'cs3_config', 'cs3_config_2',
-                          'csrr0', 'csrr1', 'ctr', 'dac1',
-                          'dac2',  # 'dbcr0',
-                          'dbcr1', 'dbcr2',  # 'dbsr',
-                          'ddr_cfg',  # 'ddr_cfg_2', 'ddr_clk_cntl',
-                          'ddr_data_init', 'ddr_init_addr',  # 'ddr_init_eaddr',
-                          # 'ddr_interval', 'ddr_ip_rev1', 'ddr_ip_rev2',
-                          'ddr_mode', 'ddr_mode_2', 'ddr_mode_cntl',
-                          # 'ddr_wrlvl_cntl', 'ddr_zq_cntl',
-                          'ddrcdr_1',  # 'ddrcdr_2', 'ddrclkdr', 'ddrdsr_1',
-                          # 'ddrdsr_2',
-                          'dear',  # 'dec',
-                          'decar',  # 'devdisr', 'ecc_err_inject', 'ecmcr',
-                          # 'ectrstcr', 'eeatr', 'eebacr', 'eebpcr', 'eedr',
-                          # 'eeer', 'eehadr', 'eeladr',
-                          'egpr0', 'egpr1', 'egpr2', 'egpr3', 'egpr4', 'egpr5',
-                          'egpr6', 'egpr7', 'egpr8', 'egpr9', 'egpr10',
-                          'egpr11', 'egpr12', 'egpr13', 'egpr14', 'egpr15',
-                          'egpr16', 'egpr17', 'egpr18', 'egpr19', 'egpr20',
-                          'egpr21', 'egpr22', 'egpr23', 'egpr24', 'egpr25',
-                          'egpr26', 'egpr27', 'egpr28', 'egpr29', 'egpr30',
-                          'egpr31',  # 'eipbrr1', 'eipbrr2', 'err_detect',
-                          # 'err_disable',
-                          'err_inject_hi', 'err_inject_lo',  # 'err_int_en',
-                          # 'err_sbe', 'esr', 'fbar', 'fbcr',
-                          'fcr', 'fir',  # 'fmr', 'fpar', 'gpporcr', 'hid0',
-                          # 'hid1',
-                          'iac1', 'iac2',  # 'ivor0', 'ivor1', 'ivor2', 'ivor3',
-                          # 'ivor4', 'ivor5', 'ivor6', 'ivor7', 'ivor8',
-                          # 'ivor9', 'ivor10', 'ivor11', 'ivor12', 'ivor13',
-                          # 'ivor14', 'ivor15', 'ivor32', 'ivor33', 'ivor34',
-                          # 'ivor35', 'ivpr', 'l1cfg0', 'l1cfg1', 'l1csr0',
-                          # 'l1csr1', 'l2captdatahi', 'l2captdatalo',
-                          # 'l2captecc', 'l2cewar0', 'l2cewar1', 'l2cewar2',
-                          # 'l2cewar3', 'l2cewarea0', 'l2cewarea1',
-                          # 'l2cewarea2', 'l2cewarea3',
-                          'l2cewcr0',  # 'l2cewcr1',
-                          'l2cewcr2', 'l2cewcr3',
-                          # 'l2ctl', 'l2erraddrh', 'l2erraddrl', 'l2errattr',
-                          # 'l2errctl', 'l2errdet', 'l2errdis', 'l2errinjctl',
-                          'l2errinjhi', 'l2errinjlo',
-                          # 'l2errinten', 'l2srbar0', 'l2srbar1', 'l2srbarea0',
-                          # 'l2srbarea1', 'laipbrr1', 'laipbrr2', 'lawar0',
-                          # 'lawar1', 'lawar2', 'lawar3', 'lawar4', 'lawar5',
-                          # 'lawar6', 'lawar7', 'lawar8', 'lawar9', 'lawar10',
-                          # 'lawar11', 'lawbar0', 'lawbar1', 'lawbar2',
-                          # 'lawbar3', 'lawbar4', 'lawbar5', 'lawbar6',
-                          # 'lawbar7', 'lawbar8', 'lawbar9', 'lawbar10',
-                          # 'lawbar11', 'lbcr', 'lbcvselcr', 'lcrr',
-                          'lr',  # 'lsdmr', 'lsor', 'lsrt',
-                          'ltear', 'lteatr',  # 'ltedr', 'lteir', 'ltesr',
-                          # 'lurt',
-                          'mamr', 'mar',  # 'mas0', 'mas1', 'mas2',
-                          # 'mas3', 'mas4', 'mas6', 'mas7',
-                          'mbmr',  # 'mcmr', 'mcpsumr', 'mcsr',
-                          'mcsrr0',  # 'mcsrr1',
-                          'mdr',  # 'mm_pvr', 'mm_svr',
-                          # 'mmucfg', 'mmucsr0', 'mrtpr', 'or0',
-                          # 'or1', 'or2', 'or3', 'or4', 'or5', 'or6', 'or7',
-                          # 'pid', 'pid0', 'pid1', 'pid2',
-                          'pir',  # 'porbmsr', 'pordbgmsr', 'pordevsr',
-                          # 'porimpscr', 'porpllsr', 'powmgtcsr', 'pvr',
-                          # 'rstcr', 'rstrscr',
-                          'sp',  # 'spefscr',
-                          'sprg0', 'sprg1', 'sprg2', 'sprg3', 'sprg4', 'sprg5',
-                          'sprg6', 'sprg7',  # 'srdscr0', 'srdscr1', 'srdscr2',
-                          'srr0', 'srr1',  # 'svr', 'tbl',
-                          'tbu',  # 'tcr', 'timing_cfg_0',
-                          'timing_cfg_1',  # 'timing_cfg_2', 'timing_cfg_3',
-                          # 'timing_cfg_4', 'timing_cfg_5', 'tlb0cfg',
-                          # 'tlb1cfg', 'tsr',
-                          'usprg0',
-                          # 'xer'
-                          ]
-        # egpr's have twice as many bits (64) as other registers (32)
-        self.registers.extend(['egpr0', 'egpr1', 'egpr2', 'egpr3', 'egpr4',
-                               'egpr5', 'egpr6', 'egpr7', 'egpr8', 'egpr9',
-                               'egpr10', 'egpr11', 'egpr12', 'egpr13', 'egpr14',
-                               'egpr15', 'egpr16', 'egpr17', 'egpr18', 'egpr19',
-                               'egpr20', 'egpr21', 'egpr22', 'egpr23', 'egpr24',
-                               'egpr25', 'egpr26', 'egpr27', 'egpr28', 'egpr29',
-                               'egpr30', 'egpr31'])
+        self.registers = devices['p2020']['GPR']
+        self.registers.extend(devices['p2020']['CPU'])
         bdi.__init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                      use_aux, dut_prompt, aux_prompt, debug, timeout,
                      campaign_number)
@@ -465,27 +334,6 @@ class bdi_p2020(bdi):
         self.command('rm '+register+' '+value, error_message='Error setting '
                                                              'register value')
 
-    # def get_registers(self, selected_targets):
-    #     regs = [{}, {}]
-    #     for core in xrange(2):
-    #         self.select_core(core)
-    #         debug_reglist = self.command('rdump',
-    #                                      error_message='Error getting '
-    #                                                    'register list')
-    #         for line in debug_reglist.split('\r')[:-2]:
-    #             line = line.split(':')
-    #             register = line[0].strip()
-    #             if selected_targets is None:
-    #                 value = line[1].split(' ')[0].strip()
-    #                 regs[core][register] = value
-    #             else:
-    #                 for target in selected_targets:
-    #                     if target in register:
-    #                         value = line[1].split(' ')[0].strip()
-    #                         regs[core][register] = value
-    #                         break
-    #     return regs
-
 
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
@@ -494,8 +342,8 @@ class openocd(jtag):
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
                  campaign_number, standalone=False):
         self.prompts = ['>']
-        self.registers = ['r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
-                          'r9', 'r10', 'r11', 'r12',  'pc', 'cpsr', 'sp', 'lr']
+        self.registers = devices['a9']['GPR']
+        self.registers.extend(devices['a9']['CPU'])
         serial = zedboards[find_uart_serials()[dut_serial_port]]
         port = find_open_port()
         if not standalone:
@@ -591,11 +439,25 @@ class openocd(jtag):
         self.command('targets zynq.cpu'+str(core),
                      error_message='Error selecting core')
 
-    def get_register_value(self, register):
-        buff = self.command('reg '+register, [':'],
-                            error_message='Error getting register value')
-        return buff.split('\n')[1].split(':')[1].strip().split(' ')[0].strip()
+    def get_register_value(self, register, coprocessor=False):
+        if coprocessor:
+            buff = self.command(' '.join('arm', 'mrc', register['CP'],
+                                         register['Op1'], register['CRn'],
+                                         register['CRm'], register['Op2']),
+                                error_message='Error getting register value')
+            return buff.split('\n')[1].strip()
+        else:
+            buff = self.command('reg '+register, [':'],
+                                error_message='Error getting register value')
+            return \
+                buff.split('\n')[1].split(':')[1].strip().split(' ')[0].strip()
 
-    def set_register_value(self, register, value):
-        self.command('reg '+register+' '+value, error_message='Error setting '
-                                                              'register value')
+    def set_register_value(self, register, value, coprocessor=False):
+        if coprocessor:
+            self.command(' '.join('arm', 'mcr', register['CP'], register['Op1'],
+                                  register['CRn'], register['CRm'],
+                                  register['Op2'], value),
+                         error_message='Error setting register value')
+        else:
+            self.command('reg '+register+' '+value,
+                         error_message='Error setting register value')
