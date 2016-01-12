@@ -9,6 +9,11 @@
             </a>
              | {{ result.timestamp|date:"m/d/Y H:i:s.u" }} | {{ result.outcome_category }} - {{ result.outcome }}
         </h2>
+        {% if image %}
+        <div align="center">
+            <img src="/output-images/{{ campaign }}/{{ result.id }}">
+        </div>
+        {% else %}
         {% if campaign_data.use_aux %}
         <h3 align="center">
             <a name="dut_output">
@@ -24,6 +29,7 @@
             AUX Output
         </h3>
         <code class="console">{{ result.aux_output }}</code>
+        {% endif %}
         {% endif %}
     {% endfor %}
 </div>
