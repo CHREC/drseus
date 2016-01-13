@@ -70,10 +70,11 @@ class injection_filter(django_filters.FilterSet):
             choices=register_index_choices)
         self.filters['register_index'].widget.attrs['size'] = min(
             len(register_index_choices), 10)
-        success_choices = injection_choices(campaign, 'success')
-        self.filters['success'].extra.update(choices=success_choices)
-        self.filters['success'].widget.attrs['size'] = min(
-            len(success_choices), 10)
+        # success_choices = ((1, 'Any'), (2, 'True'), (3, 'False'))
+        # self.filters['success'].extra.update(choices=success_choices)
+        # self.filters['success'].widget.attrs['size'] = min(
+        #     len(success_choices), 10)
+        self.filters['success'].extra.update(help_text='')
         target_choices = injection_choices(campaign, 'target')
         self.filters['target'].extra.update(choices=target_choices)
         self.filters['target'].widget.attrs['size'] = min(
@@ -123,8 +124,8 @@ class injection_filter(django_filters.FilterSet):
     result__outcome_category = django_filters.MultipleChoiceFilter(
         label='Outcome category',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    success = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    # success = django_filters.MultipleChoiceFilter(
+    #     widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     target = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     target_index = django_filters.MultipleChoiceFilter(
