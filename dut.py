@@ -44,9 +44,9 @@ class dut:
             raise Exception('error opening serial port', serial_port,
                             ', are you a member of dialout?')
         try:
-            self.serial.reset_input_buffer()
+            self.serial.reset_input_buffer()  # pyserial 3
         except AttributeError:
-            self.serial.flushInput()
+            self.serial.flushInput()  # pyserial 2.7
         self.prompt = prompt+' '
         self.ssh_port = ssh_port
         self.debug = debug

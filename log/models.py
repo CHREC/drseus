@@ -44,7 +44,6 @@ class result(models.Model):
 
 
 class injection(models.Model):
-    # commond fields
     result = models.ForeignKey(result)
     injection_number = models.IntegerField()
     timestamp = models.DateTimeField()
@@ -52,10 +51,7 @@ class injection(models.Model):
     bit = models.IntegerField(null=True)
     gold_value = models.TextField(null=True)
     injected_value = models.TextField(null=True)
-    # hw fields
     time = models.FloatField(null=True)
-    core = models.IntegerField(null=True)
-    # simics fields
     checkpoint_number = models.IntegerField(null=True)
     target_index = models.TextField(null=True)
     target = models.TextField(null=True)

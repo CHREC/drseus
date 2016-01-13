@@ -44,9 +44,6 @@ class injection_filter(django_filters.FilterSet):
             choices=checkpoint_number_choices)
         self.filters['checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), 10)
-        core_choices = injection_choices(campaign, 'core')
-        self.filters['core'].extra.update(choices=core_choices)
-        self.filters['core'].widget.attrs['size'] = min(len(core_choices), 10)
         field_choices = injection_choices(campaign, 'field')
         self.filters['field'].extra.update(choices=field_choices)
         self.filters['field'].widget.attrs['size'] = min(len(field_choices), 10)
@@ -83,8 +80,6 @@ class injection_filter(django_filters.FilterSet):
             len(target_index_choices), 10)
 
     bit = django_filters.MultipleChoiceFilter(
-        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    core = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     checkpoint_number = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')

@@ -12,7 +12,6 @@
                                     {% load django_tables2 %}
                                     {% render_table table %}
                                 </div>
-                                {% if campaign_data.use_simics %}
                                 <div align="center">
                                     <h2>
                                         <a name="device_targets">
@@ -22,7 +21,6 @@
                                     <div id="device_bit_chart">
                                     </div>
                                 </div>
-                                {% endif %}
                                 {% if output_image %}
                                 <div align="center">
                                     <h2>

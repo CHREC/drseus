@@ -130,12 +130,14 @@ class jtag:
                               'register': register,
                               'time': injection_time,
                               'timestamp': datetime.now()}
-            if 'count' in self.targets and self.targets['count'] > 1:
-                injection_data['core'] = random.randrange(self.targets['count'])
-                self.select_core(injection_data['core'])
+            if ':' in target:
+                injection_data['target_index'] = target.split(':')[1]
+                target = target.split(':')[0]
+                injection_data['target'] = target
+                self.select_core(injection_data['target_index'])
+            print(injection_data)
             injection_data['gold_value'] = self.get_register_value(
                 injection_data['register'], injection_data['target'])
-            # num_bits = len(injection_data['gold_value'].replace('0x', '')) * 4
             if 'bits' in self.targets[target]['registers'][register]:
                 num_bits_to_inject = (self.targets[target]['registers']
                                                   [register]['bits'])
@@ -146,7 +148,11 @@ class jtag:
                 int(injection_data['gold_value'], base=16)
                 ^ (1 << injection_data['bit']))
             if self.debug:
-                print(colored('core: '+str(injection_data['core']), 'magenta'))
+                print(colored('target: '+injection_data['target'], 'magenta'))
+                if 'target_index' in injection_data:
+                    print(colored('target_index: ' +
+                                  str(injection_data['target_index']),
+                                  'magenta'))
                 print(colored('register: '+injection_data['register'],
                               'magenta'))
                 print(colored('bit: '+str(injection_data['bit']), 'magenta'))
@@ -165,7 +171,8 @@ class jtag:
             sql_db.commit()
             sql_db.close()
             if int(injection_data['injected_value'], base=16) != int(
-                    self.get_register_value(injection_data['register']),
+                    self.get_register_value(injection_data['register'],
+                                            injection_data['target']),
                     base=16):
                 raise DrSEUsError('Error injecting fault')
 
@@ -448,14 +455,15 @@ class openocd(jtag):
     def get_register_value(self, register, target):
         if target == 'CP':
             buff = self.command(
-                ' '.join('arm', 'mrc',
-                         self.targets['target']['registers'][register]['CP'],
-                         self.targets['target']['registers'][register]['Op1'],
-                         self.targets['target']['registers'][register]['CRn'],
-                         self.targets['target']['registers'][register]['CRm'],
-                         self.targets['target']['registers'][register]['Op2']),
+                ' '.join([
+                    'arm', 'mrc',
+                    str(self.targets[target]['registers'][register]['CP']),
+                    str(self.targets[target]['registers'][register]['Op1']),
+                    str(self.targets[target]['registers'][register]['CRn']),
+                    str(self.targets[target]['registers'][register]['CRm']),
+                    str(self.targets[target]['registers'][register]['Op2'])]),
                 error_message='Error getting register value')
-            return buff.split('\n')[1].strip()
+            return hex(int(buff.split('\n')[1].strip()))
         else:
             buff = self.command('reg '+register, [':'],
                                 error_message='Error getting register value')
@@ -465,13 +473,14 @@ class openocd(jtag):
     def set_register_value(self, register, target, value):
         if target == 'CP':
             self.command(
-                ' '.join('arm', 'mrc',
-                         self.targets['target']['registers'][register]['CP'],
-                         self.targets['target']['registers'][register]['Op1'],
-                         self.targets['target']['registers'][register]['CRn'],
-                         self.targets['target']['registers'][register]['CRm'],
-                         self.targets['target']['registers'][register]['Op2'],
-                         value),
+                ' '.join([
+                    'arm', 'mrc',
+                    str(self.targets[target]['registers'][register]['CP']),
+                    str(self.targets[target]['registers'][register]['Op1']),
+                    str(self.targets[target]['registers'][register]['CRn']),
+                    str(self.targets[target]['registers'][register]['CRm']),
+                    str(self.targets[target]['registers'][register]['Op2']),
+                    value]),
                 error_message='Error setting register value')
         else:
             self.command('reg '+register+' '+value,

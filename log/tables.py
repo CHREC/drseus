@@ -66,14 +66,8 @@ class results_table(tables.Table):
 
     def render_targets(self, record):
         if record is not None:
-            if result.objects.get(id=record.id).campaign.use_simics:
-                targets = [inj.target
-                           for inj in
-                           injection.objects.filter(result=record.id)]
-            else:
-                targets = [inj.register
-                           for inj in
-                           injection.objects.filter(result=record.id)]
+            targets = [injection_.target for injection_
+                       in injection.objects.filter(result=record.id)]
         else:
             targets = []
         for index in xrange(len(targets)):
@@ -97,7 +91,7 @@ class hw_injection_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = injection
         exclude = ('config_object', 'config_type', 'checkpoint_number', 'field',
-                   'id', 'register_index', 'result', 'target', 'target_index')
+                   'register_index', 'result')
 
 
 class simics_injection_table(tables.Table):
@@ -106,8 +100,7 @@ class simics_injection_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = injection
-        exclude = ('config_object', 'config_type', 'core', 'id', 'result',
-                   'time')
+        exclude = ('config_object', 'config_type', 'result', 'time')
 
 
 class simics_register_diff_table(tables.Table):

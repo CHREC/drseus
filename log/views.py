@@ -32,9 +32,8 @@ def outcome_charts_page(request, campaign_number):
 
 def charts_page(request, campaign_number, group_categories):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
-    page_items = [('Results Overview', 'outcomes')]
-    if campaign_data.use_simics:
-        page_items.append(('Injections By Target', 'targets'))
+    page_items = [('Results Overview', 'outcomes'),
+                  ('Injections By Target', 'targets')]
     page_items.extend([('Injections By Register', 'registers'),
                        ('Injections By Bit', 'bits')])
     if campaign_data.use_simics:
@@ -63,10 +62,9 @@ def charts_page(request, campaign_number, group_categories):
 def campaign_page(request, campaign_number):
     campaign_data = campaign.objects.get(campaign_number=campaign_number)
     chart_array = json_campaign(campaign_data)
-    page_items = [('Campaign Data', 'campaign_data'), ]
+    page_items = [('Campaign Data', 'campaign_data'),
+                  ('Injection Targets', 'device_targets')]
     chart_array = json_campaign(campaign_data)
-    if chart_array != '[]':
-        page_items.append(('Injection Targets', 'device_targets'))
     output_file = ('campaign-data/'+str(campaign_number) +
                    '/gold_'+campaign_data.output_file)
     if os.path.exists(output_file) and what(output_file) is not None:

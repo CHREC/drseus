@@ -7,7 +7,8 @@ from simplejson import dumps
 from threading import Thread
 from .filters import fix_sort, fix_sort_list
 from .models import result
-from .simics_targets import devices
+from .simics_targets import devices as simics_devices
+from .hardware_targets import devices as hardware_devices
 
 colors = {
     'Data error': '#ba79f2',
@@ -137,14 +138,15 @@ def json_campaigns(queryset):
 
 
 def json_campaign(campaign_data):
-    if not campaign_data.use_simics:
-        return '[]'
-    if campaign_data.architecture == 'p2020':
-        targets = devices['p2020rdb']
-    elif campaign_data.architecture == 'a9':
-        targets = devices['a9x2']
+    if campaign_data.use_simics:
+        if campaign_data.architecture == 'p2020':
+            targets = simics_devices['p2020rdb']
+        elif campaign_data.architecture == 'a9':
+            targets = simics_devices['a9x2']
+        else:
+            return '[]'
     else:
-        return '[]'
+        targets = hardware_devices[campaign_data.architecture]
     target_list = sorted(targets.keys())
     chart = {
         'chart': {
@@ -253,8 +255,6 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
 
 def target_chart(queryset, campaign_data, outcomes, group_categories,
                  chart_array):
-    if not campaign_data.use_simics:
-        return
     targets = list(queryset.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
@@ -428,8 +428,6 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
 
 def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                            chart_array):
-    if not campaign_data.use_simics:
-        return
     targets = list(queryset.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:

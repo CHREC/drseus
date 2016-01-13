@@ -9,7 +9,6 @@
                                 <div id="outcome_chart">
                                 </div>
                                 <br>
-                                {% if campaign_data.use_simics %}
                                 <a name="targets">
                                 </a>
                                 <div id="target_chart">
@@ -21,15 +20,16 @@
                                 <div id="target_log_chart">
                                 </div>
                                 <br>
+                                {% if campaign_data.use_simics %}
                                 <div id="diff_target_chart">
                                 </div>
                                 <br>
+                                {% endif %}
                                 <a name="data_diff_targets">
                                 </a>
                                 <div id="data_diff_target_chart">
                                 </div>
                                 <br>
-                                {% endif %}
                                 <a name="registers">
                                 </a>
                                 <div id="register_chart">
