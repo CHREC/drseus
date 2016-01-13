@@ -358,19 +358,23 @@ class fault_injector:
                 result_data['aux_output'] = self.debugger.aux.output
         except AttributeError:
             pass
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-        sql = sql_db.cursor()
-        update_dict(sql, 'result', result_data, self.result_id)
-        sql_db.commit()
-        sql_db.close()
-        self.logged = True
-        self.debugger.output = ''
         try:
-            self.debugger.dut.output = ''
-            if self.use_aux:
-                self.debugger.aux.output = ''
-        except AttributeError:
-            pass
+            sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
+            sql = sql_db.cursor()
+            update_dict(sql, 'result', result_data, self.result_id)
+            sql_db.commit()
+            sql_db.close()
+        except KeyboardInterrupt:
+            sql_db.close()
+        else:
+            self.logged = True
+            self.debugger.output = ''
+            try:
+                self.debugger.dut.output = ''
+                if self.use_aux:
+                    self.debugger.aux.output = ''
+            except AttributeError:
+                pass
 
     def inject_and_monitor(self, iteration_counter, num_injections,
                            selected_targets, output_file, use_aux_output,

@@ -162,6 +162,13 @@ class jtag:
             self.set_register_value(injection_data['register'],
                                     injection_data['target'],
                                     injection_data['injected_value'])
+            if int(injection_data['injected_value'], base=16) == int(
+                    self.get_register_value(injection_data['register'],
+                                            injection_data['target']),
+                    base=16):
+                injection_data['success'] = True
+            else:
+                injection_data['success'] = False
             sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
             insert_dict(sql, 'injection', injection_data)
@@ -169,11 +176,6 @@ class jtag:
                         'result_id=? AND injection_number=0', (result_id,))
             sql_db.commit()
             sql_db.close()
-            if int(injection_data['injected_value'], base=16) != int(
-                    self.get_register_value(injection_data['register'],
-                                            injection_data['target']),
-                    base=16):
-                raise DrSEUsError('Error injecting fault')
 
 
 class bdi(jtag):

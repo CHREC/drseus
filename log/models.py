@@ -59,6 +59,7 @@ class injection(models.Model):
     config_type = models.TextField(null=True)
     register_index = models.TextField(null=True)
     field = models.TextField(null=True)
+    success = models.NullBooleanField()
 
 
 class simics_register_diff(models.Model):
