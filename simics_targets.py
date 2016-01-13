@@ -1,3 +1,5 @@
+from targets import calculate_target_bits
+
 # if count is not present it is assumed to be 1
 # if bits is not present it is assumbed to be 32
 # bits are listed as MSB:0 LSB:31 hence 31-i in bit ranges
@@ -2155,46 +2157,4 @@ devices = {
     }
 }
 
-for device in devices:
-    for target in devices[device]:
-        # count bits for each target
-        total_bits = 0
-        for register in devices[device][target]['registers']:
-            if 'bits' in devices[device][target]['registers'][register]:
-                bits = devices[device][target]['registers'][register]['bits']
-            else:
-                bits = 32
-            if 'count' in devices[device][target]['registers'][register]:
-                count = 1
-                if ('is_tlb' in devices[device][target]['registers'][register]
-                        and devices[device][target]['registers'][register]
-                                   ['is_tlb']):
-                    dimensions = (devices[device][target]['registers']
-                                         [register]['count'][:-1])
-                else:
-                    dimensions = (devices[device][target]['registers']
-                                         [register]['count'])
-                for dimension in dimensions:
-                    count *= dimension
-            else:
-                count = 1
-            (devices[device][target]['registers']
-                    [register]['total_bits']) = count * bits
-            total_bits += count * bits
-            # if a register is partially implemented generate an adjust_bit
-            # mapping list to ensure an unimplemented field is not injected into
-            if ('partial' in devices[device][target]['registers'][register] and
-                    devices[device][target]['registers'][register]['partial']):
-                adjust_bit = []
-                for field, field_range in (devices[device][target]
-                                                  ['registers'][register]
-                                                  ['fields'].iteritems()):
-                    adjust_bit.extend(range(field_range[0], field_range[1]+1))
-                if len(adjust_bit) != bits:
-                    raise Exception('simics_targets.py: ' +
-                                    'bits mismatch for register: '+register +
-                                    ' in target: '+target)
-                else:
-                    (devices[device][target]['registers'][register]
-                            ['adjust_bit']) = sorted(adjust_bit)
-        devices[device][target]['total_bits'] = total_bits
+calculate_target_bits(devices)

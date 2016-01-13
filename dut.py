@@ -43,7 +43,10 @@ class dut:
         except:
             raise Exception('error opening serial port', serial_port,
                             ', are you a member of dialout?')
-        self.serial.reset_input_buffer()
+        try:
+            self.serial.reset_input_buffer()
+        except AttributeError:
+            self.serial.flushInput()
         self.prompt = prompt+' '
         self.ssh_port = ssh_port
         self.debug = debug

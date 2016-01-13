@@ -10,6 +10,7 @@ from termcolor import colored
 from error import DrSEUsError
 from simics_targets import devices
 from sql import insert_dict
+from targets import choose_register, choose_target
 
 
 def flip_bit(value_to_inject, num_bits_to_inject, bit_to_inject):
@@ -28,65 +29,6 @@ def flip_bit(value_to_inject, num_bits_to_inject, bit_to_inject):
     injected_value = int(''.join(binary_list), 2)
     injected_value = hex(injected_value).rstrip('L')
     return injected_value
-
-
-def choose_target(selected_targets, targets):
-    """
-    Given a list of targets, randomly choose one and return it.
-    If no list of targets is given, choose from all available targets.
-    Random selection takes into account the number of bits each target contains.
-    """
-    target_to_inject = None
-    target_list = []
-    total_bits = 0
-    for target in targets:
-        if selected_targets is None or target in selected_targets:
-            bits = targets[target]['total_bits']
-            target_list.append((target, bits))
-            total_bits += bits
-    random_bit = randrange(total_bits)
-    bit_sum = 0
-    for target in target_list:
-        bit_sum += target[1]
-        if random_bit < bit_sum:
-            target_to_inject = target[0]
-            break
-    else:
-        raise Exception('simics_checkpoints.py:choose_target(): '
-                        'Error choosing injection target')
-    if 'count' in targets[target_to_inject]:
-        target_index = randrange(targets[target_to_inject]['count'])
-        target_to_inject += ':'+str(target_index)
-    return target_to_inject
-
-
-def choose_register(target, targets):
-    """
-    Randomly choose a register from the target and return it.
-    Random selection takes into account the number of bits each register
-    contains.
-    """
-    if ':' in target:
-        target = target.split(':')[0]
-    registers = targets[target]['registers']
-    register_to_inject = None
-    register_list = []
-    total_bits = 0
-    for register in registers:
-        bits = registers[register]['total_bits']
-        register_list.append((register, bits))
-        total_bits += bits
-    random_bit = randrange(total_bits)
-    bit_sum = 0
-    for register in register_list:
-        bit_sum += register[1]
-        if random_bit < bit_sum:
-            register_to_inject = register[0]
-            break
-    else:
-        raise Exception('simics_checkpoints.py:choose_register(): '
-                        'Error choosing register for target: '+target)
-    return register_to_inject
 
 
 def inject_register(gold_checkpoint, injected_checkpoint, register, target,

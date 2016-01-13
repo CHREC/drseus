@@ -15,6 +15,7 @@ from dut import dut
 from error import DrSEUsError
 from hardware_targets import devices
 from sql import insert_dict
+from targets import choose_register, choose_target
 
 # zedboards[uart_serial] = ftdi_serial
 zedboards = {'844301CF3718': '210248585809',
@@ -104,36 +105,43 @@ class jtag:
 
     def inject_fault(self, result_id, injection_times, command,
                      selected_targets):
-        if selected_targets is None:
-            registers = self.registers
-        else:
-            registers = []
-            for register in self.registers:
-                for target in selected_targets:
-                    if target in register:
-                        registers.append(register)
-                        break
-        for injection in xrange(1, len(injection_times)+1):
-            injection_data = {'result_id': result_id,
-                              'injection_number': injection,
-                              'time': injection_times[injection-1],
-                              'timestamp': datetime.now()}
+        if selected_targets is not None:
+            for target in selected_targets:
+                if target not in self.targets:
+                    raise Exception('jtag.py:inject_fault(): '
+                                    'invalid injection target: '+target)
+        injection = 0
+        for injection_time in injection_times:
+            injection += 1
             if self.debug:
-                print(colored('injection time: '+str(injection_data['time']),
+                print(colored('injection time: '+str(injection_time),
                               'magenta'))
             if injection == 1:
                 self.dut.serial.write(str('./'+command+'\n'))
             else:
                 self.continue_dut()
-            time.sleep(injection_data['time'])
+            time.sleep(injection_time)
             self.halt_dut()
-            injection_data['core'] = random.randrange(2)
-            self.select_core(injection_data['core'])
-            injection_data['register'] = random.choice(self.registers)
+            target = choose_target(selected_targets, self.targets)
+            register = choose_register(target, self.targets)
+            injection_data = {'result_id': result_id,
+                              'injection_number': injection,
+                              'target': target,
+                              'register': register,
+                              'time': injection_time,
+                              'timestamp': datetime.now()}
+            if 'count' in self.targets and self.targets['count'] > 1:
+                injection_data['core'] = random.randrange(self.targets['count'])
+                self.select_core(injection_data['core'])
             injection_data['gold_value'] = self.get_register_value(
-                injection_data['register'])
-            num_bits = len(injection_data['gold_value'].replace('0x', '')) * 4
-            injection_data['bit'] = random.randrange(num_bits)
+                injection_data['register'], injection_data['target'])
+            # num_bits = len(injection_data['gold_value'].replace('0x', '')) * 4
+            if 'bits' in self.targets[target]['registers'][register]:
+                num_bits_to_inject = (self.targets[target]['registers']
+                                                  [register]['bits'])
+            else:
+                num_bits_to_inject = 32
+            injection_data['bit'] = random.randrange(num_bits_to_inject)
             injection_data['injected_value'] = '0x%x' % (
                 int(injection_data['gold_value'], base=16)
                 ^ (1 << injection_data['bit']))
@@ -147,6 +155,7 @@ class jtag:
                 print(colored('injected value: ' +
                               injection_data['injected_value'], 'magenta'))
             self.set_register_value(injection_data['register'],
+                                    injection_data['target'],
                                     injection_data['injected_value'])
             sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
             sql = sql_db.cursor()
@@ -237,8 +246,7 @@ class bdi_arm(bdi):
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
                  campaign_number):
         self.prompts = ['A9#0>', 'A9#1>']
-        self.registers = devices['a9_bdi']['GPR']
-        self.registers.extend(devices['a9_bdi']['CPU'])
+        self.targets = devices['a9_bdi']
         bdi.__init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                      use_aux, dut_prompt, aux_prompt, debug, timeout,
                      campaign_number)
@@ -274,12 +282,12 @@ class bdi_arm(bdi):
                                            'Current CPSR'],
                      'Error selecting core')
 
-    def get_register_value(self, register):
+    def get_register_value(self, register, target):
         buff = self.command('rd '+register, [':'],
                             error_message='Error getting register value')
         return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
 
-    def set_register_value(self, register, value):
+    def set_register_value(self, register, target, value):
         self.command('rm '+register+' '+value, error_message='Error setting '
                                                              'register value')
 
@@ -289,8 +297,7 @@ class bdi_p2020(bdi):
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
                  campaign_number):
         self.prompts = ['P2020>']
-        self.registers = devices['p2020']['GPR']
-        self.registers.extend(devices['p2020']['CPU'])
+        self.targets = devices['p2020']
         bdi.__init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
                      use_aux, dut_prompt, aux_prompt, debug, timeout,
                      campaign_number)
@@ -325,12 +332,12 @@ class bdi_p2020(bdi):
                                            'Current LR', 'Current CCSRBAR'],
                      'Error selecting core')
 
-    def get_register_value(self, register):
+    def get_register_value(self, register, target):
         buff = self.command('rd '+register, error_message='Error getting '
                                                           'register value')
         return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
 
-    def set_register_value(self, register, value):
+    def set_register_value(self, register, target, value):
         self.command('rm '+register+' '+value, error_message='Error setting '
                                                              'register value')
 
@@ -342,8 +349,7 @@ class openocd(jtag):
                  use_aux, dut_prompt, aux_prompt, debug, timeout,
                  campaign_number, standalone=False):
         self.prompts = ['>']
-        self.registers = devices['a9']['GPR']
-        self.registers.extend(devices['a9']['CPU'])
+        self.targets = devices['a9']
         serial = zedboards[find_uart_serials()[dut_serial_port]]
         port = find_open_port()
         if not standalone:
@@ -439,12 +445,16 @@ class openocd(jtag):
         self.command('targets zynq.cpu'+str(core),
                      error_message='Error selecting core')
 
-    def get_register_value(self, register, coprocessor=False):
-        if coprocessor:
-            buff = self.command(' '.join('arm', 'mrc', register['CP'],
-                                         register['Op1'], register['CRn'],
-                                         register['CRm'], register['Op2']),
-                                error_message='Error getting register value')
+    def get_register_value(self, register, target):
+        if target == 'CP':
+            buff = self.command(
+                ' '.join('arm', 'mrc',
+                         self.targets['target']['registers'][register]['CP'],
+                         self.targets['target']['registers'][register]['Op1'],
+                         self.targets['target']['registers'][register]['CRn'],
+                         self.targets['target']['registers'][register]['CRm'],
+                         self.targets['target']['registers'][register]['Op2']),
+                error_message='Error getting register value')
             return buff.split('\n')[1].strip()
         else:
             buff = self.command('reg '+register, [':'],
@@ -452,12 +462,17 @@ class openocd(jtag):
             return \
                 buff.split('\n')[1].split(':')[1].strip().split(' ')[0].strip()
 
-    def set_register_value(self, register, value, coprocessor=False):
-        if coprocessor:
-            self.command(' '.join('arm', 'mcr', register['CP'], register['Op1'],
-                                  register['CRn'], register['CRm'],
-                                  register['Op2'], value),
-                         error_message='Error setting register value')
+    def set_register_value(self, register, target, value):
+        if target == 'CP':
+            self.command(
+                ' '.join('arm', 'mrc',
+                         self.targets['target']['registers'][register]['CP'],
+                         self.targets['target']['registers'][register]['Op1'],
+                         self.targets['target']['registers'][register]['CRn'],
+                         self.targets['target']['registers'][register]['CRm'],
+                         self.targets['target']['registers'][register]['Op2'],
+                         value),
+                error_message='Error setting register value')
         else:
             self.command('reg '+register+' '+value,
                          error_message='Error setting register value')
