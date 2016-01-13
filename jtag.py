@@ -135,7 +135,6 @@ class jtag:
                 target = target.split(':')[0]
                 injection_data['target'] = target
                 self.select_core(injection_data['target_index'])
-            print(injection_data)
             injection_data['gold_value'] = self.get_register_value(
                 injection_data['register'], injection_data['target'])
             if 'bits' in self.targets[target]['registers'][register]:
