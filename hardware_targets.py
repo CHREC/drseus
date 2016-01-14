@@ -1003,6 +1003,46 @@ devices = {
                     'CRm': 7,
                     'Op2': 2,
                     'access': 'rw'
+                },
+                'JIDR': {
+                    'CP': 14,
+                    'Op1': 7,
+                    'CRn': 0,
+                    'CRm': 0,
+                    'Op2': 0,
+                    'access': 'rw'
+                },
+                'JOSCR': {
+                    'CP': 14,
+                    'Op1': 7,
+                    'CRn': 1,
+                    'CRm': 0,
+                    'Op2': 0,
+                    'access': 'rw'
+                },
+                'JMCR': {
+                    'CP': 14,
+                    'Op1': 7,
+                    'CRn': 2,
+                    'CRm': 0,
+                    'Op2': 0,
+                    'access': 'rw'
+                },
+                'Jazelle Parameters Register': {
+                    'CP': 14,
+                    'Op1': 7,
+                    'CRn': 3,
+                    'CRm': 0,
+                    'Op2': 0,
+                    'access': 'rw'
+                },
+                'Jazelle Configurable Opcode Translation Table Register': {
+                    'CP': 14,
+                    'Op1': 7,
+                    'CRn': 4,
+                    'CRm': 0,
+                    'Op2': 0,
+                    'access': 'w'
                 }
             }
         },
