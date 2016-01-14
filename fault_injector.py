@@ -71,8 +71,7 @@ class fault_injector:
                        output_file, dut_files, aux_files, timing_iterations,
                        aux_application, aux_arguments, use_aux_output,
                        num_checkpoints, kill_dut):
-        campaign_data = {'campaign_number': self.campaign_number,
-                         'application': application,
+        campaign_data = {'application': application,
                          'output_file': output_file,
                          'use_aux': self.use_aux,
                          'use_aux_output': use_aux_output,

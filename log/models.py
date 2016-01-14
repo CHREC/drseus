@@ -9,19 +9,18 @@ class campaign_manager(models.Manager):
 
 
 class campaign(models.Model):
-    campaign_number = models.IntegerField(primary_key=True)
     application = models.TextField()
     output_file = models.TextField()
     command = models.TextField()
     aux_command = models.TextField(null=True)
     use_aux_output = models.BooleanField()
-    exec_time = models.FloatField()
+    exec_time = models.FloatField(null=True)
     architecture = models.TextField()
     use_simics = models.BooleanField()
     use_aux = models.BooleanField()
-    dut_output = models.TextField()
+    dut_output = models.TextField(null=True)
     aux_output = models.TextField(null=True)
-    debugger_output = models.TextField()
+    debugger_output = models.TextField(null=True)
     num_cycles = models.IntegerField(null=True)
     num_checkpoints = models.IntegerField(null=True)
     cycles_between = models.IntegerField(null=True)

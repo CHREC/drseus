@@ -1118,7 +1118,6 @@ devices = {
         }
     },
     'p2020': {
-        # TODO: GPRs are 64 bits wide
         # TODO: add pmr, spr, L2 TLB
         # TODO: check if only certain bits are read only (some partially worked)
         # TODO: ccsrbar, tsr reset after read/write?

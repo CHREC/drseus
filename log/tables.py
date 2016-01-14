@@ -15,7 +15,7 @@ class campaign_table(tables.Table):
 
 
 class campaigns_table(tables.Table):
-    campaign_number = tables.TemplateColumn(
+    id = tables.TemplateColumn(
         '{% if record.results > 0 %}'
         '<a href="/{{ value }}/results">'
         '{% else %}'

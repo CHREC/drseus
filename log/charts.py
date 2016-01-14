@@ -61,9 +61,8 @@ export_options = {
 
 
 def json_campaigns(queryset):
-    campaigns = queryset.values_list('campaign__campaign_number',
-                                     'campaign__command').distinct().order_by(
-        'campaign__campaign_number')
+    campaigns = queryset.values_list(
+        'campaign_id', 'campaign__command').distinct().order_by('campaign_id')
     if len(campaigns) < 1:
         return '[]'
     campaigns = zip(*campaigns)
@@ -121,7 +120,7 @@ def json_campaigns(queryset):
     chart['series'] = []
     for outcome in outcomes:
         data = list(queryset.values_list('campaign__command').distinct(
-            ).order_by('campaign__campaign_number').annotate(
+            ).order_by('campaign_id').annotate(
                 count=Sum(Case(When(outcome_category=outcome, then=1),
                                default=0, output_field=IntegerField()))
             ).values_list('count', flat=True))

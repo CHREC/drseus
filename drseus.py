@@ -22,6 +22,7 @@ import utilities
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: change Exception in simics_checkpoints.py to DrSEUsError
 # TODO: update simics_checkpoints to use simics_config
+# TODO: create temporary campaign and then update (like result)
 
 modes = 0
 for mode in (options.application, options.inject, options.supervise,
@@ -43,7 +44,6 @@ else:
         parser.error('extra arguments: '+' '.join(arguments))
 
 if options.application:
-    options.debug = True
     utilities.create_campaign(options)
 elif options.inject:
     if not options.campaign_number:
@@ -129,8 +129,7 @@ elif options.result_id:
                                                         injection_data)
     drseus.debugger.launch_simics_gui(checkpoint)
     shutil.rmtree('simics-workspace/injected-checkpoints/' +
-                  str(campaign_data['campaign_number'])+'/' +
-                  str(options.result_id))
+                  str(campaign_data['id'])+'/'+str(options.result_id))
 elif options.dependencies:
     print('updating gold checkpoint path dependencies...', end='')
     sys.stdout.flush()

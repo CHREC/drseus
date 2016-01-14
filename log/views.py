@@ -31,7 +31,7 @@ def outcome_charts_page(request, campaign_number):
 
 
 def charts_page(request, campaign_number, group_categories):
-    campaign_data = campaign.objects.get(campaign_number=campaign_number)
+    campaign_data = campaign.objects.get(id=campaign_number)
     page_items = [('Results Overview', 'outcomes'),
                   ('Injections By Target', 'targets')]
     page_items.extend([('Injections By Register', 'registers'),
@@ -42,7 +42,7 @@ def charts_page(request, campaign_number, group_categories):
     page_items.extend([('Injections Over Time', 'times'),
                        ('Results By Injection Count', 'counts')])
     injection_objects = injection.objects.filter(
-        result__campaign__campaign_number=campaign_number)
+        result__campaign_id=campaign_number)
     filter_ = injection_filter(request.GET, queryset=injection_objects,
                                campaign=campaign_number)
     if filter_.qs.count() > 0:
@@ -60,7 +60,7 @@ def charts_page(request, campaign_number, group_categories):
 
 
 def campaign_page(request, campaign_number):
-    campaign_data = campaign.objects.get(campaign_number=campaign_number)
+    campaign_data = campaign.objects.get(id=campaign_number)
     chart_array = json_campaign(campaign_data)
     page_items = [('Campaign Data', 'campaign_data'),
                   ('Injection Targets', 'device_targets')]
@@ -76,8 +76,7 @@ def campaign_page(request, campaign_number):
     if campaign_data.use_aux:
         page_items.append(('AUX Output', 'aux_output'))
     page_items.append(('Debugger Output', 'debugger_output'))
-    table = campaign_table(campaign.objects.filter(
-        campaign_number=campaign_number))
+    table = campaign_table(campaign.objects.filter(id=campaign_number))
     RequestConfig(request, paginate=False).configure(table)
     return render(request, 'campaign.html', {'campaign_data': campaign_data,
                                              'chart_array': chart_array,
@@ -95,14 +94,14 @@ def edit_page(request, campaign_number):
             if 'edit_outcome' in request.POST:
                 if form.cleaned_data['new_outcome']:
                     result.objects.filter(
-                        campaign__campaign_number=campaign_number,
+                        campaign_id=campaign_number,
                         outcome=form.cleaned_data['outcome']
                     ).values('outcome').update(
                         outcome=form.cleaned_data['new_outcome'])
             elif 'edit_outcome_category' in request.POST:
                 if form.cleaned_data['new_outcome_category']:
                     result.objects.filter(
-                        campaign__campaign_number=campaign_number,
+                        campaign_id=campaign_number,
                         outcome_category=form.cleaned_data['outcome_category']
                     ).values('outcome_category').update(
                         outcome_category=form.cleaned_data[
@@ -110,33 +109,33 @@ def edit_page(request, campaign_number):
             elif 'delete_outcome' in request.POST:
                 if form.cleaned_data['outcome']:
                     injection.objects.filter(
-                        result__campaign__campaign_number=campaign_number,
+                        result__campaign_id=campaign_number,
                         result__outcome=form.cleaned_data['outcome']).delete()
                     simics_memory_diff.objects.filter(
-                        result__campaign__campaign_number=campaign_number,
+                        result__campaign_id=campaign_number,
                         result__outcome=form.cleaned_data['outcome']).delete()
                     simics_register_diff.objects.filter(
-                        result__campaign__campaign_number=campaign_number,
+                        result__campaign_id=campaign_number,
                         result__outcome=form.cleaned_data['outcome']).delete()
                     result.objects.filter(
-                        campaign__campaign_number=campaign_number,
+                        campaign_id=campaign_number,
                         outcome=form.cleaned_data['outcome']).delete()
             elif 'delete_outcome_category' in request.POST:
                 if form.cleaned_data['outcome_category']:
                     injection.objects.filter(
-                        result__campaign__campaign_number=campaign_number,
+                        result__campaign_id=campaign_number,
                         result__outcome_category=form.cleaned_data[
                             'outcome_category']).delete()
                     simics_memory_diff.objects.filter(
-                        result__campaign__campaign_number=campaign_number,
+                        result__campaign_id=campaign_number,
                         result__outcome_category=form.cleaned_data[
                             'outcome_category']).delete()
                     simics_register_diff.objects.filter(
-                        result__campaign__campaign_number=campaign_number,
+                        result__campaign_id=campaign_number,
                         result__outcome_category=form.cleaned_data[
                             'outcome_category']).delete()
                     result.objects.filter(
-                        campaign__campaign_number=campaign_number,
+                        campaign_id=campaign_number,
                         outcome_category=form.cleaned_data[
                             'outcome_category']).delete()
     form = edit_form(campaign=campaign_number)
@@ -147,7 +146,7 @@ def edit_page(request, campaign_number):
 def campaigns_page(request):
     campaigns = campaign.objects.all()
     if len(campaigns) == 1:
-        return redirect('/'+str(campaigns[0].campaign_number)+'/results/')
+        return redirect('/'+str(campaigns[0].id)+'/results/')
     table = campaigns_table(campaigns)
     chart_array = json_campaigns(result.objects.all())
     RequestConfig(request).configure(table)
@@ -156,19 +155,32 @@ def campaigns_page(request):
 
 
 def results_page(request, campaign_number):
-    if request.method == 'POST' and 'delete' in request.POST:
-        if 'select_box' in request.POST:
+    campaign_data = campaign.objects.get(id=campaign_number)
+    injection_objects = injection.objects.filter(
+        result__campaign_id=campaign_number)
+    filter_ = injection_filter(request.GET, queryset=injection_objects,
+                               campaign=campaign_number)
+    result_ids = filter_.qs.values('result_id').distinct()
+    result_objects = result.objects.filter(id__in=result_ids)
+    if request.method == 'POST':
+        if 'delete' in request.POST and 'select_box' in request.POST:
             result_ids = [int(result_id) for result_id
                           in dict(request.POST)['select_box']]
-            injection.objects.filter(result__id__in=result_ids).delete()
-            simics_memory_diff.objects.filter(
-                result__id__in=result_ids).delete()
+            injection.objects.filter(result_id__in=result_ids).delete()
+            simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
             simics_register_diff.objects.filter(
-                result__id__in=result_ids).delete()
+                result_id__in=result_ids).delete()
             result.objects.filter(id__in=result_ids).delete()
-    elif request.method == 'POST' and ('view_output' in request.POST or
-                                       'view_output_image' in request.POST):
-        if 'select_box' in request.POST:
+        elif 'delete_all' in request.POST:
+            injection.objects.filter(result_id__in=result_ids).delete()
+            simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
+            simics_register_diff.objects.filter(
+                result_id__in=result_ids).delete()
+            result.objects.filter(id__in=result_ids).delete()
+            return redirect('/'+str(campaign_number)+'/results/')
+        elif (('view_output' in request.POST or
+               'view_output_image' in request.POST)
+              and 'select_box' in request.POST):
             result_ids = []
             page_items = []
             for result_id in dict(request.POST)['select_box']:
@@ -182,37 +194,23 @@ def results_page(request, campaign_number):
                                                        navigation_items,
                                                    'page_items': page_items,
                                                    'results': results})
-    campaign_data = campaign.objects.get(campaign_number=campaign_number)
-    injection_objects = injection.objects.filter(
-        result__campaign__campaign_number=campaign_number)
-    filter_ = injection_filter(request.GET, queryset=injection_objects,
-                               campaign=campaign_number)
-    result_ids = filter_.qs.values('result__id').distinct()
-    if request.method == 'POST' and 'delete_all' in request.POST:
-        injection.objects.filter(result__id__in=result_ids).delete()
-        simics_memory_diff.objects.filter(result__id__in=result_ids).delete()
-        simics_register_diff.objects.filter(result__id__in=result_ids).delete()
-        result.objects.filter(id__in=result_ids).delete()
-        return redirect('/'+str(campaign_number)+'/results/')
-    result_objects = result.objects.filter(id__in=result_ids)
-    if request.method == 'POST' and ('view_output_all' in request.POST or
-                                     'view_output_image_all' in request.POST):
-        page_items = [('Result ID '+str(result_id), result_id) for result_id
-                      in result_objects.values_list('id', flat=True)]
-        image = 'view_output_image_all' in request.POST
-        return render(request, 'output.html', {'campaign': campaign_number,
-                                               'image': image,
-                                               'navigation_items':
-                                                   navigation_items,
-                                               'page_items': page_items,
-                                               'results': result_objects})
-    elif request.method == 'POST' and 'new_outcome_category' in request.POST:
-        result_objects.values('outcome_category').update(
-            outcome_category=request.POST['new_outcome_category'])
-        print request.path
-    elif request.method == 'POST' and 'new_outcome' in request.POST:
-        result_objects.values('outcome').update(
-            outcome=request.POST['new_outcome'])
+        elif ('view_output_all' in request.POST or
+              'view_output_image_all' in request.POST):
+            page_items = [('Result ID '+str(result_id), result_id) for result_id
+                          in result_objects.values_list('id', flat=True)]
+            image = 'view_output_image_all' in request.POST
+            return render(request, 'output.html', {'campaign': campaign_number,
+                                                   'image': image,
+                                                   'navigation_items':
+                                                       navigation_items,
+                                                   'page_items': page_items,
+                                                   'results': result_objects})
+        elif 'new_outcome_category' in request.POST:
+            result_objects.values('outcome_category').update(
+                outcome_category=request.POST['new_outcome_category'])
+        elif 'new_outcome' in request.POST:
+            result_objects.values('outcome').update(
+                outcome=request.POST['new_outcome'])
     table = results_table(result_objects)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {'campaign_data': campaign_data,
@@ -223,7 +221,7 @@ def results_page(request, campaign_number):
 
 
 def result_page(request, campaign_number, result_id):
-    campaign_data = campaign.objects.get(campaign_number=campaign_number)
+    campaign_data = campaign.objects.get(id=campaign_number)
     navigation_items_ = [(item[0], '../'+item[1])
                          for item in navigation_items]
     page_items = [('Result', 'result'), ('Injections', 'injections')]
@@ -241,10 +239,8 @@ def result_page(request, campaign_number, result_id):
     if campaign_data.use_simics:
         page_items.extend([('Register Diffs', 'register_diffs'),
                            ('Memory Diffs', 'memory_diffs')])
-    result_object = result.objects.get(
-        campaign__campaign_number=campaign_number, id=result_id)
-    table = result_table(result.objects.filter(
-        campaign__campaign_number=campaign_number, id=result_id))
+    result_object = result.objects.get(id=result_id)
+    table = result_table(result.objects.filter(id=result_id))  # TODO: use above
     if request.method == 'POST' and 'save' in request.POST:
         form = result_form(request.POST)
         if form.is_valid():
@@ -270,23 +266,18 @@ def result_page(request, campaign_number, result_id):
             drseus = 'drseus.sh'
         Popen(['./'+drseus, '--regenerate', result_id])
     injection_objects = \
-        injection.objects.filter(
-            result__campaign__campaign_number=campaign_number,
-            result__id=result_id)
+        injection.objects.filter(result_id=result_id)
     if campaign_data.use_simics:
         injection_table = simics_injection_table(injection_objects)
         register_objects = simics_register_diff.objects.filter(
-            result__campaign__campaign_number=campaign_number,
-            result__id=result_id)
+            result_id=result_id)
         register_filter = \
             simics_register_diff_filter(request.GET, queryset=register_objects,
                                         campaign=campaign_number)
         register_table = simics_register_diff_table(register_filter.qs)
         RequestConfig(request,
                       paginate={'per_page': 25}).configure(register_table)
-        memory_objects = simics_memory_diff.objects.filter(
-            result__campaign__campaign_number=campaign_number,
-            result__id=result_id)
+        memory_objects = simics_memory_diff.objects.filter(result_id=result_id)
         memory_table = simics_memory_diff_table(memory_objects)
         RequestConfig(request,
                       paginate={'per_page': 25}).configure(memory_table)
@@ -312,7 +303,7 @@ def result_page(request, campaign_number, result_id):
 
 
 def output_image(request, campaign_number, result_id):
-    campaign_data = campaign.objects.get(campaign_number=campaign_number)
+    campaign_data = campaign.objects.get(id=campaign_number)
     if result_id == '0':
         output_file = ('campaign-data/'+campaign_number+'/'
                        'gold_'+campaign_data.output_file)

@@ -26,8 +26,8 @@ def print_zedboard_info():
 
 def list_campaigns():
     with sql(row_factory='row') as db:
-        db.cursor.execute('SELECT campaign_number, application, architecture, '
-                          'use_simics FROM log_campaign')
+        db.cursor.execute('SELECT id, application, architecture, use_simics '
+                          'FROM log_campaign')
         campaign_list = db.cursor.fetchall()
     print('DrSEUs Campaigns:')
     print('Number\t\tApplication\t\tArchitecture\tSimics')
@@ -42,19 +42,19 @@ def get_last_campaign():
             not os.path.exists('campaign-data/db.sqlite3')):
         return 0
     with sql(row_factory='row') as db:
-        db.cursor.execute('SELECT campaign_number FROM log_campaign '
-                          'ORDER BY campaign_number DESC LIMIT 1')
+        db.cursor.execute('SELECT id FROM log_campaign '
+                          'ORDER BY id DESC LIMIT 1')
         campaign_data = db.cursor.fetchone()
     if campaign_data is None:
         campaign_number = 0
     else:
-        campaign_number = campaign_data['campaign_number']
+        campaign_number = campaign_data['id']
     return campaign_number
 
 
 def get_campaign_data(campaign_number):
     with sql(row_factory='row') as db:
-        db.cursor.execute('SELECT * FROM log_campaign WHERE campaign_number=?',
+        db.cursor.execute('SELECT * FROM log_campaign WHERE id=?',
                           (campaign_number,))
         campaign_data = db.cursor.fetchone()
     if campaign_data is None:
@@ -103,8 +103,8 @@ def delete_campaign(campaign_number):
     delete_results(campaign_number)
     if os.path.exists('campaign-data/db.sqlite3'):
         with sql() as db:
-            db.cursor.execute('DELETE FROM log_campaign '
-                              'WHERE campaign_number=?', (campaign_number,))
+            db.cursor.execute('DELETE FROM log_campaign WHERE id=?',
+                              (campaign_number,))
             db.connection.commit()
         print('deleted campaign from database')
     if os.path.exists('campaign-data/'+str(campaign_number)):
@@ -118,6 +118,7 @@ def delete_campaign(campaign_number):
 
 
 def create_campaign(options):
+    options.debug = True
     campaign_number = get_last_campaign() + 1
     if options.architecture == 'p2020':
         if options.dut_serial_port is None:
@@ -145,6 +146,30 @@ def create_campaign(options):
             raise Exception('cannot find directory '+options.directory)
     if options.use_simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics_workspace.sh')
+
+    # if arguments:
+    #     self.command = application+' '+arguments
+    # else:
+    #     self.command = application
+    # campaign_data['command'] = self.command
+    # if self.use_aux:
+    #     if aux_arguments:
+    #         self.aux_command = aux_application+' '+aux_arguments
+    #     else:
+    #         self.aux_command = aux_application
+    #     campaign_data['aux_command'] = self.aux_command
+    # else:
+    #     self.aux_command = ''
+
+    # campaign_data = {'application': options.application,
+    #                  'output_file': options.file,
+    #                  'use_aux': options.use_aux,
+    #                  'use_aux_output': options.use_aux_output,
+    #                  'architecture': options.architecture,
+    #                  'use_simics': options.use_simics,
+    #                  'timestamp': datetime.now(),
+    #                  'kill_dut': options.kill_dut}
+
     if os.path.exists('campaign-data/'+str(campaign_number)):
         campaign_files = os.listdir('campaign-data/'+str(campaign_number))
         if 'results' in campaign_files:
@@ -185,11 +210,8 @@ def create_campaign(options):
 
 def get_injection_data(campaign_data, result_id):
     with sql(row_factory='row') as db:
-        db.cursor.execute('SELECT register,gold_value,injected_value,'
-                          'checkpoint_number,bit,target_index,target,'
-                          'config_object,config_type,register_index,field '
-                          'FROM log_injection INNER JOIN log_result ON '
-                          '(log_injection.result_id=log_result.id) '
+        db.cursor.execute('SELECT * FROM log_injection INNER JOIN log_result '
+                          'ON (log_injection.result_id=log_result.id) '
                           'WHERE log_result.id=?', (result_id,))
         injection_data = db.cursor.fetchall()
     injection_data = sorted(injection_data,
@@ -208,10 +230,9 @@ def load_campaign(campaign_data, options):
             options.dut_serial_port = '/dev/ttyACM0'
         if options.dut_prompt is None:
             options.dut_prompt = '[root@ZED]#'
-    drseus = fault_injector(campaign_data['campaign_number'],
-                            options.dut_serial_port, options.aux_serial_port,
-                            options.dut_prompt, options.aux_prompt,
-                            options.debugger_ip_address,
+    drseus = fault_injector(campaign_data['id'], options.dut_serial_port,
+                            options.aux_serial_port, options.dut_prompt,
+                            options.aux_prompt, options.debugger_ip_address,
                             campaign_data['architecture'],
                             campaign_data['use_aux'], options.debug,
                             campaign_data['use_simics'], options.seconds)
@@ -231,11 +252,9 @@ def perform_injections(campaign_data, iteration_counter, options,
     def interrupt_handler(signum, frame):
         drseus.log_result('Interrupted', 'Incomplete')
         if os.path.exists('campaign-data/results/' +
-                          str(campaign_data['campaign_number'])+'/' +
-                          str(drseus.result_id)):
+                          str(campaign_data['id'])+'/'+str(drseus.result_id)):
             shutil.rmtree('campaign-data/results/' +
-                          str(campaign_data['campaign_number'])+'/' +
-                          str(drseus.result_id))
+                          str(campaign_data['id'])+'/'+str(drseus.result_id))
         if not drseus.use_simics:
             try:
                 drseus.debugger.continue_dut()
@@ -247,10 +266,10 @@ def perform_injections(campaign_data, iteration_counter, options,
             pass
         if drseus.use_simics:
             if os.path.exists('simics-workspace/injected-checkpoints/' +
-                              str(campaign_data['campaign_number'])+'/' +
+                              str(campaign_data['id'])+'/' +
                               str(drseus.result_id)):
                 shutil.rmtree('simics-workspace/injected-checkpoints/' +
-                              str(campaign_data['campaign_number'])+'/' +
+                              str(campaign_data['id'])+'/' +
                               str(drseus.result_id))
         if not interactive:
             sys.exit()
@@ -315,15 +334,14 @@ def merge_campaigns(merge_directory):
         for new_campaign in new_campaigns:
             print('merging campaign: \"'+merge_directory+'/' +
                   new_campaign['command']+'\"')
-            old_campaign_number = new_campaign['campaign_number']
-            new_campaign['campaign_number'] += last_campaign_number
+            old_campaign_number = new_campaign['id']
+            new_campaign['id'] += last_campaign_number
             if os.path.exists(merge_directory+'/campaign-data/' +
                               str(old_campaign_number)):
                 print('\tcopying campaign data...', end='')
                 shutil.copytree(merge_directory+'/campaign-data/' +
                                 str(old_campaign_number),
-                                'campaign-data/' +
-                                str(new_campaign['campaign_number']))
+                                'campaign-data/'+str(new_campaign['id']))
                 print('done')
             if os.path.exists(merge_directory+'/simics-workspace/'
                               'gold-checkpoints/'+str(old_campaign_number)):
@@ -331,11 +349,11 @@ def merge_campaigns(merge_directory):
                 shutil.copytree(merge_directory+'/simics-workspace/'
                                 'gold-checkpoints/'+str(old_campaign_number),
                                 'simics-workspace/gold-checkpoints/' +
-                                str(new_campaign['campaign_number']))
+                                str(new_campaign['id']))
                 print('done')
                 print('\tupdating checkpoint dependency paths...', end='')
                 sys.stdout.flush()
-                update_checkpoint_dependencies(new_campaign['campaign_number'])
+                update_checkpoint_dependencies(new_campaign['id'])
                 print('done')
             print('\tcopying results...', end='')
             db.insert_dict('campaign', new_campaign)
