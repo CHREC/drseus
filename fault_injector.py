@@ -5,7 +5,6 @@ import os
 from paramiko import RSAKey
 import random
 import shutil
-import sqlite3
 import subprocess
 from termcolor import colored
 from threading import Thread
@@ -14,7 +13,7 @@ from time import sleep
 from error import DrSEUsError
 from jtag import bdi_p2020, openocd
 from simics import simics
-from sql import insert_dict, update_dict
+from sql import sql
 
 
 class fault_injector:
@@ -158,11 +157,8 @@ class fault_injector:
         campaign_data['debugger_output'] = self.debugger.output
         if self.use_aux:
             campaign_data['aux_output'] = self.debugger.aux.output
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-        sql = sql_db.cursor()
-        insert_dict(sql, 'campaign', campaign_data)
-        sql_db.commit()
-        sql_db.close()
+        with sql() as db:
+            db.insert_dict('campaign', campaign_data)
         os.makedirs('campaign-data/'+str(self.campaign_number)+'/dut-files')
         for item in files:
             shutil.copy(item, 'campaign-data/'+str(self.campaign_number) +
@@ -198,17 +194,12 @@ class fault_injector:
                        'outcome': 'In progress',
                        'outcome_category': 'Incomplete',
                        'timestamp': datetime.now()}
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-        sql = sql_db.cursor()
-        insert_dict(sql, 'result', result_data)
-        result_id = sql.lastrowid
-        injection_data = {'result_id': result_id,
-                          'injection_number': 0,
+        injection_data = {'injection_number': 0,
                           'timestamp': datetime.now()}
-        insert_dict(sql, 'injection', injection_data)
-        sql_db.commit()
-        sql_db.close()
-        self.result_id = result_id
+        with sql() as db:
+            db.insert_dict('result', result_data)
+            injection_data['result_id'] = self.result_id = db.cursor.lastrowid
+            db.insert_dict('injection', injection_data)
 
     def inject_faults(self, num_injections, selected_targets, compare_all):
         if self.use_simics:
@@ -358,23 +349,16 @@ class fault_injector:
                 result_data['aux_output'] = self.debugger.aux.output
         except AttributeError:
             pass
+        with sql() as db:
+            db.update_dict('result', result_data, self.result_id)
+        self.logged = True
+        self.debugger.output = ''
         try:
-            sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-            sql = sql_db.cursor()
-            update_dict(sql, 'result', result_data, self.result_id)
-            sql_db.commit()
-            sql_db.close()
-        except KeyboardInterrupt:
-            sql_db.close()
-        else:
-            self.logged = True
-            self.debugger.output = ''
-            try:
-                self.debugger.dut.output = ''
-                if self.use_aux:
-                    self.debugger.aux.output = ''
-            except AttributeError:
-                pass
+            self.debugger.dut.output = ''
+            if self.use_aux:
+                self.debugger.aux.output = ''
+        except AttributeError:
+            pass
 
     def inject_and_monitor(self, iteration_counter, num_injections,
                            selected_targets, output_file, use_aux_output,

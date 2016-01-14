@@ -1,7 +1,6 @@
 from __future__ import print_function
 import os
 from signal import SIGINT
-import sqlite3
 import subprocess
 import sys
 from termcolor import colored
@@ -11,6 +10,7 @@ import time
 from dut import dut
 from error import DrSEUsError
 import simics_checkpoints
+from sql import sql
 
 
 class simics:
@@ -506,20 +506,17 @@ class simics:
         return reg_errors + mem_errors
 
     def persistent_faults(self, result_id):
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-        sql_db.row_factory = sqlite3.Row
-        sql = sql_db.cursor()
-        sql.execute('SELECT config_object,register,register_index,'
-                    'injected_value FROM log_injection WHERE '
-                    'result_id=?', (result_id,))
-        injections = sql.fetchall()
-        sql.execute('SELECT * FROM log_simics_register_diff WHERE '
-                    'result_id=?', (result_id,))
-        register_diffs = sql.fetchall()
-        sql.execute('SELECT * FROM log_simics_memory_diff WHERE '
-                    'result_id=?', (result_id,))
-        memory_diffs = sql.fetchall()
-        sql_db.close()
+        with sql(row_factory='row') as db:
+            db.cursor.execute('SELECT config_object,register,register_index,'
+                              'injected_value FROM log_injection '
+                              'WHERE result_id=?', (result_id,))
+            injections = db.cursor.fetchall()
+            db.cursor.execute('SELECT * FROM log_simics_register_diff '
+                              'WHERE result_id=?', (result_id,))
+            register_diffs = db.cursor.fetchall()
+            db.cursor.execute('SELECT * FROM log_simics_memory_diff '
+                              'WHERE result_id=?', (result_id,))
+            memory_diffs = db.cursor.fetchall()
         if len(memory_diffs) > 0:
             return False
         for register_diff in register_diffs:

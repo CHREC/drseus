@@ -8,13 +8,12 @@ import time
 import random
 from signal import SIGINT
 import socket
-import sqlite3
 import subprocess
 
 from dut import dut
 from error import DrSEUsError
 from hardware_targets import devices
-from sql import insert_dict
+from sql import sql
 from targets import choose_register, choose_target
 
 # zedboards[uart_serial] = ftdi_serial
@@ -169,13 +168,10 @@ class jtag:
                 injection_data['success'] = True
             else:
                 injection_data['success'] = False
-            sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-            sql = sql_db.cursor()
-            insert_dict(sql, 'injection', injection_data)
-            sql.execute('DELETE FROM log_injection WHERE '
-                        'result_id=? AND injection_number=0', (result_id,))
-            sql_db.commit()
-            sql_db.close()
+            with sql() as db:
+                db.insert_dict('injection', injection_data)
+        with sql() as db:
+            db.delete_injection0(result_id)
 
 
 class bdi(jtag):

@@ -4,12 +4,11 @@ from random import randrange
 from re import findall
 from shutil import copyfile
 from subprocess import check_output
-import sqlite3
 from termcolor import colored
 
 from error import DrSEUsError
 from simics_targets import devices
-from sql import insert_dict
+from sql import sql
 from targets import choose_register, choose_target
 
 
@@ -370,21 +369,16 @@ def inject_checkpoint(campaign_number, result_id, injection_number,
                                               injected_checkpoint, register,
                                               target, board, targets))
     except Exception as error:
-        sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-        sql = sql_db.cursor()
-        insert_dict(sql, 'injection', injection_data)
-        sql_db.commit()
-        sql_db.close()
+        with sql() as db:
+            db.insert_dict('injection', injection_data)
         print(error)
         raise DrSEUsError('Error injecting fault')
     # log injection data
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-    sql = sql_db.cursor()
-    insert_dict(sql, 'injection', injection_data)
-    sql.execute('DELETE FROM log_injection WHERE '
-                'result_id=? AND injection_number=0', (result_id,))
-    sql_db.commit()
-    sql_db.close()
+    # TODO: move delete of injection0 to simics.py
+    # TODO: update handling of injection error
+    with sql() as db:
+        db.insert_dict('injection', injection_data)
+        db.delete_injection0(result_id)
     if debug:
         print(colored('result id: '+str(result_id), 'magenta'))
         print(colored('injection number: '+str(injection_number), 'magenta'))
@@ -523,86 +517,86 @@ def compare_registers(result_id, checkpoint_number, gold_checkpoint,
     gold_registers = parse_registers(gold_checkpoint+'/config', board, targets)
     monitored_registers = parse_registers(monitored_checkpoint+'/config', board,
                                           targets)
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-    sql = sql_db.cursor()
     diffs = 0
     register_diff_data = {'result_id': result_id,
                           'checkpoint_number': checkpoint_number}
-    for target in targets:
-        if target != 'TLB':
-            if 'count' in targets[target]:
-                target_count = targets[target]['count']
-            else:
-                target_count = 1
-            for target_index in xrange(target_count):
-                config_object = 'DUT_'+board+targets[target]['OBJECT']
-                if target_count > 1:
-                    config_object += '['+str(target_index)+']'
-                if target == 'GPR':
-                    register_diff_data['config_object'] = config_object+':gprs'
+    with sql() as db:
+        for target in targets:
+            if target != 'TLB':
+                if 'count' in targets[target]:
+                    target_count = targets[target]['count']
                 else:
-                    register_diff_data['config_object'] = config_object
-                for register in targets[target]['registers']:
-                    if 'count' in targets[target]['registers'][register]:
-                        register_count = (targets[target]['registers']
-                                                 [register]['count'])
+                    target_count = 1
+                for target_index in xrange(target_count):
+                    config_object = 'DUT_'+board+targets[target]['OBJECT']
+                    if target_count > 1:
+                        config_object += '['+str(target_index)+']'
+                    if target == 'GPR':
+                        register_diff_data['config_object'] = \
+                            config_object+':gprs'
                     else:
-                        register_count = ()
-                    if len(register_count) == 0:
-                        register_diff_data['monitored_value'] = \
-                            monitored_registers[
-                                register_diff_data['config_object']
-                            ][register]
-                        register_diff_data['gold_value'] = gold_registers[
-                            register_diff_data['config_object']
-                        ][register]
-                        if (register_diff_data['monitored_value'] !=
-                                register_diff_data['gold_value']):
-                            diffs += 1
-                            register_diff_data['register'] = register
-                            insert_dict(sql, 'simics_register_diff',
-                                        register_diff_data)
-                    elif len(register_count) == 1:
-                        for index1 in xrange(register_count[0]):
+                        register_diff_data['config_object'] = config_object
+                    for register in targets[target]['registers']:
+                        if 'count' in targets[target]['registers'][register]:
+                            register_count = (targets[target]['registers']
+                                                     [register]['count'])
+                        else:
+                            register_count = ()
+                        if len(register_count) == 0:
                             register_diff_data['monitored_value'] = \
                                 monitored_registers[
                                     register_diff_data['config_object']
-                                ][register][index1]
+                                ][register]
                             register_diff_data['gold_value'] = gold_registers[
                                 register_diff_data['config_object']
-                            ][register][index1]
+                            ][register]
                             if (register_diff_data['monitored_value'] !=
                                     register_diff_data['gold_value']):
                                 diffs += 1
-                                register_diff_data['register'] = (register+':' +
-                                                                  str(index1))
-                                insert_dict(sql, 'simics_register_diff',
-                                            register_diff_data)
-                    elif len(register_count) == 2:
-                        for index1 in xrange(register_count[0]):
-                            for index2 in xrange(register_count[1]):
+                                register_diff_data['register'] = register
+                                db.insert_dict('simics_register_diff',
+                                               register_diff_data)
+                        elif len(register_count) == 1:
+                            for index1 in xrange(register_count[0]):
                                 register_diff_data['monitored_value'] = \
                                     monitored_registers[
                                         register_diff_data['config_object']
-                                    ][register][index1][index2]
+                                    ][register][index1]
                                 register_diff_data['gold_value'] = \
                                     gold_registers[
                                         register_diff_data['config_object']
-                                    ][register][index1][index2]
+                                    ][register][index1]
                                 if (register_diff_data['monitored_value'] !=
                                         register_diff_data['gold_value']):
-                                    register_diff_data['register'] = \
-                                        register+':'+str(index1)+':'+str(index2)
                                     diffs += 1
-                                    insert_dict(sql, 'simics_register_diff',
-                                                register_diff_data)
-                    else:
-                        raise Exception('simics_checkpoints.py:'
-                                        'compare_registers(): '
-                                        'Too many dimensions for register ' +
-                                        register+' in target: '+target)
-    sql_db.commit()
-    sql_db.close()
+                                    register_diff_data['register'] = \
+                                        register+':'+str(index1)
+                                    db.insert_dict('simics_register_diff',
+                                                   register_diff_data)
+                        elif len(register_count) == 2:
+                            for index1 in xrange(register_count[0]):
+                                for index2 in xrange(register_count[1]):
+                                    register_diff_data['monitored_value'] = \
+                                        monitored_registers[
+                                            register_diff_data['config_object']
+                                        ][register][index1][index2]
+                                    register_diff_data['gold_value'] = \
+                                        gold_registers[
+                                            register_diff_data['config_object']
+                                        ][register][index1][index2]
+                                    if (register_diff_data['monitored_value'] !=
+                                            register_diff_data['gold_value']):
+                                        register_diff_data['register'] = \
+                                            (register+':'+str(index1)+':' +
+                                             str(index2))
+                                        diffs += 1
+                                        db.insert_dict('simics_register_diff',
+                                                       register_diff_data)
+                        else:
+                            raise Exception('simics_checkpoints.py:'
+                                            'compare_registers(): Too many '
+                                            'dimensions for register ' +
+                                            register+' in target: '+target)
     return diffs
 
 
@@ -671,29 +665,28 @@ def compare_memory(result_id, checkpoint_number, gold_checkpoint,
                           for index in xrange(2)]
     ram_diffs = [ram+'.diff' for ram in monitored_rams]
     diff_content_maps = [diff+'.content_map' for diff in ram_diffs]
-    sql_db = sqlite3.connect('campaign-data/db.sqlite3', timeout=60)
-    sql = sql_db.cursor()
     diffs = 0
     memory_diff_data = {'result_id': result_id,
                         'checkpoint_number': checkpoint_number}
-    for (memory_diff_data['image_index'], gold_ram, monitored_ram, ram_diff,
-         diff_content_map) in zip(range(len(monitored_rams)), gold_rams,
-                                  monitored_rams, ram_diffs, diff_content_maps):
-        os.system('simics-workspace/bin/craff --diff '+gold_ram+' ' +
-                  monitored_ram+' --output='+ram_diff)
-        os.system('simics-workspace/bin/craff --content-map '+ram_diff +
-                  ' --output='+diff_content_map)
-        craffOutput = check_output('simics-workspace/bin/craff --info ' +
-                                   ram_diff, shell=True)
-        block_size = int(findall(r'\d+', craffOutput.split('\n')[2])[1])
-        changed_blocks = parse_content_map(diff_content_map, block_size)
-        diffs += len(changed_blocks)
-        if extract_blocks:
-            extract_diff_blocks(gold_ram, monitored_ram, monitored_checkpoint,
-                                changed_blocks, block_size)
-        for block in changed_blocks:
-            memory_diff_data['block'] = hex(block)
-            insert_dict(sql, 'simics_memory_diff', memory_diff_data)
-    sql_db.commit()
-    sql_db.close()
+    with sql() as db:
+        for (memory_diff_data['image_index'], gold_ram, monitored_ram, ram_diff,
+             diff_content_map) in zip(range(len(monitored_rams)), gold_rams,
+                                      monitored_rams, ram_diffs,
+                                      diff_content_maps):
+            os.system('simics-workspace/bin/craff --diff '+gold_ram+' ' +
+                      monitored_ram+' --output='+ram_diff)
+            os.system('simics-workspace/bin/craff --content-map '+ram_diff +
+                      ' --output='+diff_content_map)
+            craffOutput = check_output('simics-workspace/bin/craff --info ' +
+                                       ram_diff, shell=True)
+            block_size = int(findall(r'\d+', craffOutput.split('\n')[2])[1])
+            changed_blocks = parse_content_map(diff_content_map, block_size)
+            diffs += len(changed_blocks)
+            if extract_blocks:
+                extract_diff_blocks(gold_ram, monitored_ram,
+                                    monitored_checkpoint, changed_blocks,
+                                    block_size)
+            for block in changed_blocks:
+                memory_diff_data['block'] = hex(block)
+                db.insert_dict('simics_memory_diff', memory_diff_data)
     return diffs
