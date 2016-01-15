@@ -31,19 +31,9 @@ class fault_injector:
             self.debugger = simics(campaign_data, options, self.rsakey)
         else:
             if campaign_data['architecture'] == 'p2020':
-                self.debugger = bdi_p2020(
-                    options.debugger_ip_address, self.rsakey,
-                    options.dut_serial_port, options.aux_serial_port,
-                    campaign_data['use_aux'], options.dut_prompt,
-                    options.aux_prompt, options.debug, options.timeout,
-                    campaign_data['id'])
+                self.debugger = bdi_p2020(campaign_data, options, self.rsakey)
             elif campaign_data['architecture'] == 'a9':
-                self.debugger = openocd(
-                    options.debugger_ip_address, self.rsakey,
-                    options.dut_serial_port, options.aux_serial_port,
-                    campaign_data['use_aux'], options.dut_prompt,
-                    options.aux_prompt, options.debug, options.timeout,
-                    campaign_data['id'])
+                self.debugger = openocd(campaign_data, options, self.rsakey)
 
     def __str__(self):
         string = ('DrSEUs Attributes:\n\tDebugger: '+str(self.debugger) +
