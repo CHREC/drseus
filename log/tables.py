@@ -91,7 +91,7 @@ class hw_injection_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = injection
         exclude = ('config_object', 'config_type', 'checkpoint_number', 'field',
-                   'register_index', 'result')
+                   'id', 'register_index', 'result')
 
 
 class simics_injection_table(tables.Table):
@@ -100,7 +100,7 @@ class simics_injection_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = injection
-        exclude = ('config_object', 'config_type', 'result', 'time')
+        exclude = ('config_object', 'config_type', 'id', 'result', 'time')
 
 
 class simics_register_diff_table(tables.Table):

@@ -45,7 +45,7 @@ class result(models.Model):
 class injection(models.Model):
     result = models.ForeignKey(result)
     injection_number = models.IntegerField()
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(null=True)
     register = models.TextField(null=True)
     bit = models.IntegerField(null=True)
     gold_value = models.TextField(null=True)

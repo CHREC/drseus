@@ -42,11 +42,6 @@ class sql():
             dictionary.values())
         self.connection.commit()
 
-    def delete_injection0(self, result_id):
-        self.cursor.execute('DELETE FROM log_injection WHERE '
-                            'result_id=? AND injection_number=0', (result_id,))
-        self.connection.commit()
-
     def __exit__(self, type_, value, traceback):
         self.connection.close()
         if type_ is not None or value is not None or traceback is not None:

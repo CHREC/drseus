@@ -170,7 +170,7 @@ class simics:
             self.simics.send_signal(SIGINT)
             try:
                 self.simics.stdin.write('quit\n')
-            except:
+            except IOError:
                 pass
 
             def read_worker():

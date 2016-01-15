@@ -84,11 +84,11 @@ class dut:
                 dut_scp.close()
                 ssh.close()
             except:
-                try:
-                    dut_scp.close()
-                    ssh.close()
-                except:
-                    pass
+                # try:
+                dut_scp.close()
+                ssh.close()
+                # except:
+                #     pass
                 print(colored('error sending file(s) (attempt ' +
                               str(attempt+1)+'/'+str(attempts)+')', 'red'))
                 if attempt < attempts-1:
@@ -141,11 +141,11 @@ class dut:
                 dut_scp.close()
                 ssh.close()
             except:
-                try:
-                    dut_scp.close()
-                    ssh.close()
-                except:
-                    pass
+                # try:
+                dut_scp.close()
+                ssh.close()
+                # except:
+                #     pass
                 print(colored('error getting file (attempt ' +
                               str(attempt+1)+'/'+str(attempts)+')', 'red'))
                 if attempt < attempts-1:

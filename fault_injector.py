@@ -17,161 +17,144 @@ from sql import sql
 
 
 class fault_injector:
-    def __init__(self, campaign_number, dut_serial_port, aux_serial_port,
-                 dut_prompt, aux_prompt, debugger_ip_address, architecture,
-                 use_aux, debug, use_simics, timeout):
-        self.campaign_number = campaign_number
-        self.use_simics = use_simics
-        self.use_aux = use_aux
-        self.debug = debug
-        if os.path.exists('campaign-data/'+str(campaign_number)+'/private.key'):
-            self.rsakey = RSAKey.from_private_key_file('campaign-data/' +
-                                                       str(campaign_number) +
-                                                       '/private.key')
+    def __init__(self, campaign_data, options):
+        self.campaign_data = campaign_data
+        if os.path.exists(
+                'campaign-data/'+str(campaign_data['id'])+'/private.key'):
+            self.rsakey = RSAKey.from_private_key_file(
+                'campaign-data/'+str(campaign_data['id'])+'/private.key')
         else:
             self.rsakey = RSAKey.generate(1024)
-            self.rsakey.write_private_key_file('campaign-data/' +
-                                               str(campaign_number) +
-                                               '/private.key')
-        if self.use_simics:
-            self.debugger = simics(campaign_number, architecture, self.rsakey,
-                                   use_aux, debug, timeout)
+            self.rsakey.write_private_key_file(
+                'campaign-data/'+str(campaign_data['id'])+'/private.key')
+        if self.campaign_data['use_simics']:
+            self.debugger = simics(
+                campaign_data['id'], campaign_data['architecture'], self.rsakey,
+                campaign_data['use_aux'], options.debug, options.timeout)
         else:
-            if architecture == 'p2020':
-                self.debugger = bdi_p2020(debugger_ip_address, self.rsakey,
-                                          dut_serial_port, aux_serial_port,
-                                          use_aux, dut_prompt, aux_prompt,
-                                          debug, timeout, campaign_number)
-            elif architecture == 'a9':
-                self.debugger = openocd(debugger_ip_address, self.rsakey,
-                                        dut_serial_port, aux_serial_port,
-                                        use_aux, dut_prompt, aux_prompt, debug,
-                                        timeout, campaign_number)
+            if campaign_data['architecture'] == 'p2020':
+                self.debugger = bdi_p2020(
+                    options.debugger_ip_address, self.rsakey,
+                    options.dut_serial_port, options.aux_serial_port,
+                    campaign_data['use_aux'], options.dut_prompt,
+                    options.aux_prompt, options.debug, options.timeout,
+                    campaign_data['id'])
+            elif campaign_data['architecture'] == 'a9':
+                self.debugger = openocd(
+                    options.debugger_ip_address, self.rsakey,
+                    options.dut_serial_port, options.aux_serial_port,
+                    options.campaign_data['use_aux'], options.dut_prompt,
+                    options.aux_prompt, options.debug, options.timeout,
+                    campaign_data['id'])
 
     def __str__(self):
         string = ('DrSEUs Attributes:\n\tDebugger: '+str(self.debugger) +
                   '\n\tDUT:\t'+str(self.debugger.dut).replace('\n\t', '\n\t\t'))
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             string += '\n\tAUX:\t'+str(self.debugger.aux).replace('\n\t',
                                                                   '\n\t\t')
         string += ('\n\tCampaign Information:\n\t\tCampaign Number: ' +
-                   str(self.campaign_number)+'\n\t\tDUT Command: \"' +
-                   self.command+'\"')
-        if self.use_aux:
-            string += '\n\t\tAUX Command: \"'+self.aux_command+'\"'
-        string += ('\n\t\tExecution Time: '+str(self.exec_time) +
-                   ' seconds')
+                   str(self.campaign_data['id'])+'\n\t\tDUT Command: \"' +
+                   self.campaign_data['command']+'\"')
+        if self.campaign_data['use_aux']:
+            string += ('\n\t\tAUX Command: \"' +
+                       self.campaign_data['aux_command']+'\"')
+        try:
+            string += ('\n\t\tExecution Time: ' +
+                       str(self.campaign_data['exec_time'])+' seconds')
+        except AttributeError:
+            pass
         return string
 
     def close(self):
-        if not self.use_simics:
+        if not self.campaign_data['use_simics']:
             self.debugger.close()
 
-    def setup_campaign(self, directory, architecture, application, arguments,
-                       output_file, dut_files, aux_files, timing_iterations,
-                       aux_application, aux_arguments, use_aux_output,
-                       num_checkpoints, kill_dut):
-        campaign_data = {'application': application,
-                         'output_file': output_file,
-                         'use_aux': self.use_aux,
-                         'use_aux_output': use_aux_output,
-                         'architecture': architecture,
-                         'use_simics': self.use_simics,
-                         'timestamp': datetime.now(),
-                         'kill_dut': kill_dut}
-        self.kill_dut = kill_dut
-        if self.use_simics:
+    def setup_campaign(self, options):
+        if self.campaign_data['use_simics']:
             try:
                 self.debugger.launch_simics()
             except DrSEUsError:
                 raise Exception('error launching simics, check your license '
                                 'connection')
         else:
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 self.debugger.aux.serial.write('\x03')
                 aux_process = Thread(target=self.debugger.aux.do_login)
                 aux_process.start()
             self.debugger.reset_dut()
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 aux_process.join()
-        if arguments:
-            self.command = application+' '+arguments
-        else:
-            self.command = application
-        campaign_data['command'] = self.command
-        if self.use_aux:
-            if aux_arguments:
-                self.aux_command = aux_application+' '+aux_arguments
-            else:
-                self.aux_command = aux_application
-            campaign_data['aux_command'] = self.aux_command
-        else:
-            self.aux_command = ''
         files = []
-        files.append(directory+'/'+application)
-        if self.use_aux:
+        files.append(options.directory+'/'+self.campaign_data['application'])
+        if options.files:
+            for item in options.files.split(','):
+                files.append(options.directory+'/'+item.lstrip().rstrip())
+        os.makedirs('campaign-data/'+str(self.campaign_data['id'])+'/dut-files')
+        for item in files:
+            shutil.copy(item, 'campaign-data/'+str(self.campaign_data['id']) +
+                              '/dut-files/')
+        if self.campaign_data['use_aux']:
             files_aux = []
-            files_aux.append(directory+'/'+aux_application)
-        if dut_files:
-            for item in dut_files.split(','):
-                files.append(directory+'/'+item.lstrip().rstrip())
-        if self.use_aux:
-            if aux_files:
-                for item in aux_files.split(','):
-                    files_aux.append(directory+'/'+item.lstrip().rstrip())
-        if self.use_aux:
+            files_aux.append(options.directory+'/' +
+                             self.campaign_data['aux_application'])
+            if options.aux_files:
+                for item in options.aux_files.split(','):
+                    files_aux.append(
+                        options.directory+'/'+item.lstrip().rstrip())
+            os.makedirs('campaign-data/'+str(self.campaign_data['id']) +
+                        '/aux-files')
+            for item in files_aux:
+                shutil.copy(item, 'campaign-data/' +
+                                  str(self.campaign_data['id'])+'/aux-files/')
             aux_process = Thread(target=self.debugger.aux.send_files,
                                  args=(files_aux, ))
             aux_process.start()
         self.debugger.dut.send_files(files)
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             aux_process.join()
-        if self.use_aux:
             aux_process = Thread(target=self.debugger.aux.command)
             aux_process.start()
         self.debugger.dut.command()
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             aux_process.join()
-        campaign_data['exec_time'], campaign_data['num_cycles'] = \
-            self.debugger.time_application(self.command, self.aux_command,
-                                           timing_iterations, self.kill_dut)
-        if self.use_simics:
-            (campaign_data['cycles_between'],
-             campaign_data['num_checkpoints']) = \
-                self.debugger.create_checkpoints(self.command, self.aux_command,
-                                                 campaign_data['num_cycles'],
-                                                 num_checkpoints, self.kill_dut)
-        if output_file:
-            if use_aux_output:
-                self.debugger.aux.get_file(output_file, 'campaign-data/' +
-                                           str(self.campaign_number)+'/gold_' +
-                                           output_file)
+        self.campaign_data['exec_time'], self.campaign_data['num_cycles'] = \
+            self.debugger.time_application(self.campaign_data['command'],
+                                           self.campaign_data['aux_command'],
+                                           options.timing_iterations,
+                                           self.campaign_data['kill_dut'])
+        if self.campaign_data['use_simics']:
+            (self.campaign_data['cycles_between'],
+             self.campaign_data['num_checkpoints']) = \
+                self.debugger.create_checkpoints(
+                    self.campaign_data['command'],
+                    self.campaign_data['aux_command'],
+                    self.campaign_data['num_cycles'], options.num_checkpoints,
+                    self.campaign_data['kill_dut'])
+        if self.campaign_data['output_file']:
+            if self.campaign_data['use_aux_output']:
+                self.debugger.aux.get_file(
+                    self.campaign_data['output_file'],
+                    'campaign-data/'+str(self.campaign_data['id'])+'/gold_' +
+                    self.campaign_data['output_file'])
             else:
-                self.debugger.dut.get_file(output_file, 'campaign-data/' +
-                                           str(self.campaign_number)+'/gold_' +
-                                           output_file)
-        if self.use_simics:
+                self.debugger.dut.get_file(
+                    self.campaign_data['output_file'],
+                    'campaign-data/'+str(self.campaign_data['id'])+'/gold_' +
+                    self.campaign_data['output_file'])
+        if self.campaign_data['use_simics']:
             self.debugger.close()
-        campaign_data['dut_output'] = self.debugger.dut.output
-        campaign_data['debugger_output'] = self.debugger.output
-        if self.use_aux:
-            campaign_data['aux_output'] = self.debugger.aux.output
+        self.campaign_data['dut_output'] = self.debugger.dut.output
+        self.campaign_data['debugger_output'] = self.debugger.output
+        if self.campaign_data['use_aux']:
+            self.campaign_data['aux_output'] = self.debugger.aux.output
         with sql() as db:
-            db.insert_dict('campaign', campaign_data)
-        os.makedirs('campaign-data/'+str(self.campaign_number)+'/dut-files')
-        for item in files:
-            shutil.copy(item, 'campaign-data/'+str(self.campaign_number) +
-                              '/dut-files/')
-        if self.use_aux:
-            os.makedirs('campaign-data/'+str(self.campaign_number) +
-                        '/aux-files')
-            for item in files_aux:
-                shutil.copy(item, 'campaign-data/' +
-                                  str(self.campaign_number)+'/aux-files/')
+            db.update_dict('campaign', self.campaign_data,
+                           self.campaign_data['id'])
         self.close()
 
     def send_dut_files(self, aux=False):
-        location = 'campaign-data/'+str(self.campaign_number)
+        location = 'campaign-data/'+str(self.campaign_data['id'])
         if aux:
             location += '/aux-files/'
         else:
@@ -188,55 +171,55 @@ class fault_injector:
         self.data_diff = None
         self.detected_errors = None
         self.logged = False
-        result_data = {'campaign_id': self.campaign_number,
+        result_data = {'campaign_id': self.campaign_data['id'],
                        'num_injections': num_injections,
                        'outcome': 'In progress',
                        'outcome_category': 'Incomplete',
                        'timestamp': datetime.now()}
-        injection_data = {'injection_number': 0,
-                          'timestamp': datetime.now()}
         with sql() as db:
             db.insert_dict('result', result_data)
-            injection_data['result_id'] = self.result_id = db.cursor.lastrowid
-            db.insert_dict('injection', injection_data)
+            self.result_id = db.cursor.lastrowid
+            db.insert_dict('injection',
+                           {'result_id': self.result_id, 'injection_number': 0})
 
     def inject_faults(self, num_injections, selected_targets, compare_all):
-        if self.use_simics:
-            checkpoint_nums = range(1, self.num_checkpoints)
+        if self.campaign_data['use_simics']:
+            checkpoint_nums = range(1, self.campaign_data['num_checkpoints'])
             injected_checkpoint_nums = []
             for i in xrange(num_injections):
                 checkpoint_num = random.choice(checkpoint_nums)
                 checkpoint_nums.remove(checkpoint_num)
                 injected_checkpoint_nums.append(checkpoint_num)
             injected_checkpoint_nums = sorted(injected_checkpoint_nums)
-            return self.debugger.inject_fault(self.result_id,
-                                              injected_checkpoint_nums,
-                                              selected_targets,
-                                              self.cycles_between,
-                                              self.num_checkpoints,
-                                              compare_all)
+            return self.debugger.inject_fault(
+                self.result_id, injected_checkpoint_nums, selected_targets,
+                self.campaign_data['cycles_between'],
+                self.campaign_data['num_checkpoints'], compare_all)
         else:
             injection_times = []
             for i in xrange(num_injections):
-                injection_times.append(random.uniform(0, self.exec_time))
+                injection_times.append(
+                    random.uniform(0, self.campaign_data['exec_time']))
             injection_times = sorted(injection_times)
-            self.debugger.inject_fault(self.result_id, injection_times,
-                                       self.command, selected_targets)
+            self.debugger.inject_fault(
+                self.result_id, injection_times, self.campaign_data['command'],
+                selected_targets)
             return 0
 
-    def check_output(self, output_file, use_aux_output):
+    def check_output(self):
         missing_output = False
-        os.makedirs('campaign-data/'+str(self.campaign_number)+'/results/' +
-                    str(self.result_id))
-        result_folder = ('campaign-data/'+str(self.campaign_number) +
-                         '/results/'+str(self.result_id))
-        output_location = result_folder+'/'+output_file
-        gold_location = ('campaign-data/'+str(self.campaign_number)+'/gold_' +
-                         output_file)
-        if use_aux_output:
-            self.debugger.aux.get_file(output_file, output_location)
+        result_folder = ('campaign-data/'+str(self.campaign_data['id'])+'/'
+                         'results/'+str(self.result_id))
+        os.makedirs(result_folder)
+        output_location = result_folder+'/'+self.campaign_data['output_file']
+        gold_location = ('campaign-data/'+str(self.campaign_data['id'])+'/'
+                         'gold_'+self.campaign_data['output_file'])
+        if self.campaign_data['use_aux_output']:
+            self.debugger.aux.get_file(self.campaign_data['output_file'],
+                                       output_location)
         else:
-            self.debugger.dut.get_file(output_file, output_location)
+            self.debugger.dut.get_file(self.campaign_data['output_file'],
+                                       output_location)
         if not os.listdir(result_folder):
             os.rmdir(result_folder)
             missing_output = True
@@ -251,19 +234,19 @@ class fault_injector:
                 os.remove(output_location)
                 if not os.listdir(result_folder):
                     os.rmdir(result_folder)
-        if use_aux_output:
-            self.debugger.aux.command('rm '+output_file)
+        if self.campaign_data['use_aux_output']:
+            self.debugger.aux.command('rm '+self.campaign_data['output_file'])
         else:
-            self.debugger.dut.command('rm '+output_file)
+            self.debugger.dut.command('rm '+self.campaign_data['output_file'])
         if missing_output:
             raise DrSEUsError(DrSEUsError.missing_output)
 
-    def monitor_execution(self, latent_faults, output_file, use_aux_output):
+    def monitor_execution(self, latent_faults=0):
         buff = ''
         aux_buff = ''
         outcome = ''
         outcome_category = ''
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             try:
                 aux_buff = self.debugger.aux.read_until()
             except DrSEUsError as error:
@@ -271,7 +254,7 @@ class fault_injector:
                 outcome = error.type
                 outcome_category = 'AUX execution error'
             else:
-                if self.kill_dut:
+                if self.campaign_data['kill_dut']:
                     self.debugger.dut.serial.write('\x03')
         try:
             buff = self.debugger.dut.read_until()
@@ -283,7 +266,7 @@ class fault_injector:
                 self.detected_errors = int(line.replace(
                                            'drseus_detected_errors:', ''))
                 break
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             for line in aux_buff.split('\n'):
                 if 'drseus_detected_errors:' in line:
                     if self.detected_errors is None:
@@ -291,9 +274,9 @@ class fault_injector:
                     self.detected_errors += int(line.replace(
                                                 'drseus_detected_errors:', ''))
                     break
-        if output_file and not outcome:
+        if self.campaign_data['output_file'] and not outcome:
             try:
-                self.check_output(output_file, use_aux_output)
+                self.check_output()
             except DrSEUsError as error:
                 if error.type == DrSEUsError.scp_error:
                     outcome = 'Error getting output file'
@@ -328,7 +311,7 @@ class fault_injector:
             return
         try:
             print(colored(self.debugger.dut.serial.port+' ', 'blue'), end='')
-        except:
+        except AttributeError:
             pass
         print(colored('result id '+str(self.result_id)+' outcome: ' +
                       outcome_category+' - '+outcome, 'blue'), end='')
@@ -344,26 +327,32 @@ class fault_injector:
                        'timestamp': datetime.now()}
         try:
             result_data['dut_output'] = self.debugger.dut.output
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 result_data['aux_output'] = self.debugger.aux.output
         except AttributeError:
             pass
         with sql() as db:
+            db.cursor.execute('SELECT COUNT(*) FROM log_injection '
+                              'WHERE result_id=?', (self.result_id,))
+            if db.cursor.fetchone()[0] > 1:
+                db.cursor.execute('DELETE FROM log_injection WHERE '
+                                  'result_id=? AND injection_number=0',
+                                  (self.result_id,))
             db.update_dict('result', result_data, self.result_id)
         self.logged = True
         self.debugger.output = ''
         try:
             self.debugger.dut.output = ''
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 self.debugger.aux.output = ''
         except AttributeError:
             pass
 
     def inject_and_monitor(self, iteration_counter, num_injections,
-                           selected_targets, output_file, use_aux_output,
-                           compare_all):
-        if self.use_aux and not self.use_simics:
-            if self.use_aux:
+                           selected_targets, compare_all):
+        if self.campaign_data['use_aux'] and \
+                not self.campaign_data['use_simics']:
+            if self.campaign_data['use_aux']:
                 self.debugger.aux.serial.write('\x03')
                 self.debugger.aux.do_login()
                 self.send_dut_files(aux=True)
@@ -375,7 +364,7 @@ class fault_injector:
                 else:
                     break
             self.create_result(num_injections)
-            if not self.use_simics:
+            if not self.campaign_data['use_simics']:
                 attempts = 10
                 for attempt in xrange(attempts):
                     try:
@@ -398,51 +387,51 @@ class fault_injector:
                 except DrSEUsError:
                     self.log_result('Error sending files to DUT', 'SCP error')
                     continue
-            if self.use_aux and not self.use_simics:
-                self.debugger.aux.serial.write(str('./'+self.aux_command+'\n'))
+            if self.campaign_data['use_aux'] and \
+                    not self.campaign_data['use_simics']:
+                self.debugger.aux.serial.write(
+                    str('./'+self.campaign_data['aux_command']+'\n'))
             try:
-                latent_faults = self.inject_faults(num_injections,
-                                                   selected_targets,
-                                                   compare_all)
+                latent_faults = self.inject_faults(
+                    num_injections, selected_targets, compare_all)
                 self.debugger.continue_dut()
             except DrSEUsError as error:
                 outcome = error.type
-                if self.use_simics:
+                if self.campaign_data['use_simics']:
                     outcome_category = 'Simics error'
                 else:
                     outcome_category = 'Debugger error'
-                    if not self.use_simics:
+                    if not self.campaign_data['use_simics']:
                         try:
                             self.debugger.continue_dut()
-                            if self.use_aux:
+                            if self.campaign_data['use_aux']:
                                 aux_process = Thread(
                                     target=self.debugger.aux.read_until)
                                 aux_process.start()
                             self.debugger.dut.read_until()
-                            if self.use_aux:
+                            if self.campaign_data['use_aux']:
                                 aux_process.join()
-                        except:
+                        except DrSEUsError:
                             pass
             else:
                 outcome, outcome_category = self.monitor_execution(
-                    latent_faults, output_file, use_aux_output)
-                if outcome == 'Latent faults' or (not self.use_simics
-                                                  and outcome ==
-                                                  'Masked faults'):
-                    if self.use_aux:
-                        self.debugger.aux.serial.write(str('./' +
-                                                           self.aux_command +
-                                                           '\n'))
-                    self.debugger.dut.serial.write(str('./'+self.command+'\n'))
-                    next_outcome = self.monitor_execution(0, output_file,
-                                                          use_aux_output)[0]
+                    latent_faults)
+                if outcome == 'Latent faults' or \
+                        (not self.campaign_data['use_simics']
+                         and outcome == 'Masked faults'):
+                    if self.campaign_data['use_aux']:
+                        self.debugger.aux.serial.write(
+                            str('./'+self.campaign_data['aux_command']+'\n'))
+                    self.debugger.dut.serial.write(
+                        str('./'+self.campaign_data['command']+'\n'))
+                    next_outcome = self.monitor_execution()[0]
                     if next_outcome != 'Masked faults':
                         outcome = next_outcome
                         outcome_category = 'Post execution error'
-                    elif self.use_simics:
+                    elif self.campaign_data['use_simics']:
                         if self.debugger.persistent_faults(self.result_id):
                             outcome = 'Persistent faults'
-            if self.use_simics:
+            if self.campaign_data['use_simics']:
                 try:
                     self.debugger.close()
                 except DrSEUsError as error:
@@ -450,13 +439,12 @@ class fault_injector:
                     outcome_category = 'Simics error'
                 finally:
                     shutil.rmtree('simics-workspace/injected-checkpoints/' +
-                                  str(self.campaign_number)+'/' +
+                                  str(self.campaign_data['id'])+'/' +
                                   str(self.result_id))
             self.log_result(outcome, outcome_category)
         self.close()
 
-    def supervise(self, iteration_counter, output_file, use_aux_output,
-                  packet_capture):
+    def supervise(self, iteration_counter, packet_capture):
         interrupted = False
         while not interrupted:
             with iteration_counter.get_lock():
@@ -467,7 +455,7 @@ class fault_injector:
                     break
             self.create_result()
             if packet_capture:
-                data_dir = ('campaign-data/'+str(self.campaign_number) +
+                data_dir = ('campaign-data/'+str(self.campaign_data['id']) +
                             '/results/'+str(self.result_id))
                 os.makedirs(data_dir)
                 capture_file = open(data_dir+'/capture.pcap', 'w')
@@ -481,18 +469,19 @@ class fault_injector:
                     if buff[-len('Capturing on \'eth1\''):] == \
                             'Capturing on \'eth1\'':
                         break
-            if self.use_aux:
-                self.debugger.aux.serial.write(str('./'+self.aux_command+'\n'))
-            self.debugger.dut.serial.write(str('./'+self.command+'\n'))
+            if self.campaign_data['use_aux']:
+                self.debugger.aux.serial.write(
+                    str('./'+self.campaign_data['aux_command']+'\n'))
+            self.debugger.dut.serial.write(
+                str('./'+self.campaign_data['command']+'\n'))
             try:
-                outcome, outcome_category = self.monitor_execution(
-                    0, output_file, use_aux_output)
+                outcome, outcome_category = self.monitor_execution()
             except KeyboardInterrupt:
-                if self.use_simics:
+                if self.campaign_data['use_simics']:
                     self.debugger.continue_dut()
                 self.debugger.dut.serial.write('\x03')
                 self.debugger.dut.read_until()
-                if self.use_aux:
+                if self.campaign_data['use_aux']:
                     self.debugger.aux.serial.write('\x03')
                     self.debugger.aux.read_until()
                 outcome, outcome_category = ('Interrupted', 'Incomplete')

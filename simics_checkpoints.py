@@ -369,16 +369,16 @@ def inject_checkpoint(campaign_number, result_id, injection_number,
                                               injected_checkpoint, register,
                                               target, board, targets))
     except Exception as error:
+        injection_data['success'] = False
         with sql() as db:
             db.insert_dict('injection', injection_data)
         print(error)
         raise DrSEUsError('Error injecting fault')
+    else:
+        injection_data['success'] = True
     # log injection data
-    # TODO: move delete of injection0 to simics.py
-    # TODO: update handling of injection error
     with sql() as db:
         db.insert_dict('injection', injection_data)
-        db.delete_injection0(result_id)
     if debug:
         print(colored('result id: '+str(result_id), 'magenta'))
         print(colored('injection number: '+str(injection_number), 'magenta'))

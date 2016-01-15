@@ -1,15 +1,18 @@
 from __future__ import print_function
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
+import multiprocessing
 import os
 import shutil
 import signal
 import sys
 
+from error import DrSEUsError
 from fault_injector import fault_injector
-from jtag import find_ftdi_serials, find_uart_serials
+from jtag import find_ftdi_serials, find_uart_serials, openocd
 import simics_config
 from sql import sql
+from supervisor import supervisor
 
 
 def print_zedboard_info():
@@ -38,18 +41,15 @@ def list_campaigns():
 
 
 def get_last_campaign():
-    if (not os.path.exists('campaign-data') or
-            not os.path.exists('campaign-data/db.sqlite3')):
-        return 0
-    with sql(row_factory='row') as db:
-        db.cursor.execute('SELECT id FROM log_campaign '
-                          'ORDER BY id DESC LIMIT 1')
-        campaign_data = db.cursor.fetchone()
-    if campaign_data is None:
-        campaign_number = 0
-    else:
-        campaign_number = campaign_data['id']
-    return campaign_number
+    if os.path.exists('campaign-data/db.sqlite3'):
+        with sql(row_factory='row') as db:
+            db.cursor.execute('SELECT id FROM log_campaign '
+                              'ORDER BY id DESC LIMIT 1')
+            campaign_data = db.cursor.fetchone()
+        if campaign_data is not None:
+            return campaign_data['id']
+        else:
+            return 0
 
 
 def get_campaign_data(campaign_number):
@@ -117,25 +117,19 @@ def delete_campaign(campaign_number):
         print('deleted gold checkpoints')
 
 
+def delete_all():
+    if os.path.exists('simics-workspace/gold-checkpoints'):
+        shutil.rmtree('simics-workspace/gold-checkpoints')
+        print('deleted gold checkpoints')
+    if os.path.exists('simics-workspace/injected-checkpoints'):
+        shutil.rmtree('simics-workspace/injected-checkpoints')
+        print('deleted injected checkpoints')
+    if os.path.exists('campaign-data'):
+        shutil.rmtree('campaign-data')
+        print('deleted campaign data')
+
+
 def create_campaign(options):
-    options.debug = True
-    campaign_number = get_last_campaign() + 1
-    if options.architecture == 'p2020':
-        if options.dut_serial_port is None:
-            options.dut_serial_port = '/dev/ttyUSB1'
-        if options.dut_prompt is None:
-            options.dut_prompt = 'root@p2020rdb:~#'
-    elif options.architecture == 'a9':
-        if options.dut_serial_port is None:
-            options.dut_serial_port = '/dev/ttyACM0'
-        if options.dut_prompt is None:
-            options.dut_prompt = '[root@ZED]#'
-    else:
-        raise Exception('invalid architecture: '+options.architecture)
-    if options.aux_app:
-        aux_application = options.aux_app
-    else:
-        aux_application = options.application
     if options.directory == 'fiapps':
         if not os.path.exists('fiapps'):
             os.system('./setup_apps.sh')
@@ -146,69 +140,42 @@ def create_campaign(options):
             raise Exception('cannot find directory '+options.directory)
     if options.use_simics and not os.path.exists('simics-workspace'):
         os.system('./setup_simics_workspace.sh')
-
-    # if arguments:
-    #     self.command = application+' '+arguments
-    # else:
-    #     self.command = application
-    # campaign_data['command'] = self.command
-    # if self.use_aux:
-    #     if aux_arguments:
-    #         self.aux_command = aux_application+' '+aux_arguments
-    #     else:
-    #         self.aux_command = aux_application
-    #     campaign_data['aux_command'] = self.aux_command
-    # else:
-    #     self.aux_command = ''
-
-    # campaign_data = {'application': options.application,
-    #                  'output_file': options.file,
-    #                  'use_aux': options.use_aux,
-    #                  'use_aux_output': options.use_aux_output,
-    #                  'architecture': options.architecture,
-    #                  'use_simics': options.use_simics,
-    #                  'timestamp': datetime.now(),
-    #                  'kill_dut': options.kill_dut}
-
-    if os.path.exists('campaign-data/'+str(campaign_number)):
-        campaign_files = os.listdir('campaign-data/'+str(campaign_number))
-        if 'results' in campaign_files:
-            campaign_files.remove('results')
-        if campaign_files:
-            print('previous campaign data exists, continuing will delete it')
-            if raw_input('continue? [Y/n]: ') in ['n', 'N', 'no', 'No', 'NO']:
-                return
-            else:
-                shutil.rmtree('campaign-data/'+str(campaign_number))
-                print('deleted campaign '+str(campaign_number)+' data')
-                if os.path.exists('simics-workspace/gold-checkpoints/' +
-                                  str(campaign_number)):
-                    shutil.rmtree('simics-workspace/gold-checkpoints/' +
-                                  str(campaign_number))
-                    print('deleted gold checkpoints')
-                if os.path.exists('simics-workspace/injected-checkpoints/' +
-                                  str(campaign_number)):
-                    shutil.rmtree('simics-workspace/injected-checkpoints/' +
-                                  str(campaign_number))
-    if not os.path.exists('campaign-data/'+str(campaign_number)):
-        os.makedirs('campaign-data/'+str(campaign_number))
     if not os.path.exists('campaign-data/db.sqlite3'):
-        initialize_database()
-    drseus = fault_injector(campaign_number, options.dut_serial_port,
-                            options.aux_serial_port, options.dut_prompt,
-                            options.aux_prompt, options.debugger_ip_address,
-                            options.architecture, options.use_aux,
-                            options.debug, options.use_simics, options.seconds)
-    drseus.setup_campaign(options.directory, options.architecture,
-                          options.application, options.arguments, options.file,
-                          options.files, options.aux_files,
-                          options.timing_iterations, aux_application,
-                          options.aux_args, options.use_aux_output,
-                          options.num_checkpoints, options.kill_dut)
+        if not os.path.exists(('campaign-data')):
+            os.mkdir('campaign-data')
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
+        django_command([sys.argv[0], 'migrate', '--run-syncdb'])
+    campaign_data = {
+        'application': options.application,
+        'architecture': options.architecture,
+        'aux_command': (options.aux_application if options.aux_application
+                        else options.application) +
+                       ((' '+options.aux_arguments) if options.aux_arguments
+                        else ''),
+        'command': options.application+((' '+options.arguments)
+                                        if options.arguments else ''),
+        'output_file': options.file,
+        'kill_dut': options.kill_dut,
+        'timestamp': datetime.now(),
+        'use_aux': options.use_aux,
+        'use_aux_output': options.use_aux and options.use_aux_output,
+        'use_simics': options.use_simics}
+    with sql() as db:
+        db.insert_dict('campaign', campaign_data)
+        campaign_data['id'] = db.cursor.lastrowid
+    campaign_directory = 'campaign-data/'+str(campaign_data['id'])
+    if os.path.exists(campaign_directory):
+        raise Exception('directory already exists: '
+                        'campaign-data/'+str(campaign_data['id']))
+    else:
+        os.mkdir(campaign_directory)
+    options.debug = True
+    drseus = fault_injector(campaign_data, options)
+    drseus.setup_campaign(options)
     print('\nsuccessfully setup campaign')
 
 
-def get_injection_data(campaign_data, result_id):
+def get_injection_data(result_id):
     with sql(row_factory='row') as db:
         db.cursor.execute('SELECT * FROM log_injection INNER JOIN log_result '
                           'ON (log_injection.result_id=log_result.id) '
@@ -219,35 +186,9 @@ def get_injection_data(campaign_data, result_id):
     return injection_data
 
 
-def load_campaign(campaign_data, options):
-    if campaign_data['architecture'] == 'p2020':
-        if options.dut_serial_port is None:
-            options.dut_serial_port = '/dev/ttyUSB1'
-        if options.dut_prompt is None:
-            options.dut_prompt = 'root@p2020rdb:~#'
-    elif campaign_data['architecture'] == 'a9':
-        if options.dut_serial_port is None:
-            options.dut_serial_port = '/dev/ttyACM0'
-        if options.dut_prompt is None:
-            options.dut_prompt = '[root@ZED]#'
-    drseus = fault_injector(campaign_data['id'], options.dut_serial_port,
-                            options.aux_serial_port, options.dut_prompt,
-                            options.aux_prompt, options.debugger_ip_address,
-                            campaign_data['architecture'],
-                            campaign_data['use_aux'], options.debug,
-                            campaign_data['use_simics'], options.seconds)
-    drseus.command = campaign_data['command']
-    drseus.aux_command = campaign_data['aux_command']
-    drseus.num_checkpoints = campaign_data['num_checkpoints']
-    drseus.cycles_between = campaign_data['cycles_between']
-    drseus.exec_time = campaign_data['exec_time']
-    drseus.kill_dut = campaign_data['kill_dut']
-    return drseus
-
-
 def perform_injections(campaign_data, iteration_counter, options,
                        interactive=False):
-    drseus = load_campaign(campaign_data, options)
+    drseus = fault_injector(campaign_data, options)
 
     def interrupt_handler(signum, frame):
         drseus.log_result('Interrupted', 'Incomplete')
@@ -255,16 +196,16 @@ def perform_injections(campaign_data, iteration_counter, options,
                           str(campaign_data['id'])+'/'+str(drseus.result_id)):
             shutil.rmtree('campaign-data/results/' +
                           str(campaign_data['id'])+'/'+str(drseus.result_id))
-        if not drseus.use_simics:
+        if not drseus.campaign_data['use_simics']:
             try:
                 drseus.debugger.continue_dut()
-            except:
+            except DrSEUsError:
                 pass
         try:
             drseus.debugger.close()
-        except:
+        except DrSEUsError:
             pass
-        if drseus.use_simics:
+        if drseus.campaign_data['use_simics']:
             if os.path.exists('simics-workspace/injected-checkpoints/' +
                               str(campaign_data['id'])+'/' +
                               str(drseus.result_id)):
@@ -280,20 +221,60 @@ def perform_injections(campaign_data, iteration_counter, options,
     else:
         selected_targets = None
     drseus.inject_and_monitor(iteration_counter, options.num_injections,
-                              selected_targets, campaign_data['output_file'],
-                              campaign_data['use_aux_output'],
-                              options.compare_all)
+                              selected_targets, options.compare_all)
 
 
-def initialize_database():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
-    django_command([sys.argv[0], 'migrate', '--run-syncdb'])
+def inject_campaign(options):
+    campaign_data = get_campaign_data(options.campaign_number)
+    iteration_counter = multiprocessing.Value('L', options.injection_iterations)
+    if options.num_processes > 1 and (campaign_data['use_simics'] or
+                                      campaign_data['architecture'] == 'a9'):
+        if not campaign_data['use_simics'] and \
+                campaign_data['architecture'] == 'a9':
+            zedboards = find_uart_serials().keys()
+        processes = []
+        for i in xrange(options.num_processes):
+            if not campaign_data['use_simics'] and \
+                    campaign_data['architecture'] == 'a9':
+                if i < len(zedboards):
+                    options.dut_serial_port = zedboards[i]
+                else:
+                    break
+            process = multiprocessing.Process(
+                target=perform_injections,
+                args=(campaign_data, iteration_counter, options)
+            )
+            processes.append(process)
+            process.start()
+        try:
+            for process in processes:
+                process.join()
+        except KeyboardInterrupt:
+            for process in processes:
+                os.kill(process.pid, signal.SIGINT)
+                process.join()
+    else:
+        options.debug = True
+        perform_injections(campaign_data, iteration_counter, options)
+
+
+def regenerate(options):
+    campaign_data = get_campaign_data(options.campaign_number)
+    if not campaign_data['use_simics']:
+        raise Exception('This feature is only available for Simics campaigns')
+    injection_data = get_injection_data(options.result_id)
+    drseus = fault_injector(campaign_data, options)
+    checkpoint = drseus.debugger.regenerate_checkpoints(
+        options.result_id, campaign_data['cycles_between'], injection_data)
+    drseus.debugger.launch_simics_gui(checkpoint)
+    shutil.rmtree('simics-workspace/injected-checkpoints/' +
+                  str(campaign_data['id'])+'/'+str(options.result_id))
 
 
 def view_logs(args):
     try:
         port = int(args[0])
-    except:
+    except (IndexError, ValueError):
         port = 8000
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
     django_command([sys.argv[0], 'runserver', str(port)])
@@ -323,8 +304,16 @@ def update_checkpoint_dependencies(campaign_number):
             str(campaign_number)+'/'+checkpoint, False)
 
 
+def update_all_checkpoint_dependencies():
+    if os.path.exists('simics-workspace/gold-checkpoints'):
+        print('updating gold checkpoint path dependencies...', end='')
+        sys.stdout.flush()
+        for campaign in os.listdir('simics-workspace/gold-checkpoints'):
+            update_checkpoint_dependencies(campaign)
+        print('done')
+
+
 def merge_campaigns(merge_directory):
-    last_campaign_number = get_last_campaign()
     backup_database()
     with sql(row_factory='row') as db, \
         sql(database=merge_directory+'/campaign-data/db.sqlite3',
@@ -335,7 +324,8 @@ def merge_campaigns(merge_directory):
             print('merging campaign: \"'+merge_directory+'/' +
                   new_campaign['command']+'\"')
             old_campaign_number = new_campaign['id']
-            new_campaign['id'] += last_campaign_number
+            db.insert_dict('campaign', new_campaign)
+            new_campaign['id'] = db.cursor.lastrowid
             if os.path.exists(merge_directory+'/campaign-data/' +
                               str(old_campaign_number)):
                 print('\tcopying campaign data...', end='')
@@ -356,13 +346,12 @@ def merge_campaigns(merge_directory):
                 update_checkpoint_dependencies(new_campaign['id'])
                 print('done')
             print('\tcopying results...', end='')
-            db.insert_dict('campaign', new_campaign)
             db_new.cursor.execute('SELECT * FROM log_result WHERE '
                                   'campaign_id=?', (old_campaign_number,))
             new_results = db_new.cursor.fetchall()
             for new_result in new_results:
                 old_result_id = new_result['id']
-                new_result['campaign_id'] += last_campaign_number
+                new_result['campaign_id'] = new_campaign['id']
                 del new_result['id']
                 db.insert_dict('result', new_result)
                 new_result_id = sql.lastrowid
@@ -376,3 +365,14 @@ def merge_campaigns(merge_directory):
                         del new_result_item['id']
                         db.insert_dict(table, new_result_item)
             print('done')
+
+
+def launch_openocd(options):
+    debugger = openocd(None, None, options.dut_serial_port, None, None, None,
+                       None, None, None, None, standalone=True)
+    print('Launched '+str(debugger))
+    debugger.openocd.wait()
+
+
+def launch_supervisor(options):
+    supervisor(get_campaign_data(options.campaign_number), options).cmdloop()

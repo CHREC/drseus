@@ -170,8 +170,6 @@ class jtag:
                 injection_data['success'] = False
             with sql() as db:
                 db.insert_dict('injection', injection_data)
-        with sql() as db:
-            db.delete_injection0(result_id)
 
 
 class bdi(jtag):
@@ -187,7 +185,7 @@ class bdi(jtag):
         try:
             self.telnet = Telnet(self.ip_address, self.port,
                                  timeout=self.timeout)
-        except:
+        except socket.timeout:
             self.telnet = None
             print('Could not connect to debugger, '
                   'running in supervisor-only mode')
@@ -381,8 +379,7 @@ class openocd(jtag):
         return string
 
     def close(self):
-        if self.telnet:
-            self.telnet.write('shutdown\n')
+        self.telnet.write('shutdown\n')
         jtag.close(self)
         self.openocd.send_signal(SIGINT)
         self.openocd.wait()
