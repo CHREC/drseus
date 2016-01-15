@@ -164,16 +164,16 @@ injection_group.add_option('-I', '--injections', action='store', type='int',
 injection_group.add_option('-t', '--targets', action='store', type='str',
                            dest='selected_targets', default=None,
                            help='comma-seperated list of targets for injection')
+injection_group.add_option('-p', '--procs', action='store', type='int',
+                           dest='num_processes', default=1,
+                           help='number of injections to perform in parallel '
+                                '(only supported on zedboards and in simics)')
 parser.add_option_group(injection_group)
 
 simics_injection_group = optparse.OptionGroup(parser, 'Injection Options '
                                               '(Simics only)', 'Use these when '
                                               'performing injections with '
                                               'Simics')
-simics_injection_group.add_option('-p', '--procs', action='store',
-                                  type='int', dest='num_processes', default=1,
-                                  help='number of simics injections to perform '
-                                       'in parallel')
 simics_injection_group.add_option('--compare_all', action='store_true',
                                   dest='compare_all', default=False,
                                   help='monitor all checkpoints (only last by '
