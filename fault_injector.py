@@ -43,7 +43,7 @@ class fault_injector:
                 self.debugger = openocd(
                     options.debugger_ip_address, self.rsakey,
                     options.dut_serial_port, options.aux_serial_port,
-                    options.campaign_data['use_aux'], options.dut_prompt,
+                    campaign_data['use_aux'], options.dut_prompt,
                     options.aux_prompt, options.debug, options.timeout,
                     campaign_data['id'])
 
