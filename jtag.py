@@ -52,23 +52,25 @@ def find_open_port():
 
 
 class jtag:
-    def __init__(self, ip_address, port, rsakey, dut_serial_port,
-                 aux_serial_port, use_aux, dut_prompt, aux_prompt, debug,
-                 timeout, campaign_number):
-        self.ip_address = ip_address
-        self.port = port
+    def __init__(self, campaign_data, options, rsakey):
+        self.ip_address = options.debugger_ip_address
         self.timeout = 30
-        self.debug = debug
-        self.use_aux = use_aux
+        self.debug = options.debug
+        self.use_aux = campaign_data['use_aux']
         self.output = ''
-        self.dut = dut(rsakey, dut_serial_port, dut_prompt, debug, timeout,
-                       campaign_number)
+        self.dut = dut(rsakey, options.dut_serial_port, options.dut_prompt,
+                       options.debug, options.timeout, campaign_data['id'])
         if self.use_aux:
-            self.aux = dut(rsakey, aux_serial_port, aux_prompt, debug, timeout,
-                           campaign_number, color='cyan')
+            self.aux = dut(rsakey, options.aux_serial_port, options.aux_prompt,
+                           options.debug, options.timeout, campaign_data['id'],
+                           color='cyan')
 
     def __str__(self):
-        string = ('JTAG Debugger at '+self.ip_address+' port '+str(self.port))
+        string = 'JTAG Debugger at '+self.ip_address
+        try:
+            string += ' port '+str(self.port)
+        except AttributeError:
+            pass
         return string
 
     def close(self):
@@ -176,12 +178,9 @@ class bdi(jtag):
     error_messages = ['timeout while waiting for halt',
                       'wrong state for requested command', 'read access failed']
 
-    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
-                 use_aux, dut_prompt, aux_prompt, debug, timeout,
-                 campaign_number):
-        jtag.__init__(self, ip_address, 23, rsakey, dut_serial_port,
-                      aux_serial_port, use_aux, dut_prompt, aux_prompt, debug,
-                      timeout, campaign_number)
+    def __init__(self, campaign_data, options, rsakey):
+        self.port = 23
+        jtag.__init__(self, campaign_data, options, rsakey)
         try:
             self.telnet = Telnet(self.ip_address, self.port,
                                  timeout=self.timeout)
@@ -244,14 +243,10 @@ class bdi(jtag):
 
 class bdi_arm(bdi):
     # BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
-    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
-                 use_aux, dut_prompt, aux_prompt, debug, timeout,
-                 campaign_number):
+    def __init__(self, campaign_data, options, rsakey):
         self.prompts = ['A9#0>', 'A9#1>']
         self.targets = devices['a9_bdi']
-        bdi.__init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
-                     use_aux, dut_prompt, aux_prompt, debug, timeout,
-                     campaign_number)
+        bdi.__init__(self, campaign_data, options, rsakey)
 
     def reset_dut(self):
         jtag.reset_dut(self, ['- TARGET: processing reset request',
@@ -295,14 +290,10 @@ class bdi_arm(bdi):
 
 
 class bdi_p2020(bdi):
-    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
-                 use_aux, dut_prompt, aux_prompt, debug, timeout,
-                 campaign_number):
+    def __init__(self, campaign_data, options, rsakey):
         self.prompts = ['P2020>']
         self.targets = devices['p2020']
-        bdi.__init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
-                     use_aux, dut_prompt, aux_prompt, debug, timeout,
-                     campaign_number)
+        bdi.__init__(self, campaign_data, options, rsakey)
 
     def reset_dut(self):
         jtag.reset_dut(self, ['- TARGET: processing user reset request',
@@ -347,32 +338,28 @@ class bdi_p2020(bdi):
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
 
-    def __init__(self, ip_address, rsakey, dut_serial_port, aux_serial_port,
-                 use_aux, dut_prompt, aux_prompt, debug, timeout,
-                 campaign_number, standalone=False):
+    def __init__(self, campaign_data, options, rsakey):
+        options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = devices['a9']
-        serial = zedboards[find_uart_serials()[dut_serial_port]]
-        port = find_open_port()
-        if not standalone:
+        serial = zedboards[find_uart_serials()[options.dut_serial_port]]
+        self.port = find_open_port()
+        if not options.openocd:
             self.dev_null = open('/dev/null', 'w')
         self.openocd = subprocess.Popen(['openocd', '-c',
                                          'gdb_port 0; tcl_port 0; '
-                                         'telnet_port '+str(port)+'; '
+                                         'telnet_port '+str(self.port)+'; '
                                          'interface ftdi; '
                                          'ftdi_serial '+serial+';',
                                          '-f', 'openocd_zedboard.cfg'],
-                                        stderr=(self.dev_null if not standalone
+                                        stderr=(self.dev_null
+                                                if not options.openocd
                                                 else None))
-        if not standalone:
-            jtag.__init__(self, '127.0.0.1', port, rsakey, dut_serial_port,
-                          aux_serial_port, use_aux, dut_prompt, aux_prompt,
-                          debug, timeout, campaign_number)
+        if not options.openocd:
+            jtag.__init__(self, campaign_data, options, rsakey)
             time.sleep(1)
             self.telnet = Telnet(self.ip_address, self.port,
                                  timeout=self.timeout)
-        else:
-            self.port = port
 
     def __str__(self):
         string = 'OpenOCD at localhost port '+str(self.port)

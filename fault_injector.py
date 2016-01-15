@@ -28,9 +28,7 @@ class fault_injector:
             self.rsakey.write_private_key_file(
                 'campaign-data/'+str(campaign_data['id'])+'/private.key')
         if self.campaign_data['use_simics']:
-            self.debugger = simics(
-                campaign_data['id'], campaign_data['architecture'], self.rsakey,
-                campaign_data['use_aux'], options.debug, options.timeout)
+            self.debugger = simics(campaign_data, options, self.rsakey)
         else:
             if campaign_data['architecture'] == 'p2020':
                 self.debugger = bdi_p2020(

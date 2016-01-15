@@ -193,6 +193,7 @@ parser.add_option_group(supervise_group)
 options, arguments = parser.parse_args()
 
 
+# verify command line arguments
 modes = 0
 for mode in (options.application, options.inject, options.supervise,
              options.view_logs, options.zedboards, options.list,
@@ -212,9 +213,13 @@ else:
     if len(arguments) > 0:
         parser.error('extra arguments: '+' '.join(arguments))
 
-if options.openocd:
-    options.architecture = 'a9'
 
+# set smart defaults
+if not options.campaign_number:
+    options.campaign_number = utilities.get_last_campaign()
+if options.campaign_number:
+    options.architecture = \
+        utilities.get_campaign_data(options.campaign_number)['architecture']
 if options.architecture == 'p2020':
     if options.dut_serial_port is None:
         options.dut_serial_port = '/dev/ttyUSB1'
@@ -228,9 +233,8 @@ elif options.architecture == 'a9':
 else:
     raise Exception('invalid architecture: '+options.architecture)
 
-if not options.campaign_number:
-    options.campaign_number = utilities.get_last_campaign()
 
+# process command
 if options.application:
     utilities.create_campaign(options)
 elif options.inject:

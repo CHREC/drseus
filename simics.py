@@ -20,19 +20,17 @@ class simics:
                       'dropping memop (peer attribute not set)',
                       'where nothing is mapped', 'Error']
 
-    def __init__(self, campaign_number, architecture, rsakey, use_aux, debug,
-                 timeout):
+    def __init__(self, campaign_data, options, rsakey):
         self.simics = None
         self.output = ''
-        self.campaign_number = campaign_number
-        self.debug = debug
-        self.timeout = timeout
-        if architecture == 'p2020':
+        self.campaign_data = campaign_data  # TODO: only used for id and use_aux
+        self.debug = options.debug
+        self.timeout = options.timeout
+        if campaign_data['architecture'] == 'p2020':
             self.board = 'p2020rdb'
-        elif architecture == 'a9':
+        elif campaign_data['architecture'] == 'a9':
             self.board = 'a9x2'
         self.rsakey = rsakey
-        self.use_aux = use_aux
 
     def __str__(self):
         string = 'Simics simulation of '+self.board
@@ -62,16 +60,15 @@ class simics:
                 break
         if checkpoint is None:
             self.command('$drseus=TRUE')
-            buff = self.command('run-command-file simics-'+self.board+'/' +
-                                self.board+'-linux'+('-ethernet' if
-                                                     self.use_aux
-                                                     else '') +
-                                '.simics')
+            buff = self.command(
+                'run-command-file simics-'+self.board+'/'+self.board+'-linux' +
+                ('-ethernet' if self.campaign_data['use_aux'] else '') +
+                '.simics')
         else:
             buff = self.command('read-configuration '+checkpoint)
             buff += self.command('connect-real-network-port-in ssh '
                                  'ethernet_switch0 target-ip=10.10.0.100')
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 buff += self.command('connect-real-network-port-in ssh '
                                      'ethernet_switch0 target-ip=10.10.0.104')
         found_settings = 0
@@ -93,9 +90,9 @@ class simics:
             elif 'Host TCP port' in line:
                 ssh_ports.append(int(line.split('->')[0].split(' ')[-2]))
                 found_settings += 1
-            if not self.use_aux and found_settings == 2:
+            if not self.campaign_data['use_aux'] and found_settings == 2:
                 break
-            elif self.use_aux and found_settings == 4:
+            elif self.campaign_data['use_aux'] and found_settings == 4:
                 break
         else:
             self.close()
@@ -105,15 +102,16 @@ class simics:
         elif self.board == 'a9x2':
             prompt = '#'
         self.dut = dut(self.rsakey, serial_ports[0], prompt, self.debug,
-                       self.timeout, self.campaign_number, 38400, ssh_ports[0])
-        if self.use_aux:
+                       self.timeout, self.campaign_data['id'], 38400,
+                       ssh_ports[0])
+        if self.campaign_data['use_aux']:
             self.aux = dut(self.rsakey, serial_ports[1], prompt, self.debug,
-                           self.timeout, self.campaign_number, 38400,
+                           self.timeout, self.campaign_data['id'], 38400,
                            ssh_ports[1], 'cyan')
         if checkpoint is None:
             self.continue_dut()
             self.do_uboot()
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 aux_process = Thread(target=self.aux.do_login,
                                      kwargs={'ip_address': '10.10.0.104',
                                              'change_prompt': True,
@@ -122,13 +120,13 @@ class simics:
             self.dut.do_login(ip_address='10.10.0.100',
                               change_prompt=(prompt == '#'),
                               simics=True)
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 aux_process.join()
         else:
             self.dut.ip_address = '127.0.0.1'
             if prompt == '#':
                 self.dut.prompt = 'DrSEUs# '
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 self.aux.ip_address = '127.0.0.1'
                 if prompt == '#':
                     self.aux.prompt = 'DrSEUs# '
@@ -147,7 +145,7 @@ class simics:
                            ' '+dut_board+'.'+serial_port+';'
                            'connect-real-network-port-in ssh '
                            'ethernet_switch0 target-ip=10.10.0.100;')
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             aux_board = 'AUX_'+self.board+'_1'
             simics_commands += ('new-text-console-comp text_console1;'
                                 'disconnect '+aux_board+'.console0.serial'
@@ -162,7 +160,7 @@ class simics:
     def close(self):
         try:
             self.dut.close()
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 self.aux.close()
         except AttributeError:
             pass
@@ -245,7 +243,7 @@ class simics:
         return self.read_until()
 
     def do_uboot(self):
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             def stop_aux_boot():
                 self.aux.read_until('autoboot: ')
                 self.aux.serial.write('\n')
@@ -253,13 +251,13 @@ class simics:
             aux_process.start()
         self.dut.read_until('autoboot: ')
         self.dut.serial.write('\n')
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             aux_process.join()
         self.halt_dut()
         if self.board == 'p2020rdb':
             self.command('DUT_p2020rdb.soc.phys_mem.load-file '
                          '$initrd_image $initrd_addr')
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 self.command('AUX_p2020rdb_1.soc.phys_mem.load-file '
                              '$initrd_image $initrd_addr')
             self.continue_dut()
@@ -270,7 +268,7 @@ class simics:
                                   'setenv bootargs root=/dev/ram rw '
                                   'console=$consoledev,$baudrate\n'
                                   'bootm ef080000 10000000 ef040000\n')
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 self.aux.serial.write('setenv ethaddr 00:01:af:07:9b:8d\n'
                                       'setenv eth1addr 00:01:af:07:9b:8e\n'
                                       'setenv eth2addr 00:01:af:07:9b:8f\n'
@@ -283,7 +281,7 @@ class simics:
                          '$kernel_image $kernel_addr')
             self.command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
                          '$initrd_image $initrd_addr')
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 self.command('AUX_a9x2_1.coretile.mpcore.phys_mem.load-file '
                              '$kernel_image $kernel_addr')
                 self.command('AUX_a9x2_1.coretile.mpcore.phys_mem.load-file '
@@ -297,7 +295,7 @@ class simics:
             # TODO: remove these after fixing command prompt of simics arm
             self.dut.read_until('##')
             self.dut.read_until('##')
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 self.aux.read_until('VExpress# ')
                 self.aux.serial.write('setenv bootargs console=ttyAMA0 '
                                       'root=/dev/ram0 rw\n')
@@ -315,12 +313,12 @@ class simics:
         start_time = time.time()
         self.continue_dut()
         for i in xrange(timing_iterations):
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 aux_process = Thread(target=self.aux.command,
                                      args=('./'+aux_command, ))
                 aux_process.start()
             self.dut.serial.write(str('./'+command+'\n'))
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 aux_process.join()
             if kill_dut:
                 self.dut.serial.write('\x03')
@@ -338,10 +336,10 @@ class simics:
     def create_checkpoints(self, command, aux_command, cycles, num_checkpoints,
                            kill_dut):
         os.makedirs('simics-workspace/gold-checkpoints/' +
-                    str(self.campaign_number))
+                    str(self.campaign_data['id']))
         step_cycles = cycles / num_checkpoints
         self.halt_dut()
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
                 aux_process = Thread(target=self.aux.command,
                                      args=('./'+aux_command, ))
                 aux_process.start()
@@ -354,17 +352,18 @@ class simics:
             self.command('run-cycles '+str(step_cycles))
             self.dut.output += '***drseus_checkpoint: '+str(checkpoint)+'***\n'
             incremental_checkpoint = ('gold-checkpoints/' +
-                                      str(self.campaign_number)+'/' +
+                                      str(self.campaign_data['id'])+'/' +
                                       str(checkpoint))
             self.command('write-configuration '+incremental_checkpoint)
-            if not read_thread.is_alive() or (self.use_aux and kill_dut
-                                              and not aux_process.is_alive()):
+            if not read_thread.is_alive() or \
+                (self.campaign_data['use_aux'] and kill_dut
+                 and not aux_process.is_alive()):
                 merged_checkpoint = incremental_checkpoint+'_merged'
                 self.command('!bin/checkpoint-merge '+incremental_checkpoint +
                              ' '+merged_checkpoint)
                 break
         self.continue_dut()
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             aux_process.join()
         if kill_dut:
             self.dut.serial.write('\x03')
@@ -374,13 +373,13 @@ class simics:
     def inject_fault(self, result_id, checkpoints_to_inject, selected_targets,
                      cycles_between_checkpoints, num_checkpoints, compare_all):
         dut_output = ''
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             aux_output = ''
         latent_faults = 0
         for injection_number in xrange(1, len(checkpoints_to_inject)+1):
             checkpoint_number = checkpoints_to_inject[injection_number-1]
             injected_checkpoint = simics_checkpoints.inject_checkpoint(
-                self.campaign_number, result_id, injection_number,
+                self.campaign_data['id'], result_id, injection_number,
                 checkpoint_number, self.board, selected_targets, self.debug)
             self.launch_simics(injected_checkpoint)
             injections_remaining = (injection_number <
@@ -398,10 +397,10 @@ class simics:
             if injections_remaining:
                 self.close()
             dut_output += self.dut.output
-            if self.use_aux:
+            if self.campaign_data['use_aux']:
                 aux_output += self.aux.output
         self.dut.output = dut_output
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             self.aux.output = aux_output
         return latent_faults
 
@@ -409,15 +408,15 @@ class simics:
         for i in xrange(len(injection_data)):
             if i == 0:
                 checkpoint = ('simics-workspace/gold-checkpoints/' +
-                              str(self.campaign_number)+'/' +
+                              str(self.campaign_data['id'])+'/' +
                               str(injection_data[i]['checkpoint_number']))
             else:
                 checkpoint = ('simics-workspace/injected-checkpoints/' +
-                              str(self.campaign_number)+'/' +
+                              str(self.campaign_data['id'])+'/' +
                               str(result_id)+'/' +
                               str(injection_data[i]['checkpoint_number']))
             injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
-                                   str(self.campaign_number)+'/' +
+                                   str(self.campaign_data['id'])+'/' +
                                    str(result_id)+'/' +
                                    str(injection_data[i]['checkpoint_number']) +
                                    '_injected')
@@ -432,7 +431,7 @@ class simics:
                                 injection_data[i+1]['checkpoint_number']):
                     self.command('run-cycles '+str(cycles_between))
                 self.command('write-configuration injected-checkpoints/' +
-                             str(self.campaign_number)+'/' +
+                             str(self.campaign_data['id'])+'/' +
                              str(result_id)+'/' +
                              str(injection_data[i+1]['checkpoint_number']))
                 self.close()
@@ -447,7 +446,7 @@ class simics:
                                         last_checkpoint + 1):
             self.command('run-cycles '+str(cycles_between_checkpoints))
             incremental_checkpoint = ('injected-checkpoints/' +
-                                      str(self.campaign_number)+'/' +
+                                      str(self.campaign_data['id'])+'/' +
                                       str(result_id)+'/'+str(checkpoint_number))
             monitor = compare_all or checkpoint_number == num_checkpoints
             if monitor or checkpoint_number == last_checkpoint:
@@ -456,41 +455,16 @@ class simics:
                 monitored_checkpoint = incremental_checkpoint+'_merged'
                 self.command('!bin/checkpoint-merge '+incremental_checkpoint +
                              ' '+monitored_checkpoint)
-                # dev_null = open('/dev/null', 'w')
-                # merge = subprocess.Popen([os.getcwd()+'/simics-workspace/'
-                #                           '/bin/checkpoint-merge',
-                #                           incremental_checkpoint,
-                #                           monitored_checkpoint,
-                #                           '--jobs', '4'],
-                #                          cwd=(os.getcwd() +
-                #                               '/simics-workspace'),
-                #                          stdout=dev_null, stderr=dev_null)
-                # if merge.wait():
-                #     dev_null.close()
-                #     raise DrSEUsError('Error merging checkpoint')
-                # dev_null.close()
                 gold_incremental_checkpoint = ('gold-checkpoints/' +
-                                               str(self.campaign_number)+'/' +
-                                               str(checkpoint_number))
+                                               str(self.campaign_data['id']) +
+                                               '/'+str(checkpoint_number))
                 gold_checkpoint = ('gold-checkpoints/' +
-                                   str(self.campaign_number)+'/' +
+                                   str(self.campaign_data['id'])+'/' +
                                    str(checkpoint_number)+'_merged')
                 if not os.path.exists('simics-workspace/'+gold_checkpoint):
                     self.command('!bin/checkpoint-merge ' +
                                  gold_incremental_checkpoint+' ' +
                                  gold_checkpoint)
-                    # dev_null = open('/dev/null', 'w')
-                    # merge = subprocess.Popen([os.getcwd()+'/simics-workspace/'
-                    #                           '/bin/checkpoint-merge',
-                    #                           gold_incremental_checkpoint,
-                    #                           gold_checkpoint, '--jobs', '4'],
-                    #                          cwd=(os.getcwd() +
-                    #                               '/simics-workspace'),
-                    #                          stdout=dev_null, stderr=dev_null)
-                    # if merge.wait():
-                    #     dev_null.close()
-                    #     raise DrSEUsError('Error merging checkpoint')
-                    # dev_null.close()
                 gold_checkpoint = 'simics-workspace/'+gold_checkpoint
                 monitored_checkpoint = 'simics-workspace/'+monitored_checkpoint
                 errors = simics_checkpoints.compare_registers(
