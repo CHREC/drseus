@@ -85,7 +85,7 @@ class dut:
                 ssh.close()
             except:
                 # try:
-                dut_scp.close()
+                # dut_scp.close()
                 ssh.close()
                 # except:
                 #     pass
@@ -142,7 +142,7 @@ class dut:
                 ssh.close()
             except:
                 # try:
-                dut_scp.close()
+                # dut_scp.close()
                 ssh.close()
                 # except:
                 #     pass

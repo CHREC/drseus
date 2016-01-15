@@ -368,7 +368,6 @@ class openocd(jtag):
     def close(self):
         self.telnet.write('shutdown\n')
         jtag.close(self)
-        self.openocd.send_signal(SIGINT)
         self.openocd.wait()
         self.dev_null.close()
 

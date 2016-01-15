@@ -186,7 +186,7 @@ def get_injection_data(result_id):
     return injection_data
 
 
-def perform_injections(campaign_data, iteration_counter, options,
+def perform_injections(campaign_data, options, iteration_counter,
                        interactive=False):
     drseus = fault_injector(campaign_data, options)
 
@@ -197,14 +197,8 @@ def perform_injections(campaign_data, iteration_counter, options,
             shutil.rmtree('campaign-data/results/' +
                           str(campaign_data['id'])+'/'+str(drseus.result_id))
         if not drseus.campaign_data['use_simics']:
-            try:
-                drseus.debugger.continue_dut()
-            except DrSEUsError:
-                pass
-        try:
-            drseus.debugger.close()
-        except DrSEUsError:
-            pass
+            drseus.debugger.continue_dut()
+        drseus.debugger.close()
         if drseus.campaign_data['use_simics']:
             if os.path.exists('simics-workspace/injected-checkpoints/' +
                               str(campaign_data['id'])+'/' +
@@ -225,6 +219,15 @@ def perform_injections(campaign_data, iteration_counter, options,
 
 
 def inject_campaign(options):
+    processes = []
+
+    def interrupt_handler(signum, frame):
+        for process in processes:
+            os.kill(process.pid, signal.SIGINT)
+        for process in processes:
+            process.join()
+    signal.signal(signal.SIGINT, interrupt_handler)
+
     campaign_data = get_campaign_data(options.campaign_number)
     iteration_counter = multiprocessing.Value('L', options.injection_iterations)
     if options.num_processes > 1 and (campaign_data['use_simics'] or
@@ -232,7 +235,6 @@ def inject_campaign(options):
         if not campaign_data['use_simics'] and \
                 campaign_data['architecture'] == 'a9':
             zedboards = find_uart_serials().keys()
-        processes = []
         for i in xrange(options.num_processes):
             if not campaign_data['use_simics'] and \
                     campaign_data['architecture'] == 'a9':
@@ -242,20 +244,15 @@ def inject_campaign(options):
                     break
             process = multiprocessing.Process(
                 target=perform_injections,
-                args=(campaign_data, iteration_counter, options)
+                args=(campaign_data, options, iteration_counter)
             )
             processes.append(process)
             process.start()
-        try:
-            for process in processes:
-                process.join()
-        except KeyboardInterrupt:
-            for process in processes:
-                os.kill(process.pid, signal.SIGINT)
-                process.join()
+        for process in processes:
+            process.join()
     else:
         options.debug = True
-        perform_injections(campaign_data, iteration_counter, options)
+        perform_injections(campaign_data, options, iteration_counter)
 
 
 def regenerate(options):
