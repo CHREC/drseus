@@ -34,13 +34,15 @@ class dut:
          ('login: ', 'Reboot')]
     )
 
-    def __init__(self, result_data, options, rsakey, baud_rate=115200,
-                 ssh_port=22, color='green', aux=False):
+    def __init__(self, campaign_data, result_data, options, rsakey, aux=False):
+        self.campaign_data = campaign_data
         self.result_data = result_data
         self.options = options
         self.aux = aux
         serial_port = (options.dut_serial_port if not aux
                        else options.aux_serial_port)
+        baud_rate = (options.dut_baud_rate if not aux
+                     else options.aux_baud_rate)
         try:
             self.serial = Serial(port=serial_port, baudrate=baud_rate,
                                  timeout=options.timeout, rtscts=True)
@@ -53,9 +55,7 @@ class dut:
             self.serial.flushInput()  # pyserial 2.7
         self.prompt = options.dut_prompt if not aux else options.aux_prompt
         self.prompt += ' '
-        self.ssh_port = ssh_port
         self.rsakey = rsakey
-        self.color = color
 
     def __str__(self):
         string = ('Serial Port: '+self.serial.port+'\n\tTimeout: ' +
@@ -65,7 +65,8 @@ class dut:
             string += '\n\tIP Address: '+self.ip_address
         except AttributeError:
             pass
-        string += '\n\tSCP Port: '+str(self.ssh_port)
+        string += '\n\tSCP Port: '+str(self.options.dut_scp_port if not self.aux
+                                       else self.options.aux_scp_port)
         return string
 
     def close(self):
@@ -74,57 +75,34 @@ class dut:
     def send_files(self, files):
         if self.options.debug:
             print(colored('sending file(s)', 'blue'))
-        # attempts = 10
-        # for attempt in xrange(attempts):
-        #     try:
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(self.ip_address, port=self.ssh_port,
-                    username='root', pkey=self.rsakey,
-                    allow_agent=False, look_for_keys=False)
-        dut_scp = SCPClient(ssh.get_transport())
-        dut_scp.put(files)
-        dut_scp.close()
-        ssh.close()
-            # except:
-            #     # try:
-            #     # dut_scp.close()
-            #     ssh.close()
-            #     # except:
-            #     #     pass
-            #     print(colored('error sending file(s) (attempt ' +
-            #                   str(attempt+1)+'/'+str(attempts)+')', 'red'))
-            #     if attempt < attempts-1:
-            #         sleep(30)
-            #     else:
-            #         raise DrSEUsError(DrSEUsError.scp_error)
-            # else:
-            #     break
-        # try:
-        #     ssh = paramiko.SSHClient()
-        #     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        #     ssh.connect(self.ip_address, port=self.ssh_port, username='root',
-        #                 pkey=self.rsakey, look_for_keys=False)
-        #     dut_scp = SCPClient(ssh.get_transport())
-        #     dut_scp.put(files)
-        #     dut_scp.close()
-        #     ssh.close()
-        # except Exception as error:
-        #     print(error)
-        #     for file_ in files:
-        #         scp_process = Process(target=os.system,
-        #                               args=('scp -P '+str(self.ssh_port) +
-        #                                     ' -i campaign-data/' +
-        #                                     str(self.campaign_number) +
-        #                                     '/private.key '
-        #                                     '-o StrictHostKeyChecking=no ' +
-        #                                     file_+' root@' +
-        #                                     str(self.ip_address)+':',))
-        #         scp_process.start()
-        #         scp_process.join(timeout=30)
-        #         if scp_process.exitcode != 0:
-        #             scp_process.terminate()
-        #             raise DrSEUsError(DrSEUsError.scp_error)
+        attempts = 10
+        for attempt in xrange(attempts):
+            try:
+                ssh = paramiko.SSHClient()
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.connect(self.ip_address, port=(self.options.dut_scp_port
+                                                   if not self.aux else
+                                                   self.options.aux_scp_port),
+                            username='root', pkey=self.rsakey,
+                            allow_agent=False, look_for_keys=False)
+                dut_scp = SCPClient(ssh.get_transport())
+                dut_scp.put(files)
+                dut_scp.close()
+                ssh.close()
+            except:
+                # try:
+                # dut_scp.close()
+                ssh.close()
+                # except:
+                #     pass
+                print(colored('error sending file(s) (attempt ' +
+                              str(attempt+1)+'/'+str(attempts)+')', 'red'))
+                if attempt < attempts-1:
+                    sleep(30)
+                else:
+                    raise DrSEUsError(DrSEUsError.scp_error)
+            else:
+                break
         if self.options.debug:
             print(colored('files sent', 'blue'))
 
@@ -136,7 +114,9 @@ class dut:
             try:
                 ssh = paramiko.SSHClient()
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.connect(self.ip_address, port=self.ssh_port,
+                ssh.connect(self.ip_address, port=(self.options.dut_scp_port
+                                                   if not self.aux else
+                                                   self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
                 dut_scp = SCPClient(ssh.get_transport())
@@ -157,30 +137,6 @@ class dut:
                     raise DrSEUsError(DrSEUsError.scp_error)
             else:
                 break
-        # try:
-        #     ssh = paramiko.SSHClient()
-        #     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        #     ssh.connect(self.ip_address, port=self.ssh_port, username='root',
-        #                 pkey=self.rsakey, look_for_keys=False)
-        #     dut_scp = SCPClient(ssh.get_transport())
-        #     dut_scp.get(file_, local_path=local_path)
-        #     dut_scp.close()
-        #     ssh.close()
-        # except Exception as error:
-        #     print(error)
-        #     scp_process = Process(target=os.system,
-        #                           args=('scp -P '+str(self.ssh_port) +
-        #                                 ' -i campaign-data/' +
-        #                                 str(self.campaign_number) +
-        #                                 '/private.key '
-        #                                 '-o StrictHostKeyChecking=no '
-        #                                 'root@'+str(self.ip_address)+':' +
-        #                                 file_+' ./'+local_path,))
-        #     scp_process.start()
-        #     scp_process.join(timeout=30)
-        #     if scp_process.exitcode != 0:
-        #         scp_process.terminate()
-        #         raise DrSEUsError(DrSEUsError.scp_error)
         if self.options.debug:
             print(colored('file received', 'blue'))
 
@@ -192,7 +148,8 @@ class dut:
             self.result_data['dut_output' if not self.aux
                              else 'aux_output'] += char
             if self.options.debug:
-                print(colored(char, self.color), end='')
+                print(colored(char, 'green' if not self.aux else 'cyan'),
+                      end='')
             buff += char
             if not char:
                 raise DrSEUsError(DrSEUsError.hanging)
@@ -215,10 +172,15 @@ class dut:
             if not char:
                 hanging = True
                 break
-            self.result_data['dut_output' if not self.aux
-                             else 'aux_output'] += char
+            if self.options.application:
+                self.campaign_data['dut_output' if not self.aux
+                                   else 'aux_output'] += char
+            else:
+                self.result_data['dut_output' if not self.aux
+                                 else 'aux_output'] += char
             if self.options.debug:
-                print(colored(char, self.color), end='')
+                print(colored(char, 'green' if not self.aux else 'cyan'),
+                      end='')
                 sys.stdout.flush()
             buff += char
             if buff[-len(string):] == string:
@@ -234,10 +196,12 @@ class dut:
             self.serial.timeout = self.options.timeout
         if self.options.debug:
             print()
-        if self.options.inject:
+        if not self.options.supervise:
             with sql() as db:
-                db.update_dict('result', self.result_data,
-                               self.result_data['id'])
+                if self.options.application:
+                    db.update_dict('campaign', self.campaign_data)
+                else:
+                    db.update_dict('result', self.result_data)
         if 'drseus_sighandler:' in buff:
             signal = 'Signal received'
             for line in buff.split('\n'):
@@ -268,7 +232,8 @@ class dut:
                 self.result_data['dut_output' if not self.aux
                                  else 'aux_output'] += char
                 if self.options.debug:
-                    print(colored(char, self.color), end='')
+                    print(colored(char, 'green' if not self.aux else 'cyan'),
+                          end='')
                     sys.stdout.flush()
                 buff += char
                 if not char:

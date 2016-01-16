@@ -3,6 +3,7 @@ import optparse
 
 import utilities
 
+# TODO: move rsakey back into campaign_data/db
 # TODO: add boot commands option
 # TODO: fix inconsistent reloading when editing outcomes on result table page
 # TODO: add modes to backup database and delete backups
@@ -30,6 +31,13 @@ parser.add_option('--dut_serial', action='store', type='str',
                   dest='dut_serial_port', default=None,
                   help='dut serial port [p2020 default=/dev/ttyUSB1]           '
                        '[a9 default=/dev/ttyACM0] (overridden by simics)')
+parser.add_option('--dut_baud', action='store', type='int',
+                  dest='dut_baud_rate', default=115200,
+                  help='dut serial port baud rate [default=115200] '
+                       '(overridden by simics)')
+parser.add_option('--dut_scp', action='store', type='int',
+                  dest='dut_scp_port', default=22,
+                  help='dut scp port [default=22] (overridden by simics)')
 parser.add_option('--dut_prompt', action='store', type='str',
                   dest='dut_prompt', default=None,
                   help='dut console prompt [p2020 default=root@p2020rdb:~#]    '
@@ -38,6 +46,13 @@ parser.add_option('--aux_serial', action='store', type='str',
                   dest='aux_serial_port', default='/dev/ttyUSB0',
                   help='aux serial port [p2020 default=/dev/ttyUSB1]           '
                        '[a9 default=/dev/ttyACM0] (overridden by simics)')
+parser.add_option('--aux_baud', action='store', type='int',
+                  dest='aux_baud_rate', default=115200,
+                  help='aux serial port baud rate [default=115200] '
+                       '(overridden by simics)')
+parser.add_option('--aux_scp', action='store', type='int',
+                  dest='aux_scp_port', default=22,
+                  help='aux scp port [default=22] (overridden by simics)')
 parser.add_option('--aux_prompt', action='store', type='str',
                   dest='aux_prompt', default=None,
                   help='aux console prompt [p2020 default=root@p2020rdb:~#]    '

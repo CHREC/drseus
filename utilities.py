@@ -151,10 +151,13 @@ def create_campaign(options):
                         else options.application) +
                        ((' '+options.aux_arguments) if options.aux_arguments
                         else ''),
+        'aux_output': '',
         'command': options.application+((' '+options.arguments)
                                         if options.arguments else ''),
-        'output_file': options.file,
+        'debugger_output': '',
+        'dut_output': '',
         'kill_dut': options.kill_dut,
+        'output_file': options.file,
         'timestamp': datetime.now(),
         'use_aux': options.use_aux,
         'use_aux_output': options.use_aux and options.use_aux_output,

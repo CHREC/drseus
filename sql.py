@@ -33,7 +33,12 @@ class sql():
             dictionary.values())
         self.connection.commit()
 
-    def update_dict(self, table, dictionary, row_id):
+    def update_dict(self, table, dictionary, row_id=None):
+        if row_id is None:
+            if 'id' in dictionary:
+                row_id = dictionary['id']
+            else:
+                raise Exception('Unknown sql row id to update')
         self.cursor.execute(
             'UPDATE log_{} SET {}=? WHERE id={}'.format(
                 table,

@@ -52,17 +52,17 @@ def find_open_port():
 
 class jtag:
     def __init__(self, campaign_data, result_data, options, rsakey):
-        self.ip_address = options.debugger_ip_address
-        self.timeout = 30
-        self.options = options
-        self.campaign_data = campaign_data['use_aux']
+        self.campaign_data = campaign_data
         self.result_data = result_data
-        self.dut = dut(result_data, options, rsakey)
+        self.options = options
+        self.timeout = 30
+        self.dut = dut(campaign_data, result_data, options, rsakey)
         if campaign_data['use_aux']:
-            self.aux = dut(result_data, options, rsakey, color='cyan', aux=True)
+            self.aux = dut(campaign_data, result_data, options, rsakey,
+                           aux=True)
 
     def __str__(self):
-        string = 'JTAG Debugger at '+self.ip_address
+        string = 'JTAG Debugger at '+self.options.debugger_ip_address
         try:
             string += ' port '+str(self.port)
         except AttributeError:
@@ -177,7 +177,7 @@ class bdi(jtag):
         self.port = 23
         jtag.__init__(self, campaign_data, result_data, options, rsakey)
         try:
-            self.telnet = Telnet(self.ip_address, self.port,
+            self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                                  timeout=self.timeout)
         except socket.timeout:
             self.telnet = None
@@ -187,7 +187,8 @@ class bdi(jtag):
             self.command('', error_message='Debugger not ready')
 
     def __str__(self):
-        string = 'BDI3000 at '+self.ip_address+' port '+str(self.port)
+        string = ('BDI3000 at '+self.options.debugger_ip_address +
+                  ' port '+str(self.port))
         return string
 
     def close(self):
@@ -200,20 +201,29 @@ class bdi(jtag):
         if error_message is None:
             error_message = command
         buff = self.telnet.read_very_eager()
-        self.result_data['debugger_output'] += buff
+        if self.options.application:
+            self.campaign_data['debugger_output'] += buff
+        else:
+            self.result_data['debugger_output'] += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
             command = command+'\r'
             self.telnet.write(command)
             self.telnet.write('\r')
-            self.result_data['debugger_output'] += command
+            if self.options.application:
+                self.campaign_data['debugger_output'] += command
+            else:
+                self.result_data['debugger_output'] += command
             if self.options.debug:
                 print(colored(command, 'yellow'))
         for i in xrange(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
-            self.result_data['debugger_output'] += buff
+            if self.options.application:
+                self.campaign_data['debugger_output'] += buff
+            else:
+                self.result_data['debugger_output'] += buff
             return_buffer += buff
             if self.options.debug:
                 print(colored(buff, 'yellow'), end='')
@@ -224,14 +234,19 @@ class bdi(jtag):
                 print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
-        self.result_data['debugger_output'] += buff
+        if self.options.application:
+            self.campaign_data['debugger_output'] += buff
+        else:
+            self.result_data['debugger_output'] += buff
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
-        if self.options.inject:
+        if not self.options.supervise:
             with sql() as db:
-                db.update_dict('result', self.result_data,
-                               self.result_data['id'])
+                if self.options.application:
+                    db.update_dict('campaign', self.campaign_data)
+                else:
+                    db.update_dict('result', self.result_data)
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
@@ -357,7 +372,7 @@ class openocd(jtag):
         if not options.openocd:
             jtag.__init__(self, campaign_data, result_data, options, rsakey)
             time.sleep(1)
-            self.telnet = Telnet(self.ip_address, self.port,
+            self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                                  timeout=self.timeout)
 
     def __str__(self):
@@ -375,14 +390,20 @@ class openocd(jtag):
         if error_message is None:
             error_message = command
         buff = self.telnet.read_very_eager()
-        self.result_data['debugger_output'] += buff
+        if self.options.application:
+            self.campaign_data['debugger_output'] += buff
+        else:
+            self.result_data['debugger_output'] += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
             self.telnet.write(command+'\n')
             index, match, buff = self.telnet.expect([command],
                                                     timeout=self.timeout)
-            self.result_data['debugger_output'] += buff
+            if self.options.application:
+                self.campaign_data['debugger_output'] += buff
+            else:
+                self.result_data['debugger_output'] += buff
             return_buffer += buff
             if self.options.debug:
                 print(colored(buff, 'yellow'))
@@ -391,7 +412,10 @@ class openocd(jtag):
         for i in xrange(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
-            self.result_data['debugger_output'] += buff
+            if self.options.application:
+                self.campaign_data['debugger_output'] += buff
+            else:
+                self.result_data['debugger_output'] += buff
             return_buffer += buff
             if self.options.debug:
                 print(colored(buff, 'yellow'), end='')
@@ -402,14 +426,19 @@ class openocd(jtag):
                 print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
-        self.result_data['debugger_output'] += buff
+        if self.options.application:
+            self.campaign_data['debugger_output'] += buff
+        else:
+            self.result_data['debugger_output'] += buff
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
-        if self.options.inject:
+        if not self.options.supervise:
             with sql() as db:
-                db.update_dict('result', self.result_data,
-                               self.result_data['id'])
+                if self.options.application:
+                    db.update_dict('campaign', self.campaign_data)
+                else:
+                    db.update_dict('result', self.result_data)
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:

@@ -158,6 +158,8 @@ def results_page(request, campaign_number):
     campaign_data = campaign.objects.get(id=campaign_number)
     injection_objects = injection.objects.filter(
         result__campaign_id=campaign_number)
+    if len(injection_objects) == 0:
+        return redirect('/'+str(campaign_number)+'/campaign/')
     filter_ = injection_filter(request.GET, queryset=injection_objects,
                                campaign=campaign_number)
     result_ids = filter_.qs.values('result_id').distinct()

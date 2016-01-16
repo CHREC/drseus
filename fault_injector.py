@@ -138,14 +138,8 @@ class fault_injector:
                     self.campaign_data['output_file'])
         if self.campaign_data['use_simics']:
             self.debugger.close()
-        self.campaign_data['dut_output'] = self.result_data['dut_output']
-        self.campaign_data['debugger_output'] = \
-            self.result_data['debugger_output']
-        if self.campaign_data['use_aux']:
-            self.campaign_data['aux_output'] = self.result_data['aux_output']
         with sql() as db:
-            db.update_dict('campaign', self.campaign_data,
-                           self.campaign_data['id'])
+            db.update_dict('campaign', self.campaign_data)
         self.close()
 
     def send_dut_files(self, aux=False):
@@ -325,7 +319,7 @@ class fault_injector:
                 db.cursor.execute('DELETE FROM log_injection WHERE '
                                   'result_id=? AND injection_number=0',
                                   (self.result_data['id'],))
-            db.update_dict('result', self.result_data, self.result_data['id'])
+            db.update_dict('result', self.result_data)
 
     def inject_and_monitor(self, iteration_counter, num_injections,
                            selected_targets, compare_all):

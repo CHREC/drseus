@@ -102,12 +102,16 @@ class simics:
         elif self.board == 'a9x2':
             self.options.aux_prompt = self.options.dut_prompt = '#'
         self.options.dut_serial_port = serial_ports[0]
-        self.dut = dut(self.result_data, self.options, self.rsakey, 38400,
-                       ssh_ports[0])
+        self.options.dut_baud_rate = 38400
+        self.options.dut_scp_port = ssh_ports[0]
+        self.dut = dut(self.campaign_data, self.result_data, self.options,
+                       self.rsakey)
         if self.campaign_data['use_aux']:
             self.options.aux_serial_port = serial_ports[1]
-            self.aux = dut(self.result_data, self.options, self.rsakey, 38400,
-                           ssh_ports[1], 'cyan', True)
+            self.options.aux_baud_rate = ssh_ports[1]
+            self.options.aux_scp_port = ssh_ports[1]
+            self.aux = dut(self.campaign_data, self.result_data, self.options,
+                           self.rsakey, aux=True)
         if checkpoint is None:
             self.continue_dut()
             self.do_uboot()
@@ -182,13 +186,20 @@ class simics:
             read_thread.join(timeout=5)  # must be shorter than timeout in read
             if read_thread.is_alive():
                 self.simics.kill()
-                self.result_data['debugger_output'] += ('\nkilled unresponsive '
-                                                        'simics process\n')
+                if self.options.application:
+                    self.campaign_data['debugger_output'] += \
+                        '\nkilled unresponsive simics process\n'
+                else:
+                    self.result_data['debugger_output'] += \
+                        '\nkilled unresponsive simics process\n'
                 if self.options.debug:
                     print(colored('killed unresponsive simics process',
                                   'yellow'))
             else:
-                self.result_data['debugger_output'] += 'quit\n'
+                if self.options.application:
+                    self.campaign_data['debugger_output'] += 'quit\n'
+                else:
+                    self.result_data['debugger_output'] += 'quit\n'
                 if self.options.debug:
                     print(colored('quit', 'yellow'))
                 self.simics.wait()
@@ -201,7 +212,10 @@ class simics:
 
     def continue_dut(self):
         self.simics.stdin.write('run\n')
-        self.result_data['debugger_output'] += 'run\n'
+        if self.options.application:
+            self.campaign_data['debugger_output'] += 'run\n'
+        else:
+            self.result_data['debugger_output'] += 'run\n'
         if self.options.debug:
             print(colored('run', 'yellow'))
 
@@ -225,7 +239,10 @@ class simics:
             char = self.read_char()
             if not char:
                 break
-            self.result_data['debugger_output'] += char
+            if self.options.application:
+                self.campaign_data['debugger_output'] += char
+            else:
+                self.result_data['debugger_output'] += char
             if self.options.debug:
                 print(colored(char, 'yellow'), end='')
                 sys.stdout.flush()
@@ -234,8 +251,10 @@ class simics:
                 break
         if self.options.inject:
             with sql() as db:
-                db.update_dict('result', self.result_data,
-                               self.result_data['id'])
+                if self.options.application:
+                    db.update_dict('campaign', self.campaign_data)
+                else:
+                    db.update_dict('result', self.result_data)
         for message in self.error_messages:
             if message in buff:
                 raise DrSEUsError(message)
@@ -243,7 +262,10 @@ class simics:
 
     def command(self, command):
         self.simics.stdin.write(command+'\n')
-        self.result_data['debugger_output'] += command+'\n'
+        if self.options.application:
+            self.campaign_data['debugger_output'] += command+'\n'
+        else:
+            self.result_data['debugger_output'] += command+'\n'
         if self.options.debug:
             print(colored(command, 'yellow'))
         return self.read_until()
@@ -362,8 +384,8 @@ class simics:
             checkpoint += 1
             self.command('run-cycles ' +
                          str(self.campaign_data['cycles_between']))
-            self.result_data['dut_output'] += ('***drseus_checkpoint: ' +
-                                               str(checkpoint)+'***\n')
+            self.campaign_data['dut_output'] += ('***drseus_checkpoint: ' +
+                                                 str(checkpoint)+'***\n')
             incremental_checkpoint = ('gold-checkpoints/' +
                                       str(self.campaign_data['id'])+'/' +
                                       str(checkpoint))
