@@ -83,9 +83,9 @@ class jtag:
             self.dut.serial.write('\x03')
         self.dut.do_login()
 
-    def time_application(self, timing_iterations):
+    def time_application(self):
         start = time.time()
-        for i in xrange(timing_iterations):
+        for i in xrange(self.options.timing_iterations):
             if self.campaign_data['use_aux']:
                 aux_process = Thread(
                     target=self.aux.command,
@@ -98,11 +98,17 @@ class jtag:
                 self.dut.serial.write('\x03')
             self.dut.read_until()
         end = time.time()
-        self.campaign_data['exec_time'] = (end - start) / timing_iterations
+        self.campaign_data['exec_time'] = \
+            (end - start) / self.options.timing_iterations
 
-    def inject_fault(self, injection_times, command, selected_targets):
-        if selected_targets is not None:
-            for target in selected_targets:
+    def inject_faults(self):
+        injection_times = []
+        for i in xrange(self.options.num_injections):
+            injection_times.append(
+                random.uniform(0, self.campaign_data['exec_time']))
+        injection_times = sorted(injection_times)
+        if self.options.selected_targets is not None:
+            for target in self.options.selected_targets:
                 if target not in self.targets:
                     raise Exception('jtag.py:inject_fault(): '
                                     'invalid injection target: '+target)
@@ -113,12 +119,13 @@ class jtag:
                 print(colored('injection time: '+str(injection_time),
                               'magenta'))
             if injection == 1:
-                self.dut.serial.write(str('./'+command+'\n'))
+                self.dut.serial.write(str('./'+self.campaign_data['command'] +
+                                          '\n'))
             else:
                 self.continue_dut()
             time.sleep(injection_time)
             self.halt_dut()
-            target = choose_target(selected_targets, self.targets)
+            target = choose_target(self.options.selected_targets, self.targets)
             register = choose_register(target, self.targets)
             injection_data = {'result_id': self.result_data['id'],
                               'injection_number': injection,
@@ -167,6 +174,7 @@ class jtag:
                 injection_data['success'] = False
             with sql() as db:
                 db.insert_dict('injection', injection_data)
+        return 0
 
 
 class bdi(jtag):

@@ -255,6 +255,10 @@ elif options.architecture == 'a9':
         options.aux_prompt = '[root@ZED]#'
 else:
     raise Exception('invalid architecture: '+options.architecture)
+if options.selected_targets is not None:
+    options.selected_targets = options.selected_targets.split(',')
+    options.selected_targets = [target.strip()
+                                for target in options.selected_targets]
 
 
 # process command

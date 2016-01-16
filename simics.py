@@ -1,5 +1,6 @@
 from __future__ import print_function
 import os
+from random import choice
 from signal import SIGINT
 import subprocess
 import sys
@@ -333,14 +334,14 @@ class simics:
                 self.aux.read_until('##')
                 self.aux.read_until('##')
 
-    def time_application(self, timing_iterations):
+    def time_application(self):
         self.halt_dut()
         time_data = self.command('print-time').split('\n')[-2].split()
         start_cycles = int(time_data[2])
         start_sim_time = float(time_data[3])
         start_time = time.time()
         self.continue_dut()
-        for i in xrange(timing_iterations):
+        for i in xrange(self.options.timing_iterations):
             if self.campaign_data['use_aux']:
                 aux_process = Thread(
                     target=self.aux.command,
@@ -359,11 +360,11 @@ class simics:
         end_sim_time = float(time_data[3])
         self.continue_dut()
         self.campaign_data['exec_time'] = \
-            (end_time - start_time) / timing_iterations
+            (end_time - start_time) / self.options.timing_iterations
         self.campaign_data['num_cycles'] = \
-            int((end_cycles - start_cycles) / timing_iterations)
+            int((end_cycles - start_cycles) / self.options.timing_iterations)
         self.campaign_data['sim_time'] = \
-            (end_sim_time - start_sim_time) / timing_iterations
+            (end_sim_time - start_sim_time) / self.options.timing_iterations
 
     def create_checkpoints(self):
         os.makedirs('simics-workspace/gold-checkpoints/' +
@@ -405,14 +406,21 @@ class simics:
             self.dut.serial.write('\x03')
         read_thread.join()
 
-    def inject_fault(self, checkpoints_to_inject, selected_targets):
+    def inject_faults(self):
+        checkpoint_nums = range(1, self.campaign_data['num_checkpoints'])
+        checkpoints_to_inject = []
+        for i in xrange(self.options.num_injections):
+            checkpoint_num = choice(checkpoint_nums)
+            checkpoint_nums.remove(checkpoint_num)
+            checkpoints_to_inject.append(checkpoint_num)
+        checkpoints_to_inject = sorted(checkpoints_to_inject)
         latent_faults = 0
         for injection_number in xrange(1, len(checkpoints_to_inject)+1):
             checkpoint_number = checkpoints_to_inject[injection_number-1]
             injected_checkpoint = simics_checkpoints.inject_checkpoint(
                 self.campaign_data['id'], self.result_data['id'],
                 injection_number, checkpoint_number, self.board,
-                selected_targets, self.options.debug)
+                self.options.selected_targets, self.options.debug)
             self.launch_simics(injected_checkpoint)
             injections_remaining = (injection_number <
                                     len(checkpoints_to_inject))

@@ -3,7 +3,6 @@ from datetime import datetime
 from difflib import SequenceMatcher
 import os
 from paramiko import RSAKey
-import random
 import shutil
 import subprocess
 from termcolor import colored
@@ -19,6 +18,7 @@ from sql import sql
 class fault_injector:
     def __init__(self, campaign_data, options):
         self.campaign_data = campaign_data
+        self.options = options
         self.result_data = {'campaign_id': self.campaign_data['id'],
                             'aux_output': '',
                             'data_diff': None,
@@ -75,7 +75,7 @@ class fault_injector:
         if not self.campaign_data['use_simics']:
             self.debugger.close()
 
-    def setup_campaign(self, options):
+    def setup_campaign(self):
         if self.campaign_data['use_simics']:
             try:
                 self.debugger.launch_simics()
@@ -91,21 +91,22 @@ class fault_injector:
             if self.campaign_data['use_aux']:
                 aux_process.join()
         files = []
-        files.append(options.directory+'/'+options.application)
-        if options.files:
-            for item in options.files.split(','):
-                files.append(options.directory+'/'+item.lstrip().rstrip())
+        files.append(self.options.directory+'/'+self.options.application)
+        if self.options.files:
+            for item in self.options.files.split(','):
+                files.append(self.options.directory+'/'+item.lstrip().rstrip())
         os.makedirs('campaign-data/'+str(self.campaign_data['id'])+'/dut-files')
         for item in files:
             shutil.copy(item, 'campaign-data/'+str(self.campaign_data['id']) +
                               '/dut-files/')
         if self.campaign_data['use_aux']:
             files_aux = []
-            files_aux.append(options.directory+'/'+options.aux_application)
-            if options.aux_files:
-                for item in options.aux_files.split(','):
+            files_aux.append(self.options.directory+'/' +
+                             self.options.aux_application)
+            if self.options.aux_files:
+                for item in self.options.aux_files.split(','):
                     files_aux.append(
-                        options.directory+'/'+item.lstrip().rstrip())
+                        self.options.directory+'/'+item.lstrip().rstrip())
             os.makedirs('campaign-data/'+str(self.campaign_data['id']) +
                         '/aux-files')
             for item in files_aux:
@@ -122,7 +123,7 @@ class fault_injector:
         self.debugger.dut.command()
         if self.campaign_data['use_aux']:
             aux_process.join()
-        self.debugger.time_application(options.timing_iterations)
+        self.debugger.time_application()
         if self.campaign_data['use_simics']:
             self.debugger.create_checkpoints()
         if self.campaign_data['output_file']:
@@ -173,26 +174,6 @@ class fault_injector:
             self.result_data['id'] = db.cursor.lastrowid
             db.insert_dict('injection', {'result_id': self.result_data['id'],
                                          'injection_number': 0})
-
-    def inject_faults(self, num_injections, selected_targets, compare_all):
-        if self.campaign_data['use_simics']:
-            checkpoint_nums = range(1, self.campaign_data['num_checkpoints'])
-            injected_checkpoint_nums = []
-            for i in xrange(num_injections):
-                checkpoint_num = random.choice(checkpoint_nums)
-                checkpoint_nums.remove(checkpoint_num)
-                injected_checkpoint_nums.append(checkpoint_num)
-            injected_checkpoint_nums = sorted(injected_checkpoint_nums)
-            return self.debugger.inject_fault(injected_checkpoint_nums,
-                                              selected_targets)
-        else:
-            injection_times = []
-            for i in xrange(num_injections):
-                injection_times.append(
-                    random.uniform(0, self.campaign_data['exec_time']))
-            injection_times = sorted(injection_times)
-            self.debugger.inject_fault(injection_times, selected_targets)
-            return 0
 
     def check_output(self):
         missing_output = False
@@ -321,8 +302,7 @@ class fault_injector:
                                   (self.result_data['id'],))
             db.update_dict('result', self.result_data)
 
-    def inject_and_monitor(self, iteration_counter, num_injections,
-                           selected_targets, compare_all):
+    def inject_and_monitor(self, iteration_counter):
         if self.campaign_data['use_aux'] and \
                 not self.campaign_data['use_simics']:
             if self.campaign_data['use_aux']:
@@ -336,7 +316,7 @@ class fault_injector:
                     iteration_counter.value -= 1
                 else:
                     break
-            self.create_result(num_injections)
+            self.create_result(self.options.num_injections)
             if not self.campaign_data['use_simics']:
                 attempts = 10
                 for attempt in xrange(attempts):
@@ -370,8 +350,7 @@ class fault_injector:
                 self.debugger.aux.serial.write(
                     str('./'+self.campaign_data['aux_command']+'\n'))
             try:
-                latent_faults = self.inject_faults(
-                    num_injections, selected_targets, compare_all)
+                latent_faults = self.debugger.inject_faults()
                 self.debugger.continue_dut()
             except DrSEUsError as error:
                 self.result_data['outcome'] = error.type

@@ -173,7 +173,7 @@ def create_campaign(options):
         os.mkdir(campaign_directory)
     options.debug = True
     drseus = fault_injector(campaign_data, options)
-    drseus.setup_campaign(options)
+    drseus.setup_campaign()
     print('\nsuccessfully setup campaign')
 
 
@@ -191,33 +191,7 @@ def get_injection_data(result_id):
 def perform_injections(campaign_data, options, iteration_counter,
                        interactive=False):
     drseus = fault_injector(campaign_data, options)
-
-    # def interrupt_handler(signum, frame):
-    #     drseus.log_result('Interrupted', 'Incomplete')
-    #     if os.path.exists('campaign-data/results/' +
-    #                       str(campaign_data['id'])+'/'+str(drseus.result_id)):
-    #         shutil.rmtree('campaign-data/results/' +
-    #                       str(campaign_data['id'])+'/'+str(drseus.result_id))
-    #     if not drseus.campaign_data['use_simics']:
-    #         drseus.debugger.continue_dut()
-    #     drseus.debugger.close()
-    #     if drseus.campaign_data['use_simics']:
-    #         if os.path.exists('simics-workspace/injected-checkpoints/' +
-    #                           str(campaign_data['id'])+'/' +
-    #                           str(drseus.result_id)):
-    #             shutil.rmtree('simics-workspace/injected-checkpoints/' +
-    #                           str(campaign_data['id'])+'/' +
-    #                           str(drseus.result_id))
-    #     if not interactive:
-    #         sys.exit()
-    # signal.signal(signal.SIGINT, interrupt_handler)
-
-    if options.selected_targets is not None:
-        selected_targets = options.selected_targets.split(',')
-    else:
-        selected_targets = None
-    drseus.inject_and_monitor(iteration_counter, options.num_injections,
-                              selected_targets, options.compare_all)
+    drseus.inject_and_monitor(iteration_counter)
 
 
 def inject_campaign(options):
