@@ -10,6 +10,7 @@ from termcolor import colored
 from time import sleep
 
 from error import DrSEUsError
+from sql import sql
 
 
 class dut:
@@ -33,13 +34,16 @@ class dut:
          ('login: ', 'Reboot')]
     )
 
-    def __init__(self, rsakey, serial_port, prompt, debug, timeout,
-                 campaign_number, baud_rate=115200, ssh_port=22, color='green'):
-        self.output = ''
-        self.default_timeout = timeout
+    def __init__(self, result_data, options, rsakey, baud_rate=115200,
+                 ssh_port=22, color='green', aux=False):
+        self.result_data = result_data
+        self.options = options
+        self.aux = aux
+        serial_port = (options.dut_serial_port if not aux
+                       else options.aux_serial_port)
         try:
             self.serial = Serial(port=serial_port, baudrate=baud_rate,
-                                 timeout=timeout, rtscts=True)
+                                 timeout=options.timeout, rtscts=True)
         except:
             raise Exception('error opening serial port', serial_port,
                             ', are you a member of dialout?')
@@ -47,11 +51,10 @@ class dut:
             self.serial.reset_input_buffer()  # pyserial 3
         except AttributeError:
             self.serial.flushInput()  # pyserial 2.7
-        self.prompt = prompt+' '
+        self.prompt = options.dut_prompt if not aux else options.aux_prompt
+        self.prompt += ' '
         self.ssh_port = ssh_port
-        self.debug = debug
         self.rsakey = rsakey
-        self.campaign_number = campaign_number
         self.color = color
 
     def __str__(self):
@@ -69,34 +72,34 @@ class dut:
         self.serial.close()
 
     def send_files(self, files):
-        if self.debug:
+        if self.options.debug:
             print(colored('sending file(s)', 'blue'))
-        attempts = 10
-        for attempt in xrange(attempts):
-            try:
-                ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.connect(self.ip_address, port=self.ssh_port,
-                            username='root', pkey=self.rsakey,
-                            allow_agent=False, look_for_keys=False)
-                dut_scp = SCPClient(ssh.get_transport())
-                dut_scp.put(files)
-                dut_scp.close()
-                ssh.close()
-            except:
-                # try:
-                # dut_scp.close()
-                ssh.close()
-                # except:
-                #     pass
-                print(colored('error sending file(s) (attempt ' +
-                              str(attempt+1)+'/'+str(attempts)+')', 'red'))
-                if attempt < attempts-1:
-                    sleep(30)
-                else:
-                    raise DrSEUsError(DrSEUsError.scp_error)
-            else:
-                break
+        # attempts = 10
+        # for attempt in xrange(attempts):
+        #     try:
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(self.ip_address, port=self.ssh_port,
+                    username='root', pkey=self.rsakey,
+                    allow_agent=False, look_for_keys=False)
+        dut_scp = SCPClient(ssh.get_transport())
+        dut_scp.put(files)
+        dut_scp.close()
+        ssh.close()
+            # except:
+            #     # try:
+            #     # dut_scp.close()
+            #     ssh.close()
+            #     # except:
+            #     #     pass
+            #     print(colored('error sending file(s) (attempt ' +
+            #                   str(attempt+1)+'/'+str(attempts)+')', 'red'))
+            #     if attempt < attempts-1:
+            #         sleep(30)
+            #     else:
+            #         raise DrSEUsError(DrSEUsError.scp_error)
+            # else:
+            #     break
         # try:
         #     ssh = paramiko.SSHClient()
         #     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -122,11 +125,11 @@ class dut:
         #         if scp_process.exitcode != 0:
         #             scp_process.terminate()
         #             raise DrSEUsError(DrSEUsError.scp_error)
-        if self.debug:
+        if self.options.debug:
             print(colored('files sent', 'blue'))
 
     def get_file(self, file_, local_path=''):
-        if self.debug:
+        if self.options.debug:
             print(colored('getting file', 'blue'))
         attempts = 10
         for attempt in xrange(attempts):
@@ -178,7 +181,7 @@ class dut:
         #     if scp_process.exitcode != 0:
         #         scp_process.terminate()
         #         raise DrSEUsError(DrSEUsError.scp_error)
-        if self.debug:
+        if self.options.debug:
             print(colored('file received', 'blue'))
 
     def is_logged_in(self):
@@ -186,8 +189,9 @@ class dut:
         buff = ''
         while True:
             char = self.serial.read().decode('utf-8', 'replace')
-            self.output += char
-            if self.debug:
+            self.result_data['dut_output' if not self.aux
+                             else 'aux_output'] += char
+            if self.options.debug:
                 print(colored(char, self.color), end='')
             buff += char
             if not char:
@@ -211,8 +215,9 @@ class dut:
             if not char:
                 hanging = True
                 break
-            self.output += char
-            if self.debug:
+            self.result_data['dut_output' if not self.aux
+                             else 'aux_output'] += char
+            if self.options.debug:
                 print(colored(char, self.color), end='')
                 sys.stdout.flush()
             buff += char
@@ -225,10 +230,14 @@ class dut:
                     errors += 1
             if errors > 5:
                 break
-        if self.serial.timeout != self.default_timeout:
-            self.serial.timeout = self.default_timeout
-        if self.debug:
+        if self.serial.timeout != self.options.timeout:
+            self.serial.timeout = self.options.timeout
+        if self.options.debug:
             print()
+        if self.options.inject:
+            with sql() as db:
+                db.update_dict('result', self.result_data,
+                               self.result_data['id'])
         if 'drseus_sighandler:' in buff:
             signal = 'Signal received'
             for line in buff.split('\n'):
@@ -256,8 +265,9 @@ class dut:
             buff = ''
             while True:
                 char = self.serial.read().decode('utf-8', 'replace')
-                self.output += char
-                if self.debug:
+                self.result_data['dut_output' if not self.aux
+                                 else 'aux_output'] += char
+                if self.options.debug:
                     print(colored(char, self.color), end='')
                     sys.stdout.flush()
                 buff += char
@@ -297,6 +307,7 @@ class dut:
         else:
             self.command('ip addr add '+ip_address+'/24 dev eth0')
             self.command('ip link set eth0 up')
+            self.command('ip addr show')
         if simics:
             self.ip_address = '127.0.0.1'
         else:

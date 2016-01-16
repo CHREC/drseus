@@ -7,7 +7,6 @@ import shutil
 import signal
 import sys
 
-from error import DrSEUsError
 from fault_injector import fault_injector
 from jtag import find_ftdi_serials, find_uart_serials, openocd
 import simics_config
@@ -190,25 +189,25 @@ def perform_injections(campaign_data, options, iteration_counter,
                        interactive=False):
     drseus = fault_injector(campaign_data, options)
 
-    def interrupt_handler(signum, frame):
-        drseus.log_result('Interrupted', 'Incomplete')
-        if os.path.exists('campaign-data/results/' +
-                          str(campaign_data['id'])+'/'+str(drseus.result_id)):
-            shutil.rmtree('campaign-data/results/' +
-                          str(campaign_data['id'])+'/'+str(drseus.result_id))
-        if not drseus.campaign_data['use_simics']:
-            drseus.debugger.continue_dut()
-        drseus.debugger.close()
-        if drseus.campaign_data['use_simics']:
-            if os.path.exists('simics-workspace/injected-checkpoints/' +
-                              str(campaign_data['id'])+'/' +
-                              str(drseus.result_id)):
-                shutil.rmtree('simics-workspace/injected-checkpoints/' +
-                              str(campaign_data['id'])+'/' +
-                              str(drseus.result_id))
-        if not interactive:
-            sys.exit()
-    signal.signal(signal.SIGINT, interrupt_handler)
+    # def interrupt_handler(signum, frame):
+    #     drseus.log_result('Interrupted', 'Incomplete')
+    #     if os.path.exists('campaign-data/results/' +
+    #                       str(campaign_data['id'])+'/'+str(drseus.result_id)):
+    #         shutil.rmtree('campaign-data/results/' +
+    #                       str(campaign_data['id'])+'/'+str(drseus.result_id))
+    #     if not drseus.campaign_data['use_simics']:
+    #         drseus.debugger.continue_dut()
+    #     drseus.debugger.close()
+    #     if drseus.campaign_data['use_simics']:
+    #         if os.path.exists('simics-workspace/injected-checkpoints/' +
+    #                           str(campaign_data['id'])+'/' +
+    #                           str(drseus.result_id)):
+    #             shutil.rmtree('simics-workspace/injected-checkpoints/' +
+    #                           str(campaign_data['id'])+'/' +
+    #                           str(drseus.result_id))
+    #     if not interactive:
+    #         sys.exit()
+    # signal.signal(signal.SIGINT, interrupt_handler)
 
     if options.selected_targets is not None:
         selected_targets = options.selected_targets.split(',')
@@ -221,12 +220,12 @@ def perform_injections(campaign_data, options, iteration_counter,
 def inject_campaign(options):
     processes = []
 
-    def interrupt_handler(signum, frame):
-        for process in processes:
-            os.kill(process.pid, signal.SIGINT)
-        for process in processes:
-            process.join()
-    signal.signal(signal.SIGINT, interrupt_handler)
+    # def interrupt_handler(signum, frame):
+    #     for process in processes:
+    #         os.kill(process.pid, signal.SIGINT)
+    #     for process in processes:
+    #         process.join()
+    # signal.signal(signal.SIGINT, interrupt_handler)
 
     campaign_data = get_campaign_data(options.campaign_number)
     iteration_counter = multiprocessing.Value('L', options.injection_iterations)

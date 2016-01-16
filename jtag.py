@@ -6,7 +6,6 @@ from termcolor import colored
 from threading import Thread
 import time
 import random
-from signal import SIGINT
 import socket
 import subprocess
 
@@ -52,18 +51,15 @@ def find_open_port():
 
 
 class jtag:
-    def __init__(self, campaign_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options, rsakey):
         self.ip_address = options.debugger_ip_address
         self.timeout = 30
-        self.debug = options.debug
-        self.use_aux = campaign_data['use_aux']
-        self.output = ''
-        self.dut = dut(rsakey, options.dut_serial_port, options.dut_prompt,
-                       options.debug, options.timeout, campaign_data['id'])
-        if self.use_aux:
-            self.aux = dut(rsakey, options.aux_serial_port, options.aux_prompt,
-                           options.debug, options.timeout, campaign_data['id'],
-                           color='cyan')
+        self.options = options
+        self.campaign_data = campaign_data['use_aux']
+        self.result_data = result_data
+        self.dut = dut(result_data, options, rsakey)
+        if campaign_data['use_aux']:
+            self.aux = dut(result_data, options, rsakey, color='cyan', aux=True)
 
     def __str__(self):
         string = 'JTAG Debugger at '+self.ip_address
@@ -77,7 +73,7 @@ class jtag:
         if self.telnet:
             self.telnet.close()
         self.dut.close()
-        if self.use_aux:
+        if self.campaign_data['use_aux']:
             self.aux.close()
 
     def reset_dut(self, expected_output):
@@ -87,25 +83,24 @@ class jtag:
             self.dut.serial.write('\x03')
         self.dut.do_login()
 
-    def time_application(self, command, aux_command, timing_iterations,
-                         kill_dut):
+    def time_application(self, timing_iterations):
         start = time.time()
         for i in xrange(timing_iterations):
-            if self.use_aux:
-                aux_process = Thread(target=self.aux.command,
-                                     args=('./'+aux_command, ))
+            if self.campaign_data['use_aux']:
+                aux_process = Thread(
+                    target=self.aux.command,
+                    args=('./'+self.campaign_data['aux_command'], ))
                 aux_process.start()
-            self.dut.serial.write(str('./'+command+'\n'))
-            if self.use_aux:
+            self.dut.serial.write(str('./'+self.campaign_data['command']+'\n'))
+            if self.campaign_data['use_aux']:
                 aux_process.join()
-            if kill_dut:
+            if self.campaign_data['kill_dut']:
                 self.dut.serial.write('\x03')
             self.dut.read_until()
         end = time.time()
-        return (end - start) / timing_iterations, None
+        self.campaign_data['exec_time'] = (end - start) / timing_iterations
 
-    def inject_fault(self, result_id, injection_times, command,
-                     selected_targets):
+    def inject_fault(self, injection_times, command, selected_targets):
         if selected_targets is not None:
             for target in selected_targets:
                 if target not in self.targets:
@@ -114,7 +109,7 @@ class jtag:
         injection = 0
         for injection_time in injection_times:
             injection += 1
-            if self.debug:
+            if self.options.debug:
                 print(colored('injection time: '+str(injection_time),
                               'magenta'))
             if injection == 1:
@@ -125,7 +120,7 @@ class jtag:
             self.halt_dut()
             target = choose_target(selected_targets, self.targets)
             register = choose_register(target, self.targets)
-            injection_data = {'result_id': result_id,
+            injection_data = {'result_id': self.result_data['id'],
                               'injection_number': injection,
                               'target': target,
                               'register': register,
@@ -147,7 +142,7 @@ class jtag:
             injection_data['injected_value'] = '0x%x' % (
                 int(injection_data['gold_value'], base=16)
                 ^ (1 << injection_data['bit']))
-            if self.debug:
+            if self.options.debug:
                 print(colored('target: '+injection_data['target'], 'magenta'))
                 if 'target_index' in injection_data:
                     print(colored('target_index: ' +
@@ -178,9 +173,9 @@ class bdi(jtag):
     error_messages = ['timeout while waiting for halt',
                       'wrong state for requested command', 'read access failed']
 
-    def __init__(self, campaign_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options, rsakey):
         self.port = 23
-        jtag.__init__(self, campaign_data, options, rsakey)
+        jtag.__init__(self, campaign_data, result_data, options, rsakey)
         try:
             self.telnet = Telnet(self.ip_address, self.port,
                                  timeout=self.timeout)
@@ -205,34 +200,38 @@ class bdi(jtag):
         if error_message is None:
             error_message = command
         buff = self.telnet.read_very_eager()
-        self.output += buff
-        if self.debug:
+        self.result_data['debugger_output'] += buff
+        if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
             command = command+'\r'
             self.telnet.write(command)
             self.telnet.write('\r')
-            self.output += command
-            if self.debug:
+            self.result_data['debugger_output'] += command
+            if self.options.debug:
                 print(colored(command, 'yellow'))
         for i in xrange(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
-            self.output += buff
+            self.result_data['debugger_output'] += buff
             return_buffer += buff
-            if self.debug:
+            if self.options.debug:
                 print(colored(buff, 'yellow'), end='')
             if index < 0:
                 raise DrSEUsError(error_message)
         else:
-            if self.debug:
+            if self.options.debug:
                 print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
-        self.output += buff
+        self.result_data['debugger_output'] += buff
         return_buffer += buff
-        if self.debug:
+        if self.options.debug:
             print(colored(buff, 'yellow'))
+        if self.options.inject:
+            with sql() as db:
+                db.update_dict('result', self.result_data,
+                               self.result_data['id'])
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
@@ -243,10 +242,10 @@ class bdi(jtag):
 
 class bdi_arm(bdi):
     # BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
-    def __init__(self, campaign_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options, rsakey):
         self.prompts = ['A9#0>', 'A9#1>']
         self.targets = devices['a9_bdi']
-        bdi.__init__(self, campaign_data, options, rsakey)
+        bdi.__init__(self, campaign_data, result_data, options, rsakey)
 
     def reset_dut(self):
         jtag.reset_dut(self, ['- TARGET: processing reset request',
@@ -290,10 +289,10 @@ class bdi_arm(bdi):
 
 
 class bdi_p2020(bdi):
-    def __init__(self, campaign_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options, rsakey):
         self.prompts = ['P2020>']
         self.targets = devices['p2020']
-        bdi.__init__(self, campaign_data, options, rsakey)
+        bdi.__init__(self, campaign_data, result_data, options, rsakey)
 
     def reset_dut(self):
         jtag.reset_dut(self, ['- TARGET: processing user reset request',
@@ -338,7 +337,7 @@ class bdi_p2020(bdi):
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
 
-    def __init__(self, campaign_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options, rsakey):
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = devices['a9']
@@ -356,7 +355,7 @@ class openocd(jtag):
                                                 if not options.openocd
                                                 else None))
         if not options.openocd:
-            jtag.__init__(self, campaign_data, options, rsakey)
+            jtag.__init__(self, campaign_data, result_data, options, rsakey)
             time.sleep(1)
             self.telnet = Telnet(self.ip_address, self.port,
                                  timeout=self.timeout)
@@ -376,37 +375,41 @@ class openocd(jtag):
         if error_message is None:
             error_message = command
         buff = self.telnet.read_very_eager()
-        self.output += buff
-        if self.debug:
+        self.result_data['debugger_output'] += buff
+        if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
             self.telnet.write(command+'\n')
             index, match, buff = self.telnet.expect([command],
                                                     timeout=self.timeout)
-            self.output += buff
+            self.result_data['debugger_output'] += buff
             return_buffer += buff
-            if self.debug:
+            if self.options.debug:
                 print(colored(buff, 'yellow'))
             if index < 0:
                 raise DrSEUsError(error_message)
         for i in xrange(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
-            self.output += buff
+            self.result_data['debugger_output'] += buff
             return_buffer += buff
-            if self.debug:
+            if self.options.debug:
                 print(colored(buff, 'yellow'), end='')
             if index < 0:
                 raise DrSEUsError(error_message)
         else:
-            if self.debug:
+            if self.options.debug:
                 print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
-        self.output += buff
+        self.result_data['debugger_output'] += buff
         return_buffer += buff
-        if self.debug:
+        if self.options.debug:
             print(colored(buff, 'yellow'))
+        if self.options.inject:
+            with sql() as db:
+                db.update_dict('result', self.result_data,
+                               self.result_data['id'])
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:

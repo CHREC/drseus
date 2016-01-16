@@ -3,7 +3,7 @@ import sqlite3
 
 
 class sql():
-    def dict_factory(cursor, row):
+    def dict_factory(self, cursor, row):
         dictionary = {}
         for idx, col in enumerate(cursor.description):
             dictionary[col[0]] = row[idx]

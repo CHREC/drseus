@@ -19,6 +19,12 @@ from sql import sql
 class fault_injector:
     def __init__(self, campaign_data, options):
         self.campaign_data = campaign_data
+        self.result_data = {'campaign_id': self.campaign_data['id'],
+                            'aux_output': '',
+                            'data_diff': None,
+                            'debugger_output': '',
+                            'detected_errors': None,
+                            'dut_output': ''}
         if os.path.exists(
                 'campaign-data/'+str(campaign_data['id'])+'/private.key'):
             self.rsakey = RSAKey.from_private_key_file(
@@ -28,12 +34,15 @@ class fault_injector:
             self.rsakey.write_private_key_file(
                 'campaign-data/'+str(campaign_data['id'])+'/private.key')
         if self.campaign_data['use_simics']:
-            self.debugger = simics(campaign_data, options, self.rsakey)
+            self.debugger = simics(campaign_data, self.result_data, options,
+                                   self.rsakey)
         else:
             if campaign_data['architecture'] == 'p2020':
-                self.debugger = bdi_p2020(campaign_data, options, self.rsakey)
+                self.debugger = bdi_p2020(campaign_data, self.result_data,
+                                          options, self.rsakey)
             elif campaign_data['architecture'] == 'a9':
-                self.debugger = openocd(campaign_data, options, self.rsakey)
+                self.debugger = openocd(campaign_data, self.result_data,
+                                        options, self.rsakey)
 
     def __str__(self):
         string = ('DrSEUs Attributes:\n\tDebugger: '+str(self.debugger) +
@@ -50,7 +59,15 @@ class fault_injector:
         try:
             string += ('\n\t\tExecution Time: ' +
                        str(self.campaign_data['exec_time'])+' seconds')
-        except AttributeError:
+        except KeyError:
+            pass
+        try:
+            if self.campaign_data['use_simics']:
+                string += ('\n\t\tExecution Cycles: ' +
+                           '{:,}'.format(self.campaign_data['num_cycles']) +
+                           ' cycles\n\t\tSimulated Time: ' +
+                           str(self.campaign_data['sim_time'])+' seconds')
+        except KeyError:
             pass
         return string
 
@@ -74,7 +91,7 @@ class fault_injector:
             if self.campaign_data['use_aux']:
                 aux_process.join()
         files = []
-        files.append(options.directory+'/'+self.campaign_data['application'])
+        files.append(options.directory+'/'+options.application)
         if options.files:
             for item in options.files.split(','):
                 files.append(options.directory+'/'+item.lstrip().rstrip())
@@ -84,8 +101,7 @@ class fault_injector:
                               '/dut-files/')
         if self.campaign_data['use_aux']:
             files_aux = []
-            files_aux.append(options.directory+'/' +
-                             self.campaign_data['aux_application'])
+            files_aux.append(options.directory+'/'+options.aux_application)
             if options.aux_files:
                 for item in options.aux_files.split(','):
                     files_aux.append(
@@ -106,19 +122,9 @@ class fault_injector:
         self.debugger.dut.command()
         if self.campaign_data['use_aux']:
             aux_process.join()
-        self.campaign_data['exec_time'], self.campaign_data['num_cycles'] = \
-            self.debugger.time_application(self.campaign_data['command'],
-                                           self.campaign_data['aux_command'],
-                                           options.timing_iterations,
-                                           self.campaign_data['kill_dut'])
+        self.debugger.time_application(options.timing_iterations)
         if self.campaign_data['use_simics']:
-            (self.campaign_data['cycles_between'],
-             self.campaign_data['num_checkpoints']) = \
-                self.debugger.create_checkpoints(
-                    self.campaign_data['command'],
-                    self.campaign_data['aux_command'],
-                    self.campaign_data['num_cycles'], options.num_checkpoints,
-                    self.campaign_data['kill_dut'])
+            self.debugger.create_checkpoints()
         if self.campaign_data['output_file']:
             if self.campaign_data['use_aux_output']:
                 self.debugger.aux.get_file(
@@ -132,10 +138,11 @@ class fault_injector:
                     self.campaign_data['output_file'])
         if self.campaign_data['use_simics']:
             self.debugger.close()
-        self.campaign_data['dut_output'] = self.debugger.dut.output
-        self.campaign_data['debugger_output'] = self.debugger.output
+        self.campaign_data['dut_output'] = self.result_data['dut_output']
+        self.campaign_data['debugger_output'] = \
+            self.result_data['debugger_output']
         if self.campaign_data['use_aux']:
-            self.campaign_data['aux_output'] = self.debugger.aux.output
+            self.campaign_data['aux_output'] = self.result_data['aux_output']
         with sql() as db:
             db.update_dict('campaign', self.campaign_data,
                            self.campaign_data['id'])
@@ -156,19 +163,22 @@ class fault_injector:
             self.debugger.dut.send_files(files)
 
     def create_result(self, num_injections=0):
-        self.data_diff = None
-        self.detected_errors = None
-        self.logged = False
-        result_data = {'campaign_id': self.campaign_data['id'],
-                       'num_injections': num_injections,
-                       'outcome': 'In progress',
-                       'outcome_category': 'Incomplete',
-                       'timestamp': datetime.now()}
+        self.result_data.update({'aux_output': '',
+                                 'data_diff': None,
+                                 'debugger_output': '',
+                                 'detected_errors': None,
+                                 'dut_output': '',
+                                 'num_injections': num_injections,
+                                 'outcome_category': 'Incomplete',
+                                 'outcome': 'Incomplete',
+                                 'timestamp': datetime.now()})
+        if 'id' in self.result_data:
+            del self.result_data['id']
         with sql() as db:
-            db.insert_dict('result', result_data)
-            self.result_id = db.cursor.lastrowid
-            db.insert_dict('injection',
-                           {'result_id': self.result_id, 'injection_number': 0})
+            db.insert_dict('result', self.result_data)
+            self.result_data['id'] = db.cursor.lastrowid
+            db.insert_dict('injection', {'result_id': self.result_data['id'],
+                                         'injection_number': 0})
 
     def inject_faults(self, num_injections, selected_targets, compare_all):
         if self.campaign_data['use_simics']:
@@ -179,25 +189,21 @@ class fault_injector:
                 checkpoint_nums.remove(checkpoint_num)
                 injected_checkpoint_nums.append(checkpoint_num)
             injected_checkpoint_nums = sorted(injected_checkpoint_nums)
-            return self.debugger.inject_fault(
-                self.result_id, injected_checkpoint_nums, selected_targets,
-                self.campaign_data['cycles_between'],
-                self.campaign_data['num_checkpoints'], compare_all)
+            return self.debugger.inject_fault(injected_checkpoint_nums,
+                                              selected_targets)
         else:
             injection_times = []
             for i in xrange(num_injections):
                 injection_times.append(
                     random.uniform(0, self.campaign_data['exec_time']))
             injection_times = sorted(injection_times)
-            self.debugger.inject_fault(
-                self.result_id, injection_times, self.campaign_data['command'],
-                selected_targets)
+            self.debugger.inject_fault(injection_times, selected_targets)
             return 0
 
     def check_output(self):
         missing_output = False
         result_folder = ('campaign-data/'+str(self.campaign_data['id'])+'/'
-                         'results/'+str(self.result_id))
+                         'results/'+str(self.result_data['id']))
         os.makedirs(result_folder)
         output_location = result_folder+'/'+self.campaign_data['output_file']
         gold_location = ('campaign-data/'+str(self.campaign_data['id'])+'/'
@@ -216,9 +222,9 @@ class fault_injector:
                 solutionContents = solution.read()
             with open(output_location, 'r') as result:
                 resultContents = result.read()
-            self.data_diff = SequenceMatcher(None, solutionContents,
-                                             resultContents).quick_ratio()
-            if self.data_diff == 1.0:
+            self.result_data['data_diff'] = SequenceMatcher(
+                None, solutionContents, resultContents).quick_ratio()
+            if self.result_data['data_diff'] == 1.0:
                 os.remove(output_location)
                 if not os.listdir(result_folder):
                     os.rmdir(result_folder)
@@ -230,14 +236,13 @@ class fault_injector:
             raise DrSEUsError(DrSEUsError.missing_output)
 
     def monitor_execution(self, latent_faults=0):
-        buff = ''
-        aux_buff = ''
         outcome = ''
         outcome_category = ''
         if self.campaign_data['use_aux']:
             try:
                 aux_buff = self.debugger.aux.read_until()
             except DrSEUsError as error:
+                aux_buff = ''
                 self.debugger.dut.serial.write('\x03')
                 outcome = error.type
                 outcome_category = 'AUX execution error'
@@ -247,20 +252,21 @@ class fault_injector:
         try:
             buff = self.debugger.dut.read_until()
         except DrSEUsError as error:
+            buff = ''
             outcome = error.type
             outcome_category = 'Execution error'
         for line in buff.split('\n'):
             if 'drseus_detected_errors:' in line:
-                self.detected_errors = int(line.replace(
-                                           'drseus_detected_errors:', ''))
+                self.result_data['detected_errors'] = \
+                    int(line.replace('drseus_detected_errors:', ''))
                 break
         if self.campaign_data['use_aux']:
             for line in aux_buff.split('\n'):
                 if 'drseus_detected_errors:' in line:
-                    if self.detected_errors is None:
-                        self.detected_errors = 0
-                    self.detected_errors += int(line.replace(
-                                                'drseus_detected_errors:', ''))
+                    if self.result_data['detected_errors'] is None:
+                        self.result_data['detected_errors'] = 0
+                    self.result_data['detected_errors'] += \
+                        int(line.replace('drseus_detected_errors:', ''))
                     break
         if self.campaign_data['output_file'] and not outcome:
             try:
@@ -276,14 +282,17 @@ class fault_injector:
                     outcome = error.type
                     outcome_category = 'Post execution error'
         if not outcome:
-            if self.detected_errors:
-                if self.data_diff is None or self.data_diff < 1.0:
+            if self.result_data['detected_errors']:
+                if self.result_data['data_diff'] is None or \
+                        self.result_data['data_diff'] < 1.0:
                     outcome = 'Detected data error'
                     outcome_category = 'Data error'
-                elif self.data_diff is not None and self.data_diff == 1:
+                elif self.result_data['data_diff'] is not None and \
+                        self.result_data['data_diff'] == 1:
                     outcome = 'Corrected data error'
                     outcome_category = 'Data error'
-            elif self.data_diff is not None and self.data_diff < 1.0:
+            elif self.result_data['data_diff'] is not None and \
+                    self.result_data['data_diff'] < 1.0:
                 outcome = 'Silent data error'
                 outcome_category = 'Data error'
             elif latent_faults:
@@ -294,47 +303,29 @@ class fault_injector:
                 outcome_category = 'No error'
         return outcome, outcome_category
 
-    def log_result(self, outcome, outcome_category):
-        if self.logged:
-            return
+    def log_result(self):
         try:
             print(colored(self.debugger.dut.serial.port+' ', 'blue'), end='')
         except AttributeError:
             pass
-        print(colored('result id '+str(self.result_id)+' outcome: ' +
-                      outcome_category+' - '+outcome, 'blue'), end='')
-        if self.data_diff is not None and self.data_diff < 1.0:
-            print(colored(', data diff: '+str(self.data_diff), 'blue'))
+        print(colored('result id '+str(self.result_data['id'])+' outcome: ' +
+                      self.result_data['outcome_category']+' - ' +
+                      self.result_data['outcome'], 'blue'), end='')
+        if self.result_data['data_diff'] is not None and \
+                self.result_data['data_diff'] < 1.0:
+            print(colored(', data diff: '+str(self.result_data['data_diff']),
+                          'blue'))
         else:
             print()
-        result_data = {'outcome': outcome,
-                       'outcome_category': outcome_category,
-                       'data_diff': self.data_diff,
-                       'detected_errors': self.detected_errors,
-                       'debugger_output': self.debugger.output,
-                       'timestamp': datetime.now()}
-        try:
-            result_data['dut_output'] = self.debugger.dut.output
-            if self.campaign_data['use_aux']:
-                result_data['aux_output'] = self.debugger.aux.output
-        except AttributeError:
-            pass
+        self.result_data['timestamp'] = datetime.now()
         with sql() as db:
             db.cursor.execute('SELECT COUNT(*) FROM log_injection '
-                              'WHERE result_id=?', (self.result_id,))
+                              'WHERE result_id=?', (self.result_data['id'],))
             if db.cursor.fetchone()[0] > 1:
                 db.cursor.execute('DELETE FROM log_injection WHERE '
                                   'result_id=? AND injection_number=0',
-                                  (self.result_id,))
-            db.update_dict('result', result_data, self.result_id)
-        self.logged = True
-        self.debugger.output = ''
-        try:
-            self.debugger.dut.output = ''
-            if self.campaign_data['use_aux']:
-                self.debugger.aux.output = ''
-        except AttributeError:
-            pass
+                                  (self.result_data['id'],))
+            db.update_dict('result', self.result_data, self.result_data['id'])
 
     def inject_and_monitor(self, iteration_counter, num_injections,
                            selected_targets, compare_all):
@@ -364,8 +355,10 @@ class fault_injector:
                         if attempt < attempts-1:
                             sleep(30)
                         else:
-                            self.log_result('Error resetting DUT',
-                                            'Debugger error')
+                            self.result_data.update({
+                                'outcome_category': 'Debugger error',
+                                'outcome': 'Error resetting dut'})
+                            self.log_result()
                             self.close()
                             return
                     else:
@@ -373,7 +366,10 @@ class fault_injector:
                 try:
                     self.send_dut_files()
                 except DrSEUsError:
-                    self.log_result('Error sending files to DUT', 'SCP error')
+                    self.result_data.update({
+                        'outcome_category': 'SCP error',
+                        'outcome': 'Error sending files to DUT'})
+                    self.log_result()
                     continue
             if self.campaign_data['use_aux'] and \
                     not self.campaign_data['use_simics']:
@@ -384,11 +380,11 @@ class fault_injector:
                     num_injections, selected_targets, compare_all)
                 self.debugger.continue_dut()
             except DrSEUsError as error:
-                outcome = error.type
+                self.result_data['outcome'] = error.type
                 if self.campaign_data['use_simics']:
-                    outcome_category = 'Simics error'
+                    self.result_data['outcome_category'] = 'Simics error'
                 else:
-                    outcome_category = 'Debugger error'
+                    self.result_data['outcome_category'] = 'Debugger error'
                     if not self.campaign_data['use_simics']:
                         try:
                             self.debugger.continue_dut()
@@ -402,11 +398,12 @@ class fault_injector:
                         except DrSEUsError:
                             pass
             else:
-                outcome, outcome_category = self.monitor_execution(
-                    latent_faults)
-                if outcome == 'Latent faults' or \
+                (self.result_data['outcome'],
+                 self.result_data['outcome_category']) = \
+                    self.monitor_execution(latent_faults)
+                if self.result_data['outcome'] == 'Latent faults' or \
                         (not self.campaign_data['use_simics']
-                         and outcome == 'Masked faults'):
+                         and self.result_data['outcome'] == 'Masked faults'):
                     if self.campaign_data['use_aux']:
                         self.debugger.aux.serial.write(
                             str('./'+self.campaign_data['aux_command']+'\n'))
@@ -414,22 +411,24 @@ class fault_injector:
                         str('./'+self.campaign_data['command']+'\n'))
                     next_outcome = self.monitor_execution()[0]
                     if next_outcome != 'Masked faults':
-                        outcome = next_outcome
-                        outcome_category = 'Post execution error'
+                        self.result_data.update({
+                            'outcome_category': 'Post execution error',
+                            'outcome': next_outcome})
                     elif self.campaign_data['use_simics']:
-                        if self.debugger.persistent_faults(self.result_id):
-                            outcome = 'Persistent faults'
+                        if self.debugger.persistent_faults():
+                            self.result_data['outcome'] = 'Persistent faults'
             if self.campaign_data['use_simics']:
                 try:
                     self.debugger.close()
                 except DrSEUsError as error:
-                    outcome = error.type
-                    outcome_category = 'Simics error'
+                    self.result_data.update({
+                        'outcome_category': 'Simics error',
+                        'outcome': error.type})
                 finally:
                     shutil.rmtree('simics-workspace/injected-checkpoints/' +
                                   str(self.campaign_data['id'])+'/' +
-                                  str(self.result_id))
-            self.log_result(outcome, outcome_category)
+                                  str(self.result_data['id']))
+            self.log_result()
         self.close()
 
     def supervise(self, iteration_counter, packet_capture):
@@ -444,7 +443,7 @@ class fault_injector:
             self.create_result()
             if packet_capture:
                 data_dir = ('campaign-data/'+str(self.campaign_data['id']) +
-                            '/results/'+str(self.result_id))
+                            '/results/'+str(self.result_data['id']))
                 os.makedirs(data_dir)
                 capture_file = open(data_dir+'/capture.pcap', 'w')
                 capture_process = subprocess.Popen(['ssh', 'p2020', 'tshark '
@@ -463,7 +462,9 @@ class fault_injector:
             self.debugger.dut.serial.write(
                 str('./'+self.campaign_data['command']+'\n'))
             try:
-                outcome, outcome_category = self.monitor_execution()
+                (self.result_data['outcome'],
+                 self.result_data['outcome_category']) = \
+                    self.monitor_execution()
             except KeyboardInterrupt:
                 if self.campaign_data['use_simics']:
                     self.debugger.continue_dut()
@@ -472,9 +473,11 @@ class fault_injector:
                 if self.campaign_data['use_aux']:
                     self.debugger.aux.serial.write('\x03')
                     self.debugger.aux.read_until()
-                outcome, outcome_category = ('Interrupted', 'Incomplete')
+                self.result_data.update({
+                    'outcome_category': 'Incomplete',
+                    'outcome': 'Interrupted'})
                 interrupted = True
-            self.log_result(outcome, outcome_category)
+            self.log_result()
             if packet_capture:
                 os.system('ssh p2020 \'killall tshark\'')
                 capture_process.wait()

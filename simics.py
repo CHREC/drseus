@@ -20,12 +20,11 @@ class simics:
                       'dropping memop (peer attribute not set)',
                       'where nothing is mapped', 'Error']
 
-    def __init__(self, campaign_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options, rsakey):
         self.simics = None
-        self.output = ''
         self.campaign_data = campaign_data  # TODO: only used for id and use_aux
-        self.debug = options.debug
-        self.timeout = options.timeout
+        self.result_data = result_data
+        self.options = options
         if campaign_data['architecture'] == 'p2020':
             self.board = 'p2020rdb'
         elif campaign_data['architecture'] == 'a9':
@@ -98,37 +97,39 @@ class simics:
             self.close()
             raise DrSEUsError('Error finding port or pseudoterminal')
         if self.board == 'p2020rdb':
-            prompt = 'root@p2020rdb:~#'
+            self.options.aux_prompt = self.options.dut_prompt = \
+                'root@p2020rdb:~#'
         elif self.board == 'a9x2':
-            prompt = '#'
-        self.dut = dut(self.rsakey, serial_ports[0], prompt, self.debug,
-                       self.timeout, self.campaign_data['id'], 38400,
+            self.options.aux_prompt = self.options.dut_prompt = '#'
+        self.options.dut_serial_port = serial_ports[0]
+        self.dut = dut(self.result_data, self.options, self.rsakey, 38400,
                        ssh_ports[0])
         if self.campaign_data['use_aux']:
-            self.aux = dut(self.rsakey, serial_ports[1], prompt, self.debug,
-                           self.timeout, self.campaign_data['id'], 38400,
-                           ssh_ports[1], 'cyan')
+            self.options.aux_serial_port = serial_ports[1]
+            self.aux = dut(self.result_data, self.options, self.rsakey, 38400,
+                           ssh_ports[1], 'cyan', True)
         if checkpoint is None:
             self.continue_dut()
             self.do_uboot()
             if self.campaign_data['use_aux']:
-                aux_process = Thread(target=self.aux.do_login,
-                                     kwargs={'ip_address': '10.10.0.104',
-                                             'change_prompt': True,
-                                             'simics': True})
+                aux_process = Thread(
+                    target=self.aux.do_login,
+                    kwargs={'ip_address': '10.10.0.104',
+                            'change_prompt': (self.board == 'a9x2'),
+                            'simics': True})
                 aux_process.start()
             self.dut.do_login(ip_address='10.10.0.100',
-                              change_prompt=(prompt == '#'),
+                              change_prompt=(self.board == 'a9x2'),
                               simics=True)
             if self.campaign_data['use_aux']:
                 aux_process.join()
         else:
             self.dut.ip_address = '127.0.0.1'
-            if prompt == '#':
+            if self.board == 'a9x2':
                 self.dut.prompt = 'DrSEUs# '
             if self.campaign_data['use_aux']:
                 self.aux.ip_address = '127.0.0.1'
-                if prompt == '#':
+                if self.board == 'a9x2':
                     self.aux.prompt = 'DrSEUs# '
 
     def launch_simics_gui(self, checkpoint):
@@ -181,13 +182,14 @@ class simics:
             read_thread.join(timeout=5)  # must be shorter than timeout in read
             if read_thread.is_alive():
                 self.simics.kill()
-                self.output += '\nkilled unresponsive simics process\n'
-                if self.debug:
+                self.result_data['debugger_output'] += ('\nkilled unresponsive '
+                                                        'simics process\n')
+                if self.options.debug:
                     print(colored('killed unresponsive simics process',
                                   'yellow'))
             else:
-                self.output += 'quit\n'
-                if self.debug:
+                self.result_data['debugger_output'] += 'quit\n'
+                if self.options.debug:
                     print(colored('quit', 'yellow'))
                 self.simics.wait()
         self.simics = None
@@ -199,8 +201,8 @@ class simics:
 
     def continue_dut(self):
         self.simics.stdin.write('run\n')
-        self.output += 'run\n'
-        if self.debug:
+        self.result_data['debugger_output'] += 'run\n'
+        if self.options.debug:
             print(colored('run', 'yellow'))
 
     def read_char_worker(self):
@@ -223,13 +225,17 @@ class simics:
             char = self.read_char()
             if not char:
                 break
-            self.output += char
-            if self.debug:
+            self.result_data['debugger_output'] += char
+            if self.options.debug:
                 print(colored(char, 'yellow'), end='')
                 sys.stdout.flush()
             buff += char
             if buff[-len(string):] == string:
                 break
+        if self.options.inject:
+            with sql() as db:
+                db.update_dict('result', self.result_data,
+                               self.result_data['id'])
         for message in self.error_messages:
             if message in buff:
                 raise DrSEUsError(message)
@@ -237,8 +243,8 @@ class simics:
 
     def command(self, command):
         self.simics.stdin.write(command+'\n')
-        self.output += command+'\n'
-        if self.debug:
+        self.result_data['debugger_output'] += command+'\n'
+        if self.options.debug:
             print(colored(command, 'yellow'))
         return self.read_until()
 
@@ -305,105 +311,102 @@ class simics:
                 self.aux.read_until('##')
                 self.aux.read_until('##')
 
-    def time_application(self, command, aux_command, timing_iterations,
-                         kill_dut):
-        num_cycles = 0
+    def time_application(self, timing_iterations):
         self.halt_dut()
-        start_cycles = self.command('print-time').split('\n')[-2].split()[2]
+        time_data = self.command('print-time').split('\n')[-2].split()
+        start_cycles = int(time_data[2])
+        start_sim_time = float(time_data[3])
         start_time = time.time()
         self.continue_dut()
         for i in xrange(timing_iterations):
             if self.campaign_data['use_aux']:
-                aux_process = Thread(target=self.aux.command,
-                                     args=('./'+aux_command, ))
+                aux_process = Thread(
+                    target=self.aux.command,
+                    args=('./'+self.campaign_data['aux_command'], ))
                 aux_process.start()
-            self.dut.serial.write(str('./'+command+'\n'))
+            self.dut.serial.write(str('./'+self.campaign_data['command']+'\n'))
             if self.campaign_data['use_aux']:
                 aux_process.join()
-            if kill_dut:
+            if self.campaign_data['kill_dut']:
                 self.dut.serial.write('\x03')
             self.dut.read_until()
-            self.halt_dut()
-            end_cycles = self.command(
-                'print-time').split('\n')[-2].split()[2]
-            num_cycles += int(end_cycles) - int(start_cycles)
-            start_cycles = end_cycles
-            self.continue_dut()
+        self.halt_dut()
         end_time = time.time()
-        return ((end_time - start_time) / timing_iterations,
-                int(num_cycles / timing_iterations))
+        time_data = self.command('print-time').split('\n')[-2].split()
+        end_cycles = int(time_data[2])
+        end_sim_time = float(time_data[3])
+        self.continue_dut()
+        self.campaign_data['exec_time'] = \
+            (end_time - start_time) / timing_iterations
+        self.campaign_data['num_cycles'] = \
+            int((end_cycles - start_cycles) / timing_iterations)
+        self.campaign_data['sim_time'] = \
+            (end_sim_time - start_sim_time) / timing_iterations
 
-    def create_checkpoints(self, command, aux_command, cycles, num_checkpoints,
-                           kill_dut):
+    def create_checkpoints(self):
         os.makedirs('simics-workspace/gold-checkpoints/' +
                     str(self.campaign_data['id']))
-        step_cycles = cycles / num_checkpoints
+        self.campaign_data['cycles_between'] = \
+            self.campaign_data['num_cycles'] / self.options.num_checkpoints
         self.halt_dut()
         if self.campaign_data['use_aux']:
-                aux_process = Thread(target=self.aux.command,
-                                     args=('./'+aux_command, ))
+                aux_process = Thread(
+                    target=self.aux.command,
+                    args=('./'+self.campaign_data['aux_command'], ))
                 aux_process.start()
-        self.dut.serial.write('./'+command+'\n')
+        self.dut.serial.write('./'+self.campaign_data['command']+'\n')
         read_thread = Thread(target=self.dut.read_until)
         read_thread.start()
         checkpoint = 0
         while True:
             checkpoint += 1
-            self.command('run-cycles '+str(step_cycles))
-            self.dut.output += '***drseus_checkpoint: '+str(checkpoint)+'***\n'
+            self.command('run-cycles ' +
+                         str(self.campaign_data['cycles_between']))
+            self.result_data['dut_output'] += ('***drseus_checkpoint: ' +
+                                               str(checkpoint)+'***\n')
             incremental_checkpoint = ('gold-checkpoints/' +
                                       str(self.campaign_data['id'])+'/' +
                                       str(checkpoint))
             self.command('write-configuration '+incremental_checkpoint)
-            if not read_thread.is_alive() or \
-                (self.campaign_data['use_aux'] and kill_dut
-                 and not aux_process.is_alive()):
+            if not read_thread.is_alive() or (self.campaign_data['use_aux'] and
+                                              self.campaign_data['kill_dut'] and
+                                              not aux_process.is_alive()):
                 merged_checkpoint = incremental_checkpoint+'_merged'
                 self.command('!bin/checkpoint-merge '+incremental_checkpoint +
                              ' '+merged_checkpoint)
                 break
+        self.campaign_data['num_checkpoints'] = checkpoint
         self.continue_dut()
         if self.campaign_data['use_aux']:
             aux_process.join()
-        if kill_dut:
+        if self.campaign_data['kill_dut']:
             self.dut.serial.write('\x03')
         read_thread.join()
-        return step_cycles, checkpoint
 
-    def inject_fault(self, result_id, checkpoints_to_inject, selected_targets,
-                     cycles_between_checkpoints, num_checkpoints, compare_all):
-        dut_output = ''
-        if self.campaign_data['use_aux']:
-            aux_output = ''
+    def inject_fault(self, checkpoints_to_inject, selected_targets):
         latent_faults = 0
         for injection_number in xrange(1, len(checkpoints_to_inject)+1):
             checkpoint_number = checkpoints_to_inject[injection_number-1]
             injected_checkpoint = simics_checkpoints.inject_checkpoint(
-                self.campaign_data['id'], result_id, injection_number,
-                checkpoint_number, self.board, selected_targets, self.debug)
+                self.campaign_data['id'], self.result_data['id'],
+                injection_number, checkpoint_number, self.board,
+                selected_targets, self.options.debug)
             self.launch_simics(injected_checkpoint)
             injections_remaining = (injection_number <
                                     len(checkpoints_to_inject))
             if injections_remaining:
                 next_checkpoint = checkpoints_to_inject[injection_number]
             else:
-                next_checkpoint = num_checkpoints
-            errors = self.compare_checkpoints(result_id, checkpoint_number,
-                                              next_checkpoint,
-                                              cycles_between_checkpoints,
-                                              num_checkpoints, compare_all)
+                next_checkpoint = self.campaign_data['num_checkpoints']
+            errors = self.compare_checkpoints(checkpoint_number,
+                                              next_checkpoint)
             if errors > latent_faults:
                 latent_faults = errors
             if injections_remaining:
                 self.close()
-            dut_output += self.dut.output
-            if self.campaign_data['use_aux']:
-                aux_output += self.aux.output
-        self.dut.output = dut_output
-        if self.campaign_data['use_aux']:
-            self.aux.output = aux_output
         return latent_faults
 
+    #  TODO: update
     def regenerate_checkpoints(self, result_id, cycles_between, injection_data):
         for i in xrange(len(injection_data)):
             if i == 0:
@@ -437,18 +440,18 @@ class simics:
                 self.close()
         return injected_checkpoint
 
-    def compare_checkpoints(self, result_id, checkpoint_number, last_checkpoint,
-                            cycles_between_checkpoints, num_checkpoints,
-                            compare_all):
+    def compare_checkpoints(self, checkpoint_number, last_checkpoint):
         reg_errors = 0
         mem_errors = 0
         for checkpoint_number in xrange(checkpoint_number + 1,
                                         last_checkpoint + 1):
-            self.command('run-cycles '+str(cycles_between_checkpoints))
-            incremental_checkpoint = ('injected-checkpoints/' +
-                                      str(self.campaign_data['id'])+'/' +
-                                      str(result_id)+'/'+str(checkpoint_number))
-            monitor = compare_all or checkpoint_number == num_checkpoints
+            self.command('run-cycles ' +
+                         str(self.campaign_data['cycles_between']))
+            incremental_checkpoint = (
+                'injected-checkpoints/'+str(self.campaign_data['id'])+'/' +
+                str(self.result_data['id'])+'/'+str(checkpoint_number))
+            monitor = self.options.compare_all or \
+                checkpoint_number == self.campaign_data['num_checkpoints']
             if monitor or checkpoint_number == last_checkpoint:
                 self.command('write-configuration '+incremental_checkpoint)
             if monitor:
@@ -468,28 +471,28 @@ class simics:
                 gold_checkpoint = 'simics-workspace/'+gold_checkpoint
                 monitored_checkpoint = 'simics-workspace/'+monitored_checkpoint
                 errors = simics_checkpoints.compare_registers(
-                    result_id, checkpoint_number, gold_checkpoint,
+                    self.result_data['id'], checkpoint_number, gold_checkpoint,
                     monitored_checkpoint, self.board)
                 if errors > reg_errors:
                     reg_errors = errors
                 errors = simics_checkpoints.compare_memory(
-                    result_id, checkpoint_number, gold_checkpoint,
+                    self.result_data['id'], checkpoint_number, gold_checkpoint,
                     monitored_checkpoint, self.board)
                 if errors > reg_errors:
                     mem_errors = errors
         return reg_errors + mem_errors
 
-    def persistent_faults(self, result_id):
+    def persistent_faults(self):
         with sql(row_factory='row') as db:
             db.cursor.execute('SELECT config_object,register,register_index,'
                               'injected_value FROM log_injection '
-                              'WHERE result_id=?', (result_id,))
+                              'WHERE result_id=?', (self.result_data['id'],))
             injections = db.cursor.fetchall()
             db.cursor.execute('SELECT * FROM log_simics_register_diff '
-                              'WHERE result_id=?', (result_id,))
+                              'WHERE result_id=?', (self.result_data['id'],))
             register_diffs = db.cursor.fetchall()
             db.cursor.execute('SELECT * FROM log_simics_memory_diff '
-                              'WHERE result_id=?', (result_id,))
+                              'WHERE result_id=?', (self.result_data['id'],))
             memory_diffs = db.cursor.fetchall()
         if len(memory_diffs) > 0:
             return False

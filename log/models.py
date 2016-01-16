@@ -15,6 +15,7 @@ class campaign(models.Model):
     aux_command = models.TextField(null=True)
     use_aux_output = models.BooleanField()
     exec_time = models.FloatField(null=True)
+    sim_time = models.FloatField(null=True)
     architecture = models.TextField()
     use_simics = models.BooleanField()
     use_aux = models.BooleanField()

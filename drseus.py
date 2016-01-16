@@ -36,12 +36,12 @@ parser.add_option('--dut_prompt', action='store', type='str',
                        '[a9 default=[root@ZED]#] (overridden by simics)')
 parser.add_option('--aux_serial', action='store', type='str',
                   dest='aux_serial_port', default='/dev/ttyUSB0',
-                  help='aux serial port [default=/dev/ttyUSB0] '
-                       '(overridden by simics)')
+                  help='aux serial port [p2020 default=/dev/ttyUSB1]           '
+                       '[a9 default=/dev/ttyACM0] (overridden by simics)')
 parser.add_option('--aux_prompt', action='store', type='str',
                   dest='aux_prompt', default=None,
-                  help='aux console prompt [default=root@p2020rdb:~#]  '
-                       '(overridden by simics)')
+                  help='aux console prompt [p2020 default=root@p2020rdb:~#]    '
+                       '[a9 default=[root@ZED]#] (overridden by simics)')
 parser.add_option('--debugger_ip', action='store', type='str',
                   dest='debugger_ip_address', default='10.42.0.50',
                   help='debugger ip address [default=10.42.0.50] '
@@ -217,7 +217,7 @@ else:
 # set smart defaults
 if not options.campaign_number:
     options.campaign_number = utilities.get_last_campaign()
-if options.campaign_number:
+if not options.application and options.campaign_number:
     options.architecture = \
         utilities.get_campaign_data(options.campaign_number)['architecture']
 if options.architecture == 'p2020':
@@ -225,11 +225,19 @@ if options.architecture == 'p2020':
         options.dut_serial_port = '/dev/ttyUSB1'
     if options.dut_prompt is None:
         options.dut_prompt = 'root@p2020rdb:~#'
+    if options.aux_serial_port is None:
+        options.aux_serial_port = '/dev/ttyUSB0'
+    if options.aux_prompt is None:
+        options.aux_prompt = 'root@p2020rdb:~#'
 elif options.architecture == 'a9':
     if options.dut_serial_port is None:
         options.dut_serial_port = '/dev/ttyACM0'
     if options.dut_prompt is None:
         options.dut_prompt = '[root@ZED]#'
+    if options.aux_serial_port is None:
+        options.aux_serial_port = '/dev/ttyACM1'
+    if options.aux_prompt is None:
+        options.aux_prompt = '[root@ZED]#'
 else:
     raise Exception('invalid architecture: '+options.architecture)
 

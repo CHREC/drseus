@@ -13,18 +13,19 @@ from fault_injector import fault_injector
 
 class supervisor(Cmd):
     def __init__(self, campaign_data, options):
+        self.campaign_data = campaign_data
         self.capture = options.capture
         self.directory = options.directory
         options.debug = True
         self.drseus = fault_injector(campaign_data, options)
-        if self.drseus.campaign_data['use_simics']:
+        if self.campaign_data['use_simics']:
             checkpoint = (
-                'gold-checkpoints/'+str(self.drseus.campaign_data['id'])+'/' +
-                str(self.drseus.campaign_data['num_checkpoints'])+'_merged')
+                'gold-checkpoints/'+str(self.campaign_data['id'])+'/' +
+                str(self.campaign_data['num_checkpoints'])+'_merged')
             self.drseus.debugger.launch_simics(checkpoint)
             self.drseus.debugger.continue_dut()
         else:
-            if self.drseus.campaign_data['use_aux']:
+            if self.campaign_data['use_aux']:
                 self.drseus.debugger.aux.serial.write('\x03')
                 aux_process = Thread(target=self.drseus.debugger.aux.do_login)
                 aux_process.start()
@@ -36,13 +37,13 @@ class supervisor(Cmd):
                     continue
                 else:
                     booted = True
-            if self.drseus.campaign_data['use_aux']:
+            if self.campaign_data['use_aux']:
                 aux_process.join()
                 self.drseus.send_aux_files()
             self.drseus.send_dut_files()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
-        if self.drseus.campaign_data['use_aux']:
+        if self.campaign_data['use_aux']:
             self.__class__ = aux_supervisor
 
     def preloop(self):
@@ -62,7 +63,7 @@ class supervisor(Cmd):
         except ValueError:
             print('Invalid value entered')
             return
-        if self.drseus.campaign_data['use_simics']:
+        if self.campaign_data['use_simics']:
             self.drseus.debugger.timeout = new_timeout
         if aux:
             self.drseus.debugger.aux.default_timeout = new_timeout
@@ -99,17 +100,17 @@ class supervisor(Cmd):
                         self.drseus.debugger.dut.serial.write(
                             sys.stdin.readline()+'\n')
         except KeyboardInterrupt:
-            if self.drseus.campaign_data['use_simics']:
+            if self.campaign_data['use_simics']:
                 self.drseus.debugger.continue_dut()
             if aux:
                 self.drseus.debugger.aux.serial.write('\x03')
             else:
                 self.drseus.debugger.dut.serial.write('\x03')
             read_thread.join()
-        if aux:
-            self.drseus.log_result(arg, 'AUX command')
-        else:
-            self.drseus.log_result(arg, 'DUT command')
+        self.drseus.result_data.update({
+            'outcome_category': ('AUX' if aux else 'DUT')+' command',
+            'outcome': arg})
+        self.drseus.log_result()
 
     def do_read_dut(self, arg=None, aux=False):
         """Read from DUT, interrupt with ctrl-c"""
@@ -120,17 +121,16 @@ class supervisor(Cmd):
             else:
                 self.drseus.debugger.dut.read_until('toinfinityandbeyond!')
         except DrSEUsError as error:
-            outcome = error.type
+            self.drsue.result_data['outcome'] = error.type
         except KeyboardInterrupt:
-            outcome = 'Interrupted'
-            if self.drseus.campaign_data['use_simics']:
+            self.drsue.result_data['outcome'] = 'Interrupted'
+            if self.campaign_data['use_simics']:
                 self.drseus.debugger.continue_dut()
         else:
-            outcome = 'No error'
-        if aux:
-            self.drseus.log_result(outcome, 'Read AUX')
-        else:
-            self.drseus.log_result(outcome, 'Read DUT')
+            self.drsue.result_data['outcome'] = 'No error'
+        self.drseus.result_data['outcome_category'] = \
+            'Read '+('AUX' if aux else 'DUT')
+        self.drseus.log_result()
 
     def do_send_dut_files(self, arg, aux=False):
         """Send (comma-seperated) files to DUT, defaults to campaign files"""
@@ -147,13 +147,13 @@ class supervisor(Cmd):
                 self.drseus.send_dut_files(aux)
         except KeyboardInterrupt:
             print('Transfer interrupted')
-            if self.drseus.campaign_data['use_simics']:
+            if self.campaign_data['use_simics']:
                 self.drseus.debugger.continue_dut()
 
     def do_get_dut_file(self, arg, aux=False):
         """Retrieve file from DUT device"""
         self.drseus.create_result()
-        directory = ('campaign-data/'+str(self.drseus.campaign_data['id']) +
+        directory = ('campaign-data/'+str(self.campaign_data['id']) +
                      '/results/'+str(self.drseus.result_id)+'/')
         os.makedirs(directory)
         try:
@@ -162,14 +162,21 @@ class supervisor(Cmd):
             else:
                 self.drseus.debugger.dut.get_file(arg, directory)
         except KeyboardInterrupt:
-            self.drseus.log_result(arg, 'Get '+('AUX' if aux else 'DUT') +
-                                        ' file interrupted')
-            if self.drseus.campaign_data['use_simics']:
+            self.drseus.result_data.update({
+                'outcome_category':
+                    'Get '+('AUX' if aux else 'DUT')+' file interrupted',
+                'outcome': arg})
+            if self.campaign_data['use_simics']:
                 self.drseus.debugger.continue_dut()
         else:
             self.drseus.log_result(arg, 'Get '+('AUX' if aux else 'DUT') +
                                         ' file')
+            self.drseus.result_data.update({
+                'outcome_category':
+                    'Get '+('AUX' if aux else 'DUT')+' file',
+                'outcome': arg})
             print('File saved to '+directory)
+        self.drseus.log_result()
 
     def do_supervise(self, arg):
         """Supervise for targeted runtime (in seconds) or iterations"""
@@ -180,7 +187,7 @@ class supervisor(Cmd):
                 print('Invalid value entered')
                 return
             supervise_iterations = max(
-                int(run_time / self.drseus.campaign_data['exec_time']), 1)
+                int(run_time / self.campaign_data['exec_time']), 1)
         else:
             try:
                 supervise_iterations = int(arg)
@@ -201,7 +208,7 @@ class supervisor(Cmd):
 
     def do_exit(self, arg=None):
         """Exit DrSEUs"""
-        if self.drseus.campaign_data['use_simics']:
+        if self.campaign_data['use_simics']:
             self.drseus.debugger.close()
         self.drseus.close()
         sys.exit()
