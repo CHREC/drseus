@@ -4,7 +4,6 @@ from django.core.management import execute_from_command_line as django_command
 import multiprocessing
 import os
 import shutil
-import signal
 import sys
 
 from fault_injector import fault_injector
@@ -147,10 +146,10 @@ def create_campaign(options):
     campaign_data = {
         'application': options.application,
         'architecture': options.architecture,
-        'aux_command': (options.aux_application if options.aux_application
-                        else options.application) +
-                       ((' '+options.aux_arguments) if options.aux_arguments
-                        else ''),
+        'aux_command': ((options.aux_application if options.aux_application
+                         else options.application) +
+                        ((' '+options.aux_arguments) if options.aux_arguments
+                         else '')) if options.use_aux else None,
         'aux_output': '',
         'command': options.application+((' '+options.arguments)
                                         if options.arguments else ''),
@@ -184,7 +183,7 @@ def get_injection_data(result_id):
                           'WHERE log_result.id=?', (result_id,))
         injection_data = db.cursor.fetchall()
     injection_data = sorted(injection_data,
-                            key=lambda x: x['checkpoint_number'])
+                            key=lambda x: x['injection_number'])
     return injection_data
 
 

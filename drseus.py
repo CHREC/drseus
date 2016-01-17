@@ -283,7 +283,7 @@ elif options.delete_all:
 elif options.merge_directory:
     utilities.merge_campaigns(options.merge_directory)
 elif options.result_id:
-    utilities.regenerate()
+    utilities.regenerate(options)
 elif options.dependencies:
     utilities.update_all_checkpoint_dependencies()
 elif options.openocd:

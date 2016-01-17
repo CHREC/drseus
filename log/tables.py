@@ -4,9 +4,7 @@ from .models import (campaign, result, injection, simics_register_diff,
 
 
 class campaign_table(tables.Table):
-    results = tables.Column()
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
-    last_injection = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
         attrs = {"class": "paleblue"}
@@ -16,17 +14,19 @@ class campaign_table(tables.Table):
 
 class campaigns_table(tables.Table):
     id = tables.TemplateColumn('<a href="/{{ value }}/results">{{ value }}</a>')
-    results = tables.Column()
+    results = tables.Column(empty_values=())
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
-    last_injection = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+
+    def render_results(self, record):
+        return str(result.objects.filter(campaign=record.id).count())
 
     class Meta:
         attrs = {"class": "paleblue"}
         model = campaign
         exclude = ('application', 'aux_application', 'aux_output',
                    'cycles_between', 'debugger_output', 'dut_output',
-                   'output_file', 'num_cycles', 'num_checkpoints', 'use_aux',
-                   'use_aux_output', 'rsakey')
+                   'kill_dut', 'num_checkpoints', 'output_file', 'use_aux',
+                   'use_aux_output')
 
 
 class result_table(tables.Table):

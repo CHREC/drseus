@@ -1,13 +1,6 @@
 from django.db import models
 
 
-class campaign_manager(models.Manager):
-    def get_queryset(self):
-        return super(campaign_manager, self).get_queryset().annotate(
-            results=models.Count('result', distinct=True),
-            last_injection=models.Max('result__injection__timestamp'))
-
-
 class campaign(models.Model):
     application = models.TextField()
     output_file = models.TextField()
@@ -27,7 +20,6 @@ class campaign(models.Model):
     cycles_between = models.IntegerField(null=True)
     timestamp = models.DateTimeField()
     kill_dut = models.BooleanField()
-    objects = campaign_manager()
 
 
 class result(models.Model):
