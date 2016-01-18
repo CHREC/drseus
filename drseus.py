@@ -11,8 +11,7 @@ import utilities
 # TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
 # TODO: add option for number of times to rerun app for latent fault case
-# TODO: change Exception in simics_checkpoints.py to DrSEUsError
-# TODO: update simics_checkpoints to use simics_config
+# TODO: change Exception in simics.py to DrSEUsError
 
 parser = argparse.ArgumentParser(
     description='The Dynamic Robust Single Event Upset Simulator '
@@ -22,7 +21,6 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-C', '--campaign', action='store', type=int, metavar='ID',
                     dest='campaign_id', default=0,
                     help='campaign to use, defaults to last campaign created')
-# TODO: update
 parser.add_argument('-D', '--debug', action='store_true', dest='debug',
                     help='display device output for parallel injections')
 parser.add_argument('-T', '--timeout', action='store', type=int,

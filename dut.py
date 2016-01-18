@@ -1,7 +1,5 @@
 from __future__ import print_function
 from collections import OrderedDict
-# from multiprocessing import Process
-# import os
 import paramiko
 from scp import SCPClient
 from serial import Serial
@@ -85,8 +83,8 @@ class dut:
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-            except (EOFError, paramiko.NoValidConnectionsError,
-                    paramiko.SSHException) as error:
+            except (EOFError, paramiko.ssh_exception.NoValidConnectionsError,
+                    paramiko.ssh_exception.SSHException) as error:
                 print(colored('error sending file(s) (attempt '+str(attempt+1) +
                               '/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
@@ -115,8 +113,8 @@ class dut:
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-            except (EOFError, paramiko.NoValidConnectionsError,
-                    paramiko.SSHException) as error:
+            except (EOFError, paramiko.ssh_exception.NoValidConnectionsError,
+                    paramiko.ssh_exception.SSHException) as error:
                 print(colored('error getting file (attempt '+str(attempt+1) +
                               '/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
