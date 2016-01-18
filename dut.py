@@ -43,12 +43,12 @@ class dut:
                        else options.aux_serial_port)
         baud_rate = (options.dut_baud_rate if not aux
                      else options.aux_baud_rate)
-        try:
-            self.serial = Serial(port=serial_port, baudrate=baud_rate,
-                                 timeout=options.timeout, rtscts=True)
-        except:
-            raise Exception('error opening serial port', serial_port,
-                            ', are you a member of dialout?')
+        # try:
+        self.serial = Serial(port=serial_port, baudrate=baud_rate,
+                             timeout=options.timeout, rtscts=True)
+        # except:
+        #     raise Exception('error opening serial port', serial_port,
+        #                     ', are you a member of dialout?')
         try:
             self.serial.reset_input_buffer()  # pyserial 3
         except AttributeError:
@@ -75,26 +75,17 @@ class dut:
     def send_files(self, files):
         if self.options.debug:
             print(colored('sending file(s)', 'blue'))
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         attempts = 10
         for attempt in xrange(attempts):
             try:
-                ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 ssh.connect(self.ip_address, port=(self.options.dut_scp_port
                                                    if not self.aux else
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-                dut_scp = SCPClient(ssh.get_transport())
-                dut_scp.put(files)
-                dut_scp.close()
-                ssh.close()
-            except:
-                # try:
-                # dut_scp.close()
-                ssh.close()
-                # except:
-                #     pass
+            except (EOFError, paramiko.SSHException):
                 print(colored('error sending file(s) (attempt ' +
                               str(attempt+1)+'/'+str(attempts)+')', 'red'))
                 if attempt < attempts-1:
@@ -102,6 +93,10 @@ class dut:
                 else:
                     raise DrSEUsError(DrSEUsError.scp_error)
             else:
+                dut_scp = SCPClient(ssh.get_transport())
+                dut_scp.put(files)
+                dut_scp.close()
+                ssh.close()
                 break
         if self.options.debug:
             print(colored('files sent', 'blue'))
@@ -109,26 +104,17 @@ class dut:
     def get_file(self, file_, local_path=''):
         if self.options.debug:
             print(colored('getting file', 'blue'))
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         attempts = 10
         for attempt in xrange(attempts):
             try:
-                ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 ssh.connect(self.ip_address, port=(self.options.dut_scp_port
                                                    if not self.aux else
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-                dut_scp = SCPClient(ssh.get_transport())
-                dut_scp.get(file_, local_path=local_path)
-                dut_scp.close()
-                ssh.close()
-            except:
-                # try:
-                # dut_scp.close()
-                ssh.close()
-                # except:
-                #     pass
+            except (EOFError, paramiko.SSHException):
                 print(colored('error getting file (attempt ' +
                               str(attempt+1)+'/'+str(attempts)+')', 'red'))
                 if attempt < attempts-1:
@@ -136,6 +122,10 @@ class dut:
                 else:
                     raise DrSEUsError(DrSEUsError.scp_error)
             else:
+                dut_scp = SCPClient(ssh.get_transport())
+                dut_scp.get(file_, local_path=local_path)
+                dut_scp.close()
+                ssh.close()
                 break
         if self.options.debug:
             print(colored('file received', 'blue'))

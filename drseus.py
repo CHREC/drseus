@@ -15,7 +15,8 @@ import utilities
 # TODO: update simics_checkpoints to use simics_config
 
 parser = argparse.ArgumentParser(
-    description='Welcome to DrSEUs!',
+    description='The Dynamic Robust Single Event Upset Simulator '
+                'was created by Ed Carlisle IV',
     epilog='Begin by creating a new campaign with "%(prog)s new APPLICATION". '
            'Then run injections with "%(prog)s inject".')
 parser.add_argument('-C', '--campaign', action='store', type=int, metavar='ID',

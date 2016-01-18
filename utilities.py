@@ -202,14 +202,6 @@ def perform_injections(campaign_data, options, iteration_counter,
 
 def inject_campaign(options):
     processes = []
-
-    # def interrupt_handler(signum, frame):
-    #     for process in processes:
-    #         os.kill(process.pid, signal.SIGINT)
-    #     for process in processes:
-    #         process.join()
-    # signal.signal(signal.SIGINT, interrupt_handler)
-
     campaign_data = get_campaign_data(options.campaign_id)
     iteration_counter = multiprocessing.Value('L', options.iterations)
     if options.processes > 1 and (campaign_data['use_simics'] or
@@ -342,8 +334,7 @@ def merge_campaigns(options):
 
 
 def launch_openocd(options):
-    debugger = openocd(None, None, options.dut_serial_port, None, None, None,
-                       None, None, None, None, standalone=True)
+    debugger = openocd(None, None, options, None)
     print('Launched '+str(debugger))
     debugger.openocd.wait()
 

@@ -9,7 +9,7 @@ from threading import Thread
 from filters import fix_sort, fix_sort_list
 from models import result
 from simics_targets import devices as simics_devices
-from hardware_targets import devices as hardware_devices
+from jtag_targets import devices as hardware_devices
 
 colors = {
     'Data error': '#ba79f2',

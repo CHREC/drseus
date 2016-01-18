@@ -11,7 +11,7 @@ import subprocess
 
 from dut import dut
 from error import DrSEUsError
-from hardware_targets import devices
+from jtag_targets import devices
 from sql import sql
 from targets import choose_register, choose_target
 
@@ -174,7 +174,7 @@ class jtag:
                 injection_data['success'] = False
             with sql() as db:
                 db.insert_dict('injection', injection_data)
-        return 0
+        return 0, False
 
 
 class bdi(jtag):

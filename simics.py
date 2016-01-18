@@ -1,6 +1,9 @@
 from __future__ import print_function
+from datetime import datetime
 import os
-from random import choice
+from random import choice, randrange
+from re import findall
+from shutil import copyfile
 from signal import SIGINT
 import subprocess
 import sys
@@ -10,8 +13,10 @@ import time
 
 from dut import dut
 from error import DrSEUsError
-import simics_checkpoints
+import simics_config
+from simics_targets import devices
 from sql import sql
+from targets import choose_register, choose_target
 
 
 class simics:
@@ -23,13 +28,14 @@ class simics:
 
     def __init__(self, campaign_data, result_data, options, rsakey):
         self.simics = None
-        self.campaign_data = campaign_data  # TODO: only used for id and use_aux
+        self.campaign_data = campaign_data
         self.result_data = result_data
         self.options = options
         if campaign_data['architecture'] == 'p2020':
             self.board = 'p2020rdb'
         elif campaign_data['architecture'] == 'a9':
             self.board = 'a9x2'
+        self.targets = devices[self.board]
         self.rsakey = rsakey
 
     def __str__(self):
@@ -417,10 +423,8 @@ class simics:
         latent_faults = 0
         for injection_number in xrange(1, len(checkpoints_to_inject)+1):
             checkpoint_number = checkpoints_to_inject[injection_number-1]
-            injected_checkpoint = simics_checkpoints.inject_checkpoint(
-                self.campaign_data['id'], self.result_data['id'],
-                injection_number, checkpoint_number, self.board,
-                self.options.selected_targets, self.options.debug)
+            injected_checkpoint = self.inject_checkpoint(injection_number,
+                                                         checkpoint_number)
             self.launch_simics(injected_checkpoint)
             injections_remaining = (injection_number <
                                     len(checkpoints_to_inject))
@@ -434,7 +438,298 @@ class simics:
                 latent_faults = errors
             if injections_remaining:
                 self.close()
-        return latent_faults
+        return latent_faults, (latent_faults and self.persistent_faults())
+
+    def flip_bit(self, value_to_inject, num_bits_to_inject, bit_to_inject):
+        """
+        Flip the bit_to_inject of the binary representation of value_to_inject
+        and return the new value.
+        """
+        if bit_to_inject >= num_bits_to_inject or bit_to_inject < 0:
+            raise Exception('simics.py:flip_bit():'
+                            ' invalid bit_to_inject: '+str(bit_to_inject) +
+                            ' for num_bits_to_inject: '+str(num_bits_to_inject))
+        value_to_inject = int(value_to_inject, base=0)
+        binary_list = list(
+            str(bin(value_to_inject))[2:].zfill(num_bits_to_inject))
+        binary_list[num_bits_to_inject-1-bit_to_inject] = (
+            '1' if binary_list[num_bits_to_inject-1-bit_to_inject] == '0'
+            else '0')
+        injected_value = int(''.join(binary_list), 2)
+        injected_value = hex(injected_value).rstrip('L')
+        return injected_value
+
+    def inject_register(self, gold_checkpoint, injected_checkpoint, register,
+                        target, previous_injection_data=None):
+        """
+        Creates config file for injected_checkpoint with an injected value for
+        the register of the target in the gold_checkpoint and return the
+        injection information.
+        """
+        if previous_injection_data is None:
+            # create injection_data
+            injection_data = {}
+            injection_data['register'] = register
+            if ':' in target:
+                target_index = target.split(':')[1]
+                target = target.split(':')[0]
+                config_object = ('DUT_'+self.board +
+                                 self.targets[target]['OBJECT'] +
+                                 '['+target_index+']')
+            else:
+                target_index = None
+                config_object = 'DUT_'+self.board+self.targets[target]['OBJECT']
+            injection_data['target_index'] = target_index
+            config_type = self.targets[target]['TYPE']
+            injection_data['config_type'] = config_type
+            injection_data['target'] = target
+            injection_data['config_object'] = config_object
+            if 'count' in self.targets[target]['registers'][register]:
+                register_index = []
+                for dimension in (self.targets[target]
+                                              ['registers'][register]['count']):
+                    index = randrange(dimension)
+                    register_index.append(index)
+            else:
+                register_index = None
+            # choose bit_to_inject and TLB field_to_inject
+            if ('is_tlb' in self.targets[target]['registers'][register] and
+                    self.targets[target]['registers'][register]['is_tlb']):
+                fields = self.targets[target]['registers'][register]['fields']
+                field_to_inject = None
+                fields_list = []
+                total_bits = 0
+                for field in fields:
+                    bits = fields[field]['bits']
+                    fields_list.append((field, bits))
+                    total_bits += bits
+                random_bit = randrange(total_bits)
+                bit_sum = 0
+                for field in fields_list:
+                    bit_sum += field[1]
+                    if random_bit < bit_sum:
+                        field_to_inject = field[0]
+                        break
+                else:
+                    raise Exception('simics.py:inject_register(): '
+                                    'Error choosing TLB field to inject')
+                injection_data['field'] = field_to_inject
+                if 'split' in fields[field_to_inject] and \
+                        fields[field_to_inject]['split']:
+                    total_bits = (fields[field_to_inject]['bits_h'] +
+                                  fields[field_to_inject]['bits_l'])
+                    random_bit = randrange(total_bits)
+                    if random_bit < fields[field_to_inject]['bits_l']:
+                        register_index[-1] = fields[field_to_inject]['index_l']
+                        start_bit_index = \
+                            fields[field_to_inject]['bit_indicies_l'][0]
+                        end_bit_index = \
+                            fields[field_to_inject]['bit_indicies_l'][1]
+                    else:
+                        register_index[-1] = fields[field_to_inject]['index_h']
+                        start_bit_index = \
+                            fields[field_to_inject]['bit_indicies_h'][0]
+                        end_bit_index = \
+                            fields[field_to_inject]['bit_indicies_h'][1]
+                else:
+                    register_index[-1] = fields[field_to_inject]['index']
+                    start_bit_index = fields[field_to_inject]['bit_indicies'][0]
+                    end_bit_index = fields[field_to_inject]['bit_indicies'][1]
+                num_bits_to_inject = 32
+                bit_to_inject = randrange(start_bit_index, end_bit_index+1)
+            else:
+                if 'bits' in self.targets[target]['registers'][register]:
+                    num_bits_to_inject = \
+                        self.targets[target]['registers'][register]['bits']
+                else:
+                    num_bits_to_inject = 32
+                bit_to_inject = randrange(num_bits_to_inject)
+                if 'adjust_bit' in self.targets[target]['registers'][register]:
+                    bit_to_inject = (self.targets[target]['registers'][register]
+                                                 ['adjust_bit'][bit_to_inject])
+                if 'actualBits' in self.targets[target]['registers'][register]:
+                    num_bits_to_inject = (self.targets[target]['registers']
+                                                      [register]['actualBits'])
+                if 'fields' in self.targets[target]['registers'][register]:
+                    for field_name, field_bounds in \
+                        (self.targets[target]['registers']
+                                     [register]['fields'].iteritems()):
+                        if bit_to_inject in range(field_bounds[0],
+                                                  field_bounds[1]+1):
+                            field_to_inject = field_name
+                            break
+                    else:
+                        raise Exception('checkpoints.py:inject_register(): '
+                                        'Error finding register field name for '
+                                        'bit '+str(bit_to_inject) +
+                                        ' in register '+register)
+                    injection_data['field'] = field_to_inject
+                else:
+                    injection_data['field'] = None
+            injection_data['bit'] = bit_to_inject
+
+            if register_index is not None:
+                injection_data['register_index'] = ''
+                for index in register_index:
+                    injection_data['register_index'] += str(index)+':'
+                injection_data['register_index'] = \
+                    injection_data['register_index'][:-1]
+            else:
+                injection_data['register_index'] = None
+        else:
+            # use previous injection data
+            config_object = previous_injection_data['config_object']
+            config_type = previous_injection_data['config_type']
+            register_index = previous_injection_data['register_index']
+            if register_index is not None:
+                register_index = [int(index) for index
+                                  in register_index.split(':')]
+            injection_data = {}
+            injected_value = previous_injection_data['injected_value']
+        # perform checkpoint injection
+        config = simics_config.read_configuration(injected_checkpoint)
+        gold_value = simics_config.get_attr(config, config_object, register)
+        if register_index is None:
+            if previous_injection_data is None:
+                injected_value = self.flip_bit(gold_value, num_bits_to_inject,
+                                               bit_to_inject)
+            simics_config.set_attr(config, config_object, register,
+                                   injected_value)
+        else:
+            register_list = gold_value
+            if len(register_index) == 1:
+                gold_value = register_list[register_index[0]]
+                if previous_injection_data is None:
+                    injected_value = self.flip_bit(
+                        gold_value, num_bits_to_inject, bit_to_inject)
+                register_list[register_index[0]] = injected_value
+            elif len(register_index) == 2:
+                gold_value = register_list[register_index[0]][register_index[1]]
+                if previous_injection_data is None:
+                    injected_value = self.flip_bit(
+                        gold_value, num_bits_to_inject, bit_to_inject)
+                (register_list[register_index[0]]
+                              [register_index[1]]) = injected_value
+            elif len(register_index) == 3:
+                gold_value = (register_list[register_index[0]]
+                                           [register_index[1]]
+                                           [register_index[2]])
+                if previous_injection_data is None:
+                    injected_value = self.flip_bit(
+                        gold_value, num_bits_to_inject, bit_to_inject)
+                (register_list[register_index[0]]
+                              [register_index[1]]
+                              [register_index[2]]) = injected_value
+            else:
+                raise Exception('simics.py:inject_register(): '
+                                'Too many dimensions for register '+register +
+                                ' in target: '+target)
+            simics_config.set_attr(config, config_object, register,
+                                   register_list)
+        simics_config.write_configuration(config, injected_checkpoint, False)
+        injection_data['gold_value'] = gold_value
+        injection_data['injected_value'] = injected_value
+        return injection_data
+
+    def inject_checkpoint(self, injection_number, checkpoint_number):
+        """
+        Create a new injected checkpoint (only performing injection on the
+        selected_targets if provided) and return the path of the injected
+        checkpoint.
+        """
+        # verify selected targets exist
+        if self.options.selected_targets is not None:
+            for target in self.options.selected_targets:
+                if target not in self.targets:
+                    raise Exception('simics.py:inject_checkpoint():'
+                                    ' invalid injection target: '+target)
+        if injection_number == 1:
+            gold_checkpoint = ('simics-workspace/gold-checkpoints/' +
+                               str(self.campaign_data['id'])+'/' +
+                               str(checkpoint_number))
+        else:
+            gold_checkpoint = ('simics-workspace/injected-checkpoints/' +
+                               str(self.campaign_data['id'])+'/' +
+                               str(self.result_data['id'])+'/' +
+                               str(checkpoint_number))
+        injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
+                               str(self.campaign_data['id'])+'/' +
+                               str(self.result_data['id'])+'/' +
+                               str(checkpoint_number)+'_injected')
+        os.makedirs(injected_checkpoint)
+        # copy gold checkpoint files
+        checkpoint_files = os.listdir(gold_checkpoint)
+        for checkpoint_file in checkpoint_files:
+            copyfile(gold_checkpoint+'/'+checkpoint_file,
+                     injected_checkpoint+'/'+checkpoint_file)
+        # choose injection target
+        target = choose_target(self.options.selected_targets, self.targets)
+        register = choose_register(target, self.targets)
+        injection_data = {'result_id': self.result_data['id'],
+                          'injection_number': injection_number,
+                          'checkpoint_number': checkpoint_number,
+                          'register': register,
+                          'target': target,
+                          'timestamp': datetime.now()}
+        try:
+            # perform fault injection
+            injection_data.update(self.inject_register(
+                gold_checkpoint, injected_checkpoint, register, target))
+        except Exception as error:
+            injection_data['success'] = False
+            with sql() as db:
+                db.insert_dict('injection', injection_data)
+            print(error)
+            raise DrSEUsError('Error injecting fault')
+        else:
+            injection_data['success'] = True
+        # log injection data
+        with sql() as db:
+            db.insert_dict('injection', injection_data)
+        if self.options.debug:
+            print(colored('result id: '+str(self.result_data['id']), 'magenta'))
+            print(colored('injection number: '+str(injection_number),
+                          'magenta'))
+            print(colored('checkpoint number: '+str(checkpoint_number),
+                          'magenta'))
+            print(colored('target: '+injection_data['target'], 'magenta'))
+            print(colored('register: '+injection_data['register'], 'magenta'))
+            print(colored('gold value: '+injection_data['gold_value'],
+                          'magenta'))
+            print(colored('injected value: '+injection_data['injected_value'],
+                          'magenta'))
+        return injected_checkpoint.replace('simics-workspace/', '')
+
+    def persistent_faults(self):
+        with sql(row_factory='row') as db:
+            db.cursor.execute('SELECT config_object,register,register_index,'
+                              'injected_value FROM log_injection '
+                              'WHERE result_id=?', (self.result_data['id'],))
+            injections = db.cursor.fetchall()
+            db.cursor.execute('SELECT * FROM log_simics_register_diff '
+                              'WHERE result_id=?', (self.result_data['id'],))
+            register_diffs = db.cursor.fetchall()
+            db.cursor.execute('SELECT * FROM log_simics_memory_diff '
+                              'WHERE result_id=?', (self.result_data['id'],))
+            memory_diffs = db.cursor.fetchall()
+        if len(memory_diffs) > 0:
+            return False
+        for register_diff in register_diffs:
+            for injection in injections:
+                if injection['register_index']:
+                    injected_register = (injection['register']+':' +
+                                         injection['register_index'])
+                else:
+                    injected_register = injection['register']
+                if (register_diff['config_object'] == injection['config_object']
+                        and register_diff['register'] == injected_register):
+                    if (int(register_diff['monitored_value'], base=0) ==
+                            int(injection['injected_value'], base=0)):
+                        break
+            else:
+                return False
+        else:
+            return True
 
     def regenerate_checkpoints(self, injection_data):
         for i in xrange(len(injection_data)):
@@ -453,10 +748,16 @@ class simics:
                                    str(injection_data[i]['checkpoint_number']) +
                                    '_injected')
             os.makedirs(injected_checkpoint)
+            checkpoint_files = os.listdir(checkpoint)
+            for checkpoint_file in checkpoint_files:
+                copyfile(checkpoint+'/'+checkpoint_file,
+                         injected_checkpoint+'/'+checkpoint_file)
+            targets = devices[self.board]
+            self.inject_register(
+                checkpoint, injected_checkpoint, injection_data['register'],
+                injection_data['target'], self.board, targets, injection_data)
             injected_checkpoint = \
-                simics_checkpoints.regenerate_injected_checkpoint(
-                    self.board, checkpoint, injected_checkpoint,
-                    injection_data[i])
+                injected_checkpoint.replace('simics-workspace/', '')
             if i < len(injection_data) - 1:
                 self.launch_simics(checkpoint=injected_checkpoint)
                 for j in xrange(injection_data[i]['checkpoint_number'],
@@ -500,45 +801,234 @@ class simics:
                                  gold_checkpoint)
                 gold_checkpoint = 'simics-workspace/'+gold_checkpoint
                 monitored_checkpoint = 'simics-workspace/'+monitored_checkpoint
-                errors = simics_checkpoints.compare_registers(
-                    self.result_data['id'], checkpoint_number, gold_checkpoint,
-                    monitored_checkpoint, self.board)
+                errors = self.compare_registers(
+                    checkpoint_number, gold_checkpoint, monitored_checkpoint)
                 if errors > reg_errors:
                     reg_errors = errors
-                errors = simics_checkpoints.compare_memory(
-                    self.result_data['id'], checkpoint_number, gold_checkpoint,
-                    monitored_checkpoint, self.board)
+                errors = self.compare_memory(
+                    checkpoint_number, gold_checkpoint, monitored_checkpoint)
                 if errors > reg_errors:
                     mem_errors = errors
         return reg_errors + mem_errors
 
-    def persistent_faults(self):
-        with sql(row_factory='row') as db:
-            db.cursor.execute('SELECT config_object,register,register_index,'
-                              'injected_value FROM log_injection '
-                              'WHERE result_id=?', (self.result_data['id'],))
-            injections = db.cursor.fetchall()
-            db.cursor.execute('SELECT * FROM log_simics_register_diff '
-                              'WHERE result_id=?', (self.result_data['id'],))
-            register_diffs = db.cursor.fetchall()
-            db.cursor.execute('SELECT * FROM log_simics_memory_diff '
-                              'WHERE result_id=?', (self.result_data['id'],))
-            memory_diffs = db.cursor.fetchall()
-        if len(memory_diffs) > 0:
-            return False
-        for register_diff in register_diffs:
-            for injection in injections:
-                if injection['register_index']:
-                    injected_register = (injection['register']+':' +
-                                         injection['register_index'])
+    def parse_registers(self, checkpoint):
+        """
+        Retrieves all the register values of the targets specified in
+        simics_targets.py for the specified checkpoint and returns a
+        dictionary with all the values.
+        """
+        config = simics_config.read_configuration(checkpoint)
+        registers = {}
+        for target in self.targets:
+            if target != 'TLB':
+                if 'count' in self.targets[target]:
+                    count = self.targets[target]['count']
                 else:
-                    injected_register = injection['register']
-                if (register_diff['config_object'] == injection['config_object']
-                        and register_diff['register'] == injected_register):
-                    if (int(register_diff['monitored_value'], base=0) ==
-                            int(injection['injected_value'], base=0)):
-                        break
-            else:
-                return False
-        else:
-            return True
+                    count = 1
+                for target_index in xrange(count):
+                    config_object = \
+                        'DUT_'+self.board+self.targets[target]['OBJECT']
+                    # config_type = self.targets[target]['TYPE']
+                    if count > 1:
+                        config_object += '['+str(target_index)+']'
+                    if target == 'GPR':
+                        target_key = config_object + ':gprs'
+                    else:
+                        target_key = config_object
+                    registers[target_key] = {}
+                    for register in self.targets[target]['registers']:
+                        registers[target_key][register] = \
+                            simics_config.get_attr(config, config_object,
+                                                   register)
+        return registers
+
+    def compare_registers(self, checkpoint_number, gold_checkpoint,
+                          monitored_checkpoint):
+        """
+        Compares the register values of the checkpoint_number for iteration
+        to the gold_checkpoint and adds the differences to the database.
+        """
+        gold_registers = self.parse_registers(gold_checkpoint+'/config')
+        monitored_registers = self.parse_registers(
+            monitored_checkpoint+'/config')
+        diffs = 0
+        register_diff_data = {'result_id': self.result_data['id'],
+                              'checkpoint_number': checkpoint_number}
+        with sql() as db:
+            for target in self.targets:
+                if target != 'TLB':
+                    if 'count' in self.targets[target]:
+                        target_count = self.targets[target]['count']
+                    else:
+                        target_count = 1
+                    for target_index in xrange(target_count):
+                        config_object = \
+                            'DUT_'+self.board+self.targets[target]['OBJECT']
+                        if target_count > 1:
+                            config_object += '['+str(target_index)+']'
+                        if target == 'GPR':
+                            register_diff_data['config_object'] = \
+                                config_object+':gprs'
+                        else:
+                            register_diff_data['config_object'] = config_object
+                        for register in self.targets[target]['registers']:
+                            if 'count' in (self.targets[target]
+                                                       ['registers'][register]):
+                                register_count = \
+                                    (self.targets[target]['registers']
+                                                 [register]['count'])
+                            else:
+                                register_count = ()
+                            if len(register_count) == 0:
+                                register_diff_data['monitored_value'] = \
+                                    monitored_registers[
+                                        register_diff_data['config_object']
+                                    ][register]
+                                register_diff_data['gold_value'] = \
+                                    gold_registers[
+                                        register_diff_data['config_object']
+                                    ][register]
+                                if (register_diff_data['monitored_value'] !=
+                                        register_diff_data['gold_value']):
+                                    diffs += 1
+                                    register_diff_data['register'] = register
+                                    db.insert_dict('simics_register_diff',
+                                                   register_diff_data)
+                            elif len(register_count) == 1:
+                                for index1 in xrange(register_count[0]):
+                                    register_diff_data['monitored_value'] = \
+                                        monitored_registers[
+                                            register_diff_data['config_object']
+                                        ][register][index1]
+                                    register_diff_data['gold_value'] = \
+                                        gold_registers[
+                                            register_diff_data['config_object']
+                                        ][register][index1]
+                                    if (register_diff_data['monitored_value'] !=
+                                            register_diff_data['gold_value']):
+                                        diffs += 1
+                                        register_diff_data['register'] = \
+                                            register+':'+str(index1)
+                                        db.insert_dict('simics_register_diff',
+                                                       register_diff_data)
+                            elif len(register_count) == 2:
+                                for index1 in xrange(register_count[0]):
+                                    for index2 in xrange(register_count[1]):
+                                        register_diff_data['monitored_value'] = \
+                                            monitored_registers[
+                                                register_diff_data[
+                                                    'config_object']
+                                            ][register][index1][index2]
+                                        register_diff_data['gold_value'] = \
+                                            gold_registers[
+                                                register_diff_data[
+                                                    'config_object']
+                                            ][register][index1][index2]
+                                        if (register_diff_data[
+                                                'monitored_value'] !=
+                                                register_diff_data[
+                                                    'gold_value']):
+                                            register_diff_data['register'] = \
+                                                (register+':'+str(index1)+':' +
+                                                 str(index2))
+                                            diffs += 1
+                                            db.insert_dict(
+                                                'simics_register_diff',
+                                                register_diff_data)
+                            else:
+                                raise Exception('simics.py:'
+                                                'compare_registers(): Too many '
+                                                'dimensions for register ' +
+                                                register+' in target: '+target)
+        return diffs
+
+    def parse_content_map(self, content_map, block_size):
+        """
+        Parse a content_map created by the Simics craff utility and returns a
+        list of the addresses of the image that contain data.
+        """
+        with open(content_map, 'r') as content_map_file:
+            diff_addresses = []
+            for line in content_map_file:
+                if 'empty' not in line:
+                    line = line.split()
+                    base_address = int(line[0], 16)
+                    offsets = [index for index, value in enumerate(line[1])
+                               if value == 'D']
+                    for offset in offsets:
+                        diff_addresses.append(base_address+offset*block_size)
+        return diff_addresses
+
+    def extract_diff_blocks(self, gold_ram, monitored_ram,
+                            incremental_checkpoint, addresses, block_size):
+        """
+        Extract all of the blocks of size block_size specified in addresses of
+        both the gold_ram image and the monitored_ram image.
+        """
+        if len(addresses) > 0:
+            os.mkdir(incremental_checkpoint+'/memory-blocks')
+            for address in addresses:
+                gold_block = (incremental_checkpoint+'/memory-blocks/' +
+                              hex(address)+'_gold.raw')
+                monitored_block = (incremental_checkpoint+'/memory-blocks/' +
+                                   hex(address)+'_monitored.raw')
+                os.system('simics-workspace/bin/craff '+gold_ram +
+                          ' --extract='+hex(address) +
+                          ' --extract-block-size='+str(block_size) +
+                          ' --output='+gold_block)
+                os.system('simics-workspace/bin/craff '+monitored_ram +
+                          ' --extract='+hex(address) +
+                          ' --extract-block-size='+str(block_size) +
+                          ' --output='+monitored_block)
+
+    def compare_memory(self, checkpoint_number, gold_checkpoint,
+                       monitored_checkpoint, extract_blocks=False):
+        """
+        Compare the memory contents of gold_checkpoint with monitored_checkpoint
+        and return the list of blocks that do not match. If extract_blocks is
+        true then extract any blocks that do not match to
+        incremental_checkpoint/memory-blocks/.
+        """
+        if self.board == 'p2020rdb':
+            gold_rams = [gold_checkpoint+'/DUT_'+self.board +
+                         '.soc.ram_image['+str(index)+'].craff'
+                         for index in xrange(1)]
+            monitored_rams = [monitored_checkpoint+'/DUT_'+self.board +
+                              '.soc.ram_image['+str(index)+'].craff'
+                              for index in xrange(1)]
+        elif self.board == 'a9x2':
+            gold_rams = [gold_checkpoint+'/DUT_'+self.board +
+                         '.coretile.ddr_image['+str(index)+'].craff'
+                         for index in xrange(2)]
+            monitored_rams = [monitored_checkpoint+'/DUT_'+self.board +
+                              '.coretile.ddr_image['+str(index)+'].craff'
+                              for index in xrange(2)]
+        ram_diffs = [ram+'.diff' for ram in monitored_rams]
+        diff_content_maps = [diff+'.content_map' for diff in ram_diffs]
+        diffs = 0
+        memory_diff_data = {'result_id': self.result_data['id'],
+                            'checkpoint_number': checkpoint_number}
+        with sql() as db:
+            for (memory_diff_data['image_index'], gold_ram, monitored_ram,
+                 ram_diff, diff_content_map) in zip(
+                    range(len(monitored_rams)), gold_rams, monitored_rams,
+                    ram_diffs, diff_content_maps):
+                os.system('simics-workspace/bin/craff --diff '+gold_ram+' ' +
+                          monitored_ram+' --output='+ram_diff)
+                os.system('simics-workspace/bin/craff --content-map '+ram_diff +
+                          ' --output='+diff_content_map)
+                craff_output = subprocess.check_output(
+                    'simics-workspace/bin/craff --info '+ram_diff, shell=True)
+                block_size = int(findall(r'\d+',
+                                         craff_output.split('\n')[2])[1])
+                changed_blocks = self.parse_content_map(diff_content_map,
+                                                        block_size)
+                diffs += len(changed_blocks)
+                if extract_blocks:
+                    self.extract_diff_blocks(gold_ram, monitored_ram,
+                                             monitored_checkpoint,
+                                             changed_blocks, block_size)
+                for block in changed_blocks:
+                    memory_diff_data['block'] = hex(block)
+                    db.insert_dict('simics_memory_diff', memory_diff_data)
+        return diffs

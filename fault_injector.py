@@ -56,19 +56,15 @@ class fault_injector:
         if self.campaign_data['use_aux']:
             string += ('\n\t\tAUX Command: \"' +
                        self.campaign_data['aux_command']+'\"')
-        try:
-            string += ('\n\t\tExecution Time: ' +
-                       str(self.campaign_data['exec_time'])+' seconds')
-        except KeyError:
-            pass
-        try:
-            if self.campaign_data['use_simics']:
-                string += ('\n\t\tExecution Cycles: ' +
-                           '{:,}'.format(self.campaign_data['num_cycles']) +
-                           ' cycles\n\t\tSimulated Time: ' +
-                           str(self.campaign_data['sim_time'])+' seconds')
-        except KeyError:
-            pass
+        string += ('\n\t\t' +
+                   ('Host 'if self.campaign_data['use_simics'] else '') +
+                   'Execution Time: ' +
+                   str(self.campaign_data['exec_time'])+' seconds')
+        if self.campaign_data['use_simics']:
+            string += ('\n\t\tExecution Cycles: ' +
+                       '{:,}'.format(self.campaign_data['num_cycles']) +
+                       ' cycles\n\t\tSimulated Time: ' +
+                       str(self.campaign_data['sim_time'])+' seconds')
         return string
 
     def close(self):
@@ -210,7 +206,7 @@ class fault_injector:
         if missing_output:
             raise DrSEUsError(DrSEUsError.missing_output)
 
-    def monitor_execution(self, latent_faults=0):
+    def monitor_execution(self, latent_faults=0, persistent_faults=False):
         outcome = ''
         outcome_category = ''
         if self.campaign_data['use_aux']:
@@ -270,6 +266,9 @@ class fault_injector:
                     self.result_data['data_diff'] < 1.0:
                 outcome = 'Silent data error'
                 outcome_category = 'Data error'
+            elif persistent_faults:
+                outcome = 'Persistent faults'
+                outcome_category = 'No error'
             elif latent_faults:
                 outcome = 'Latent faults'
                 outcome_category = 'No error'
@@ -339,9 +338,9 @@ class fault_injector:
                         break
                 try:
                     self.send_dut_files()
-                except DrSEUsError:
+                except DrSEUsError as error:
                     self.result_data.update({
-                        'outcome_category': 'SCP error',
+                        'outcome_category': error.type,
                         'outcome': 'Error sending files to DUT'})
                     self.log_result()
                     continue
@@ -350,7 +349,7 @@ class fault_injector:
                 self.debugger.aux.serial.write(
                     str('./'+self.campaign_data['aux_command']+'\n'))
             try:
-                latent_faults = self.debugger.inject_faults()
+                latent_faults, persistent_faults = self.debugger.inject_faults()
                 self.debugger.continue_dut()
             except DrSEUsError as error:
                 self.result_data['outcome'] = error.type
@@ -373,7 +372,7 @@ class fault_injector:
             else:
                 (self.result_data['outcome'],
                  self.result_data['outcome_category']) = \
-                    self.monitor_execution(latent_faults)
+                    self.monitor_execution(latent_faults, persistent_faults)
                 if self.result_data['outcome'] == 'Latent faults' or \
                         (not self.campaign_data['use_simics']
                          and self.result_data['outcome'] == 'Masked faults'):
@@ -387,9 +386,6 @@ class fault_injector:
                         self.result_data.update({
                             'outcome_category': 'Post execution error',
                             'outcome': next_outcome})
-                    elif self.campaign_data['use_simics']:
-                        if self.debugger.persistent_faults():
-                            self.result_data['outcome'] = 'Persistent faults'
             if self.campaign_data['use_simics']:
                 try:
                     self.debugger.close()
