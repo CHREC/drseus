@@ -7,6 +7,7 @@ from subprocess import check_output
 from termcolor import colored
 
 from error import DrSEUsError
+import simics_config
 from simics_targets import devices
 from sql import sql
 from targets import choose_register, choose_target
@@ -156,169 +157,46 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
         injection_data = {}
         injected_value = previous_injection_data['injected_value']
     # perform checkpoint injection
-    with open(gold_checkpoint+'/config', 'r') as gold_config, \
-            open(injected_checkpoint+'/config', 'w') as injected_config:
-        current_line = gold_config.readline()
-        injected_config.write(current_line)
-        # write out configuration data until injection target found
-        while ('OBJECT '+config_object+' TYPE '+config_type+' {'
-               not in current_line):
-            current_line = gold_config.readline()
-            injected_config.write(current_line)
-            if current_line == '':
-                raise Exception('simics_checkpoints.py:inject_register(): '
-                                'Could not find '+config_object +
-                                ' in '+gold_checkpoint+'/config')
-        # find target register
-        while '\t'+register+': ' not in current_line:
-            current_line = gold_config.readline()
-            if 'OBJECT' in current_line:
-                raise Exception('simics_checkpoints.py:inject_register(): '
-                                'Could not find '+register +
-                                ' in '+config_object +
-                                ' in '+gold_checkpoint+'/config')
-            elif '\t'+register+': ' not in current_line:
-                injected_config.write(current_line)
-        # inject register value
-        if register_index is None:
-            gold_value = current_line.split(':')[1].strip()
+    config = simics_config.read_configuration(injected_checkpoint)
+    gold_value = simics_config.get_attr(config, config_object, register)
+    if register_index is None:
+        if previous_injection_data is None:
+            injected_value = flip_bit(gold_value, num_bits_to_inject,
+                                      bit_to_inject)
+        simics_config.set_attr(config, config_object, register, injected_value)
+    else:
+        register_list = gold_value
+        if len(register_index) == 1:
+            gold_value = register_list[register_index[0]]
             if previous_injection_data is None:
                 injected_value = flip_bit(gold_value, num_bits_to_inject,
                                           bit_to_inject)
-            injected_config.write('\t'+register+': '+injected_value+'\n')
-        # parse register list
+            register_list[register_index[0]] = injected_value
+        elif len(register_index) == 2:
+            gold_value = register_list[register_index[0]][register_index[1]]
+            if previous_injection_data is None:
+                injected_value = flip_bit(gold_value, num_bits_to_inject,
+                                          bit_to_inject)
+            (register_list[register_index[0]]
+                          [register_index[1]]) = injected_value
+        elif len(register_index) == 3:
+            gold_value = (register_list[register_index[0]]
+                                       [register_index[1]]
+                                       [register_index[2]])
+            if previous_injection_data is None:
+                injected_value = flip_bit(gold_value, num_bits_to_inject,
+                                          bit_to_inject)
+            (register_list[register_index[0]]
+                          [register_index[1]]
+                          [register_index[2]]) = injected_value
         else:
-            register_buffer = current_line.strip()
-            if len(register_index) == 1:
-                while ')' not in current_line:
-                    current_line = gold_config.readline()
-                    register_buffer += current_line.strip()
-                register_buffer = register_buffer.replace(' ', '')
-                register_list = (
-                    register_buffer[
-                        register_buffer.index('(')+1:register_buffer.index(')')
-                    ].split(',')
-                )
-                gold_value = register_list[register_index[0]]
-                if previous_injection_data is None:
-                    injected_value = flip_bit(gold_value, num_bits_to_inject,
-                                              bit_to_inject)
-                register_list[register_index[0]] = injected_value
-                injected_config.write('\t'+register+': (')
-                line_to_write = ''
-                for index in xrange(len(register_list)):
-                    if index == len(register_list)-1:
-                        if line_to_write == '':
-                            injected_config.write(register_list[index]+')\n')
-                        else:
-                            injected_config.write(line_to_write+', ' +
-                                                  register_list[index]+')\n')
-                    else:
-                        if len(line_to_write+register_list[index]+', ') > 80:
-                            injected_config.write(line_to_write+',\n\t' +
-                                                  '       ')
-                            line_to_write = register_list[index]
-                        elif line_to_write == '':
-                            line_to_write += register_list[index]
-                        else:
-                            line_to_write += ', '+register_list[index]
-            elif len(register_index) == 2:
-                while '))' not in current_line:
-                    current_line = gold_config.readline()
-                    register_buffer += current_line.strip()
-                register_buffer = register_buffer.replace(' ', '')
-                register_list = (
-                    register_buffer[
-                        register_buffer.index('((')+2:
-                        register_buffer.index('))')
-                    ].split('),(')
-                )
-                for index1 in xrange(len(register_list)):
-                    register_list[index1] = register_list[index1].split(',')
-                gold_value = register_list[register_index[0]][register_index[1]]
-                if previous_injection_data is None:
-                    injected_value = flip_bit(gold_value, num_bits_to_inject,
-                                              bit_to_inject)
-                (register_list[register_index[0]]
-                              [register_index[1]]) = injected_value
-                injected_config.write('\t'+register+': ((')
-                for index1 in xrange(len(register_list)):
-                    for index2 in xrange(len(register_list[index1])):
-                        if index2 != len(register_list[index1])-1:
-                            injected_config.write(
-                                register_list[index1][index2]+', '
-                            )
-                        elif index1 != len(register_list)-1:
-                            injected_config.write(
-                                register_list[index1][index2]+'),\n\t       ('
-                            )
-                        else:
-                            injected_config.write(
-                                register_list[index1][index2]+'))\n'
-                            )
-            elif len(register_index) == 3:
-                while ')))' not in current_line:
-                    current_line = gold_config.readline()
-                    register_buffer += current_line.strip()
-                register_buffer = register_buffer.replace(' ', '')
-                register_list = (
-                    register_buffer[
-                        register_buffer.index('(((')+3:
-                        register_buffer.index(')))')
-                    ].split(')),((')
-                )
-                for index1 in xrange(len(register_list)):
-                    register_list[index1] = register_list[index1].split('),(')
-                    for index2 in xrange(len(register_list[index1])):
-                        register_list[index1][index2] = \
-                            register_list[index1][index2].split(',')
-                gold_value = (
-                    register_list[register_index[0]]
-                                 [register_index[1]]
-                                 [register_index[2]]
-                )
-                if previous_injection_data is None:
-                    injected_value = flip_bit(gold_value, num_bits_to_inject,
-                                              bit_to_inject)
-                (
-                    register_list[register_index[0]]
-                                 [register_index[1]]
-                                 [register_index[2]]
-                ) = injected_value
-                injected_config.write('\t'+register+': (((')
-                for index1 in xrange(len(register_list)):
-                    for index2 in xrange(len(register_list[index1])):
-                        for index3 in xrange(len(register_list[index1]
-                                                              [index2])):
-                            if index3 != len(register_list[index1][index2])-1:
-                                injected_config.write(
-                                    register_list[index1][index2][index3]+', '
-                                )
-                            elif index2 != len(register_list[index1])-1:
-                                injected_config.write(
-                                    register_list[index1][index2][index3] +
-                                    '),\n\t        ('
-                                )
-                            elif index1 != len(register_list)-1:
-                                injected_config.write(
-                                    register_list[index1][index2][index3] +
-                                    ')),\n\t       (('
-                                )
-                            else:
-                                injected_config.write(
-                                    register_list[index1][index2][index3] +
-                                    ')))\n'
-                                )
-            else:
-                raise Exception('simics_checkpoints.py:inject_register(): '
-                                'Too many dimensions for register '+register +
-                                ' in target: '+target)
-        injection_data['gold_value'] = gold_value
-        injection_data['injected_value'] = injected_value
-        # write out remaining configuration data
-        while current_line != '':
-            current_line = gold_config.readline()
-            injected_config.write(current_line)
+            raise Exception('simics_checkpoints.py:inject_register(): '
+                            'Too many dimensions for register '+register +
+                            ' in target: '+target)
+        simics_config.set_attr(config, config_object, register, register_list)
+    simics_config.write_configuration(config, injected_checkpoint, False)
+    injection_data['gold_value'] = gold_value
+    injection_data['injected_value'] = injected_value
     return injection_data
 
 
@@ -349,7 +227,7 @@ def inject_checkpoint(campaign_id, result_id, injection_number,
     os.makedirs(injected_checkpoint)
     # copy gold checkpoint files
     checkpoint_files = os.listdir(gold_checkpoint)
-    checkpoint_files.remove('config')
+    # checkpoint_files.remove('config')
     # checkpoint_files.remove('DebugInfo.txt')
     for checkpoint_file in checkpoint_files:
         copyfile(gold_checkpoint+'/'+checkpoint_file,
@@ -415,6 +293,7 @@ def parse_registers(config_file, board, targets):
     simics_targets.py for the specified checkpoint config_file and returns a
     dictionary with all the values.
     """
+    config = simics_config.read_configuration(config_file)
     registers = {}
     for target in targets:
         if target != 'TLB':
@@ -424,7 +303,7 @@ def parse_registers(config_file, board, targets):
                 count = 1
             for target_index in xrange(count):
                 config_object = 'DUT_'+board+targets[target]['OBJECT']
-                config_type = targets[target]['TYPE']
+                # config_type = targets[target]['TYPE']
                 if count > 1:
                     config_object += '['+str(target_index)+']'
                 if target == 'GPR':
@@ -432,78 +311,9 @@ def parse_registers(config_file, board, targets):
                 else:
                     target_key = config_object
                 registers[target_key] = {}
-                with open(config_file, 'r') as config:
-                    current_line = config.readline()
-                    while ('OBJECT '+config_object+' TYPE '+config_type+' {'
-                           not in current_line):
-                        current_line = config.readline()
-                        if current_line == '':
-                            raise Exception('simics_checkpoints.py:'
-                                            'parse_registers(): '
-                                            'could not find '+config_object +
-                                            ' in '+config_file)
-                    current_line = config.readline()
-                    while 'OBJECT' not in current_line and current_line != '':
-                        if ':' in current_line:
-                            current_item = current_line.split(':')[0].strip()
-                            if current_item in targets[target]['registers']:
-                                if 'count' in (targets[target]['registers']
-                                                      [current_item]):
-                                    dimensions = len(targets[target]
-                                                            ['registers']
-                                                            [current_item]
-                                                            ['count'])
-                                    register_buffer = current_line.strip()
-                                    if dimensions == 1:
-                                        while ')' not in current_line:
-                                            current_line = config.readline()
-                                            register_buffer += \
-                                                current_line.strip()
-                                        register_buffer = \
-                                            register_buffer.replace(' ', '')
-                                        register_list = register_buffer[
-                                            register_buffer.index('(')+1:
-                                            register_buffer.index(')')
-                                        ].split(',')
-                                    elif dimensions == 2:
-                                        while '))' not in current_line:
-                                            current_line = config.readline()
-                                            register_buffer += \
-                                                current_line.strip()
-                                        register_buffer = \
-                                            register_buffer.replace(' ', '')
-                                        register_list = register_buffer[
-                                            register_buffer.index('((')+2:
-                                            register_buffer.index('))')
-                                        ].split('),(')
-                                        for index in xrange(len(register_list)):
-                                            register_list[index] = \
-                                                register_list[index].split(',')
-                                    else:
-                                        raise Exception(
-                                            'simics_checkpoints.py:'
-                                            'parse_registers(): '
-                                            'Too many dimensions for register'
-                                            ' in target: '+target)
-                                    (registers[target_key]
-                                              [current_item]) = register_list
-                                else:
-                                    current_value = \
-                                        current_line.split(':')[1].strip()
-                                    (registers[target_key]
-                                              [current_item]) = current_value
-                        current_line = config.readline()
-                if (len(registers[target_key]) !=
-                        len(targets[target]['registers'])):
-                    missing_registers = []
-                    for register in targets[target]['registers']:
-                        if register not in registers[target_key]:
-                            missing_registers.append(register)
-                    raise Exception('simics_checkpoints.py:'
-                                    'parse_registers(): '
-                                    'Could not find the following registers '
-                                    'for '+config_object+': ' +
-                                    str(missing_registers))
+                for register in targets[target]['registers']:
+                    registers[target_key][register] = \
+                        simics_config.get_attr(config, config_object, register)
     return registers
 
 
