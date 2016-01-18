@@ -1,6 +1,6 @@
 import django_tables2 as tables
-from .models import (campaign, result, injection, simics_register_diff,
-                     simics_memory_diff)
+
+import models
 
 
 class campaign_table(tables.Table):
@@ -8,7 +8,7 @@ class campaign_table(tables.Table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = campaign
+        model = models.campaign
         exclude = ('aux_output', 'debugger_output', 'dut_output')
 
 
@@ -18,11 +18,11 @@ class campaigns_table(tables.Table):
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
     def render_results(self, record):
-        return str(result.objects.filter(campaign=record.id).count())
+        return str(models.result.objects.filter(campaign=record.id).count())
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = campaign
+        model = models.campaign
         exclude = ('application', 'aux_application', 'aux_output',
                    'cycles_between', 'debugger_output', 'dut_output',
                    'kill_dut', 'num_checkpoints', 'output_file', 'use_aux',
@@ -44,7 +44,7 @@ class result_table(tables.Table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = result
+        model = models.result
         exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output')
 
 
@@ -60,7 +60,7 @@ class results_table(tables.Table):
     def render_targets(self, record):
         if record is not None:
             targets = [injection_.target for injection_
-                       in injection.objects.filter(result=record.id)]
+                       in models.injection.objects.filter(result=record.id)]
         else:
             targets = []
         for index in xrange(len(targets)):
@@ -73,7 +73,7 @@ class results_table(tables.Table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = result
+        model = models.result
         exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output')
 
 
@@ -82,7 +82,7 @@ class hw_injection_table(tables.Table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = injection
+        model = models.injection
         exclude = ('config_object', 'config_type', 'checkpoint_number', 'field',
                    'id', 'register_index', 'result')
 
@@ -92,7 +92,7 @@ class simics_injection_table(tables.Table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = injection
+        model = models.injection
         exclude = ('config_object', 'config_type', 'id', 'result', 'time')
 
 
@@ -100,11 +100,11 @@ class simics_register_diff_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         exclude = ('id', 'result')
-        model = simics_register_diff
+        model = models.simics_register_diff
 
 
 class simics_memory_diff_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         exclude = ('id', 'result')
-        model = simics_memory_diff
+        model = models.simics_memory_diff

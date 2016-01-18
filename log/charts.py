@@ -5,10 +5,11 @@ from django.db.models.functions import Concat, Length, Substr
 import numpy
 from simplejson import dumps
 from threading import Thread
-from .filters import fix_sort, fix_sort_list
-from .models import result
-from .simics_targets import devices as simics_devices
-from .hardware_targets import devices as hardware_devices
+
+from filters import fix_sort, fix_sort_list
+from models import result
+from simics_targets import devices as simics_devices
+from hardware_targets import devices as hardware_devices
 
 colors = {
     'Data error': '#ba79f2',
@@ -41,9 +42,7 @@ colors = {
 }
 
 colors_extra = ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
-                '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1',
-                '#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
-                '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1']
+                '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1']*5
 
 
 export_options = {
@@ -60,7 +59,7 @@ export_options = {
 }
 
 
-def json_campaigns(queryset):
+def campaigns_chart(queryset):
     campaigns = queryset.values_list(
         'campaign_id', 'campaign__command').distinct().order_by('campaign_id')
     if len(campaigns) < 1:
@@ -77,7 +76,7 @@ def json_campaigns(queryset):
     chart = {
         'chart': {
             'height': 600,
-            'renderTo': 'campaign_chart',
+            'renderTo': 'campaigns_chart',
             'type': 'column'
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
@@ -93,7 +92,7 @@ def json_campaigns(queryset):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'campaign_chart_click'
+                        'click': 'chart_click'
                     }
                 },
                 'stacking': 'percent'
@@ -126,7 +125,7 @@ def json_campaigns(queryset):
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart)
-    chart = chart.replace('\"campaign_chart_click\"', """
+    chart = chart.replace('\"chart_click\"', """
     function(event) {
         var campaign_numbers = campaign_number_list;
         window.location.assign(''+campaign_numbers[this.x]+'/results/?'+
@@ -136,7 +135,7 @@ def json_campaigns(queryset):
     return '['+chart+']'
 
 
-def json_campaign(campaign_data):
+def target_bits_chart(campaign_data):
     if campaign_data.use_simics:
         if campaign_data.architecture == 'p2020':
             targets = simics_devices['p2020rdb']
@@ -149,7 +148,7 @@ def json_campaign(campaign_data):
     target_list = sorted(targets.keys())
     chart = {
         'chart': {
-            'renderTo': 'device_bit_chart',
+            'renderTo': 'target_bits_chart',
             'type': 'column'
         },
         'exporting': {
@@ -184,14 +183,51 @@ def json_campaign(campaign_data):
     return '['+dumps(chart)+']'
 
 
-def outcome_chart(queryset, campaign_data, outcomes, group_categories,
-                  chart_array):
+def results_charts(queryset, campaign_data, group_categories):
+    charts = (overview_chart, targets_charts, propagation_chart,
+              diff_targets_chart, registers_chart, tlbs_chart, tlb_fields_chart,
+              bits_chart, times_charts, diff_times_chart, counts_chart)
+    if group_categories:
+        outcomes = list(queryset.values_list(
+            'result__outcome_category', flat=True).distinct(
+            ).order_by('result__outcome_category'))
+    else:
+        outcomes = list(queryset.values_list(
+            'result__outcome', flat=True).distinct(
+            ).order_by('result__outcome'))
+    if 'Latent faults' in outcomes:
+        outcomes.remove('Latent faults')
+        outcomes[:0] = ('Latent faults', )
+    if 'Persistent faults' in outcomes:
+        outcomes.remove('Persistent faults')
+        outcomes[:0] = ('Persistent faults', )
+    if 'Masked faults' in outcomes:
+        outcomes.remove('Masked faults')
+        outcomes[:0] = ('Masked faults', )
+    if 'No error' in outcomes:
+        outcomes.remove('No error')
+        outcomes[:0] = ('No error', )
+    chart_array = []
+    threads = []
+    for chart in charts:
+        thread = Thread(target=chart,
+                        args=(queryset, campaign_data, outcomes,
+                              group_categories, chart_array))
+        thread.start()
+        threads.append(thread)
+    for thread in threads:
+        thread.join()
+    return '['+','.join(chart_array)+']'
+
+
+def overview_chart(queryset, campaign_data, outcomes, group_categories,
+                   chart_array):
     if len(outcomes) <= 1:
         return
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'outcome_chart',
+            'renderTo': 'overview_chart',
             'type': 'pie'
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
@@ -207,7 +243,7 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'outcome_chart_click'
+                        'click': 'chart_click'
                     }
                 }
             }
@@ -216,7 +252,7 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
             {
                 'data': [],
                 'dataLabels': {
-                    'formatter': 'outcome_percentage_formatter',
+                    'formatter': 'chart_formatter',
                 },
                 'name': 'Outcomes'
             }
@@ -234,7 +270,7 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
         chart['series'][0]['data'].append(
             (outcome, result.objects.filter(**filter_kwargs).count()))
     outcome_list = dumps(outcomes)
-    chart = dumps(chart).replace('\"outcome_chart_click\"', """
+    chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         var outcomes = outcome_list;
         window.location.assign('../results/?result__outcome='+outcomes[this.x]);
@@ -242,7 +278,7 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
     """.replace('outcome_list', outcome_list))
     if group_categories:
         chart = chart.replace('?result__outcome=', '?result__outcome_category=')
-    chart = chart.replace('\"outcome_percentage_formatter\"', """
+    chart = chart.replace('\"chart_formatter\"', """
     function() {
         var outcomes = outcome_list;
         return ''+outcomes[parseInt(this.point.x)]+' '+
@@ -252,8 +288,8 @@ def outcome_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
-def target_chart(queryset, campaign_data, outcomes, group_categories,
-                 chart_array):
+def targets_charts(queryset, campaign_data, outcomes, group_categories,
+                   chart_array):
     targets = list(queryset.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
@@ -261,7 +297,7 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'target_chart',
+            'renderTo': 'targets_chart',
             'type': 'column',
             'zoomType': 'y'
         },
@@ -278,7 +314,7 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'target_chart_click'
+                        'click': 'chart_click'
                     }
                 },
                 'stacking': True
@@ -311,7 +347,7 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
     chart_percent = deepcopy(chart)
-    chart_percent['chart']['renderTo'] = 'target_percent_chart'
+    chart_percent['chart']['renderTo'] = 'targets_percent_chart'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
     chart_percent['yAxis'] = {
         'labels': {
@@ -321,7 +357,7 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             'text': 'Percent of Injections'
         }
     }
-    chart_percent = dumps(chart_percent).replace('\"target_chart_click\"', """
+    chart_percent = dumps(chart_percent).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('../results/?result__outcome='+this.series.name+
                                '&target='+this.category);
@@ -333,9 +369,9 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart_percent)
     if len(outcomes) == 1:
         chart_log = deepcopy(chart)
-        chart_log['chart']['renderTo'] = 'target_log_chart'
+        chart_log['chart']['renderTo'] = 'targets_log_chart'
         chart_log['yAxis']['type'] = 'logarithmic'
-        chart_log = dumps(chart_log).replace('\"target_chart_click\"', """
+        chart_log = dumps(chart_log).replace('\"chart_click\"', """
         function(event) {
             window.location.assign('../results/?result__outcome='+
                                    this.series.name+
@@ -346,7 +382,7 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
             chart_log = chart_log.replace('?result__outcome=',
                                           '?result__outcome_category=')
         chart_array.append(chart_log)
-    chart = dumps(chart).replace('\"target_chart_click\"', """
+    chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('../results/?result__outcome='+this.series.name+
                                '&target='+this.category);
@@ -357,7 +393,7 @@ def target_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
-def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
+def propagation_chart(queryset, campaign_data, outcomes, group_categories,
                       chart_array):
     if not campaign_data.use_simics:
         return
@@ -367,7 +403,7 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
         return
     chart = {
         'chart': {
-            'renderTo': 'diff_target_chart',
+            'renderTo': 'propagation_chart',
             'type': 'column',
             'zoomType': 'y'
         },
@@ -383,7 +419,7 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'target_chart_click'
+                        'click': 'chart_click'
                     }
                 }
             }
@@ -417,7 +453,7 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
         mem_diff_list.append(mem_diff_count/count)
     chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
-    chart = dumps(chart).replace('\"target_chart_click\"', """
+    chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('../results/?target='+this.category);
     }
@@ -425,15 +461,15 @@ def diff_target_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
-def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
-                           chart_array):
+def diff_targets_chart(queryset, campaign_data, outcomes, group_categories,
+                       chart_array):
     targets = list(queryset.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
         return
     chart = {
         'chart': {
-            'renderTo': 'data_diff_target_chart',
+            'renderTo': 'diff_targets_chart',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -452,7 +488,7 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'target_chart_click'
+                        'click': 'chart_click'
                     }
                 }
             }
@@ -483,7 +519,7 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
                          default='result__data_diff'))
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 for x in data]})
-    chart = dumps(chart).replace('\"target_chart_click\"', """
+    chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('../results/?target='+this.category);
     }
@@ -491,8 +527,20 @@ def data_diff_target_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
-def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
-                       chart_array):
+def registers_chart(queryset, campaign_data, outcomes, group_categories,
+                    chart_array):
+    registers_tlbs_charts(False, queryset, campaign_data, outcomes,
+                          group_categories, chart_array)
+
+
+def tlbs_chart(queryset, campaign_data, outcomes, group_categories,
+               chart_array):
+    registers_tlbs_charts(True, queryset, campaign_data, outcomes,
+                          group_categories, chart_array)
+
+
+def registers_tlbs_charts(tlb, queryset, campaign_data, outcomes,
+                          group_categories, chart_array):
     if not tlb:
         registers = queryset.exclude(target='TLB').annotate(
             register_name=Concat('register', Value(' '), 'register_index')
@@ -514,7 +562,7 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'register_chart' if not tlb else 'tlb_chart',
+            'renderTo': 'registers_chart' if not tlb else 'tlbs_chart',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -535,7 +583,7 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'register_chart_click'
+                        'click': 'chart_click'
                     }
                 },
                 'stacking': True
@@ -586,7 +634,7 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
             ).values_list('register_name', 'count')
         data = sorted(data, key=fix_sort_list)
         chart['series'].append({'data': zip(*data)[1], 'name': outcome})
-    chart = dumps(chart).replace('\"register_chart_click\"', """
+    chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         var reg = this.category.split(':');
         var register = reg[0];
@@ -608,19 +656,8 @@ def register_tlb_chart(tlb, queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
-def register_chart(queryset, campaign_data, outcomes, group_categories,
-                   chart_array):
-    register_tlb_chart(False, queryset, campaign_data, outcomes,
-                       group_categories, chart_array)
-
-
-def tlb_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
-    register_tlb_chart(True, queryset, campaign_data, outcomes,
-                       group_categories, chart_array)
-
-
-def field_chart(queryset, campaign_data, outcomes, group_categories,
-                chart_array):
+def tlb_fields_chart(queryset, campaign_data, outcomes, group_categories,
+                     chart_array):
     fields = list(queryset.filter(target='TLB').values_list(
         'field', flat=True).distinct().order_by('field'))
     if len(fields) < 1:
@@ -628,7 +665,7 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'field_chart',
+            'renderTo': 'tlb_fields_chart',
             'type': 'column',
             'zoomType': 'y'
         },
@@ -645,7 +682,7 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'field_chart_click'
+                        'click': 'chart_click'
                     }
                 },
                 'stacking': True
@@ -677,7 +714,7 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
-    chart = dumps(chart).replace('\"field_chart_click\"', """
+    chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('../results/?result__outcome='+this.series.name+
                                '&field='+this.category);
@@ -688,7 +725,8 @@ def field_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
-def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
+def bits_chart(queryset, campaign_data, outcomes, group_categories,
+               chart_array):
     bits = list(queryset.exclude(target='TLB').values_list(
         'bit', flat=True).distinct().order_by('bit'))
     if len(bits) < 1:
@@ -696,7 +734,7 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'bit_chart',
+            'renderTo': 'bits_chart',
             'type': 'column',
             'zoomType': 'y'
         },
@@ -713,7 +751,7 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'bit_chart_click'
+                        'click': 'chart_click'
                     }
                 },
                 'stacking': True
@@ -745,7 +783,7 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
-    chart = dumps(chart).replace('\"bit_chart_click\"', """
+    chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('../results/?result__outcome='+this.series.name+
                                '&bit='+this.category);
@@ -756,8 +794,8 @@ def bit_chart(queryset, campaign_data, outcomes, group_categories, chart_array):
     chart_array.append(chart)
 
 
-def time_chart(queryset, campaign_data, outcomes, group_categories,
-               chart_array):
+def times_charts(queryset, campaign_data, outcomes, group_categories,
+                 chart_array):
     if campaign_data.use_simics:
         times = list(queryset.values_list(
             'checkpoint_number', flat=True).distinct().order_by(
@@ -772,7 +810,7 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'time_chart',
+            'renderTo': 'times_chart',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -789,7 +827,7 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'time_chart_click'
+                        'click': 'chart_click'
                     }
                 },
                 'stacking': True
@@ -814,7 +852,7 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
     window_size = 10
     chart_smoothed = deepcopy(chart)
     chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] += '_smoothed'
+    chart_smoothed['chart']['renderTo'] = 'times_smoothed_chart'
     chart_smoothed['title']['text'] += (' (Moving Average Window Size = ' +
                                         str(window_size)+')')
     for outcome in outcomes:
@@ -849,7 +887,7 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
             'stacking': True})
         chart_array.append(dumps(chart_smoothed))
     if campaign_data.use_simics:
-        chart = dumps(chart).replace('\"time_chart_click\"', """
+        chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
             window.location.assign('../results/?result__outcome='+
                                    this.series.name+
@@ -858,7 +896,7 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
         }
         """)
     else:
-        # chart = dumps(chart).replace('\"time_chart_click\"', """
+        # chart = dumps(chart).replace('\"chart_click\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
         #     window.location.assign('../results/?result__outcome='+
@@ -872,8 +910,8 @@ def time_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
-def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
-                    chart_array):
+def diff_times_chart(queryset, campaign_data, outcomes, group_categories,
+                     chart_array):
     if campaign_data.use_simics:
         times = list(queryset.values_list(
             'checkpoint_number', flat=True).distinct().order_by(
@@ -887,7 +925,7 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
         return
     chart = {
         'chart': {
-            'renderTo': 'diff_time_chart',
+            'renderTo': 'diff_times_chart',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -906,7 +944,7 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'diff_time_chart_click'
+                        'click': 'chart_click'
                     }
                 },
             }
@@ -952,14 +990,14 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
     chart['series'].append({'data': [x*100 if x is not None else 0
                                      for x in data]})
     if campaign_data.use_simics:
-        chart = dumps(chart).replace('\"diff_time_chart_click\"', """
+        chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
             window.location.assign('../results/?checkpoint_number='+
                                    this.category);
         }
         """)
     else:
-        # chart = dumps(chart).replace('\"diff_time_chart_click\"', """
+        # chart = dumps(chart).replace('\"chart_click\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
         #     window.location.assign('../results/?time_rounded='+
@@ -970,8 +1008,8 @@ def diff_time_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
-def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
-                          chart_array):
+def counts_chart(queryset, campaign_data, outcomes, group_categories,
+                 chart_array):
     qs_result_ids = queryset.values('result__id').distinct()
     injection_counts = list(result.objects.filter(
         id__in=qs_result_ids).values_list('num_injections', flat=True).distinct(
@@ -981,7 +1019,7 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'count_chart',
+            'renderTo': 'counts_chart',
             'type': 'column'
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
@@ -997,7 +1035,7 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'count_chart_click'
+                        'click': 'chart_click'
                     }
                 },
                 'stacking': True
@@ -1029,12 +1067,12 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
             chart_data.append(result.objects.filter(**filter_kwargs).count())
         chart['series'].append({'data': chart_data, 'name': outcome})
     chart_percent = deepcopy(chart)
-    chart_percent['chart']['renderTo'] += '_percent'
+    chart_percent['chart']['renderTo'] = 'counts_percent_chart'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
     chart_percent['yAxis']['labels'] = {'format': '{value}%'}
     chart_percent['yAxis']['title']['text'] = 'Percent of Results'
     chart_array.append(dumps(chart_percent))
-    chart = dumps(chart).replace('\"count_chart_click\"', """
+    chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('../results/?result__outcome='+this.series.name+
                                '&result__num_injections='+this.category);
@@ -1043,40 +1081,3 @@ def injection_count_chart(queryset, campaign_data, outcomes, group_categories,
     if group_categories:
         chart = chart.replace('?result__outcome=', '?result__outcome_category=')
     chart_array.append(chart)
-
-
-def json_charts(queryset, campaign_data, group_categories):
-    charts = (outcome_chart, target_chart, diff_target_chart,
-              data_diff_target_chart, register_chart, tlb_chart, field_chart,
-              bit_chart, time_chart, diff_time_chart, injection_count_chart)
-    if group_categories:
-        outcomes = list(queryset.values_list(
-            'result__outcome_category', flat=True).distinct(
-            ).order_by('result__outcome_category'))
-    else:
-        outcomes = list(queryset.values_list(
-            'result__outcome', flat=True).distinct(
-            ).order_by('result__outcome'))
-    if 'Latent faults' in outcomes:
-        outcomes.remove('Latent faults')
-        outcomes[:0] = ('Latent faults', )
-    if 'Persistent faults' in outcomes:
-        outcomes.remove('Persistent faults')
-        outcomes[:0] = ('Persistent faults', )
-    if 'Masked faults' in outcomes:
-        outcomes.remove('Masked faults')
-        outcomes[:0] = ('Masked faults', )
-    if 'No error' in outcomes:
-        outcomes.remove('No error')
-        outcomes[:0] = ('No error', )
-    chart_array = []
-    threads = []
-    for chart in charts:
-        thread = Thread(target=chart,
-                        args=(queryset, campaign_data, outcomes,
-                              group_categories, chart_array))
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
-    return '['+','.join(chart_array)+']'

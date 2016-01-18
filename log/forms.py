@@ -1,5 +1,6 @@
 from django import forms
-from .filters import result_choices
+
+from filters import result_choices
 
 
 class result_form(forms.Form):

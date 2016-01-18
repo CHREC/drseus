@@ -10,10 +10,10 @@
                                     {% csrf_token %}
                                     <table style="width: 100%">
                                         <script type="text/javascript">
-                                            function set_checkboxes(status) {
+                                            function set_checkboxes(checked) {
                                                 checkboxes = document.getElementsByName('select_box');
                                                 for(var i=0, n=checkboxes.length; i<n; i++) {
-                                                    checkboxes[i].checked = status;
+                                                    checkboxes[i].checked = checked;
                                                 }
                                             }
                                             function invert_checkboxes() {
@@ -127,7 +127,7 @@
                                         <tr>
                                             <td>
                                                 <div style="text-align: center;">
-                                                    <input type="button" onclick="invert_checkboxes(true)" value="Invert Selection">
+                                                    <input type="button" onclick="invert_checkboxes()" value="Invert Selection">
                                                 </div>
                                             </td>
                                         </tr>

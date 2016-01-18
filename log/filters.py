@@ -2,7 +2,7 @@ from django.forms import SelectMultiple, Textarea
 import django_filters
 from re import split
 
-from .models import (injection, result, simics_register_diff)
+import models
 
 
 def fix_sort(string):
@@ -16,7 +16,7 @@ def fix_sort_list(list):
 
 def injection_choices(campaign, attribute):
     choices = []
-    for item in sorted(injection.objects.filter(
+    for item in sorted(models.injection.objects.filter(
             result__campaign_id=campaign).values(attribute).distinct()):
         choices.append((item[attribute], item[attribute]))
     return sorted(choices, key=fix_sort_list)
@@ -24,7 +24,7 @@ def injection_choices(campaign, attribute):
 
 def result_choices(campaign, attribute):
     choices = []
-    for item in sorted(result.objects.filter(
+    for item in sorted(models.result.objects.filter(
             campaign_id=campaign).values(attribute).distinct()):
         choices.append((item[attribute], item[attribute]))
     return sorted(choices, key=fix_sort_list)
@@ -136,7 +136,7 @@ class injection_filter(django_filters.FilterSet):
         name='time', label='Time (<)', lookup_type='lt', help_text='')
 
     class Meta:
-        model = injection
+        model = models.injection
         exclude = ['config_object', 'config_type', 'gold_value',
                    'injected_value', 'injection_number', 'result', 'time',
                    'timestamp']
@@ -173,5 +173,5 @@ class simics_register_diff_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
 
     class Meta:
-        model = simics_register_diff
+        model = models.simics_register_diff
         exclude = ['config_object', 'gold_value', 'monitored_value', 'result']
