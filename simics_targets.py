@@ -9,7 +9,6 @@ devices = {
         'CPU': {
             'count': 2,
             'OBJECT': '.coretile.mpcore.core',
-            'TYPE': 'arm-cortex-a9',
             'registers': {
                 'cpsr': {},
                 'spsr': {
@@ -20,7 +19,6 @@ devices = {
         'GPR': {
             'count': 2,
             'OBJECT': '.coretile.mpcore.core',
-            'TYPE': 'arm-cortex-a9',
             'registers': {
                 'gprs': {
                     'count': (7, 16),
@@ -34,7 +32,6 @@ devices = {
             #              Interleaved SDRAM mappings are instead mapped
             #              sequentially.
             'OBJECT': '.soc.ccsr',
-            'TYPE': 'qoriq-p2-ccsr',
             'registers': {
                 'LAWAR': {
                     'count': (12, )
@@ -52,7 +49,6 @@ devices = {
         'CPU': {
             'count': 2,
             'OBJECT': '.soc.cpu',
-            'TYPE': 'ppce500',
             'registers': {
                 'pc': {},
                 'l1cfg0': {},
@@ -221,7 +217,6 @@ devices = {
         'GPR': {
             'count': 2,
             'OBJECT': '.soc.cpu',
-            'TYPE': 'ppce500',
             'registers': {
                 'gprs': {
                     'count': (32, ),
@@ -232,7 +227,6 @@ devices = {
         'TLB': {
             'count': 2,
             'OBJECT': '.soc.cpu',
-            'TYPE': 'ppce500',
             'registers': {
                 'tlb0': {
                     'is_tlb': True,
@@ -465,7 +459,6 @@ devices = {
             #              not been implemented.
             'count': 2,
             'OBJECT': '.soc.dma',
-            'TYPE': 'qoriq-p2-dma',
             'registers': {
                 'BCR': {
                     'count': (4, )
@@ -586,7 +579,6 @@ devices = {
             # LIMITATIONS: Handles enabling/disabling the cores only.
             #              Access errors are not monitored nor reported.
             'OBJECT': '.soc.ecm',
-            'TYPE': 'qoriq-p2-ecm',
             'registers': {
                 'EEBPCR': {}
                 # Not Implemented
@@ -602,7 +594,6 @@ devices = {
         },
         'ELBC': {
             'OBJECT': '.soc.elbc',
-            'TYPE': 'qoriq-p2-elbc',
             'registers': {
                 'BR': {
                     'count': (8, )
@@ -674,7 +665,6 @@ devices = {
             #              Command and Data CRC check is not supported.
             #              Infinite data transfers not supported.
             'OBJECT': '.soc.esdhc',
-            'TYPE': 'qoriq-p2-esdhc',
             'registers': {
                 'regs_ADMAES': {},
                 'regs_ADMASA': {
@@ -808,7 +798,6 @@ devices = {
             #              When the throttle attribute is set, 3.125 Mbit is
             #              used as an upper bound for the bitrate.
             'OBJECT': '.soc.espi',
-            'TYPE': 'qoriq-p2-espi',
             'registers': {
                 'regs_CS_SPMODE': {
                     'count': (4, ),
@@ -858,7 +847,6 @@ devices = {
             #              generated when receiving buffers.
             'count': 3,
             'OBJECT': '.soc.etsec',
-            'TYPE': 'qoriq-p2-etsec',
             'registers': {
                 'ATTR': {},
                 'ATTRELI': {},
@@ -1264,7 +1252,6 @@ devices = {
         },
         'GPIO': {
             'OBJECT': '.soc.gpio',
-            'TYPE': 'qoriq-p2-gpio',
             'registers': {
                 'GPDAT': {},
                 'GPDIR': {},
@@ -1276,7 +1263,6 @@ devices = {
         },
         'GU': {
             'OBJECT': '.soc.gu',
-            'TYPE': 'qoriq-p2-gu',
             'registers': {
                 'AUTORSTSR': {},
                 'CLKOCR': {},
@@ -1310,7 +1296,6 @@ devices = {
             #              Arbitration lost not supported/detectable
             'count': 2,
             'OBJECT': '.soc.i2c',
-            'TYPE': 'qoriq-p2-i2c',
             'registers': {
                 'I2CCR': {},
                 'I2CDFSRR': {},
@@ -1322,7 +1307,6 @@ devices = {
         },
         'L2SRAM': {
             'OBJECT': '.soc.l2sram',
-            'TYPE': 'qoriq-p2-l2',
             'registers': {
                 'L2CTL': {
                     'fields': {
@@ -1385,7 +1369,6 @@ devices = {
         },
         'MC': {
             'OBJECT': '.soc.mc',
-            'TYPE': 'qoriq-p2-ddr-mc',
             'registers': {
                 'CAPTURE_ADDRESS': {},
                 'CAPTURE_ATTRIBUTES': {},
@@ -1524,7 +1507,6 @@ devices = {
             #              implementation.
             'count': 3,
             'OBJECT': '.soc.pcie_bridge',
-            'TYPE': 'qoriq-p2-pcie',
             'registers': {
                 'PEX_CONFIG': {
                     'bits': 29,
@@ -1633,7 +1615,6 @@ devices = {
             #              xVPR[PRIORITY] values are not guaranteed.
             #              Edge triggered interrupts are not supported.
             'OBJECT': '.soc.pic',
-            'TYPE': 'qoriq-p2-pic',
             'registers': {
                 'BRR1': {},
                 'BRR2': {},
@@ -1737,7 +1718,6 @@ devices = {
             #       Operations crossing inbound window borders.
             #       Incoming packet filtering based on target ID.
             'OBJECT': '.soc.rapidio',
-            'TYPE': 'qoriq-p2-rapidio',
             'registers': {
                 'regs_DMIRIR': {},
                 'regs_DMR': {},
@@ -2000,7 +1980,6 @@ devices = {
             #              implemented.
             #              Extensions to EHCI not implemented.
             'OBJECT': '.soc.usb',
-            'TYPE': 'qoriq-p2-usb',
             'registers': {
                 'regs_BURSTSIZE': {},  # Write-access not implemented
                 'regs_DCCPARAMS': {},

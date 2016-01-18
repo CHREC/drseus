@@ -480,8 +480,6 @@ class simics:
                 target_index = None
                 config_object = 'DUT_'+self.board+self.targets[target]['OBJECT']
             injection_data['target_index'] = target_index
-            config_type = self.targets[target]['TYPE']
-            injection_data['config_type'] = config_type
             injection_data['target'] = target
             injection_data['config_object'] = config_object
             if 'count' in self.targets[target]['registers'][register]:
@@ -579,7 +577,6 @@ class simics:
         else:
             # use previous injection data
             config_object = previous_injection_data['config_object']
-            config_type = previous_injection_data['config_type']
             register_index = previous_injection_data['register_index']
             if register_index is not None:
                 register_index = [int(index) for index
@@ -828,7 +825,6 @@ class simics:
                 for target_index in xrange(count):
                     config_object = \
                         'DUT_'+self.board+self.targets[target]['OBJECT']
-                    # config_type = self.targets[target]['TYPE']
                     if count > 1:
                         config_object += '['+str(target_index)+']'
                     if target == 'GPR':

@@ -48,7 +48,6 @@ class injection(models.Model):
     target_index = models.TextField(null=True)
     target = models.TextField(null=True)
     config_object = models.TextField(null=True)
-    config_type = models.TextField(null=True)
     register_index = models.TextField(null=True)
     field = models.TextField(null=True)
     success = models.NullBooleanField()
