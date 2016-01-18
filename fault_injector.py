@@ -93,27 +93,27 @@ class fault_injector:
         files = []
         files.append(self.options.directory+'/'+self.options.application)
         if self.options.files:
-            for item in self.options.files.split(','):
-                files.append(self.options.directory+'/'+item.lstrip().rstrip())
+            for file_ in self.options.files:
+                files.append(self.options.directory+'/'+file_)
         os.makedirs('campaign-data/'+str(self.campaign_data['id'])+'/dut-files')
         for item in files:
             shutil.copy(item, 'campaign-data/'+str(self.campaign_data['id']) +
                               '/dut-files/')
         if self.campaign_data['use_aux']:
-            files_aux = []
-            files_aux.append(self.options.directory+'/' +
+            aux_files = []
+            aux_files.append(self.options.directory+'/' +
                              self.options.aux_application)
             if self.options.aux_files:
-                for item in self.options.aux_files.split(','):
-                    files_aux.append(
-                        self.options.directory+'/'+item.lstrip().rstrip())
+                for file_ in self.options.aux_files:
+                    aux_files.append(
+                        self.options.directory+'/'+file_)
             os.makedirs('campaign-data/'+str(self.campaign_data['id']) +
                         '/aux-files')
-            for item in files_aux:
+            for item in aux_files:
                 shutil.copy(item, 'campaign-data/' +
                                   str(self.campaign_data['id'])+'/aux-files/')
             aux_process = Thread(target=self.debugger.aux.send_files,
-                                 args=(files_aux, ))
+                                 args=(aux_files, ))
             aux_process.start()
         self.debugger.dut.send_files(files)
         if self.campaign_data['use_aux']:
@@ -316,7 +316,7 @@ class fault_injector:
                     iteration_counter.value -= 1
                 else:
                     break
-            self.create_result(self.options.num_injections)
+            self.create_result(self.options.injections)
             if not self.campaign_data['use_simics']:
                 attempts = 10
                 for attempt in xrange(attempts):

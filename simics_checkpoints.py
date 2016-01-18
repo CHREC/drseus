@@ -322,7 +322,7 @@ def inject_register(gold_checkpoint, injected_checkpoint, register, target,
     return injection_data
 
 
-def inject_checkpoint(campaign_number, result_id, injection_number,
+def inject_checkpoint(campaign_id, result_id, injection_number,
                       checkpoint_number, board, selected_targets, debug):
     """
     Create a new injected checkpoint (only performing injection on the
@@ -338,13 +338,13 @@ def inject_checkpoint(campaign_number, result_id, injection_number,
                                 ' invalid injection target: '+target)
     if injection_number == 1:
         gold_checkpoint = ('simics-workspace/gold-checkpoints/' +
-                           str(campaign_number)+'/'+str(checkpoint_number))
+                           str(campaign_id)+'/'+str(checkpoint_number))
     else:
         gold_checkpoint = ('simics-workspace/injected-checkpoints/' +
-                           str(campaign_number)+'/'+str(result_id)+'/' +
+                           str(campaign_id)+'/'+str(result_id)+'/' +
                            str(checkpoint_number))
     injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
-                           str(campaign_number)+'/'+str(result_id)+'/' +
+                           str(campaign_id)+'/'+str(result_id)+'/' +
                            str(checkpoint_number)+'_injected')
     os.makedirs(injected_checkpoint)
     # copy gold checkpoint files

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import optparse
+import argparse
 
 import utilities
 
@@ -13,278 +13,238 @@ import utilities
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: change Exception in simics_checkpoints.py to DrSEUsError
 # TODO: update simics_checkpoints to use simics_config
-# TODO: move from optparse to argparse
 
-parser = optparse.OptionParser('drseus.py {mode} {options}')
+parser = argparse.ArgumentParser(
+    description='Welcome to DrSEUs!',
+    epilog='Begin by creating a new campaign with "%(prog)s new APPLICATION". '
+           'Then run injections with "%(prog)s inject".')
+parser.add_argument('-C', '--campaign', action='store', type=int, metavar='ID',
+                    dest='campaign_id', default=0,
+                    help='campaign to use, defaults to last campaign created')
+# TODO: update
+parser.add_argument('-D', '--debug', action='store_true', dest='debug',
+                    help='display device output for parallel injections')
+parser.add_argument('-T', '--timeout', action='store', type=int,
+                    metavar='SECONDS', dest='timeout', default=300,
+                    help='device read timeout [default=300]')
+parser.add_argument('--serial', action='store', metavar='PORT',
+                    dest='dut_serial_port',
+                    help='DUT serial port [p2020 default=/dev/ttyUSB1] '
+                         '[a9 default=/dev/ttyACM0] (overridden by Simics)')
+parser.add_argument('--baud', action='store', type=int, metavar='RATE',
+                    dest='dut_baud_rate', default=115200,
+                    help='DUT serial port baud rate [default=115200] '
+                         '(overridden by Simics)')
+parser.add_argument('--scp', action='store', type=int, metavar='PORT',
+                    dest='dut_scp_port', default=22,
+                    help='DUT scp port [default=22] (overridden by Simics)')
+parser.add_argument('--prompt', action='store', metavar='PROMPT',
+                    dest='dut_prompt',
+                    help='DUT console prompt [p2020 default=root@p2020rdb:~#] '
+                         '[a9 default=[root@ZED]#] (overridden by Simics)')
+parser.add_argument('--aux_serial', action='store', metavar='PORT',
+                    dest='aux_serial_port',
+                    help='AUX serial port [p2020 default=/dev/ttyUSB1] '
+                         '[a9 default=/dev/ttyACM0] (overridden by Simics)')
+parser.add_argument('--aux_baud', action='store', type=int, metavar='RATE',
+                    dest='aux_baud_rate', default=115200,
+                    help='AUX serial port baud rate [default=115200] '
+                         '(overridden by Simics)')
+parser.add_argument('--aux_scp', action='store', type=int, metavar='PORT',
+                    dest='aux_scp_port', default=22,
+                    help='AUX scp port [default=22] (overridden by Simics)')
+parser.add_argument('--aux_prompt', action='store', metavar='PROMPT',
+                    dest='aux_prompt',
+                    help='AUX console prompt [p2020 default=root@p2020rdb:~#] '
+                         '[a9 default=[root@ZED]#] (overridden by Simics)')
+parser.add_argument('--debugger_ip', action='store', metavar='ADDRESS',
+                    dest='debugger_ip_address', default='10.42.0.50',
+                    help='debugger ip address [default=10.42.0.50] '
+                         '(ignored by Simics and ZedBoards)')
+subparsers = parser.add_subparsers(
+    title='commands',
+    description='Run "%(prog)s COMMAND -h" to get additional help for each '
+                'command',
+    metavar='COMMAND', dest='command')
 
-parser.add_option('-N', '--campaign', action='store', type='int',
-                  dest='campaign_number', default=0,
-                  help='campaign number to use, defaults to last campaign '
-                       'created')
-parser.add_option('-g', '--debug', action='store_true', dest='debug',
-                  default=False,
-                  help='display device output for parallel injections')
-parser.add_option('-T', '--timeout', action='store', type='int',
-                  dest='timeout', default=300,
-                  help='device read timeout in seconds [default=300]')
-parser.add_option('--dut_serial', action='store', type='str',
-                  dest='dut_serial_port', default=None,
-                  help='dut serial port [p2020 default=/dev/ttyUSB1]           '
-                       '[a9 default=/dev/ttyACM0] (overridden by simics)')
-parser.add_option('--dut_baud', action='store', type='int',
-                  dest='dut_baud_rate', default=115200,
-                  help='dut serial port baud rate [default=115200] '
-                       '(overridden by simics)')
-parser.add_option('--dut_scp', action='store', type='int',
-                  dest='dut_scp_port', default=22,
-                  help='dut scp port [default=22] (overridden by simics)')
-parser.add_option('--dut_prompt', action='store', type='str',
-                  dest='dut_prompt', default=None,
-                  help='dut console prompt [p2020 default=root@p2020rdb:~#]    '
-                       '[a9 default=[root@ZED]#] (overridden by simics)')
-parser.add_option('--aux_serial', action='store', type='str',
-                  dest='aux_serial_port', default='/dev/ttyUSB0',
-                  help='aux serial port [p2020 default=/dev/ttyUSB1]           '
-                       '[a9 default=/dev/ttyACM0] (overridden by simics)')
-parser.add_option('--aux_baud', action='store', type='int',
-                  dest='aux_baud_rate', default=115200,
-                  help='aux serial port baud rate [default=115200] '
-                       '(overridden by simics)')
-parser.add_option('--aux_scp', action='store', type='int',
-                  dest='aux_scp_port', default=22,
-                  help='aux scp port [default=22] (overridden by simics)')
-parser.add_option('--aux_prompt', action='store', type='str',
-                  dest='aux_prompt', default=None,
-                  help='aux console prompt [p2020 default=root@p2020rdb:~#]    '
-                       '[a9 default=[root@ZED]#] (overridden by simics)')
-parser.add_option('--debugger_ip', action='store', type='str',
-                  dest='debugger_ip_address', default='10.42.0.50',
-                  help='debugger ip address [default=10.42.0.50] '
-                       '(ignored by simics)')
+new_campaign = subparsers.add_parser('new', help='create a new campaign',
+                                     description='create a new campaign')
+new_campaign.add_argument('application', action='store', metavar='APPLICATION',
+                          help='application to run on device')
+new_campaign.add_argument('-A', '--arch', action='store',
+                          choices=['a9', 'p2020'], dest='architecture',
+                          default='p2020',
+                          help='target architecture [default=p2020]')
+new_campaign.add_argument('-t', '--timing', action='store', type=int,
+                          dest='iterations', default=5,
+                          help='number of timing iterations to run [default=5]')
+new_campaign.add_argument('-a', '--args', action='store', dest='arguments',
+                          help='arguments for application')
+new_campaign.add_argument('-d', '--dir', action='store', dest='directory',
+                          default='fiapps',
+                          help='directory to look for files [default=fiapps]')
+new_campaign.add_argument('-f', '--files', action='store', nargs='+',
+                          metavar='FILE', dest='files',
+                          help='files to copy to device')
+new_campaign.add_argument('-o', '--output', action='store', dest='file',
+                          default='result.dat',
+                          help='target application output file '
+                               '[default=result.dat]')
+new_campaign.add_argument('-x', '--aux', action='store_true', dest='use_aux',
+                          help='use auxiliary device during testing')
+new_campaign.add_argument('-y', '--aux_app', action='store',
+                          metavar='APPLICATION', dest='aux_application',
+                          help='target application for auxiliary device')
+new_campaign.add_argument('-z', '--aux_args', action='store',
+                          metavar='ARGUMENTS', dest='aux_arguments',
+                          help='arguments for auxiliary application')
+new_campaign.add_argument('-F', '--aux_files', action='store', nargs='+',
+                          metavar='FILE', dest='aux_files',
+                          help='files to copy to auxiliary device')
+new_campaign.add_argument('-O', '--aux_output', action='store_true',
+                          dest='use_aux_output',
+                          help='use output file from auxiliary device')
+new_campaign.add_argument('-k', '--kill_dut', action='store_true',
+                          dest='kill_dut',
+                          help='send ctrl-c to DUT after auxiliary device '
+                               'completes execution')
+new_campaign.add_argument('-s', '--simics', action='store_true',
+                          dest='use_simics', help='use Simics simulator')
+new_simics_campaign = new_campaign.add_argument_group(
+    'Simics campaigns', 'Additional options for Simics campaigns only')
+new_simics_campaign.add_argument('-c', '--checkpoints', action='store',
+                                 type=int, metavar='CHECKPOINTS',
+                                 dest='checkpoints', default=50,
+                                 help='number of gold checkpoints to target for'
+                                      ' creation (actual number of checkpoints '
+                                      'may be different) [default=50]')
+new_campaign.set_defaults(func=utilities.create_campaign)
 
-mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes', 'Specify the desired '
-                                  'operating mode')
-mode_group.add_option('-c', '--create_campaign', action='store', type='str',
-                      dest='application', default=None,
-                      help='create a new campaign for the application '
-                           'specified')
-mode_group.add_option('-i', '--inject', action='store_true', dest='inject',
-                      default=False,
-                      help='perform fault injections on an existing campaign')
-mode_group.add_option('-S', '--supervise', action='store_true',
-                      dest='supervise', default=False,
-                      help='do not inject faults, only supervise devices')
-mode_group.add_option('-l', '--log', action='store_true',
-                      dest='view_logs', default=False,
-                      help='start the log server, optionally specify server '
-                           'port [default=8000]')
-mode_group.add_option('-Z', '--zedboard_info', action='store_true',
-                      dest='zedboards', default=False,
-                      help='print information about attached ZedBoards')
-mode_group.add_option('-b', '--list_campaigns', action='store_true',
-                      dest='list', help='list campaigns')
-mode_group.add_option('-d', '--delete_results', action='store_true',
-                      dest='delete_results', default=False,
-                      help='delete results for a campaign')
-mode_group.add_option('-e', '--delete_campaign', action='store_true',
-                      dest='delete_campaign', default=False,
-                      help='delete campaign (results and campaign information)')
-mode_group.add_option('-D', '--delete_all', action='store_true',
-                      dest='delete_all', default=False,
-                      help='delete results and/or injected checkpoints for all '
-                           'campaigns')
-mode_group.add_option('-M', '--merge', action='store', type='str',
-                      dest='merge_directory', default=None,
-                      help='merge campaigns from external DIRECTORY into the '
-                           'local directory')
-mode_group.add_option('--openocd', action='store_true', dest='openocd',
-                      default=False,
-                      help='launch openocd for dut (zedboard support only)')
-parser.add_option_group(mode_group)
+inject = subparsers.add_parser('inject',
+                               help='perform fault injections on a campaign',
+                               description='perform fault injections on a '
+                                           'campaign')
+inject.add_argument('-n', '--iterations', action='store', type=int,
+                    dest='iterations', default=10,
+                    help='number of iterations to perform [default=10]')
+inject.add_argument('-i', '--injections', action='store', type=int,
+                    dest='injections', default=1,
+                    help='number of injections per iteration [default=1]')
+inject.add_argument('-t', '--targets', action='store', nargs='+',
+                    metavar='TARGET', dest='selected_targets',
+                    help='list of targets for injection')
+inject.add_argument('-p', '--processes', action='store', type=int,
+                    dest='processes', default=1,
+                    help='number of injections to perform in parallel '
+                         '(only supported for ZedBoards and Simics)')
+inject_simics = inject.add_argument_group(
+    'Simics campaigns', 'Additional options for Simics campaigns only')
+inject_simics.add_argument('-a', '--compare_all', action='store_true',
+                           dest='compare_all',
+                           help='monitor all checkpoints (only last by '
+                                'default), IMPORTANT: do NOT use with '
+                                '"-p" or "--processes" when using this '
+                                'option for the first time in a '
+                                'campaign')
+inject.set_defaults(func=utilities.inject_campaign)
 
-simics_mode_group = optparse.OptionGroup(parser, 'DrSEUs Modes (Simics only)',
-                                         'These modes are only available for '
-                                         'Simics campaigns')
-simics_mode_group.add_option('-r', '--regenerate', action='store', type='int',
-                             dest='result_id', default=0,
-                             help='regenerate injected state and  launch in '
-                                  'Simics')
-simics_mode_group.add_option('-u', '--update', action='store_true',
-                             dest='dependencies', default=False,
-                             help='update gold checkpoint dependency paths')
-parser.add_option_group(simics_mode_group)
+supervise = subparsers.add_parser('supervise',
+                                  help='run interactive supervisor',
+                                  description='run interactive supervisor')
+supervise.add_argument('-d', '--dir', action='store', dest='directory',
+                       default='fiapps',
+                       help='directory to look for files [default=fiapps]')
+supervise.add_argument('-w', '--wireshark', action='store_true', dest='capture',
+                       help='run remote packet capture')
+supervise.set_defaults(func=utilities.launch_supervisor)
 
-new_group = optparse.OptionGroup(parser, 'New Campaign Options',
-                                 'Use these to create a new campaign, they will'
-                                 ' be saved')
-new_group.add_option('-s', '--simics', action='store_true', dest='use_simics',
-                     default=False, help='use simics simulator')
-new_group.add_option('-A', '--arch', action='store',  choices=['a9', 'p2020'],
-                     dest='architecture', default='p2020',
-                     help='target architecture [default=p2020]')
-new_group.add_option('-m', '--timing', action='store', type='int',
-                     dest='timing_iterations', default=5,
-                     help='number of timing iterations to run [default=5]')
-new_group.add_option('-a', '--args', action='store', type='str',
-                     dest='arguments', default='',
-                     help='arguments for application')
-new_group.add_option('-L', '--directory', action='store', type='str',
-                     dest='directory', default='fiapps',
-                     help='directory to look for files [default=fiapps]')
-new_group.add_option('-f', '--files', action='store', type='str', dest='files',
-                     default='',
-                     help='comma-separated list of files to copy to device')
-new_group.add_option('-o', '--output', action='store', type='str',
-                     dest='file', default='result.dat',
-                     help='target application output file [default=result.dat]')
-new_group.add_option('-x', '--aux', action='store_true', dest='use_aux',
-                     default=False, help='use second device during testing')
-new_group.add_option('-y', '--aux_app', action='store',
-                     type='str', dest='aux_application', default='',
-                     help='target application for auxiliary device')
-new_group.add_option('-z', '--aux_args', action='store', type='str',
-                     dest='aux_arguments', default='',
-                     help='arguments for auxiliary application')
-new_group.add_option('-F', '--aux_files', action='store', type='str',
-                     dest='aux_files', default='',
-                     help='comma-separated list of files to copy to aux device')
-new_group.add_option('-O', '--aux_output', action='store_true',
-                     dest='use_aux_output', default=False,
-                     help='get output file from aux instead of dut')
-new_group.add_option('-k', '--kill_dut', action='store_true',
-                     dest='kill_dut', default=False,
-                     help='send ctrl-c to dut after aux completes execution')
-parser.add_option_group(new_group)
+log_viewer = subparsers.add_parser('log', help='start the log web server',
+                                   description='start the log web server')
+log_viewer.add_argument('-p', '--port', action='store', type=int,
+                        dest='port', default=8000,
+                        help='log web server port [default=8000]')
+log_viewer.set_defaults(func=utilities.view_logs)
 
-new_simics_group = optparse.OptionGroup(parser, 'New Campaign Options '
-                                        '(Simics only)', 'Use these for new '
-                                        'Simics campaigns')
-new_simics_group.add_option('-C', '--checkpoints', action='store', type='int',
-                            dest='num_checkpoints', default=50,
-                            help='number of gold checkpoints to target for '
-                                 'creation (actual number of checkpoints may '
-                                 'be different) [default=50]')
-parser.add_option_group(new_simics_group)
+zedboards = subparsers.add_parser('zedboards',
+                                  help='print information about attached '
+                                       'ZedBoards',
+                                  description='print information about '
+                                              'attached ZedBoards')
+zedboards.set_defaults(func=utilities.print_zedboard_info)
 
-injection_group = optparse.OptionGroup(parser, 'Injection Options', 'Use these '
-                                       'when performing injections '
-                                       '(-i or --inject)')
-injection_group.add_option('-n', '--iterations', action='store', type='int',
-                           dest='injection_iterations', default=10,
-                           help='number of iterations to perform [default=10]')
-injection_group.add_option('-I', '--injections', action='store', type='int',
-                           dest='num_injections', default=1,
-                           help='number of injections per execution run '
-                                '[default=1]')
-injection_group.add_option('-t', '--targets', action='store', type='str',
-                           dest='selected_targets', default=None,
-                           help='comma-seperated list of targets for injection')
-injection_group.add_option('-p', '--procs', action='store', type='int',
-                           dest='num_processes', default=1,
-                           help='number of injections to perform in parallel '
-                                '(only supported on zedboards and in simics)')
-parser.add_option_group(injection_group)
+list_campaigns = subparsers.add_parser('list', help='list campaigns',
+                                       description='list campaigns')
+list_campaigns.set_defaults(func=utilities.list_campaigns)
 
-simics_injection_group = optparse.OptionGroup(parser, 'Injection Options '
-                                              '(Simics only)', 'Use these when '
-                                              'performing injections with '
-                                              'Simics')
-simics_injection_group.add_option('--compare_all', action='store_true',
-                                  dest='compare_all', default=False,
-                                  help='monitor all checkpoints (only last by '
-                                       'default), IMPORTANT: do NOT use with '
-                                       '\"-p\" or \"--procs\" when using this '
-                                       'option for the first time in a '
-                                       'campaign')
-parser.add_option_group(simics_injection_group)
+delete = subparsers.add_parser('delete',
+                               description='delete all results and campaigns',
+                               help='delete results and campaigns')
+delete.add_argument('-r', '--results', action='store_true', dest='results',
+                    help='only delete results for the currently selected '
+                         'campaign')
+delete.add_argument('-c', '--campaign', action='store_true', dest='campaign',
+                    help='only delete the currently selected campaign and its '
+                         'results')
+delete.set_defaults(func=utilities.delete)
 
-supervise_group = optparse.OptionGroup(parser, 'Supervisor Options', 'Use these'
-                                       ' options for supervising '
-                                       '(-S or --supervise)')
-supervise_group.add_option('-w', '--wireshark', action='store_true',
-                           dest='capture', help='run remote packet capture')
-parser.add_option_group(supervise_group)
+merge = subparsers.add_parser('merge', help='merge campaigns',
+                              description='merge campaigns')
+merge.add_argument('directory', action='store', metavar='DIRECTORY',
+                   help='merge campaigns from external directory into the '
+                        'local directory')
+merge.set_defaults(func=utilities.merge_campaigns)
 
-options, arguments = parser.parse_args()
+openocd = subparsers.add_parser('openocd',
+                                help='launch openocd for DUT '
+                                     '(only supported for ZedBoards)',
+                                description='launch openocd for DUT '
+                                            '(only supported for ZedBoards)')
+openocd.set_defaults(func=utilities.launch_openocd)
 
+regenerate = subparsers.add_parser('regenerate',
+                                   help='regenerate injected state and launch '
+                                        'in Simics (only supported for Simics '
+                                        'campaigns)',
+                                   description='regenerate injected state and '
+                                               'launch in Simics (only '
+                                               'supported for Simics '
+                                               'campaigns)')
+regenerate.add_argument('result_id', action='store', metavar='RESULT_ID',
+                        help='result to regenerate')
+regenerate.set_defaults(func=utilities.regenerate)
 
-# verify command line arguments
-modes = 0
-for mode in (options.application, options.inject, options.supervise,
-             options.view_logs, options.zedboards, options.list,
-             options.delete_results, options.delete_campaign,
-             options.delete_all, options.merge_directory, options.result_id,
-             options.dependencies, options.openocd):
-    if mode:
-        modes += 1
-if modes == 0:
-    parser.error('please specify a mode (list options with --help)')
-elif modes > 1:
-    parser.error('only one mode can be used at a time')
-if options.view_logs:
-    if len(arguments) > 1:
-        parser.error('extra arguments: '+' '.join(arguments[1:]))
-else:
-    if len(arguments) > 0:
-        parser.error('extra arguments: '+' '.join(arguments))
+update = subparsers.add_parser('update',
+                               help='update gold checkpoint dependency paths '
+                                    '(only supported for Simics campaigns)',
+                               description='update gold checkpoint dependency '
+                                           'paths (only supported for Simics '
+                                           'campaigns)')
+update.set_defaults(func=utilities.update_dependencies)
 
-
-# set smart defaults
-if not options.campaign_number:
-    options.campaign_number = utilities.get_last_campaign()
-if not options.application and options.campaign_number:
-    options.architecture = \
-        utilities.get_campaign_data(options.campaign_number)['architecture']
-if options.architecture == 'p2020':
-    if options.dut_serial_port is None:
-        options.dut_serial_port = '/dev/ttyUSB1'
-    if options.dut_prompt is None:
-        options.dut_prompt = 'root@p2020rdb:~#'
-    if options.aux_serial_port is None:
-        options.aux_serial_port = '/dev/ttyUSB0'
-    if options.aux_prompt is None:
-        options.aux_prompt = 'root@p2020rdb:~#'
-elif options.architecture == 'a9':
-    if options.dut_serial_port is None:
-        options.dut_serial_port = '/dev/ttyACM0'
-    if options.dut_prompt is None:
-        options.dut_prompt = '[root@ZED]#'
-    if options.aux_serial_port is None:
-        options.aux_serial_port = '/dev/ttyACM1'
-    if options.aux_prompt is None:
-        options.aux_prompt = '[root@ZED]#'
-else:
-    raise Exception('invalid architecture: '+options.architecture)
-if options.selected_targets is not None:
-    options.selected_targets = options.selected_targets.split(',')
-    options.selected_targets = [target.strip()
-                                for target in options.selected_targets]
-
-
-# process command
-if options.application:
-    utilities.create_campaign(options)
-elif options.inject:
-    utilities.inject_campaign(options)
-elif options.supervise:
-    utilities.launch_supervisor(options)
-elif options.view_logs:
-    utilities.view_logs(arguments)
-elif options.zedboards:
-    utilities.print_zedboard_info()
-elif options.list:
-    utilities.list_campaigns()
-elif options.delete_results:
-    utilities.delete_results(options.campaign_number)
-elif options.delete_campaign:
-    utilities.delete_campaign(options.campaign_number)
-elif options.delete_all:
-    utilities.delete_all()
-elif options.merge_directory:
-    utilities.merge_campaigns(options.merge_directory)
-elif options.result_id:
-    utilities.regenerate(options)
-elif options.dependencies:
-    utilities.update_all_checkpoint_dependencies()
-elif options.openocd:
-    utilities.launch_openocd()
+options = parser.parse_args()
+if not options.command == 'new':
+    if not options.campaign_id:
+        options.campaign_id = utilities.get_last_campaign()
+    if options.campaign_id:
+        options.architecture = \
+            utilities.get_campaign_data(options.campaign_id)['architecture']
+if options.command == 'new' or options.campaign_id:
+    if options.architecture == 'p2020':
+        if options.dut_serial_port is None:
+            options.dut_serial_port = '/dev/ttyUSB1'
+        if options.dut_prompt is None:
+            options.dut_prompt = 'root@p2020rdb:~#'
+        if options.aux_serial_port is None:
+            options.aux_serial_port = '/dev/ttyUSB0'
+        if options.aux_prompt is None:
+            options.aux_prompt = 'root@p2020rdb:~#'
+    elif options.architecture == 'a9':
+        if options.dut_serial_port is None:
+            options.dut_serial_port = '/dev/ttyACM0'
+        if options.dut_prompt is None:
+            options.dut_prompt = '[root@ZED]#'
+        if options.aux_serial_port is None:
+            options.aux_serial_port = '/dev/ttyACM1'
+        if options.aux_prompt is None:
+            options.aux_prompt = '[root@ZED]#'
+options.func(options)

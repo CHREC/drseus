@@ -85,7 +85,7 @@ class jtag:
 
     def time_application(self):
         start = time.time()
-        for i in xrange(self.options.timing_iterations):
+        for i in xrange(self.options.iterations):
             if self.campaign_data['use_aux']:
                 aux_process = Thread(
                     target=self.aux.command,
@@ -99,11 +99,11 @@ class jtag:
             self.dut.read_until()
         end = time.time()
         self.campaign_data['exec_time'] = \
-            (end - start) / self.options.timing_iterations
+            (end - start) / self.options.iterations
 
     def inject_faults(self):
         injection_times = []
-        for i in xrange(self.options.num_injections):
+        for i in xrange(self.options.injections):
             injection_times.append(
                 random.uniform(0, self.campaign_data['exec_time']))
         injection_times = sorted(injection_times)
@@ -209,7 +209,7 @@ class bdi(jtag):
         if error_message is None:
             error_message = command
         buff = self.telnet.read_very_eager()
-        if self.options.application:
+        if self.options.command == 'new':
             self.campaign_data['debugger_output'] += buff
         else:
             self.result_data['debugger_output'] += buff
@@ -219,7 +219,7 @@ class bdi(jtag):
             command = command+'\r'
             self.telnet.write(command)
             self.telnet.write('\r')
-            if self.options.application:
+            if self.options.command == 'new':
                 self.campaign_data['debugger_output'] += command
             else:
                 self.result_data['debugger_output'] += command
@@ -228,7 +228,7 @@ class bdi(jtag):
         for i in xrange(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
-            if self.options.application:
+            if self.options.command == 'new':
                 self.campaign_data['debugger_output'] += buff
             else:
                 self.result_data['debugger_output'] += buff
@@ -242,16 +242,16 @@ class bdi(jtag):
                 print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
-        if self.options.application:
+        if self.options.command == 'new':
             self.campaign_data['debugger_output'] += buff
         else:
             self.result_data['debugger_output'] += buff
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
-        if not self.options.supervise:
+        if not self.options.command == 'supervise':
             with sql() as db:
-                if self.options.application:
+                if self.options.command == 'new':
                     db.update_dict('campaign', self.campaign_data)
                 else:
                     db.update_dict('result', self.result_data)
@@ -398,7 +398,7 @@ class openocd(jtag):
         if error_message is None:
             error_message = command
         buff = self.telnet.read_very_eager()
-        if self.options.application:
+        if self.options.command == 'new':
             self.campaign_data['debugger_output'] += buff
         else:
             self.result_data['debugger_output'] += buff
@@ -408,7 +408,7 @@ class openocd(jtag):
             self.telnet.write(command+'\n')
             index, match, buff = self.telnet.expect([command],
                                                     timeout=self.timeout)
-            if self.options.application:
+            if self.options.command == 'new':
                 self.campaign_data['debugger_output'] += buff
             else:
                 self.result_data['debugger_output'] += buff
@@ -420,7 +420,7 @@ class openocd(jtag):
         for i in xrange(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
-            if self.options.application:
+            if self.options.command == 'new':
                 self.campaign_data['debugger_output'] += buff
             else:
                 self.result_data['debugger_output'] += buff
@@ -434,16 +434,16 @@ class openocd(jtag):
                 print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
-        if self.options.application:
+        if self.options.command == 'new':
             self.campaign_data['debugger_output'] += buff
         else:
             self.result_data['debugger_output'] += buff
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
-        if not self.options.supervise:
+        if not self.options.command == 'supervise':
             with sql() as db:
-                if self.options.application:
+                if self.options.command == 'new':
                     db.update_dict('campaign', self.campaign_data)
                 else:
                     db.update_dict('result', self.result_data)

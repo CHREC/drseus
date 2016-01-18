@@ -172,7 +172,7 @@ class dut:
             if not char:
                 hanging = True
                 break
-            if self.options.application:
+            if self.options.command == 'new':
                 self.campaign_data['dut_output' if not self.aux
                                    else 'aux_output'] += char
             else:
@@ -196,9 +196,9 @@ class dut:
             self.serial.timeout = self.options.timeout
         if self.options.debug:
             print()
-        if not self.options.supervise:
+        if not self.options.command == 'supervise':
             with sql() as db:
-                if self.options.application:
+                if self.options.command == 'new':
                     db.update_dict('campaign', self.campaign_data)
                 else:
                     db.update_dict('result', self.result_data)

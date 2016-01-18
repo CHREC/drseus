@@ -187,7 +187,7 @@ class simics:
             read_thread.join(timeout=5)  # must be shorter than timeout in read
             if read_thread.is_alive():
                 self.simics.kill()
-                if self.options.application:
+                if self.options.command == 'new':
                     self.campaign_data['debugger_output'] += \
                         '\nkilled unresponsive simics process\n'
                 else:
@@ -197,7 +197,7 @@ class simics:
                     print(colored('killed unresponsive simics process',
                                   'yellow'))
             else:
-                if self.options.application:
+                if self.options.command == 'new':
                     self.campaign_data['debugger_output'] += 'quit\n'
                 else:
                     self.result_data['debugger_output'] += 'quit\n'
@@ -213,7 +213,7 @@ class simics:
 
     def continue_dut(self):
         self.simics.stdin.write('run\n')
-        if self.options.application:
+        if self.options.command == 'new':
             self.campaign_data['debugger_output'] += 'run\n'
         else:
             self.result_data['debugger_output'] += 'run\n'
@@ -240,7 +240,7 @@ class simics:
             char = self.read_char()
             if not char:
                 break
-            if self.options.application:
+            if self.options.command == 'new':
                 self.campaign_data['debugger_output'] += char
             else:
                 self.result_data['debugger_output'] += char
@@ -250,9 +250,9 @@ class simics:
             buff += char
             if buff[-len(string):] == string:
                 break
-        if self.options.inject:
+        if not self.options.command == 'supervise':
             with sql() as db:
-                if self.options.application:
+                if self.options.command == 'new':
                     db.update_dict('campaign', self.campaign_data)
                 else:
                     db.update_dict('result', self.result_data)
@@ -263,7 +263,7 @@ class simics:
 
     def command(self, command):
         self.simics.stdin.write(command+'\n')
-        if self.options.application:
+        if self.options.command == 'new':
             self.campaign_data['debugger_output'] += command+'\n'
         else:
             self.result_data['debugger_output'] += command+'\n'
@@ -341,7 +341,7 @@ class simics:
         start_sim_time = float(time_data[3])
         start_time = time.time()
         self.continue_dut()
-        for i in xrange(self.options.timing_iterations):
+        for i in xrange(self.options.iterations):
             if self.campaign_data['use_aux']:
                 aux_process = Thread(
                     target=self.aux.command,
@@ -360,17 +360,17 @@ class simics:
         end_sim_time = float(time_data[3])
         self.continue_dut()
         self.campaign_data['exec_time'] = \
-            (end_time - start_time) / self.options.timing_iterations
+            (end_time - start_time) / self.options.iterations
         self.campaign_data['num_cycles'] = \
-            int((end_cycles - start_cycles) / self.options.timing_iterations)
+            int((end_cycles - start_cycles) / self.options.iterations)
         self.campaign_data['sim_time'] = \
-            (end_sim_time - start_sim_time) / self.options.timing_iterations
+            (end_sim_time - start_sim_time) / self.options.iterations
 
     def create_checkpoints(self):
         os.makedirs('simics-workspace/gold-checkpoints/' +
                     str(self.campaign_data['id']))
         self.campaign_data['cycles_between'] = \
-            self.campaign_data['num_cycles'] / self.options.num_checkpoints
+            self.campaign_data['num_cycles'] / self.options.checkpoints
         self.halt_dut()
         if self.campaign_data['use_aux']:
                 aux_process = Thread(
@@ -409,7 +409,7 @@ class simics:
     def inject_faults(self):
         checkpoint_nums = range(1, self.campaign_data['num_checkpoints'])
         checkpoints_to_inject = []
-        for i in xrange(self.options.num_injections):
+        for i in xrange(self.options.injections):
             checkpoint_num = choice(checkpoint_nums)
             checkpoint_nums.remove(checkpoint_num)
             checkpoints_to_inject.append(checkpoint_num)
