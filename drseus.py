@@ -72,7 +72,7 @@ new_campaign = subparsers.add_parser('new', help='create a new campaign',
 new_campaign.add_argument('application', action='store', metavar='APPLICATION',
                           help='application to run on device')
 new_campaign.add_argument('-A', '--arch', action='store',
-                          choices=['a9', 'p2020'], dest='architecture',
+                          choices=('a9', 'p2020'), dest='architecture',
                           default='p2020',
                           help='target architecture [default=p2020]')
 new_campaign.add_argument('-t', '--timing', action='store', type=int,
@@ -177,14 +177,13 @@ list_campaigns = subparsers.add_parser('list', help='list campaigns',
 list_campaigns.set_defaults(func=utilities.list_campaigns)
 
 delete = subparsers.add_parser('delete',
-                               description='delete all results and campaigns',
+                               description='delete results and campaigns',
                                help='delete results and campaigns')
-delete.add_argument('-r', '--results', action='store_true', dest='results',
-                    help='only delete results for the currently selected '
-                         'campaign')
-delete.add_argument('-c', '--campaign', action='store_true', dest='campaign',
-                    help='only delete the currently selected campaign and its '
-                         'results')
+delete.add_argument('delete', action='store',
+                    choices=('all', 'results', 'campaign'),
+                    help='delete {results} for the selected campaign, '
+                         'delete selected {campaign} and its results, '
+                         'or delete {all} campaigns and results')
 delete.set_defaults(func=utilities.delete)
 
 merge = subparsers.add_parser('merge', help='merge campaigns',

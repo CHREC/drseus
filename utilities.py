@@ -116,11 +116,11 @@ def delete_campaign(campaign_id):
 
 
 def delete(options):
-    if options.campaign:
-        delete_campaign(options.campaign_id)
-    elif options.results:
+    if options.delete == 'results':
         delete_results(options.campaign_id)
-    else:
+    elif options.delete == 'campaign':
+        delete_campaign(options.campaign_id)
+    elif options.delete == 'all':
         if os.path.exists('simics-workspace/gold-checkpoints'):
             shutil.rmtree('simics-workspace/gold-checkpoints')
             print('deleted gold checkpoints')
