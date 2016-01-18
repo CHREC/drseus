@@ -243,8 +243,7 @@ def regenerate(options):
         raise Exception('This feature is only available for Simics campaigns')
     injection_data = get_injection_data(options.result_id)
     drseus = fault_injector(campaign_data, options)
-    checkpoint = drseus.debugger.regenerate_checkpoints(
-        options.result_id, campaign_data['cycles_between'], injection_data)
+    checkpoint = drseus.debugger.regenerate_checkpoints(injection_data)
     drseus.debugger.launch_simics_gui(checkpoint)
     shutil.rmtree('simics-workspace/injected-checkpoints/' +
                   str(campaign_data['id'])+'/'+str(options.result_id))

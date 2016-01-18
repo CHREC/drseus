@@ -436,8 +436,7 @@ class simics:
                 self.close()
         return latent_faults
 
-    #  TODO: update
-    def regenerate_checkpoints(self, result_id, cycles_between, injection_data):
+    def regenerate_checkpoints(self, injection_data):
         for i in xrange(len(injection_data)):
             if i == 0:
                 checkpoint = ('simics-workspace/gold-checkpoints/' +
@@ -446,11 +445,11 @@ class simics:
             else:
                 checkpoint = ('simics-workspace/injected-checkpoints/' +
                               str(self.campaign_data['id'])+'/' +
-                              str(result_id)+'/' +
+                              str(self.options.result_id)+'/' +
                               str(injection_data[i]['checkpoint_number']))
             injected_checkpoint = ('simics-workspace/injected-checkpoints/' +
                                    str(self.campaign_data['id'])+'/' +
-                                   str(result_id)+'/' +
+                                   str(self.options.result_id)+'/' +
                                    str(injection_data[i]['checkpoint_number']) +
                                    '_injected')
             os.makedirs(injected_checkpoint)
@@ -462,10 +461,11 @@ class simics:
                 self.launch_simics(checkpoint=injected_checkpoint)
                 for j in xrange(injection_data[i]['checkpoint_number'],
                                 injection_data[i+1]['checkpoint_number']):
-                    self.command('run-cycles '+str(cycles_between))
+                    self.command('run-cycles ' +
+                                 str(self.campaign_data['cycles_between']))
                 self.command('write-configuration injected-checkpoints/' +
                              str(self.campaign_data['id'])+'/' +
-                             str(result_id)+'/' +
+                             str(self.options.result_id)+'/' +
                              str(injection_data[i+1]['checkpoint_number']))
                 self.close()
         return injected_checkpoint
