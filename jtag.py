@@ -366,7 +366,7 @@ class openocd(jtag):
         self.targets = devices['a9']
         serial = zedboards[find_uart_serials()[options.dut_serial_port]]
         self.port = find_open_port()
-        if not options.openocd:
+        if options.command != 'openocd':
             self.dev_null = open('/dev/null', 'w')
         self.openocd = subprocess.Popen(['openocd', '-c',
                                          'gdb_port 0; tcl_port 0; '
@@ -375,9 +375,9 @@ class openocd(jtag):
                                          'ftdi_serial '+serial+';',
                                          '-f', 'openocd_zedboard.cfg'],
                                         stderr=(self.dev_null
-                                                if not options.openocd
+                                                if options.command != 'openocd'
                                                 else None))
-        if not options.openocd:
+        if options.command != 'openocd':
             jtag.__init__(self, campaign_data, result_data, options, rsakey)
             time.sleep(1)
             self.telnet = Telnet(self.options.debugger_ip_address, self.port,
