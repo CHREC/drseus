@@ -85,9 +85,10 @@ class dut:
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-            except (EOFError, paramiko.SSHException):
-                print(colored('error sending file(s) (attempt ' +
-                              str(attempt+1)+'/'+str(attempts)+')', 'red'))
+            except (EOFError, paramiko.NoValidConnectionsError,
+                    paramiko.SSHException) as error:
+                print(colored('error sending file(s) (attempt '+str(attempt+1) +
+                              '/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 else:
@@ -114,9 +115,10 @@ class dut:
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-            except (EOFError, paramiko.SSHException):
-                print(colored('error getting file (attempt ' +
-                              str(attempt+1)+'/'+str(attempts)+')', 'red'))
+            except (EOFError, paramiko.NoValidConnectionsError,
+                    paramiko.SSHException) as error:
+                print(colored('error getting file (attempt '+str(attempt+1) +
+                              '/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 else:
