@@ -43,12 +43,14 @@ class fault_injector:
             elif campaign_data['architecture'] == 'a9':
                 self.debugger = openocd(campaign_data, self.result_data,
                                         options, self.rsakey)
-        if not self.campaign_data['use_simics'] \
-                and self.campaign_data['use_aux']:
-            self.debugger.aux.serial.write('\x03')
-            self.debugger.aux.do_login()
-            if options.command != 'new':
-                self.send_dut_files(aux=True)
+        if not self.campaign_data['use_simics']:
+            if self.campaign_data['use_aux']:
+                self.debugger.aux.serial.write('\x03')
+                self.debugger.aux.do_login()
+                if options.command != 'new':
+                    self.send_dut_files(aux=True)
+            if options.command == 'new':
+                self.debugger.reset_dut()
 
     def __str__(self):
         string = ('DrSEUs Attributes:\n\tDebugger: '+str(self.debugger) +

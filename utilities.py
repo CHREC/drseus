@@ -185,7 +185,7 @@ def inject_campaign(options):
     campaign_data = get_campaign_data(options.campaign_id)
 
     def perform_injections(iteration_counter):
-        drseus = fault_injector(options)
+        drseus = fault_injector(campaign_data, options)
         drseus.inject_and_monitor(iteration_counter)
 
 # def inject_campaign(options):

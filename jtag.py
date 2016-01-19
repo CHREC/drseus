@@ -40,7 +40,7 @@ def find_uart_serials():
     return serials
 
 
-class jtag:
+class jtag(object):
     def __init__(self, campaign_data, result_data, options, rsakey):
         self.campaign_data = campaign_data
         self.result_data = result_data
@@ -72,7 +72,7 @@ class jtag:
 
     def reset_dut(self, expected_output):
         if self.telnet:
-            self.__command('reset', expected_output, 'Error resetting DUT')
+            self.command('reset', expected_output, 'Error resetting DUT')
         else:
             self.dut.serial.write('\x03')
         self.dut.do_login()
@@ -125,8 +125,8 @@ class jtag:
                 injection_data['target_index'] = target.split(':')[1]
                 target = target.split(':')[0]
                 injection_data['target'] = target
-                self.__select_core(injection_data['target_index'])
-            injection_data['gold_value'] = self.__get_register_value(
+                self.select_core(injection_data['target_index'])
+            injection_data['gold_value'] = self.get_register_value(
                 injection_data['register'], injection_data['target'])
             if 'bits' in self.targets[target]['registers'][register]:
                 num_bits_to_inject = (self.targets[target]['registers']
@@ -150,12 +150,12 @@ class jtag:
                               'magenta'))
                 print(colored('injected value: ' +
                               injection_data['injected_value'], 'magenta'))
-            self.__set_register_value(injection_data['register'],
-                                      injection_data['target'],
-                                      injection_data['injected_value'])
+            self.set_register_value(injection_data['register'],
+                                    injection_data['target'],
+                                    injection_data['injected_value'])
             if int(injection_data['injected_value'], base=16) == int(
-                    self.__get_register_value(injection_data['register'],
-                                              injection_data['target']),
+                    self.get_register_value(injection_data['register'],
+                                            injection_data['target']),
                     base=16):
                 injection_data['success'] = True
             else:
@@ -180,7 +180,7 @@ class bdi(jtag):
             print('Could not connect to debugger, '
                   'running in supervisor-only mode')
         else:
-            self.__command('', error_message='Debugger not ready')
+            self.command('', error_message='Debugger not ready')
 
     def __str__(self):
         string = ('BDI3000 at '+self.options.debugger_ip_address +
@@ -192,7 +192,7 @@ class bdi(jtag):
             self.telnet.write('quit\r')
         jtag.close(self)
 
-    def __command(self, command, expected_output=[], error_message=None):
+    def command(self, command, expected_output=[], error_message=None):
         return_buffer = ''
         if error_message is None:
             error_message = command
@@ -275,28 +275,28 @@ class bdi_arm(bdi):
                               '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
-        self.__command('halt 3', ['- TARGET: core #0 has entered debug mode',
-                                  '- TARGET: core #1 has entered debug mode'],
-                       'Error halting DUT')
+        self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
+                                '- TARGET: core #1 has entered debug mode'],
+                     'Error halting DUT')
 
     def continue_dut(self):
-        self.__command('cont 3', error_message='Error continuing DUT')
+        self.command('cont 3', error_message='Error continuing DUT')
 
-    def __select_core(self, core):
+    def select_core(self, core):
         # TODO: check if cores are running (not in debug mode)
-        self.__command('select '+str(core), ['Core number', 'Core state',
-                                             'Debug entry cause', 'Current PC',
-                                             'Current CPSR'],
-                       'Error selecting core')
+        self.command('select '+str(core), ['Core number', 'Core state',
+                                           'Debug entry cause', 'Current PC',
+                                           'Current CPSR'],
+                     'Error selecting core')
 
-    def __get_register_value(self, register, target):
-        buff = self.__command('rd '+register, [':'],
-                              error_message='Error getting register value')
+    def get_register_value(self, register, target):
+        buff = self.command('rd '+register, [':'],
+                            error_message='Error getting register value')
         return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
 
-    def __set_register_value(self, register, target, value):
-        self.__command('rm '+register+' '+value, error_message='Error setting '
-                                                               'register value')
+    def set_register_value(self, register, target, value):
+        self.command('rm '+register+' '+value, error_message='Error setting '
+                                                             'register value')
 
 
 class bdi_p2020(bdi):
@@ -320,29 +320,29 @@ class bdi_p2020(bdi):
                               '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
-        self.__command('halt 0; halt 1', ['Target CPU', 'Core state',
-                                          'Debug entry cause', 'Current PC',
-                                          'Current CR', 'Current MSR',
-                                          'Current LR']*2, 'Error halting DUT')
+        self.command('halt 0; halt 1', ['Target CPU', 'Core state',
+                                        'Debug entry cause', 'Current PC',
+                                        'Current CR', 'Current MSR',
+                                        'Current LR']*2, 'Error halting DUT')
 
     def continue_dut(self):
-        self.__command('go 0 1', error_message='Error continuing DUT')
+        self.command('go 0 1', error_message='Error continuing DUT')
 
-    def __select_core(self, core):
-        self.__command('select '+str(core), ['Target CPU', 'Core state',
-                                             'Debug entry cause', 'Current PC',
-                                             'Current CR', 'Current MSR',
-                                             'Current LR', 'Current CCSRBAR'],
-                       'Error selecting core')
+    def select_core(self, core):
+        self.command('select '+str(core), ['Target CPU', 'Core state',
+                                           'Debug entry cause', 'Current PC',
+                                           'Current CR', 'Current MSR',
+                                           'Current LR', 'Current CCSRBAR'],
+                     'Error selecting core')
 
-    def __get_register_value(self, register, target):
-        buff = self.__command('rd '+register, error_message='Error getting '
-                                                            'register value')
+    def get_register_value(self, register, target):
+        buff = self.command('rd '+register, error_message='Error getting '
+                                                          'register value')
         return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
 
-    def __set_register_value(self, register, target, value):
-        self.__command('rm '+register+' '+value, error_message='Error setting '
-                                                               'register value')
+    def set_register_value(self, register, target, value):
+        self.command('rm '+register+' '+value, error_message='Error setting '
+                                                             'register value')
 
 
 class openocd(jtag):
@@ -387,7 +387,7 @@ class openocd(jtag):
         self.openocd.wait()
         self.dev_null.close()
 
-    def __command(self, command, expected_output=[], error_message=None):
+    def command(self, command, expected_output=[], error_message=None):
         return_buffer = ''
         if error_message is None:
             error_message = command
@@ -453,22 +453,22 @@ class openocd(jtag):
                        ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'])
 
     def halt_dut(self):
-        self.__command('halt',
-                       ['target state: halted',
-                        'target halted in ARM state due to debug-request, '
-                        'current mode:', 'cpsr:', 'MMU:']*2,
-                       'Error halting DUT')
+        self.command('halt',
+                     ['target state: halted',
+                      'target halted in ARM state due to debug-request, '
+                      'current mode:', 'cpsr:', 'MMU:']*2,
+                     'Error halting DUT')
 
     def continue_dut(self):
-        self.__command('resume', error_message='Error continuing DUT')
+        self.command('resume', error_message='Error continuing DUT')
 
-    def __select_core(self, core):
-        self.__command('targets zynq.cpu'+str(core),
-                       error_message='Error selecting core')
+    def select_core(self, core):
+        self.command('targets zynq.cpu'+str(core),
+                     error_message='Error selecting core')
 
-    def __get_register_value(self, register, target):
+    def get_register_value(self, register, target):
         if target == 'CP':
-            buff = self.__command(
+            buff = self.command(
                 ' '.join([
                     'arm', 'mrc',
                     str(self.targets[target]['registers'][register]['CP']),
@@ -479,14 +479,14 @@ class openocd(jtag):
                 error_message='Error getting register value')
             return hex(int(buff.split('\n')[1].strip()))
         else:
-            buff = self.__command('reg '+register, [':'],
-                                  error_message='Error getting register value')
+            buff = self.command('reg '+register, [':'],
+                                error_message='Error getting register value')
             return \
                 buff.split('\n')[1].split(':')[1].strip().split(' ')[0].strip()
 
-    def __set_register_value(self, register, target, value):
+    def set_register_value(self, register, target, value):
         if target == 'CP':
-            self.__command(
+            self.command(
                 ' '.join([
                     'arm', 'mrc',
                     str(self.targets[target]['registers'][register]['CP']),
@@ -497,5 +497,5 @@ class openocd(jtag):
                     value]),
                 error_message='Error setting register value')
         else:
-            self.__command('reg '+register+' '+value,
-                           error_message='Error setting register value')
+            self.command('reg '+register+' '+value,
+                         error_message='Error setting register value')
