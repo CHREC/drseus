@@ -2,13 +2,7 @@ import os
 import sqlite3
 
 
-class sql():
-    def dict_factory(self, cursor, row):
-        dictionary = {}
-        for idx, col in enumerate(cursor.description):
-            dictionary[col[0]] = row[idx]
-        return dictionary
-
+class sql(object):
     def __init__(self, database='campaign-data/db.sqlite3', row_factory=''):
         if not os.path.exists(database):
             raise Exception('could not find database file: '+database)
@@ -16,11 +10,19 @@ class sql():
         self.row_factory = row_factory
 
     def __enter__(self):
+
+        def dict_factory(cursor, row):
+            dictionary = {}
+            for idx, col in enumerate(cursor.description):
+                dictionary[col[0]] = row[idx]
+            return dictionary
+
+    # def __enter__(self):
         self.connection = sqlite3.connect(self.database, timeout=60)
         if self.row_factory == 'row':
             self.connection.row_factory = sqlite3.Row
         elif self.row_factory == 'dict':
-            self.connection.row_factory = self.dict_factory
+            self.connection.row_factory = dict_factory
         self.cursor = self.connection.cursor()
         return self
 

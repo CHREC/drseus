@@ -8,7 +8,7 @@ import sys
 
 from fault_injector import fault_injector
 from jtag import find_ftdi_serials, find_uart_serials, openocd
-import simics_config
+from simics_config import simics_config
 from sql import sql
 from supervisor import supervisor
 
@@ -249,25 +249,17 @@ def view_logs(options):
 def __update_checkpoint_dependencies(campaign_id):
     for checkpoint in os.listdir('simics-workspace/gold-checkpoints/' +
                                  str(campaign_id)):
-        config = simics_config.read_configuration(
-            'simics-workspace/gold-checkpoints/' +
-            str(campaign_id)+'/'+checkpoint)
-        os.rename('simics-workspace/gold-checkpoints/' +
-                  str(campaign_id)+'/'+checkpoint+'/config',
-                  'simics-workspace/gold-checkpoints/' +
-                  str(campaign_id)+'/'+checkpoint+'/config.bak')
-        paths = simics_config.get_attr(config, 'sim', 'checkpoint_path')
-        new_paths = []
-        for path in paths:
-            path_list = path.split('/')
-            path_list = path_list[path_list.index('simics-workspace'):]
-            path_list[-2] = str(campaign_id)
-            new_paths.append('\"'+os.getcwd()+'/'+'/'.join(path_list))
-        simics_config.set_attr(config, 'sim', 'checkpoint_path',
-                               new_paths)
-        simics_config.write_configuration(
-            config, 'simics-workspace/gold-checkpoints/' +
-            str(campaign_id)+'/'+checkpoint, False)
+        with simics_config('simics-workspace/gold-checkpoints/' +
+                           str(campaign_id)+'/'+checkpoint) as config:
+            paths = config.get(config, 'sim', 'checkpoint_path')
+            new_paths = []
+            for path in paths:
+                path_list = path.split('/')
+                path_list = path_list[path_list.index('simics-workspace'):]
+                path_list[-2] = str(campaign_id)
+                new_paths.append('\"'+os.getcwd()+'/'+'/'.join(path_list))
+            config.set(config, 'sim', 'checkpoint_path', new_paths)
+            config.save()
 
 
 def update_dependencies(none=None):

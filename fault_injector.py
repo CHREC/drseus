@@ -15,7 +15,7 @@ from simics import simics
 from sql import sql
 
 
-class fault_injector:
+class fault_injector(object):
     def __init__(self, campaign_data, options):
         self.campaign_data = campaign_data
         self.options = options

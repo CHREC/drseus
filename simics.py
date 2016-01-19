@@ -13,13 +13,13 @@ from time import sleep, time
 
 from dut import dut
 from error import DrSEUsError
-import simics_config
+from simics_config import simics_config
 from simics_targets import devices
 from sql import sql
 from targets import choose_register, choose_target
 
 
-class simics:
+class simics(object):
     error_messages = ['Address not mapped', 'Illegal Instruction',
                       'Illegal instruction', 'Illegal memory mapping',
                       'Illegal Memory Mapping', 'Error setting attribute',
@@ -688,28 +688,25 @@ class simics:
                 injection_data = {}
                 injected_value = previous_injection_data['injected_value']
             # perform checkpoint injection
-            config = simics_config.read_configuration(injected_checkpoint)
-            gold_value = simics_config.get_attr(config, config_object, register)
-            if register_index is None:
-                if previous_injection_data is None:
-                    injected_value = flip_bit(gold_value, num_bits_to_inject,
-                                              bit_to_inject)
-                simics_config.set_attr(config, config_object, register,
-                                       injected_value)
-            else:
-                register_list_ = register_list = gold_value
-                if previous_injection_data is None:
-                    for index in register_index:
-                        gold_value = gold_value[index]
-                    injected_value = flip_bit(
-                        gold_value, num_bits_to_inject, bit_to_inject)
-                for index in xrange(len(register_index)-1):
-                    register_list_ = register_list_[register_index[index]]
-                register_list_[register_index[-1]] = injected_value
-                simics_config.set_attr(config, config_object, register,
-                                       register_list)
-            simics_config.write_configuration(config, injected_checkpoint,
-                                              False)
+            with simics_config(injected_checkpoint) as config:
+                gold_value = config.get(config_object, register)
+                if register_index is None:
+                    if previous_injection_data is None:
+                        injected_value = flip_bit(
+                            gold_value, num_bits_to_inject, bit_to_inject)
+                    config.set(config_object, register, injected_value)
+                else:
+                    register_list_ = register_list = gold_value
+                    if previous_injection_data is None:
+                        for index in register_index:
+                            gold_value = gold_value[index]
+                        injected_value = flip_bit(
+                            gold_value, num_bits_to_inject, bit_to_inject)
+                    for index in xrange(len(register_index)-1):
+                        register_list_ = register_list_[register_index[index]]
+                    register_list_[register_index[-1]] = injected_value
+                    config.set(config_object, register, register_list)
+                config.save()
             injection_data['gold_value'] = gold_value
             injection_data['injected_value'] = injected_value
             return injection_data
@@ -793,28 +790,28 @@ class simics:
                 simics_targets.py for the specified checkpoint and returns a
                 dictionary with all the values.
                 """
-                config = simics_config.read_configuration(checkpoint)
-                registers = {}
-                for target in self.targets:
-                    if target != 'TLB':
-                        if 'count' in self.targets[target]:
-                            count = self.targets[target]['count']
-                        else:
-                            count = 1
-                        for target_index in xrange(count):
-                            config_object = \
-                                'DUT_'+self.board+self.targets[target]['OBJECT']
-                            if count > 1:
-                                config_object += '['+str(target_index)+']'
-                            if target == 'GPR':
-                                target_key = config_object + ':gprs'
+                with simics_config(checkpoint) as config:
+                    registers = {}
+                    for target in self.targets:
+                        if target != 'TLB':
+                            if 'count' in self.targets[target]:
+                                count = self.targets[target]['count']
                             else:
-                                target_key = config_object
-                            registers[target_key] = {}
-                            for register in self.targets[target]['registers']:
-                                registers[target_key][register] = \
-                                    simics_config.get_attr(
-                                        config, config_object, register)
+                                count = 1
+                            for target_index in xrange(count):
+                                config_object = ('DUT_'+self.board +
+                                                 self.targets[target]['OBJECT'])
+                                if count > 1:
+                                    config_object += '['+str(target_index)+']'
+                                if target == 'GPR':
+                                    target_key = config_object + ':gprs'
+                                else:
+                                    target_key = config_object
+                                registers[target_key] = {}
+                                for register in (self.targets[target]
+                                                             ['registers']):
+                                    registers[target_key][register] = \
+                                        config.get(config_object, register)
                 return registers
 
             # watch out! we're gonna use recursion

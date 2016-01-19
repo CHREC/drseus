@@ -1,19 +1,4 @@
 from ply import lex, yacc
-import os
-import re
-
-
-class MergeError(Exception):
-    def __init__(self, reason, error=None):
-        self.reason = reason
-        self.error = error
-
-    def __str__(self):
-        ostr = "Checkpoint merge aborted:"
-        if self.error:
-            ostr += "\n%s" % (self.error,)
-        ostr += "\n%s" % (self.reason,)
-        return ostr
 
 
 class data_list(list):
@@ -197,124 +182,85 @@ def p_error(p):
     raise ParseError(p)
 
 
-####
-def init_parser():
-    # lextab and write_tables arguments makes it not try to create
-    # files in current working directory.
-    lex.lex(debug=0, optimize=1, lextab=None)
-    yacc.yacc(debug=0, optimize=1, write_tables=False)
+class simics_config(object):
 
+    class SimicsConfigError(Exception):
+        def __init__(self, reason, error=None):
+            self.reason = reason
+            self.error = error
 
-def attr_string(a):
-    if isinstance(a, data_list):
-        return "[" + " ".join(attr_string(v) for v in a) + "]"
-    elif isinstance(a, list):
-        return "(" + ",".join(attr_string(v) for v in a) + ")"
-    elif isinstance(a, dict):
-        return "{" + ",".join(attr_string(k) + ":" + attr_string(a[k])
-                              for k in a) + "}"
-    return a
+        def __str__(self):
+            string = 'SimicsConfigError:'
+            if self.error:
+                string += '\n%s' % (self.error,)
+            string += '\n%s' % (self.reason,)
+            return string
 
+# class simics_config(object):
+    def __init__(self, checkpoint):
+        self.checkpoint = checkpoint
 
-def open_config(filename, mode):
-    return open(filename, mode)
+    def __enter__(self):
+        try:
+            with open(self.checkpoint+'/config', 'rb') as config_file:
+                config_contents = config_file.read()
+        except EnvironmentError as e:
+            raise self.ConfigError('Error reading checkpoint: %s' % (e,))
+        lex.lex(debug=0, optimize=1)
+        yacc.yacc(debug=0, optimize=1)
+        try:
+            self.config = yacc.parse(config_contents)
+        except RuntimeError as error:
+            raise self.ConfigError('Parse error in %s' % (self.checkpoint,),
+                                   error)
+        except ParseError as error:
+            if error.args and error.args[0]:
+                raise self.ConfigError(
+                    'Syntax error in %s:%d' % (self.checkpoint,
+                                               error.args[0].lineno), error)
+            raise self.ConfigError(
+                'Unknown parse error in %s' % self.checkpoint, error)
+        return self
 
+    def save(self):
 
-def write_configuration(conf, bundle_dirname, gz):
-    filename = os.path.join(bundle_dirname, "config.gz" if gz else "config")
-    with open_config(filename, "wb") as f:
-        f.write("#SIMICS-CONF-1\n")
-        for o in conf:
-            (typ, attrs) = conf[o]
-            f.write("OBJECT %s TYPE %s {\n" % (o, typ))
-            for a in attrs:
-                f.write("\t%s: %s\n" % (a, attr_string(attrs[a])))
-            f.write("}\n")
+        def attribute_string(attribute):
+            if isinstance(attribute, data_list):
+                return '['+' '.join(attribute_string(value)
+                                    for value in attribute)+']'
+            elif isinstance(attribute, list):
+                return '('+','.join(attribute_string(value)
+                                    for value in attribute)+')'
+            elif isinstance(attribute, dict):
+                return '{'+','.join(attribute_string(key)+':' +
+                                    attribute_string(attribute[key]) for key
+                                    in attribute)+'}'
+            return attribute
 
+    # def save(self):
+        with open(self.checkpoint+'/config', 'wb') as config_file:
+            config_file.write('#SIMICS-CONF-1\n')
+            for object_ in self.config:
+                (type_, attirbutes) = self.config[object_]
+                config_file.write('OBJECT %s TYPE %s {\n' % (object_, type_))
+                for attribute in attirbutes:
+                    config_file.write('\t%s: %s\n' %
+                                      (attribute,
+                                       attribute_string(attirbutes[attribute])))
+                config_file.write('}\n')
 
-def read_configuration(filename):
-    if os.path.isdir(filename):
-        conffile = os.path.join(filename, "config.gz")
-        if not os.path.isfile(conffile):
-            conffile = os.path.join(filename, "config")
-            if not os.path.isfile(conffile):
-                raise MergeError("No config[.gz] in %s" % filename)
-        filename = conffile
-    try:
-        with open_config(filename, "rb") as f:
-            txt = f.read()
-    except EnvironmentError, e:
-        raise MergeError("Error reading checkpoint: %s" % (e,))
+    def get(self, object_, attribute):
+        if object_ in self.config:
+            (type_, attirbutes) = self.config[object_]
+            if attribute in attirbutes:
+                return attirbutes[attribute]
+        return None
 
-    init_parser()
-    try:
-        return yacc.parse(txt)
-    except RuntimeError, ex:
-        raise MergeError("Parse error in %s" % (filename,), ex)
-    except ParseError, ex:
-        if ex.args and ex.args[0]:
-            raise MergeError("Syntax error in %s:%d"
-                             % (filename, ex.args[0].lineno), ex)
-        raise MergeError("Unknown parse error in %s" % filename, ex)
+    def set(self, object_, attribute, value):
+        if object_ in self.config:
+            (type_, attirbutes) = self.config[object_]
+            attirbutes[attribute] = value
 
-
-def get_attr(conf, o, a):
-    if o in conf:
-        (typ, attrs) = conf[o]
-        if a in attrs:
-            return attrs[a]
-    return None
-
-
-def set_attr(conf, o, a, v):
-    if o in conf:
-        (typ, attrs) = conf[o]
-        attrs[a] = v
-
-escape_to_char = {
-    'a': '\a',
-    'b': '\b',
-    't': '\t',
-    'n': '\n',
-    'v': '\v',
-    'f': '\f',
-    'r': '\r',
-    '"': '"',
-    '\\': '\\',
-    }
-
-
-def parse_escape_char(m):
-    c = m.group(1)
-    if c in escape_to_char:
-        return escape_to_char[c]
-    else:
-        return chr(int(c, 8))
-
-
-# Convert a quoted string (from the config file) to its actual contents.
-def parse_quoted_string(quoted):
-    assert quoted.startswith('"') and quoted.endswith('"')
-    return re.sub(r'\\(["\\abtnvfr]|[0-7]{1,3})', parse_escape_char,
-                  quoted[1: -1])
-
-
-assert parse_quoted_string('"ab\\\\c\\"d\\ne\\033f"') == 'ab\\c"d\ne\033f'
-
-char_to_escape = {c: e for (e, c) in escape_to_char.items()}
-
-
-# Quote a string in a way appropriate for the config file.
-def make_quoted_string(s):
-    q = '"'
-    for c in s:
-        o = ord(c)
-        if c in char_to_escape:
-            q += '\\' + char_to_escape[c]
-        elif o < 32 or o == 127:
-            q += '\\%03o' % o
-        else:
-            q += c
-    return q + '"'
-
-assert make_quoted_string('ab\\c"d\ne\033f') == '"ab\\\\c\\"d\\ne\\033f"'
+    def __exit__(self, type_, value, traceback):
+        if type_ is not None or value is not None or traceback is not None:
+            return False  # reraise exception

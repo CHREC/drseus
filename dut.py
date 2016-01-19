@@ -13,7 +13,7 @@ from error import DrSEUsError
 from sql import sql
 
 
-class dut:
+class dut(object):
     error_messages = OrderedDict(
         [('drseus_sighandler', 'Signal raised'),
          ('Kernel panic', 'Kernel error'),

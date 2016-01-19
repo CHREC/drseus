@@ -2,3 +2,5 @@
 campaign-data/
 fiapps/
 simics-workspace/
+lextab.py
+parsetab.py
