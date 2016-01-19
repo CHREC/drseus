@@ -96,7 +96,7 @@ class dut:
                 dut_scp = SCPClient(ssh.get_transport())
                 try:
                     dut_scp.put(files)
-                except socket_timeout as error:
+                except (socket_timeout, SCPException) as error:
                     dut_scp.close()
                     ssh.close()
                     print(colored('error sending file(s) (attempt ' +
