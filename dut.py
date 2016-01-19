@@ -3,6 +3,7 @@ from collections import OrderedDict
 import paramiko
 from scp import SCPClient
 from serial import Serial
+from socket import timeout as socket_timeout
 import sys
 from termcolor import colored
 from time import sleep
@@ -90,13 +91,25 @@ class dut:
                 if attempt < attempts-1:
                     sleep(30)
                 else:
-                    raise DrSEUsError(DrSEUsError.scp_error)
+                    raise DrSEUsError(DrSEUsError.ssh_error)
             else:
                 dut_scp = SCPClient(ssh.get_transport())
-                dut_scp.put(files)
-                dut_scp.close()
-                ssh.close()
-                break
+                try:
+                    dut_scp.put(files)
+                except socket_timeout as error:
+                    dut_scp.close()
+                    ssh.close()
+                    print(colored('error sending file(s) (attempt ' +
+                                  str(attempt+1)+'/'+str(attempts)+'): ' +
+                                  str(error), 'red'))
+                    if attempt < attempts-1:
+                        sleep(30)
+                    else:
+                        raise DrSEUsError(DrSEUsError.scp_error)
+                else:
+                    dut_scp.close()
+                    ssh.close()
+                    break
         if self.options.debug:
             print(colored('files sent', 'blue'))
 
@@ -120,13 +133,25 @@ class dut:
                 if attempt < attempts-1:
                     sleep(30)
                 else:
-                    raise DrSEUsError(DrSEUsError.scp_error)
+                    raise DrSEUsError(DrSEUsError.ssh_error)
             else:
                 dut_scp = SCPClient(ssh.get_transport())
-                dut_scp.get(file_, local_path=local_path)
-                dut_scp.close()
-                ssh.close()
-                break
+                try:
+                    dut_scp.get(file_, local_path=local_path)
+                except socket_timeout as error:
+                    dut_scp.close()
+                    ssh.close()
+                    print(colored('error getting file (attempt ' +
+                                  str(attempt+1)+'/'+str(attempts)+'): ' +
+                                  str(error), 'red'))
+                    if attempt < attempts-1:
+                        sleep(30)
+                    else:
+                        raise DrSEUsError(DrSEUsError.scp_error)
+                else:
+                    dut_scp.close()
+                    ssh.close()
+                    break
         if self.options.debug:
             print(colored('file received', 'blue'))
 

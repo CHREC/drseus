@@ -2,6 +2,7 @@ class DrSEUsError(Exception):
     hanging = 'Hanging'
     missing_output = 'Missing output'
     scp_error = 'SCP error'
+    ssh_error = 'SSH error'
     launch_simics = 'Error launching simics'
 
     def __init__(self, error_type):

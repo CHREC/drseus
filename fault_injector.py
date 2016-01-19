@@ -309,12 +309,13 @@ class fault_injector:
                 self.debugger.aux.do_login()
                 self.send_dut_files(aux=True)
         while True:
-            with iteration_counter.get_lock():
-                iteration = iteration_counter.value
-                if iteration:
-                    iteration_counter.value -= 1
-                else:
-                    break
+            if iteration_counter is not None:
+                with iteration_counter.get_lock():
+                    iteration = iteration_counter.value
+                    if iteration:
+                        iteration_counter.value -= 1
+                    else:
+                        break
             self.create_result(self.options.injections)
             if not self.campaign_data['use_simics']:
                 attempts = 10

@@ -203,7 +203,10 @@ def perform_injections(campaign_data, options, iteration_counter,
 def inject_campaign(options):
     processes = []
     campaign_data = get_campaign_data(options.campaign_id)
-    iteration_counter = multiprocessing.Value('L', options.iterations)
+    if options.iterations is not None:
+        iteration_counter = multiprocessing.Value('L', options.iterations)
+    else:
+        iteration_counter = None
     if options.processes > 1 and (campaign_data['use_simics'] or
                                   campaign_data['architecture'] == 'a9'):
         if not campaign_data['use_simics'] and \

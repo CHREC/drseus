@@ -124,8 +124,8 @@ inject = subparsers.add_parser('inject',
                                description='perform fault injections on a '
                                            'campaign')
 inject.add_argument('-n', '--iterations', action='store', type=int,
-                    dest='iterations', default=10,
-                    help='number of iterations to perform [default=10]')
+                    dest='iterations',
+                    help='number of iterations to perform [default=infinite]')
 inject.add_argument('-i', '--injections', action='store', type=int,
                     dest='injections', default=1,
                     help='number of injections per iteration [default=1]')
