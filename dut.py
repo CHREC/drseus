@@ -31,8 +31,7 @@ class dut:
          ('free(), invalid next size', 'Kernel error'),
          ('double free or corruption', 'Kernel error'),
          ('????????', '????????'),
-         ('login: ', 'Reboot')]
-    )
+         ('login: ', 'Reboot')])
 
     def __init__(self, campaign_data, result_data, options, rsakey, aux=False):
         self.campaign_data = campaign_data
@@ -154,27 +153,6 @@ class dut:
         if self.options.debug:
             print(colored('file received', 'blue'))
 
-    def is_logged_in(self):
-        self.serial.write('\n')
-        buff = ''
-        while True:
-            char = self.serial.read().decode('utf-8', 'replace')
-            self.result_data['dut_output' if not self.aux
-                             else 'aux_output'] += char
-            if self.options.debug:
-                print(colored(char, 'green' if not self.aux else 'cyan'),
-                      end='')
-            buff += char
-            if not char:
-                raise DrSEUsError(DrSEUsError.hanging)
-            elif buff[-len(self.prompt):] == self.prompt:
-                return True
-            elif buff[-len('login: '):] == 'login: ':
-                return False
-            elif buff[-len('can\'t get kernel image'):] == \
-                    'can\'t get kernel image':
-                raise DrSEUsError('error booting')
-
     def read_until(self, string=None):
         if string is None:
             string = self.prompt
@@ -238,7 +216,30 @@ class dut:
         return self.read_until()
 
     def do_login(self, ip_address=None, change_prompt=False, simics=False):
-        if not self.is_logged_in():
+
+        def is_logged_in():
+            self.serial.write('\n')
+            buff = ''
+            while True:
+                char = self.serial.read().decode('utf-8', 'replace')
+                self.result_data['dut_output' if not self.aux
+                                 else 'aux_output'] += char
+                if self.options.debug:
+                    print(colored(char, 'green' if not self.aux else 'cyan'),
+                          end='')
+                buff += char
+                if not char:
+                    raise DrSEUsError(DrSEUsError.hanging)
+                elif buff[-len(self.prompt):] == self.prompt:
+                    return True
+                elif buff[-len('login: '):] == 'login: ':
+                    return False
+                elif buff[-len('can\'t get kernel image'):] == \
+                        'can\'t get kernel image':
+                    raise DrSEUsError('error booting')
+
+    # def do_login(self, ip_address=None, change_prompt=False, simics=False):
+        if not is_logged_in():
             self.serial.write('root\n')
             buff = ''
             while True:

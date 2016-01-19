@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import argparse
+from argparse import ArgumentParser
 
 import utilities
 
@@ -13,7 +13,7 @@ import utilities
 # TODO: add option for number of times to rerun app for latent fault case
 # TODO: change Exception in simics.py to DrSEUsError
 
-parser = argparse.ArgumentParser(
+parser = ArgumentParser(
     description='The Dynamic Robust Single Event Upset Simulator '
                 'was created by Ed Carlisle IV',
     epilog='Begin by creating a new campaign with "%(prog)s new APPLICATION". '
@@ -218,6 +218,10 @@ update = subparsers.add_parser('update',
                                            'paths (only supported for Simics '
                                            'campaigns)')
 update.set_defaults(func=utilities.update_dependencies)
+
+backup = subparsers.add_parser('backup', help='backup the results database',
+                               description='backup the results database')
+backup.set_defaults(func=utilities.backup_database)
 
 options = parser.parse_args()
 if not options.command == 'new':

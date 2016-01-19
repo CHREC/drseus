@@ -1,13 +1,13 @@
 from __future__ import print_function
 from datetime import datetime
-import pyudev
+from pyudev import Context
 from telnetlib import Telnet
 from termcolor import colored
 from threading import Thread
-import time
-import random
+from time import sleep, time
+from random import randrange, uniform
 import socket
-import subprocess
+from subprocess import Popen
 
 from dut import dut
 from error import DrSEUsError
@@ -23,8 +23,7 @@ zedboards = {'844301CF3718': '210248585809',
 
 
 def find_ftdi_serials():
-    context = pyudev.Context()
-    debuggers = context.list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6014')
+    debuggers = Context().list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6014')
     serials = []
     for debugger in debuggers:
         if 'DEVLINKS' not in debugger:
@@ -33,21 +32,12 @@ def find_ftdi_serials():
 
 
 def find_uart_serials():
-    context = pyudev.Context()
-    uarts = context.list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
+    uarts = Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
     serials = {}
     for uart in uarts:
         if 'DEVLINKS' in uart:
             serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
     return serials
-
-
-def find_open_port():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(('', 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    return port
 
 
 class jtag:
@@ -56,6 +46,10 @@ class jtag:
         self.result_data = result_data
         self.options = options
         self.timeout = 30
+        if options.command == 'inject' and options.selected_targets is not None:
+            for target in options.selected_targets:
+                if target not in self.targets:
+                    raise Exception('invalid injection target: '+target)
         self.dut = dut(campaign_data, result_data, options, rsakey)
         if campaign_data['use_aux']:
             self.aux = dut(campaign_data, result_data, options, rsakey,
@@ -78,13 +72,13 @@ class jtag:
 
     def reset_dut(self, expected_output):
         if self.telnet:
-            self.command('reset', expected_output, 'Error resetting DUT')
+            self.__command('reset', expected_output, 'Error resetting DUT')
         else:
             self.dut.serial.write('\x03')
         self.dut.do_login()
 
     def time_application(self):
-        start = time.time()
+        start = time()
         for i in xrange(self.options.iterations):
             if self.campaign_data['use_aux']:
                 aux_process = Thread(
@@ -97,21 +91,15 @@ class jtag:
             if self.campaign_data['kill_dut']:
                 self.dut.serial.write('\x03')
             self.dut.read_until()
-        end = time.time()
+        end = time()
         self.campaign_data['exec_time'] = \
             (end - start) / self.options.iterations
 
     def inject_faults(self):
         injection_times = []
         for i in xrange(self.options.injections):
-            injection_times.append(
-                random.uniform(0, self.campaign_data['exec_time']))
+            injection_times.append(uniform(0, self.campaign_data['exec_time']))
         injection_times = sorted(injection_times)
-        if self.options.selected_targets is not None:
-            for target in self.options.selected_targets:
-                if target not in self.targets:
-                    raise Exception('jtag.py:inject_fault(): '
-                                    'invalid injection target: '+target)
         injection = 0
         for injection_time in injection_times:
             injection += 1
@@ -123,7 +111,7 @@ class jtag:
                                           '\n'))
             else:
                 self.continue_dut()
-            time.sleep(injection_time)
+            sleep(injection_time)
             self.halt_dut()
             target = choose_target(self.options.selected_targets, self.targets)
             register = choose_register(target, self.targets)
@@ -137,18 +125,18 @@ class jtag:
                 injection_data['target_index'] = target.split(':')[1]
                 target = target.split(':')[0]
                 injection_data['target'] = target
-                self.select_core(injection_data['target_index'])
-            injection_data['gold_value'] = self.get_register_value(
+                self.__select_core(injection_data['target_index'])
+            injection_data['gold_value'] = self.__get_register_value(
                 injection_data['register'], injection_data['target'])
             if 'bits' in self.targets[target]['registers'][register]:
                 num_bits_to_inject = (self.targets[target]['registers']
                                                   [register]['bits'])
             else:
                 num_bits_to_inject = 32
-            injection_data['bit'] = random.randrange(num_bits_to_inject)
-            injection_data['injected_value'] = '0x%x' % (
-                int(injection_data['gold_value'], base=16)
-                ^ (1 << injection_data['bit']))
+            injection_data['bit'] = randrange(num_bits_to_inject)
+            injection_data['injected_value'] = '0x%x' % \
+                (int(injection_data['gold_value'], base=16) ^
+                    (1 << injection_data['bit']))
             if self.options.debug:
                 print(colored('target: '+injection_data['target'], 'magenta'))
                 if 'target_index' in injection_data:
@@ -162,12 +150,12 @@ class jtag:
                               'magenta'))
                 print(colored('injected value: ' +
                               injection_data['injected_value'], 'magenta'))
-            self.set_register_value(injection_data['register'],
-                                    injection_data['target'],
-                                    injection_data['injected_value'])
+            self.__set_register_value(injection_data['register'],
+                                      injection_data['target'],
+                                      injection_data['injected_value'])
             if int(injection_data['injected_value'], base=16) == int(
-                    self.get_register_value(injection_data['register'],
-                                            injection_data['target']),
+                    self.__get_register_value(injection_data['register'],
+                                              injection_data['target']),
                     base=16):
                 injection_data['success'] = True
             else:
@@ -192,7 +180,7 @@ class bdi(jtag):
             print('Could not connect to debugger, '
                   'running in supervisor-only mode')
         else:
-            self.command('', error_message='Debugger not ready')
+            self.__command('', error_message='Debugger not ready')
 
     def __str__(self):
         string = ('BDI3000 at '+self.options.debugger_ip_address +
@@ -204,7 +192,7 @@ class bdi(jtag):
             self.telnet.write('quit\r')
         jtag.close(self)
 
-    def command(self, command, expected_output=[], error_message=None):
+    def __command(self, command, expected_output=[], error_message=None):
         return_buffer = ''
         if error_message is None:
             error_message = command
@@ -287,28 +275,28 @@ class bdi_arm(bdi):
                               '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
-        self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
-                                '- TARGET: core #1 has entered debug mode'],
-                     'Error halting DUT')
+        self.__command('halt 3', ['- TARGET: core #0 has entered debug mode',
+                                  '- TARGET: core #1 has entered debug mode'],
+                       'Error halting DUT')
 
     def continue_dut(self):
-        self.command('cont 3', error_message='Error continuing DUT')
+        self.__command('cont 3', error_message='Error continuing DUT')
 
-    def select_core(self, core):
+    def __select_core(self, core):
         # TODO: check if cores are running (not in debug mode)
-        self.command('select '+str(core), ['Core number', 'Core state',
-                                           'Debug entry cause', 'Current PC',
-                                           'Current CPSR'],
-                     'Error selecting core')
+        self.__command('select '+str(core), ['Core number', 'Core state',
+                                             'Debug entry cause', 'Current PC',
+                                             'Current CPSR'],
+                       'Error selecting core')
 
-    def get_register_value(self, register, target):
-        buff = self.command('rd '+register, [':'],
-                            error_message='Error getting register value')
+    def __get_register_value(self, register, target):
+        buff = self.__command('rd '+register, [':'],
+                              error_message='Error getting register value')
         return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
 
-    def set_register_value(self, register, target, value):
-        self.command('rm '+register+' '+value, error_message='Error setting '
-                                                             'register value')
+    def __set_register_value(self, register, target, value):
+        self.__command('rm '+register+' '+value, error_message='Error setting '
+                                                               'register value')
 
 
 class bdi_p2020(bdi):
@@ -332,35 +320,44 @@ class bdi_p2020(bdi):
                               '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
-        self.command('halt 0; halt 1', ['Target CPU', 'Core state',
-                                        'Debug entry cause', 'Current PC',
-                                        'Current CR', 'Current MSR',
-                                        'Current LR']*2, 'Error halting DUT')
+        self.__command('halt 0; halt 1', ['Target CPU', 'Core state',
+                                          'Debug entry cause', 'Current PC',
+                                          'Current CR', 'Current MSR',
+                                          'Current LR']*2, 'Error halting DUT')
 
     def continue_dut(self):
-        self.command('go 0 1', error_message='Error continuing DUT')
+        self.__command('go 0 1', error_message='Error continuing DUT')
 
-    def select_core(self, core):
-        self.command('select '+str(core), ['Target CPU', 'Core state',
-                                           'Debug entry cause', 'Current PC',
-                                           'Current CR', 'Current MSR',
-                                           'Current LR', 'Current CCSRBAR'],
-                     'Error selecting core')
+    def __select_core(self, core):
+        self.__command('select '+str(core), ['Target CPU', 'Core state',
+                                             'Debug entry cause', 'Current PC',
+                                             'Current CR', 'Current MSR',
+                                             'Current LR', 'Current CCSRBAR'],
+                       'Error selecting core')
 
-    def get_register_value(self, register, target):
-        buff = self.command('rd '+register, error_message='Error getting '
-                                                          'register value')
+    def __get_register_value(self, register, target):
+        buff = self.__command('rd '+register, error_message='Error getting '
+                                                            'register value')
         return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
 
-    def set_register_value(self, register, target, value):
-        self.command('rm '+register+' '+value, error_message='Error setting '
-                                                             'register value')
+    def __set_register_value(self, register, target, value):
+        self.__command('rm '+register+' '+value, error_message='Error setting '
+                                                               'register value')
 
 
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
 
     def __init__(self, campaign_data, result_data, options, rsakey):
+
+        def find_open_port():
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.bind(('', 0))
+            port = sock.getsockname()[1]
+            sock.close()
+            return port
+
+    # def __init__(self, campaign_data, result_data, options, rsakey):
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = devices['a9']
@@ -368,18 +365,15 @@ class openocd(jtag):
         self.port = find_open_port()
         if options.command != 'openocd':
             self.dev_null = open('/dev/null', 'w')
-        self.openocd = subprocess.Popen(['openocd', '-c',
-                                         'gdb_port 0; tcl_port 0; '
-                                         'telnet_port '+str(self.port)+'; '
-                                         'interface ftdi; '
-                                         'ftdi_serial '+serial+';',
-                                         '-f', 'openocd_zedboard.cfg'],
-                                        stderr=(self.dev_null
-                                                if options.command != 'openocd'
-                                                else None))
+        self.openocd = Popen(['openocd', '-c',
+                              'gdb_port 0; tcl_port 0; telnet_port ' +
+                              str(self.port)+'; interface ftdi; ftdi_serial ' +
+                              serial+';', '-f', 'openocd_zedboard.cfg'],
+                             stderr=(self.dev_null
+                                     if options.command != 'openocd' else None))
         if options.command != 'openocd':
             jtag.__init__(self, campaign_data, result_data, options, rsakey)
-            time.sleep(1)
+            sleep(1)
             self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                                  timeout=self.timeout)
 
@@ -393,7 +387,7 @@ class openocd(jtag):
         self.openocd.wait()
         self.dev_null.close()
 
-    def command(self, command, expected_output=[], error_message=None):
+    def __command(self, command, expected_output=[], error_message=None):
         return_buffer = ''
         if error_message is None:
             error_message = command
@@ -459,22 +453,22 @@ class openocd(jtag):
                        ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'])
 
     def halt_dut(self):
-        self.command('halt',
-                     ['target state: halted',
-                      'target halted in ARM state due to debug-request, '
-                      'current mode:', 'cpsr:', 'MMU:']*2,
-                     'Error halting DUT')
+        self.__command('halt',
+                       ['target state: halted',
+                        'target halted in ARM state due to debug-request, '
+                        'current mode:', 'cpsr:', 'MMU:']*2,
+                       'Error halting DUT')
 
     def continue_dut(self):
-        self.command('resume', error_message='Error continuing DUT')
+        self.__command('resume', error_message='Error continuing DUT')
 
-    def select_core(self, core):
-        self.command('targets zynq.cpu'+str(core),
-                     error_message='Error selecting core')
+    def __select_core(self, core):
+        self.__command('targets zynq.cpu'+str(core),
+                       error_message='Error selecting core')
 
-    def get_register_value(self, register, target):
+    def __get_register_value(self, register, target):
         if target == 'CP':
-            buff = self.command(
+            buff = self.__command(
                 ' '.join([
                     'arm', 'mrc',
                     str(self.targets[target]['registers'][register]['CP']),
@@ -485,14 +479,14 @@ class openocd(jtag):
                 error_message='Error getting register value')
             return hex(int(buff.split('\n')[1].strip()))
         else:
-            buff = self.command('reg '+register, [':'],
-                                error_message='Error getting register value')
+            buff = self.__command('reg '+register, [':'],
+                                  error_message='Error getting register value')
             return \
                 buff.split('\n')[1].split(':')[1].strip().split(' ')[0].strip()
 
-    def set_register_value(self, register, target, value):
+    def __set_register_value(self, register, target, value):
         if target == 'CP':
-            self.command(
+            self.__command(
                 ' '.join([
                     'arm', 'mrc',
                     str(self.targets[target]['registers'][register]['CP']),
@@ -503,5 +497,5 @@ class openocd(jtag):
                     value]),
                 error_message='Error setting register value')
         else:
-            self.command('reg '+register+' '+value,
-                         error_message='Error setting register value')
+            self.__command('reg '+register+' '+value,
+                           error_message='Error setting register value')

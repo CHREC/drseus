@@ -14,10 +14,10 @@ def calculate_target_bits(devices):
                     bits = 32
                 if 'count' in devices[device][target]['registers'][register]:
                     count = 1
-                    if ('is_tlb' in devices[device][target]['registers']
-                                           [register]
-                            and devices[device][target]['registers'][register]
-                                       ['is_tlb']):
+                    if 'is_tlb' in \
+                        devices[device][target]['registers'][register] \
+                        and (devices[device][target]['registers'][register]
+                                    ['is_tlb']):
                         dimensions = (devices[device][target]['registers']
                                              [register]['count'][:-1])
                     else:
@@ -32,9 +32,9 @@ def calculate_target_bits(devices):
                 total_bits += count * bits
                 # if a register is partially implemented generate an adjust_bit
                 # mapping list to ensure an unimplemented field is not injected
-                if ('partial' in devices[device][target]['registers'][register]
-                        and devices[device][target]['registers'][register]
-                                   ['partial']):
+                if 'partial' in devices[device][target]['registers'][register] \
+                    and (devices[device][target]['registers'][register]
+                                ['partial']):
                     adjust_bit = []
                     for field, field_range in (devices[device][target]
                                                       ['registers'][register]

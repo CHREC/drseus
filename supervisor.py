@@ -1,8 +1,8 @@
 from __future__ import print_function
 from cmd import Cmd
-import multiprocessing
-import os
-import pdb
+from multiprocessing import Value
+from os import makedirs, system
+from pdb import set_trace
 from select import select
 import sys
 from threading import Thread
@@ -18,17 +18,7 @@ class supervisor(Cmd):
         self.directory = options.directory
         options.debug = True
         self.drseus = fault_injector(campaign_data, options)
-        if self.campaign_data['use_simics']:
-            checkpoint = (
-                'gold-checkpoints/'+str(self.campaign_data['id'])+'/' +
-                str(self.campaign_data['num_checkpoints'])+'_merged')
-            self.drseus.debugger.launch_simics(checkpoint)
-            self.drseus.debugger.continue_dut()
-        else:
-            if self.campaign_data['use_aux']:
-                self.drseus.debugger.aux.serial.write('\x03')
-                aux_process = Thread(target=self.drseus.debugger.aux.do_login)
-                aux_process.start()
+        if not self.campaign_data['use_simics']:
             booted = False
             while not booted:
                 try:
@@ -37,9 +27,6 @@ class supervisor(Cmd):
                     continue
                 else:
                     booted = True
-            if self.campaign_data['use_aux']:
-                aux_process.join()
-                self.drseus.send_aux_files()
             self.drseus.send_dut_files()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
@@ -155,7 +142,7 @@ class supervisor(Cmd):
         self.drseus.create_result()
         directory = ('campaign-data/'+str(self.campaign_data['id']) +
                      '/results/'+str(self.drseus.result_id)+'/')
-        os.makedirs(directory)
+        makedirs(directory)
         try:
             if aux:
                 self.drseus.debugger.aux.get_file(arg, directory)
@@ -195,16 +182,16 @@ class supervisor(Cmd):
                 print('Invalid value entered')
                 return
         print('Performing '+str(supervise_iterations)+' iteration(s)...\n')
-        iteration_counter = multiprocessing.Value('L', supervise_iterations)
+        iteration_counter = Value('L', supervise_iterations)
         self.drseus.supervise(iteration_counter, self.capture)
 
     def do_debug(self, arg=None):
         """Start PDB"""
-        pdb.set_trace()
+        set_trace()
 
     def do_shell(self, arg):
         """Pass command to a system shell when line begins with \"!\""""
-        os.system(arg)
+        system(arg)
 
     def do_exit(self, arg=None):
         """Exit DrSEUs"""
