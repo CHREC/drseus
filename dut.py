@@ -4,7 +4,8 @@ from paramiko import AutoAddPolicy, SSHClient
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 from scp import SCPClient, SCPException
 from serial import Serial
-from socket import timeout as socket_timeout
+from socket import error as SocketError
+from socket import timeout as SocketTimeout
 import sys
 from termcolor import colored
 from time import sleep
@@ -84,7 +85,8 @@ class dut(object):
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-            except (EOFError, NoValidConnectionsError, SSHException) as error:
+            except (EOFError, NoValidConnectionsError, SocketError,
+                    SSHException) as error:
                 print(colored('error sending file(s) (attempt '+str(attempt+1) +
                               '/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
@@ -95,7 +97,7 @@ class dut(object):
                 dut_scp = SCPClient(ssh.get_transport())
                 try:
                     dut_scp.put(files)
-                except (socket_timeout, SCPException) as error:
+                except (SocketTimeout, SCPException) as error:
                     dut_scp.close()
                     ssh.close()
                     print(colored('error sending file(s) (attempt ' +
@@ -125,7 +127,8 @@ class dut(object):
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-            except (EOFError, NoValidConnectionsError, SSHException) as error:
+            except (EOFError, NoValidConnectionsError, SocketError,
+                    SSHException) as error:
                 print(colored('error getting file (attempt '+str(attempt+1) +
                               '/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
@@ -136,7 +139,7 @@ class dut(object):
                 dut_scp = SCPClient(ssh.get_transport())
                 try:
                     dut_scp.get(file_, local_path=local_path)
-                except (socket_timeout, SCPException) as error:
+                except (SocketTimeout, SCPException) as error:
                     dut_scp.close()
                     ssh.close()
                     print(colored('error getting file (attempt ' +
