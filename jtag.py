@@ -44,6 +44,8 @@ class jtag(object):
         self.result_data = result_data
         self.options = options
         self.timeout = 30
+        self.prompts = [bytes(prompt, encoding='utf-8')
+                        for prompt in self.prompts]
         if options.command == 'inject' and options.selected_targets is not None:
             for target in options.selected_targets:
                 if target not in self.targets:
@@ -186,14 +188,16 @@ class bdi(jtag):
 
     def close(self):
         if self.telnet:
-            self.telnet.write('quit\r')
+            self.telnet.write(bytes('quit\r', encoding='utf-8'))
         jtag.close(self)
 
     def command(self, command, expected_output=[], error_message=None):
+        expected_output = [bytes(output, encoding='utf-8')
+                           for output in expected_output]
         return_buffer = ''
         if error_message is None:
             error_message = command
-        buff = self.telnet.read_very_eager()
+        buff = self.telnet.read_very_eager().decode('utf-8', 'replace')
         if self.options.command == 'new':
             self.campaign_data['debugger_output'] += buff
         else:
@@ -202,8 +206,8 @@ class bdi(jtag):
             print(colored(buff, 'yellow'))
         if command:
             command = command+'\r'
-            self.telnet.write(command)
-            self.telnet.write('\r')
+            self.telnet.write(bytes(command, encoding='utf-8'))
+            self.telnet.write(bytes('\r', encoding='utf-8'))
             if self.options.command == 'new':
                 self.campaign_data['debugger_output'] += command
             else:
@@ -213,6 +217,7 @@ class bdi(jtag):
         for i in range(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
+            buff = buff.decode('utf-8', 'replace')
             if self.options.command == 'new':
                 self.campaign_data['debugger_output'] += buff
             else:
@@ -227,6 +232,7 @@ class bdi(jtag):
                 print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
+        buff = buff.decode('utf-8', 'replace')
         if self.options.command == 'new':
             self.campaign_data['debugger_output'] += buff
         else:
@@ -377,15 +383,17 @@ class openocd(jtag):
         return string
 
     def close(self):
-        self.telnet.write('shutdown\n')
+        self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
         jtag.close(self)
         self.openocd.wait()
 
     def command(self, command, expected_output=[], error_message=None):
+        expected_output = [bytes(output, encoding='utf-8')
+                           for output in expected_output]
         return_buffer = ''
         if error_message is None:
             error_message = command
-        buff = self.telnet.read_very_eager()
+        buff = self.telnet.read_very_eager().decode('utf-8', 'replace')
         if self.options.command == 'new':
             self.campaign_data['debugger_output'] += buff
         else:
@@ -393,9 +401,10 @@ class openocd(jtag):
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
-            self.telnet.write(command+'\n')
-            index, match, buff = self.telnet.expect([command],
-                                                    timeout=self.timeout)
+            self.telnet.write(bytes(command+'\n', encoding='utf-8'))
+            index, match, buff = self.telnet.expect(
+                [bytes(command, encoding='utf-8')], timeout=self.timeout)
+            buff = buff.decode('utf-8', 'replace')
             if self.options.command == 'new':
                 self.campaign_data['debugger_output'] += buff
             else:
@@ -408,6 +417,7 @@ class openocd(jtag):
         for i in range(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
+            buff = buff.decode('utf-8', 'replace')
             if self.options.command == 'new':
                 self.campaign_data['debugger_output'] += buff
             else:
@@ -422,6 +432,7 @@ class openocd(jtag):
                 print()
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
+        buff = buff.decode('utf-8', 'replace')
         if self.options.command == 'new':
             self.campaign_data['debugger_output'] += buff
         else:

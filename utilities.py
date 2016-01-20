@@ -197,7 +197,7 @@ def inject_campaign(options):
                                   campaign_data['architecture'] == 'a9'):
         if not campaign_data['use_simics'] and \
                 campaign_data['architecture'] == 'a9':
-            zedboards = find_uart_serials().keys()
+            zedboards = list(find_uart_serials().keys())
         for i in range(options.processes):
             if not campaign_data['use_simics'] and \
                     campaign_data['architecture'] == 'a9':
