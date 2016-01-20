@@ -264,3 +264,7 @@ class simics_config(object):
     def __exit__(self, type_, value, traceback):
         if type_ is not None or value is not None or traceback is not None:
             return False  # reraise exception
+
+if __name__ == '__main__':
+    lex.lex(debug=0, optimize=1)
+    yacc.yacc(debug=0, optimize=1)
