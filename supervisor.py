@@ -1,4 +1,3 @@
-from __future__ import print_function
 from cmd import Cmd
 from multiprocessing import Value
 from os import makedirs, system
@@ -63,9 +62,9 @@ class supervisor(Cmd):
         """Send DUT device a command and interact, interrupt with ctrl-c"""
         self.drseus.create_result()
         if aux:
-            self.drseus.debugger.aux.serial.write(arg+'\n')
+            self.drseus.debugger.aux.write(arg+'\n')
         else:
-            self.drseus.debugger.dut.serial.write(arg+'\n')
+            self.drseus.debugger.dut.write(arg+'\n')
 
         def read_thread_worker():
             try:
@@ -81,11 +80,11 @@ class supervisor(Cmd):
             while read_thread.is_alive():
                 if select([sys.stdin], [], [], 0.1)[0]:
                     if aux:
-                        self.drseus.debugger.aux.serial.write(
-                            sys.stdin.readline()+'\n')
+                        self.drseus.debugger.aux.write(sys.stdin.readline() +
+                                                       '\n')
                     else:
-                        self.drseus.debugger.dut.serial.write(
-                            sys.stdin.readline()+'\n')
+                        self.drseus.debugger.dut.write(sys.stdin.readline() +
+                                                       '\n')
         except KeyboardInterrupt:
             if self.campaign_data['use_simics']:
                 self.drseus.debugger.continue_dut()

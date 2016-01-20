@@ -38,7 +38,7 @@ def calculate_target_bits(devices):
                     adjust_bit = []
                     for field, field_range in (devices[device][target]
                                                       ['registers'][register]
-                                                      ['fields'].iteritems()):
+                                                      ['fields'].items()):
                         adjust_bit.extend(range(field_range[0],
                                                 field_range[1]+1))
                     if len(adjust_bit) != bits:

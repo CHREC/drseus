@@ -2,7 +2,7 @@ from django.forms import SelectMultiple, Textarea
 import django_filters
 from re import split
 
-import models
+from .models import (injection, result, simics_register_diff)
 
 
 def fix_sort(string):
@@ -16,19 +16,20 @@ def fix_sort_list(list):
 
 def injection_choices(campaign, attribute):
     choices = []
-    for item in sorted(models.injection.objects.filter(
-            result__campaign_id=campaign).values(attribute).distinct()):
-        if item[attribute] is not None:
-            choices.append((item[attribute], item[attribute]))
+    for item in injection.objects.filter(
+        result__campaign_id=campaign).values_list(
+            attribute, flat=True).distinct():
+        if item is not None:
+            choices.append((item, item))
     return sorted(choices, key=fix_sort_list)
 
 
 def result_choices(campaign, attribute):
     choices = []
-    for item in sorted(models.result.objects.filter(
-            campaign_id=campaign).values(attribute).distinct()):
-        if item[attribute] is not None:
-            choices.append((item[attribute], item[attribute]))
+    for item in result.objects.filter(campaign_id=campaign).values_list(
+            attribute, flat=True).distinct():
+        if item is not None:
+            choices.append((item, item))
     return sorted(choices, key=fix_sort_list)
 
 
@@ -132,7 +133,7 @@ class injection_filter(django_filters.FilterSet):
         name='time', label='Time (<)', lookup_type='lt', help_text='')
 
     class Meta:
-        model = models.injection
+        model = injection
         fields = ('result__outcome_category', 'result__outcome',
                   'result__data_diff_gt', 'result__data_diff_lt',
                   'result__dut_output', 'result__aux_output',
@@ -173,5 +174,5 @@ class simics_register_diff_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
 
     class Meta:
-        model = models.simics_register_diff
+        model = simics_register_diff
         fields = ('checkpoint_number', 'register')

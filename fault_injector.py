@@ -1,10 +1,8 @@
-from __future__ import print_function
-from datetime import datetime
 from difflib import SequenceMatcher
 import os
 from paramiko import RSAKey
 from shutil import copy, rmtree
-import subprocess
+from subprocess import PIPE, Popen
 from termcolor import colored
 from threading import Thread
 from time import sleep
@@ -184,9 +182,9 @@ class fault_injector(object):
                 os.rmdir(result_folder)
                 missing_output = True
             else:
-                with open(gold_location, 'r') as solution:
+                with open(gold_location, 'rb') as solution:
                     solutionContents = solution.read()
-                with open(output_location, 'r') as result:
+                with open(output_location, 'rb') as result:
                     resultContents = result.read()
                 self.result_data['data_diff'] = SequenceMatcher(
                     None, solutionContents, resultContents).quick_ratio()
@@ -309,7 +307,7 @@ class fault_injector(object):
             self.create_result(self.options.injections)
             if not self.campaign_data['use_simics']:
                 attempts = 10
-                for attempt in xrange(attempts):
+                for attempt in range(attempts):
                     try:
                         self.debugger.reset_dut()
                     except DrSEUsError as error:
@@ -337,8 +335,8 @@ class fault_injector(object):
                     continue
             if self.campaign_data['use_aux'] and \
                     not self.campaign_data['use_simics']:
-                self.debugger.aux.serial.write(
-                    str('./'+self.campaign_data['aux_command']+'\n'))
+                self.debugger.aux.write('./'+self.campaign_data['aux_command'] +
+                                        '\n')
             try:
                 latent_faults, persistent_faults = self.debugger.inject_faults()
                 self.debugger.continue_dut()
@@ -368,10 +366,10 @@ class fault_injector(object):
                     (not self.campaign_data['use_simics'] and
                         self.result_data['outcome'] == 'Masked faults'):
                     if self.campaign_data['use_aux']:
-                        self.debugger.aux.serial.write(
-                            str('./'+self.campaign_data['aux_command']+'\n'))
-                    self.debugger.dut.serial.write(
-                        str('./'+self.campaign_data['command']+'\n'))
+                        self.debugger.aux.write(
+                            './'+self.campaign_data['aux_command']+'\n')
+                    self.debugger.dut.write('./'+self.campaign_data['command'] +
+                                            '\n')
                     next_outcome = self.__monitor_execution()[0]
                     if next_outcome != 'Masked faults':
                         self.result_data.update({
@@ -406,10 +404,9 @@ class fault_injector(object):
                             '/results/'+str(self.result_data['id']))
                 os.makedirs(data_dir)
                 capture_file = open(data_dir+'/capture.pcap', 'w')
-                capture_process = subprocess.Popen(['ssh', 'p2020', 'tshark '
-                                                    '-F pcap -i eth1 -w -'],
-                                                   stderr=subprocess.PIPE,
-                                                   stdout=capture_file)
+                capture_process = Popen(
+                    ['ssh', 'p2020', 'tshark -F pcap -i eth1 -w -'],
+                    stderr=PIPE, stdout=capture_file)
                 buff = ''
                 while True:
                     buff += capture_process.stderr.read(1)
@@ -417,10 +414,9 @@ class fault_injector(object):
                             'Capturing on \'eth1\'':
                         break
             if self.campaign_data['use_aux']:
-                self.debugger.aux.serial.write(
-                    str('./'+self.campaign_data['aux_command']+'\n'))
-            self.debugger.dut.serial.write(
-                str('./'+self.campaign_data['command']+'\n'))
+                self.debugger.aux.write('./'+self.campaign_data['aux_command'] +
+                                        '\n')
+            self.debugger.dut.write('./'+self.campaign_data['command']+'\n')
             try:
                 (self.result_data['outcome'],
                  self.result_data['outcome_category']) = \

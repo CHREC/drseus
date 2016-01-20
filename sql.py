@@ -35,7 +35,7 @@ class sql(object):
                 table,
                 ','.join(dictionary.keys()),
                 ','.join('?'*len(dictionary))),
-            dictionary.values())
+            list(dictionary.values()))
         self.connection.commit()
 
     def update_dict(self, table, dictionary, row_id=None):
@@ -51,7 +51,7 @@ class sql(object):
                 table,
                 '=?,'.join(dictionary.keys()),
                 str(row_id)),
-            dictionary.values())
+            list(dictionary.values()))
         self.connection.commit()
 
     def __exit__(self, type_, value, traceback):

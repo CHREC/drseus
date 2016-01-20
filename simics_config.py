@@ -47,7 +47,7 @@ t_ignore = ' \t\r'
 
 
 def t_error(t):
-    print "Illegal character '%s'" % (t.value[0],)
+    print('Illegal character "%s"' % (t.value[0],))
     t.skip(1)
 
 
@@ -202,7 +202,7 @@ class simics_config(object):
 
     def __enter__(self):
         try:
-            with open(self.checkpoint+'/config', 'rb') as config_file:
+            with open(self.checkpoint+'/config', 'r') as config_file:
                 config_contents = config_file.read()
         except EnvironmentError as e:
             raise self.ConfigError('Error reading checkpoint: %s' % (e,))
@@ -238,7 +238,7 @@ class simics_config(object):
             return attribute
 
     # def save(self):
-        with open(self.checkpoint+'/config', 'wb') as config_file:
+        with open(self.checkpoint+'/config', 'w') as config_file:
             config_file.write('#SIMICS-CONF-1\n')
             for object_ in self.config:
                 (type_, attirbutes) = self.config[object_]

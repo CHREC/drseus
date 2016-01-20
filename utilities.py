@@ -1,4 +1,3 @@
-from __future__ import print_function
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
 from multiprocessing import Process, Value
@@ -21,7 +20,7 @@ def print_zedboard_info(none=None):
     for serial in ftdis:
         print('\t'+serial)
     print('Cypress UART device serial numbers:')
-    for uart, serial in uarts.iteritems():
+    for uart, serial in uarts.items():
         print('\t'+uart+': '+serial)
 
 
@@ -199,7 +198,7 @@ def inject_campaign(options):
         if not campaign_data['use_simics'] and \
                 campaign_data['architecture'] == 'a9':
             zedboards = find_uart_serials().keys()
-        for i in xrange(options.processes):
+        for i in range(options.processes):
             if not campaign_data['use_simics'] and \
                     campaign_data['architecture'] == 'a9':
                 if i < len(zedboards):

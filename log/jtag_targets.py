@@ -1,1 +1,0 @@
-../jtag_targets.py

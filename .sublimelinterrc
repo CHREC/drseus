@@ -1,0 +1,8 @@
+{
+    "@python": 3,
+    "linters": {
+        "flake8": {
+            "max-line-length": 80
+        }
+    }
+}

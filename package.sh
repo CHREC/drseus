@@ -18,7 +18,7 @@ rm -rf .git
 python -m compileall -l .
 rm ./*.py
 touch drseus.sh
-printf '#!/bin/bash\npython drseus.pyc "$@"' > drseus.sh
+printf '#!/bin/bash\npython3 drseus.pyc "$@"' > drseus.sh
 chmod +x drseus.sh
 
 pushd log

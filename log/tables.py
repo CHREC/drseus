@@ -1,6 +1,7 @@
 import django_tables2 as tables
 
-import models
+from .models import (campaign, injection, result, simics_memory_diff,
+                     simics_register_diff)
 
 
 class campaigns_table(tables.Table):
@@ -15,11 +16,11 @@ class campaigns_table(tables.Table):
 
     def render_results(self, record):
         return '{:,}'.format(
-            models.result.objects.filter(campaign=record.id).count())
+            result.objects.filter(campaign=record.id).count())
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = models.campaign
+        model = campaign
         fields = ('id_', 'results', 'command', 'aux_command', 'architecture',
                   'use_simics', 'exec_time', 'sim_time', 'num_cycles',
                   'timestamp')
@@ -39,7 +40,7 @@ class campaign_table(campaigns_table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = models.campaign
+        model = campaign
         exclude = ('id_',)
         fields = ('id', 'timestamp', 'results', 'command', 'aux_command',
                   'architecture', 'use_simics', 'use_aux', 'exec_time',
@@ -59,10 +60,10 @@ class results_table(tables.Table):
     def render_targets(self, record):
         if record is not None:
             targets = [injection_.target for injection_
-                       in models.injection.objects.filter(result=record.id)]
+                       in injection.objects.filter(result=record.id)]
         else:
             targets = []
-        for index in xrange(len(targets)):
+        for index in range(len(targets)):
             if targets[index] is None:
                 targets[index] = '-'
         if len(targets) > 0:
@@ -72,7 +73,7 @@ class results_table(tables.Table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = models.result
+        model = result
         fields = ('select', 'id_', 'timestamp', 'outcome_category', 'outcome',
                   'data_diff', 'detected_errors', 'num_injections', 'targets')
         order_by = 'id_'
@@ -92,7 +93,7 @@ class result_table(results_table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = models.result
+        model = result
         exclude = ('id_', 'select', 'targets')
         fields = ('id', 'timestamp', 'outcome_category', 'outcome',
                   'num_injections', 'data_diff', 'detected_errors')
@@ -103,7 +104,7 @@ class hw_injection_table(tables.Table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = models.injection
+        model = injection
         exclude = ('config_object', 'config_type', 'checkpoint_number', 'field',
                    'id', 'register_index', 'result')
 
@@ -113,7 +114,7 @@ class simics_injection_table(tables.Table):
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = models.injection
+        model = injection
         fields = ('injection_number', 'timestamp', 'checkpoint_number',
                   'target', 'target_index', 'register', 'register_index', 'bit',
                   'field', 'gold_value', 'injected_value', 'success')
@@ -122,12 +123,12 @@ class simics_injection_table(tables.Table):
 class simics_register_diff_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
-        model = models.simics_register_diff
+        model = simics_register_diff
         exclude = ('id', 'result')
 
 
 class simics_memory_diff_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
-        model = models.simics_memory_diff
+        model = simics_memory_diff
         exclude = ('id', 'result')

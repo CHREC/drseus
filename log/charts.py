@@ -6,8 +6,8 @@ import numpy
 from simplejson import dumps
 from threading import Thread
 
-from filters import fix_sort, fix_sort_list
-from models import result
+from .filters import fix_sort, fix_sort_list
+from .models import result
 from simics_targets import devices as simics_devices
 from jtag_targets import devices as hardware_devices
 
@@ -628,7 +628,7 @@ def registers_tlbs_charts(tlb, queryset, campaign_data, outcomes,
                                default=0, output_field=IntegerField()))
             ).values_list('register_name', 'count')
         data = sorted(data, key=fix_sort_list)
-        chart['series'].append({'data': zip(*data)[1], 'name': outcome})
+        chart['series'].append({'data': list(zip(*data))[1], 'name': outcome})
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         var reg = this.category.split(':');
@@ -865,7 +865,7 @@ def times_charts(queryset, campaign_data, outcomes, group_categories,
             filter_kwargs['result__outcome_category' if group_categories
                           else 'result__outcome'] = outcome
             data = []
-            for i in xrange(len(times)):
+            for i in range(len(times)):
                 if i+1 < len(times):
                     data.append(queryset.filter(time__gte=times[i],
                                                 time__lt=times[i+1],
@@ -972,7 +972,7 @@ def diff_times_chart(queryset, campaign_data, outcomes, group_categories,
             ).values_list('avg', flat=True)
     else:
         data = []
-        for i in xrange(len(times)):
+        for i in range(len(times)):
             if i+1 < len(times):
                 data.append(queryset.filter(time__gte=times[i],
                                             time__lt=times[i+1]).aggregate(

@@ -1,4 +1,3 @@
-from __future__ import print_function
 from collections import OrderedDict
 from paramiko import AutoAddPolicy, SSHClient
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
@@ -43,16 +42,18 @@ class dut(object):
                        else options.aux_serial_port)
         baud_rate = (options.dut_baud_rate if not aux
                      else options.aux_baud_rate)
-        # try:
-        self.serial = Serial(port=serial_port, baudrate=baud_rate,
+        self.serial = Serial(port=None, baudrate=baud_rate,
                              timeout=options.timeout, rtscts=True)
+        if self.campaign_data['use_simics']:
+            # workaround for pyserial 3
+            self.serial._dsrdtr = True
+        self.serial.port = serial_port
+        # try:
+        self.serial.open()
         # except:
         #     raise Exception('error opening serial port', serial_port,
         #                     ', are you a member of dialout?')
-        try:
-            self.serial.reset_input_buffer()  # pyserial 3
-        except AttributeError:
-            self.serial.flushInput()  # pyserial 2.7
+        self.serial.reset_input_buffer()
         self.prompt = options.dut_prompt if not aux else options.aux_prompt
         self.prompt += ' '
         self.rsakey = rsakey
@@ -74,11 +75,11 @@ class dut(object):
 
     def send_files(self, files):
         if self.options.debug:
-            print(colored('sending file(s)', 'blue'))
+            print(colored('sending file(s)...', 'blue'))
         ssh = SSHClient()
         ssh.set_missing_host_key_policy(AutoAddPolicy())
         attempts = 10
-        for attempt in xrange(attempts):
+        for attempt in range(attempts):
             try:
                 ssh.connect(self.ip_address, port=(self.options.dut_scp_port
                                                    if not self.aux else
@@ -97,7 +98,7 @@ class dut(object):
                 dut_scp = SCPClient(ssh.get_transport())
                 try:
                     dut_scp.put(files)
-                except (SocketTimeout, SCPException) as error:
+                except (SCPException, SocketError, SocketTimeout) as error:
                     dut_scp.close()
                     ssh.close()
                     print(colored('error sending file(s) (attempt ' +
@@ -110,17 +111,18 @@ class dut(object):
                 else:
                     dut_scp.close()
                     ssh.close()
+                    if self.options.debug:
+                        print(colored('done', 'blue'))
                     break
-        if self.options.debug:
-            print(colored('files sent', 'blue'))
 
     def get_file(self, file_, local_path=''):
         if self.options.debug:
-            print(colored('getting file', 'blue'))
+            print(colored('getting file...', 'blue'), end='')
+            sys.stdout.flush()
         ssh = SSHClient()
         ssh.set_missing_host_key_policy(AutoAddPolicy())
         attempts = 10
-        for attempt in xrange(attempts):
+        for attempt in range(attempts):
             try:
                 ssh.connect(self.ip_address, port=(self.options.dut_scp_port
                                                    if not self.aux else
@@ -139,7 +141,7 @@ class dut(object):
                 dut_scp = SCPClient(ssh.get_transport())
                 try:
                     dut_scp.get(file_, local_path=local_path)
-                except (SocketTimeout, SCPException) as error:
+                except (SCPException, SocketError, SocketTimeout) as error:
                     dut_scp.close()
                     ssh.close()
                     print(colored('error getting file (attempt ' +
@@ -152,9 +154,12 @@ class dut(object):
                 else:
                     dut_scp.close()
                     ssh.close()
+                    if self.options.debug:
+                        print(colored('done', 'blue'))
                     break
-        if self.options.debug:
-            print(colored('file received', 'blue'))
+
+    def write(self, string):
+        self.serial.write(bytes(string, encoding='utf-8'))
 
     def read_until(self, string=None):
         if string is None:
@@ -221,13 +226,13 @@ class dut(object):
             return buff
 
     def command(self, command=''):
-        self.serial.write(str(command+'\n'))
+        self.write(command+'\n')
         return self.read_until()
 
     def do_login(self, ip_address=None, change_prompt=False, simics=False):
 
         def is_logged_in():
-            self.serial.write('\n')
+            self.write('\n')
             buff = ''
             while True:
                 char = self.serial.read().decode('utf-8', 'replace')
@@ -249,7 +254,7 @@ class dut(object):
 
     # def do_login(self, ip_address=None, change_prompt=False, simics=False):
         if not is_logged_in():
-            self.serial.write('root\n')
+            self.write('root\n')
             buff = ''
             while True:
                 char = self.serial.read().decode('utf-8', 'replace')
@@ -268,7 +273,7 @@ class dut(object):
                     self.command('chrec')
                     break
         if change_prompt:
-            self.serial.write('export PS1=\"DrSEUs# \"\n')
+            self.write('export PS1=\"DrSEUs# \"\n')
             self.read_until('export PS1=\"DrSEUs# \"')
             self.prompt = 'DrSEUs# '
             self.read_until()
@@ -278,7 +283,7 @@ class dut(object):
                      '\" > ~/.ssh/authorized_keys')
         if ip_address is None:
             attempts = 10
-            for attempt in xrange(attempts):
+            for attempt in range(attempts):
                 for line in self.command('ip addr show').split('\n'):
                     line = line.strip().split()
                     if len(line) > 0 and line[0] == 'inet':

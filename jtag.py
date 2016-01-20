@@ -1,5 +1,3 @@
-from __future__ import print_function
-from datetime import datetime
 from pyudev import Context
 from telnetlib import Telnet
 from termcolor import colored
@@ -7,7 +5,7 @@ from threading import Thread
 from time import sleep, time
 from random import randrange, uniform
 import socket
-from subprocess import Popen
+from subprocess import DEVNULL, Popen
 
 from dut import dut
 from error import DrSEUsError
@@ -79,13 +77,13 @@ class jtag(object):
 
     def time_application(self):
         start = time()
-        for i in xrange(self.options.iterations):
+        for i in range(self.options.iterations):
             if self.campaign_data['use_aux']:
                 aux_process = Thread(
                     target=self.aux.command,
                     args=('./'+self.campaign_data['aux_command'], ))
                 aux_process.start()
-            self.dut.serial.write(str('./'+self.campaign_data['command']+'\n'))
+            self.dut.write('./'+self.campaign_data['command']+'\n')
             if self.campaign_data['use_aux']:
                 aux_process.join()
             if self.campaign_data['kill_dut']:
@@ -97,7 +95,7 @@ class jtag(object):
 
     def inject_faults(self):
         injection_times = []
-        for i in xrange(self.options.injections):
+        for i in range(self.options.injections):
             injection_times.append(uniform(0, self.campaign_data['exec_time']))
         injection_times = sorted(injection_times)
         injection = 0
@@ -107,8 +105,7 @@ class jtag(object):
                 print(colored('injection time: '+str(injection_time),
                               'magenta'))
             if injection == 1:
-                self.dut.serial.write(str('./'+self.campaign_data['command'] +
-                                          '\n'))
+                self.dut.write('./'+self.campaign_data['command']+'\n')
             else:
                 self.continue_dut()
             sleep(injection_time)
@@ -213,7 +210,7 @@ class bdi(jtag):
                 self.result_data['debugger_output'] += command
             if self.options.debug:
                 print(colored(command, 'yellow'))
-        for i in xrange(len(expected_output)):
+        for i in range(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
             if self.options.command == 'new':
@@ -363,14 +360,12 @@ class openocd(jtag):
         self.targets = devices['a9']
         serial = zedboards[find_uart_serials()[options.dut_serial_port]]
         self.port = find_open_port()
-        if options.command != 'openocd':
-            self.dev_null = open('/dev/null', 'w')
         self.openocd = Popen(['openocd', '-c',
                               'gdb_port 0; tcl_port 0; telnet_port ' +
                               str(self.port)+'; interface ftdi; ftdi_serial ' +
                               serial+';', '-f', 'openocd_zedboard.cfg'],
-                             stderr=(self.dev_null
-                                     if options.command != 'openocd' else None))
+                             stderr=(DEVNULL if options.command != 'openocd'
+                                     else None))
         if options.command != 'openocd':
             jtag.__init__(self, campaign_data, result_data, options, rsakey)
             sleep(1)
@@ -385,7 +380,6 @@ class openocd(jtag):
         self.telnet.write('shutdown\n')
         jtag.close(self)
         self.openocd.wait()
-        self.dev_null.close()
 
     def command(self, command, expected_output=[], error_message=None):
         return_buffer = ''
@@ -411,7 +405,7 @@ class openocd(jtag):
                 print(colored(buff, 'yellow'))
             if index < 0:
                 raise DrSEUsError(error_message)
-        for i in xrange(len(expected_output)):
+        for i in range(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
             if self.options.command == 'new':

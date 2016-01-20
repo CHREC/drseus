@@ -1,8 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 from argparse import ArgumentParser
 
 import utilities
 
+# TODO: add ip address override
 # TODO: remove output image buttons if not needed from log viewer result page
 # TODO: move rsakey back into campaign_data/db
 # TODO: add boot commands option
@@ -32,8 +33,7 @@ parser.add_argument('--serial', action='store', metavar='PORT',
                          '[a9 default=/dev/ttyACM0] (overridden by Simics)')
 parser.add_argument('--baud', action='store', type=int, metavar='RATE',
                     dest='dut_baud_rate', default=115200,
-                    help='DUT serial port baud rate [default=115200] '
-                         '(overridden by Simics)')
+                    help='DUT serial port baud rate [default=115200]')
 parser.add_argument('--scp', action='store', type=int, metavar='PORT',
                     dest='dut_scp_port', default=22,
                     help='DUT scp port [default=22] (overridden by Simics)')
@@ -47,8 +47,7 @@ parser.add_argument('--aux_serial', action='store', metavar='PORT',
                          '[a9 default=/dev/ttyACM0] (overridden by Simics)')
 parser.add_argument('--aux_baud', action='store', type=int, metavar='RATE',
                     dest='aux_baud_rate', default=115200,
-                    help='AUX serial port baud rate [default=115200] '
-                         '(overridden by Simics)')
+                    help='AUX serial port baud rate [default=115200]')
 parser.add_argument('--aux_scp', action='store', type=int, metavar='PORT',
                     dest='aux_scp_port', default=22,
                     help='AUX scp port [default=22] (overridden by Simics)')
@@ -77,8 +76,8 @@ new_campaign.add_argument('-A', '--arch', action='store',
 new_campaign.add_argument('-t', '--timing', action='store', type=int,
                           dest='iterations', default=5,
                           help='number of timing iterations to run [default=5]')
-new_campaign.add_argument('-a', '--args', action='store', dest='arguments',
-                          help='arguments for application')
+new_campaign.add_argument('-a', '--args', action='store', nargs='+',
+                          dest='arguments', help='arguments for application')
 new_campaign.add_argument('-d', '--dir', action='store', dest='directory',
                           default='fiapps',
                           help='directory to look for files [default=fiapps]')
@@ -249,4 +248,6 @@ if options.command == 'new' or options.campaign_id:
             options.aux_serial_port = '/dev/ttyACM1'
         if options.aux_prompt is None:
             options.aux_prompt = '[root@ZED]#'
+if options.command == 'new' and options.arguments:
+    options.arguments = ' '.join(options.arguments)
 options.func(options)
