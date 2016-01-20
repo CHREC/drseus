@@ -75,7 +75,7 @@ class dut(object):
 
     def send_files(self, files):
         if self.options.debug:
-            print(colored('sending file(s)...', 'blue'))
+            print(colored('sending file(s)...', 'blue'), end='')
         ssh = SSHClient()
         ssh.set_missing_host_key_policy(AutoAddPolicy())
         attempts = 10

@@ -71,7 +71,7 @@ def charts_page(request, campaign_id, group_categories):
         page_items.append(('Fault Propagation', 'propagation_chart'))
     page_items.extend([('Data Diff By Target', 'diff_targets_chart'),
                        ('Injections By Register', 'registers_chart'),
-                       ('Injections By Bit', 'bits_chart')])
+                       ('Injections By Register Bit', 'register_bits_chart')])
     if campaign_data.use_simics:
         page_items.extend([('Injections By TLB Entry', 'tlbs_chart'),
                           ('Injections By TLB Field', 'tlb_fields_chart')])

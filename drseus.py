@@ -226,7 +226,7 @@ options = parser.parse_args()
 if options.command is None:
     parser.print_help()
 else:
-    if not options.command == 'new':
+    if options.command != 'new':
         if not options.campaign_id:
             options.campaign_id = utilities.get_last_campaign()
         if options.campaign_id:

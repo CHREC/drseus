@@ -182,7 +182,7 @@ def target_bits_chart(campaign_data):
 def results_charts(queryset, campaign_data, group_categories):
     charts = (overview_chart, targets_charts, propagation_chart,
               diff_targets_chart, registers_chart, tlbs_chart, tlb_fields_chart,
-              bits_chart, times_charts, diff_times_chart, counts_chart)
+              register_bits_chart, times_charts, diff_times_chart, counts_chart)
     if group_categories:
         outcomes = list(queryset.values_list(
             'result__outcome_category', flat=True).distinct(
@@ -545,7 +545,7 @@ def registers_tlbs_charts(tlb, queryset, campaign_data, outcomes,
         registers = queryset.filter(target='TLB').annotate(
             tlb_index=Substr('register_index', 1,
                              Length('register_index')-2,
-                             output_field=TextField()),
+                             output_field=TextField())).annotate(
             register_name=Concat('register', Value(' '), 'tlb_index')
         ).values_list('register_name', flat=True).distinct(
         ).order_by('register_name')
@@ -620,7 +620,7 @@ def registers_tlbs_charts(tlb, queryset, campaign_data, outcomes,
             data = queryset.filter(target='TLB').annotate(
                 tlb_index=Substr('register_index', 1,
                                  Length('register_index')-2,
-                                 output_field=TextField()),
+                                 output_field=TextField())).annotate(
                 register_name=Concat('register', Value(' '), 'tlb_index')
             ).values_list('register_name').distinct().order_by('register_name'
                                                                ).annotate(
@@ -720,8 +720,8 @@ def tlb_fields_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(chart)
 
 
-def bits_chart(queryset, campaign_data, outcomes, group_categories,
-               chart_array):
+def register_bits_chart(queryset, campaign_data, outcomes, group_categories,
+                        chart_array):
     bits = list(queryset.exclude(target='TLB').values_list(
         'bit', flat=True).distinct().order_by('bit'))
     if len(bits) < 1:
@@ -729,7 +729,7 @@ def bits_chart(queryset, campaign_data, outcomes, group_categories,
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'bits_chart',
+            'renderTo': 'register_bits_chart',
             'type': 'column',
             'zoomType': 'y'
         },
