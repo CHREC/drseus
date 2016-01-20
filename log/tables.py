@@ -75,7 +75,7 @@ class results_table(tables.Table):
         model = models.result
         fields = ('select', 'id_', 'timestamp', 'outcome_category', 'outcome',
                   'data_diff', 'detected_errors', 'num_injections', 'targets')
-        order_by = 'id'
+        order_by = 'id_'
 
 
 class result_table(results_table):
