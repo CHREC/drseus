@@ -741,7 +741,7 @@ class simics(object):
                               'checkpoint_number': checkpoint_number,
                               'register': register,
                               'target': target,
-                              'timestamp': datetime.now()}
+                              'timestamp': None}
             try:
                 # perform fault injection
                 injection_data.update(inject_register(injected_checkpoint,

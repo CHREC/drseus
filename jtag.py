@@ -120,7 +120,7 @@ class jtag(object):
                               'target': target,
                               'register': register,
                               'time': injection_time,
-                              'timestamp': datetime.now()}
+                              'timestamp': None}
             if ':' in target:
                 injection_data['target_index'] = target.split(':')[1]
                 target = target.split(':')[0]

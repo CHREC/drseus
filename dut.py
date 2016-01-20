@@ -187,11 +187,17 @@ class dut(object):
                     errors += 1
             if errors > 5:
                 break
+            if buff[-1] == '\n' and self.options.command != 'supervise':
+                with sql() as db:
+                    if self.options.command == 'new':
+                        db.update_dict('campaign', self.campaign_data)
+                    else:
+                        db.update_dict('result', self.result_data)
         if self.serial.timeout != self.options.timeout:
             self.serial.timeout = self.options.timeout
         if self.options.debug:
             print()
-        if not self.options.command == 'supervise':
+        if self.options.command != 'supervise':
             with sql() as db:
                 if self.options.command == 'new':
                     db.update_dict('campaign', self.campaign_data)

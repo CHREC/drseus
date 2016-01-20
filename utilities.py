@@ -160,7 +160,7 @@ def create_campaign(options):
         'dut_output': '',
         'kill_dut': options.kill_dut,
         'output_file': options.file,
-        'timestamp': datetime.now(),
+        'timestamp': None,
         'use_aux': options.use_aux,
         'use_aux_output': options.use_aux and options.use_aux_output,
         'use_simics': options.use_simics}

@@ -154,7 +154,7 @@ class fault_injector(object):
                                  'num_injections': num_injections,
                                  'outcome_category': 'Incomplete',
                                  'outcome': 'Incomplete',
-                                 'timestamp': datetime.now()})
+                                 'timestamp': None})
         if 'id' in self.result_data:
             del self.result_data['id']
         with sql() as db:
@@ -288,7 +288,6 @@ class fault_injector(object):
                           'blue'))
         else:
             print()
-        self.result_data['timestamp'] = datetime.now()
         with sql() as db:
             db.cursor.execute('SELECT COUNT(*) FROM log_injection '
                               'WHERE result_id=?', (self.result_data['id'],))

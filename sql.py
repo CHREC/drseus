@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import sqlite3
 
@@ -27,6 +28,8 @@ class sql(object):
         return self
 
     def insert_dict(self, table, dictionary):
+        if 'timestamp' in dictionary:
+            dictionary['timestamp'] = datetime.now()
         self.cursor.execute(
             'INSERT INTO log_{} ({}) VALUES ({})'.format(
                 table,
@@ -41,6 +44,8 @@ class sql(object):
                 row_id = dictionary['id']
             else:
                 raise Exception('Unknown sql row id to update')
+        if 'timestamp' in dictionary:
+            dictionary['timestamp'] = datetime.now()
         self.cursor.execute(
             'UPDATE log_{} SET {}=? WHERE id={}'.format(
                 table,
