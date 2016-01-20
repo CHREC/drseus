@@ -18,7 +18,8 @@ def injection_choices(campaign, attribute):
     choices = []
     for item in sorted(models.injection.objects.filter(
             result__campaign_id=campaign).values(attribute).distinct()):
-        choices.append((item[attribute], item[attribute]))
+        if item[attribute] is not None:
+            choices.append((item[attribute], item[attribute]))
     return sorted(choices, key=fix_sort_list)
 
 
@@ -26,7 +27,8 @@ def result_choices(campaign, attribute):
     choices = []
     for item in sorted(models.result.objects.filter(
             campaign_id=campaign).values(attribute).distinct()):
-        choices.append((item[attribute], item[attribute]))
+        if item[attribute] is not None:
+            choices.append((item[attribute], item[attribute]))
     return sorted(choices, key=fix_sort_list)
 
 
@@ -47,6 +49,15 @@ class injection_filter(django_filters.FilterSet):
         field_choices = injection_choices(campaign, 'field')
         self.filters['field'].extra.update(choices=field_choices)
         self.filters['field'].widget.attrs['size'] = min(len(field_choices), 10)
+        register_choices = injection_choices(campaign, 'register')
+        self.filters['register'].extra.update(choices=register_choices)
+        self.filters['register'].widget.attrs['size'] = min(
+            len(register_choices), 10)
+        register_index_choices = injection_choices(campaign, 'register_index')
+        self.filters['register_index'].extra.update(
+            choices=register_index_choices)
+        self.filters['register_index'].widget.attrs['size'] = min(
+            len(register_index_choices), 10)
         num_injections_choices = result_choices(campaign, 'num_injections')
         self.filters['result__num_injections'].extra.update(
             choices=num_injections_choices)
@@ -61,19 +72,6 @@ class injection_filter(django_filters.FilterSet):
             choices=outcome_category_choices)
         self.filters['result__outcome_category'].widget.attrs['size'] = min(
             len(outcome_category_choices), 10)
-        register_choices = injection_choices(campaign, 'register')
-        self.filters['register'].extra.update(choices=register_choices)
-        self.filters['register'].widget.attrs['size'] = min(
-            len(register_choices), 10)
-        register_index_choices = injection_choices(campaign, 'register_index')
-        self.filters['register_index'].extra.update(
-            choices=register_index_choices)
-        self.filters['register_index'].widget.attrs['size'] = min(
-            len(register_index_choices), 10)
-        # success_choices = ((1, 'Any'), (2, 'True'), (3, 'False'))
-        # self.filters['success'].extra.update(choices=success_choices)
-        # self.filters['success'].widget.attrs['size'] = min(
-        #     len(success_choices), 10)
         self.filters['success'].extra.update(help_text='')
         target_choices = injection_choices(campaign, 'target')
         self.filters['target'].extra.update(choices=target_choices)
@@ -124,8 +122,6 @@ class injection_filter(django_filters.FilterSet):
     result__outcome_category = django_filters.MultipleChoiceFilter(
         label='Outcome category',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    # success = django_filters.MultipleChoiceFilter(
-    #     widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     target = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     target_index = django_filters.MultipleChoiceFilter(
@@ -137,9 +133,13 @@ class injection_filter(django_filters.FilterSet):
 
     class Meta:
         model = models.injection
-        exclude = ['config_object', 'config_type', 'gold_value',
-                   'injected_value', 'injection_number', 'result', 'time',
-                   'timestamp']
+        fields = ('result__outcome_category', 'result__outcome',
+                  'result__data_diff_gt', 'result__data_diff_lt',
+                  'result__dut_output', 'result__aux_output',
+                  'result__debugger_output', 'result__num_injections',
+                  'checkpoint_number', 'time_gt', 'time_lt', 'target',
+                  'target_index', 'register', 'register_index', 'bit', 'field',
+                  'success')
 
 
 class simics_register_diff_filter(django_filters.FilterSet):
@@ -157,7 +157,7 @@ class simics_register_diff_filter(django_filters.FilterSet):
         register_choices = self.simics_register_diff_choices('register')
         self.filters['register'].extra.update(choices=register_choices)
         self.filters['register'].widget.attrs['size'] = min(
-            len(register_choices), 30)
+            len(register_choices), 10)
 
     def simics_register_diff_choices(self, attribute):
         choices = []
@@ -174,4 +174,4 @@ class simics_register_diff_filter(django_filters.FilterSet):
 
     class Meta:
         model = models.simics_register_diff
-        exclude = ['config_object', 'gold_value', 'monitored_value', 'result']
+        fields = ('checkpoint_number', 'register')

@@ -60,13 +60,10 @@ export_options = {
 
 
 def campaigns_chart(queryset):
-    campaigns = queryset.values_list(
-        'campaign_id', 'campaign__command').distinct().order_by('campaign_id')
+    campaigns = list(queryset.values_list('campaign_id', flat=True).distinct(
+        ).order_by('campaign_id'))
     if len(campaigns) < 1:
         return '[]'
-    campaigns = zip(*campaigns)
-    campaign_numbers = dumps(campaigns[0])
-    campaigns = campaigns[1]
     outcomes = list(queryset.values_list(
         'outcome_category', flat=True).distinct().order_by('outcome_category'))
     if 'No error' in outcomes:
@@ -104,7 +101,7 @@ def campaigns_chart(queryset):
         'xAxis': {
             'categories': campaigns,
             'title': {
-                'text': 'Campaigns'
+                'text': 'Campaign IDs'
             }
         },
         'yAxis': {
@@ -118,7 +115,7 @@ def campaigns_chart(queryset):
     }
     chart['series'] = []
     for outcome in outcomes:
-        data = list(queryset.values_list('campaign__command').distinct(
+        data = list(queryset.values_list('campaign_id').distinct(
             ).order_by('campaign_id').annotate(
                 count=Sum(Case(When(outcome_category=outcome, then=1),
                                default=0, output_field=IntegerField()))
@@ -127,11 +124,10 @@ def campaigns_chart(queryset):
     chart = dumps(chart)
     chart = chart.replace('\"chart_click\"', """
     function(event) {
-        var campaign_numbers = campaign_number_list;
-        window.location.assign(''+campaign_numbers[this.x]+'/results/?'+
+        window.location.assign('/campaign/'+this.category+'/results?'+
                                'result__outcome_category='+this.series.name);
     }
-    """.replace('campaign_number_list', campaign_numbers))
+    """)
     return '['+chart+']'
 
 
@@ -260,7 +256,6 @@ def overview_chart(queryset, campaign_data, outcomes, group_categories,
         'title': {
             'text': 'Overview'
         }
-
     }
     qs_result_ids = queryset.values('result__id').distinct()
     filter_kwargs = {'id__in': qs_result_ids}
@@ -273,7 +268,7 @@ def overview_chart(queryset, campaign_data, outcomes, group_categories,
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         var outcomes = outcome_list;
-        window.location.assign('../results/?result__outcome='+outcomes[this.x]);
+        window.location.assign('results?result__outcome='+outcomes[this.x]);
     }
     """.replace('outcome_list', outcome_list))
     if group_categories:
@@ -359,7 +354,7 @@ def targets_charts(queryset, campaign_data, outcomes, group_categories,
     }
     chart_percent = dumps(chart_percent).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('../results/?result__outcome='+this.series.name+
+        window.location.assign('results?result__outcome='+this.series.name+
                                '&target='+this.category);
     }
     """)
@@ -373,7 +368,7 @@ def targets_charts(queryset, campaign_data, outcomes, group_categories,
         chart_log['yAxis']['type'] = 'logarithmic'
         chart_log = dumps(chart_log).replace('\"chart_click\"', """
         function(event) {
-            window.location.assign('../results/?result__outcome='+
+            window.location.assign('results?result__outcome='+
                                    this.series.name+
                                    '&target='+this.category);
         }
@@ -384,7 +379,7 @@ def targets_charts(queryset, campaign_data, outcomes, group_categories,
         chart_array.append(chart_log)
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('../results/?result__outcome='+this.series.name+
+        window.location.assign('results?result__outcome='+this.series.name+
                                '&target='+this.category);
     }
     """)
@@ -455,7 +450,7 @@ def propagation_chart(queryset, campaign_data, outcomes, group_categories,
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('../results/?target='+this.category);
+        window.location.assign('results?target='+this.category);
     }
     """)
     chart_array.append(chart)
@@ -521,7 +516,7 @@ def diff_targets_chart(queryset, campaign_data, outcomes, group_categories,
     chart['series'].append({'data': [x*100 for x in data]})
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('../results/?target='+this.category);
+        window.location.assign('results?target='+this.category);
     }
     """)
     chart_array.append(chart)
@@ -640,12 +635,12 @@ def registers_tlbs_charts(tlb, queryset, campaign_data, outcomes,
         var register = reg[0];
         var index = reg[1];
         if (index) {
-            window.location.assign('../results/?result__outcome='+
+            window.location.assign('results?result__outcome='+
                                    this.series.name+
                                    '&register='+register+
                                    '&register_index='+index);
         } else {
-            window.location.assign('../results/?result__outcome='+
+            window.location.assign('results?result__outcome='+
                                    this.series.name+
                                    '&register='+register);
         }
@@ -716,7 +711,7 @@ def tlb_fields_chart(queryset, campaign_data, outcomes, group_categories,
         chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('../results/?result__outcome='+this.series.name+
+        window.location.assign('results?result__outcome='+this.series.name+
                                '&field='+this.category);
     }
     """)
@@ -785,7 +780,7 @@ def bits_chart(queryset, campaign_data, outcomes, group_categories,
         chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('../results/?result__outcome='+this.series.name+
+        window.location.assign('results?result__outcome='+this.series.name+
                                '&bit='+this.category);
     }
     """)
@@ -889,7 +884,7 @@ def times_charts(queryset, campaign_data, outcomes, group_categories,
     if campaign_data.use_simics:
         chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
-            window.location.assign('../results/?result__outcome='+
+            window.location.assign('results?result__outcome='+
                                    this.series.name+
                                    '&checkpoint_number='+
                                    this.category);
@@ -899,7 +894,7 @@ def times_charts(queryset, campaign_data, outcomes, group_categories,
         # chart = dumps(chart).replace('\"chart_click\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
-        #     window.location.assign('../results/?result__outcome='+
+        #     window.location.assign('results?result__outcome='+
         #                            this.series.name+
         #                            '&time_rounded='+time.toFixed(2));
         # }
@@ -992,7 +987,7 @@ def diff_times_chart(queryset, campaign_data, outcomes, group_categories,
     if campaign_data.use_simics:
         chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
-            window.location.assign('../results/?checkpoint_number='+
+            window.location.assign('results?checkpoint_number='+
                                    this.category);
         }
         """)
@@ -1000,7 +995,7 @@ def diff_times_chart(queryset, campaign_data, outcomes, group_categories,
         # chart = dumps(chart).replace('\"chart_click\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
-        #     window.location.assign('../results/?time_rounded='+
+        #     window.location.assign('results?time_rounded='+
         #                            time.toFixed(2));
         # }
         # """)
@@ -1074,7 +1069,7 @@ def counts_chart(queryset, campaign_data, outcomes, group_categories,
     chart_array.append(dumps(chart_percent))
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('../results/?result__outcome='+this.series.name+
+        window.location.assign('results?result__outcome='+this.series.name+
                                '&result__num_injections='+this.category);
     }
     """)

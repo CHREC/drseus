@@ -4,15 +4,14 @@ import views
 
 urlpatterns = [
     url(r'^$', views.campaigns_page),
-    url(r'^(?P<campaign_id>[0-9]+)/campaign/$', views.campaign_page),
-    url(r'^(?P<campaign_id>[0-9]+)/edit/$', views.edit_page),
-    url(r'^(?P<campaign_id>[0-9]+)/category_charts/$',
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/info$', views.campaign_page),
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/category_charts$',
         views.category_charts_page),
-    url(r'^(?P<campaign_id>[0-9]+)/outcome_charts/$',
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/outcome_charts$',
         views.outcome_charts_page),
-    url(r'^(?P<campaign_id>[0-9]+)/results/$', views.results_page),
-    url(r'^(?P<campaign_id>[0-9]+)/result/(?P<result_id>[0-9]+)/$',
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/results$', views.results_page),
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/result/(?P<result_id>[0-9]+)$',
         views.result_page),
-    url(r'^output-images/(?P<campaign_id>[0-9]+)/(?P<result_id>[0-9]+)$',
-        views.output_image)
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/output/(?P<result_id>[0-9]+)$',
+        views.output)
 ]

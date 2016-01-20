@@ -4,7 +4,7 @@
 <div class="source">
     {% for result in results %}
         <h2 align="center">
-            <a href="../result/{{ result.id }}" name="{{ result.id }}">
+            <a href="./result/{{ result.id }}" name="{{ result.id }}">
                 Result ID {{ result.id }}
             </a>
              | {{ result.timestamp|date:"m/d/Y H:i:s.u" }} | {{ result.outcome_category }} -
@@ -16,7 +16,7 @@
         </h2>
         {% if image %}
         <div align="center">
-            <img src="/output-images/{{ campaign }}/{{ result.id }}">
+            <img src="./output/{{ result.id }}">
         </div>
         {% else %}
         {% if campaign_data.use_aux %}

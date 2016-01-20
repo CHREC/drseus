@@ -3,59 +3,58 @@ import django_tables2 as tables
 import models
 
 
-class campaign_table(tables.Table):
-    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
-
-    class Meta:
-        attrs = {"class": "paleblue"}
-        model = models.campaign
-        exclude = ('aux_output', 'debugger_output', 'dut_output')
-
-
 class campaigns_table(tables.Table):
-    id = tables.TemplateColumn('<a href="/{{ value }}/results">{{ value }}</a>')
+    id_ = tables.TemplateColumn(
+        '<a href="/campaign/{{ value }}/results">{{ value }}</a>',
+        accessor='id')
+    num_cycles = tables.Column()
     results = tables.Column(empty_values=())
-    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+
+    def render_num_cycles(self, record):
+        return '{:,}'.format(record.num_cycles)
 
     def render_results(self, record):
-        return str(models.result.objects.filter(campaign=record.id).count())
+        return '{:,}'.format(
+            models.result.objects.filter(campaign=record.id).count())
 
     class Meta:
         attrs = {"class": "paleblue"}
         model = models.campaign
-        exclude = ('application', 'aux_application', 'aux_output',
-                   'cycles_between', 'debugger_output', 'dut_output',
-                   'kill_dut', 'num_checkpoints', 'output_file', 'use_aux',
-                   'use_aux_output')
+        fields = ('id_', 'results', 'command', 'aux_command', 'architecture',
+                  'use_simics', 'exec_time', 'sim_time', 'num_cycles',
+                  'timestamp')
+        order_by = 'id_'
 
 
-class result_table(tables.Table):
-    outcome = tables.TemplateColumn('{{ form.outcome }}')
-    outcome_category = tables.TemplateColumn('{{ form.outcome_category }}')
-    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
-    edit = tables.TemplateColumn('<input type="submit" name="save" '
-                                 'value="Save" onclick="return confirm('
-                                 '\'Are you sure you want to edit this '
-                                 'result?\')"/>')
-    delete = tables.TemplateColumn('<input type="submit" name="delete" '
-                                   'value="Delete" onclick="return confirm('
-                                   '\'Are you sure you want to delete this '
-                                   'result?\')" />')
+class campaign_table(campaigns_table):
+    num_checkpoints = tables.Column()
+    cycles_between = tables.Column()
+    results = tables.Column(empty_values=())
+
+    def render_num_checkpoints(self, record):
+        return '{:,}'.format(record.num_checkpoints)
+
+    def render_cycles_between(self, record):
+        return '{:,}'.format(record.cycles_between)
 
     class Meta:
         attrs = {"class": "paleblue"}
-        model = models.result
-        exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output')
+        model = models.campaign
+        exclude = ('id_',)
+        fields = ('id', 'timestamp', 'results', 'command', 'aux_command',
+                  'architecture', 'use_simics', 'use_aux', 'exec_time',
+                  'sim_time', 'num_cycles', 'output_file', 'num_checkpoints',
+                  'cycles_between')
 
 
 class results_table(tables.Table):
-    id = tables.TemplateColumn(  # LinkColumn()
-        '<a href="../result/{{ value }}">{{ value }}</a>')
+    id_ = tables.TemplateColumn(  # LinkColumn()
+        '<a href="./result/{{ value }}">{{ value }}</a>', accessor='id')
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
     targets = tables.Column(empty_values=())
     select = tables.TemplateColumn(
-        '<input type="checkbox" name="select_box" '
-        'value="{{ record.id }}">', orderable=False)
+        '<input type="checkbox" name="select_box" value="{{ record.id }}">',
+        verbose_name='', orderable=False)
 
     def render_targets(self, record):
         if record is not None:
@@ -74,7 +73,29 @@ class results_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = models.result
-        exclude = ('aux_output', 'campaign', 'debugger_output', 'dut_output')
+        fields = ('select', 'id_', 'timestamp', 'outcome_category', 'outcome',
+                  'data_diff', 'detected_errors', 'num_injections', 'targets')
+        order_by = 'id'
+
+
+class result_table(results_table):
+    outcome = tables.TemplateColumn(
+        '<input name="outcome" type="text" value="{{ value }}" />')
+    outcome_category = tables.TemplateColumn(
+        '<input name="outcome_category" type="text" value="{{ value }}" />')
+    edit = tables.TemplateColumn(
+        '<input type="submit" name="save" value="Save" onclick="return confirm('
+        '"Are you sure you want to edit this result?")"/>')
+    delete = tables.TemplateColumn(
+        '<input type="submit" name="delete" value="Delete" onclick="return '
+        'confirm("Are you sure you want to delete this result?")" />')
+
+    class Meta:
+        attrs = {"class": "paleblue"}
+        model = models.result
+        exclude = ('id_', 'select', 'targets')
+        fields = ('id', 'timestamp', 'outcome_category', 'outcome',
+                  'num_injections', 'data_diff', 'detected_errors')
 
 
 class hw_injection_table(tables.Table):
@@ -93,18 +114,20 @@ class simics_injection_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = models.injection
-        exclude = ('config_object', 'config_type', 'id', 'result', 'time')
+        fields = ('injection_number', 'timestamp', 'checkpoint_number',
+                  'target', 'target_index', 'register', 'register_index', 'bit',
+                  'field', 'gold_value', 'injected_value', 'success')
 
 
 class simics_register_diff_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
-        exclude = ('id', 'result')
         model = models.simics_register_diff
+        exclude = ('id', 'result')
 
 
 class simics_memory_diff_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
-        exclude = ('id', 'result')
         model = models.simics_memory_diff
+        exclude = ('id', 'result')

@@ -3,9 +3,9 @@ from argparse import ArgumentParser
 
 import utilities
 
+# TODO: remove output image buttons if not needed from log viewer result page
 # TODO: move rsakey back into campaign_data/db
 # TODO: add boot commands option
-# TODO: fix inconsistent reloading when editing outcomes on result table page
 # TODO: add modes to backup database and delete backups
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut

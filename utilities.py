@@ -80,14 +80,14 @@ def delete(options):
         if os.path.exists('campaign-data/db.sqlite3'):
             with sql() as db:
                 db.cursor.execute('DELETE FROM log_simics_memory_diff WHERE '
-                                  'result_id IN (SELECT id FROM log_result WHERE '
-                                  'campaign_id=?)', (campaign_id,))
+                                  'result_id IN (SELECT id FROM log_result '
+                                  'WHERE campaign_id=?)', (campaign_id,))
                 db.cursor.execute('DELETE FROM log_simics_register_diff WHERE '
-                                  'result_id IN (SELECT id FROM log_result WHERE '
-                                  'campaign_id=?)', (campaign_id,))
+                                  'result_id IN (SELECT id FROM log_result '
+                                  'WHERE campaign_id=?)', (campaign_id,))
                 db.cursor.execute('DELETE FROM log_injection WHERE '
-                                  'result_id IN (SELECT id FROM log_result WHERE '
-                                  'campaign_id=?)', (campaign_id,))
+                                  'result_id IN (SELECT id FROM log_result '
+                                  'WHERE campaign_id=?)', (campaign_id,))
                 db.cursor.execute('DELETE FROM log_result WHERE campaign_id=?',
                                   (campaign_id,))
                 db.connection.commit()

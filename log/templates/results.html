@@ -26,21 +26,17 @@
                                                 checkboxes = document.getElementsByName('select_box');
                                                 for(var i=0, n=checkboxes.length; i<n; i++) {
                                                     if (checkboxes[i].checked) {
-                                                        window.open('../result/'+checkboxes[i].value, '_blank');
+                                                        window.open('./result/'+checkboxes[i].value, '_blank');
                                                     }
                                                 }
                                             }
                                             function edit_outcome_click() {
                                                 var outcome = prompt('Enter the new outcome for all currently filtered results: ');
                                                 $.post('', {'new_outcome': outcome, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                                                window.location = window.location.href.replace(/result__outcome=[^&]+&/, 'result__outcome='+outcome+'&');
-                                                window.location.reload();
                                             }
                                             function edit_outcome_category_click() {
                                                 var outcome_category = prompt('Enter the new outcome category for all currently filtered results: ');
                                                 $.post('', {'new_outcome_category': outcome_category, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                                                window.location = window.location.href.replace(/result__outcome_category=[^&]+&/, 'result__outcome_category='+outcome_category+'&');
-                                                window.location.reload();
                                             }
                                         </script>
                                         <tr>
@@ -86,7 +82,7 @@
                                             </td>
                                             <td>
                                                 <div style="text-align: center;">
-                                                    <input type="button" value="Edit Outcome Categories" onclick="edit_outcome_category_click()">
+                                                    <input type="submit" name="refresh" value="Edit Outcome Categories" onclick="edit_outcome_category_click()">
                                                 </div>
                                             </td>
                                             <td>
@@ -115,7 +111,7 @@
                                             </td>
                                             <td>
                                                 <div style="text-align: center;">
-                                                    <input type="button" name="edit_outcome" value="Edit Outcomes" onclick="edit_outcome_click()">
+                                                    <input type="submit" name="refresh" value="Edit Outcomes" onclick="edit_outcome_click()">
                                                 </div>
                                             </td>
                                             <td>
