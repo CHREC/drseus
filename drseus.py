@@ -223,31 +223,34 @@ backup = subparsers.add_parser('backup', help='backup the results database',
 backup.set_defaults(func=utilities.backup_database)
 
 options = parser.parse_args()
-if not options.command == 'new':
-    if not options.campaign_id:
-        options.campaign_id = utilities.get_last_campaign()
-    if options.campaign_id:
-        options.architecture = \
-            utilities.get_campaign_data(options.campaign_id)['architecture']
-if options.command == 'new' or options.campaign_id:
-    if options.architecture == 'p2020':
-        if options.dut_serial_port is None:
-            options.dut_serial_port = '/dev/ttyUSB1'
-        if options.dut_prompt is None:
-            options.dut_prompt = 'root@p2020rdb:~#'
-        if options.aux_serial_port is None:
-            options.aux_serial_port = '/dev/ttyUSB0'
-        if options.aux_prompt is None:
-            options.aux_prompt = 'root@p2020rdb:~#'
-    elif options.architecture == 'a9':
-        if options.dut_serial_port is None:
-            options.dut_serial_port = '/dev/ttyACM0'
-        if options.dut_prompt is None:
-            options.dut_prompt = '[root@ZED]#'
-        if options.aux_serial_port is None:
-            options.aux_serial_port = '/dev/ttyACM1'
-        if options.aux_prompt is None:
-            options.aux_prompt = '[root@ZED]#'
-if options.command == 'new' and options.arguments:
-    options.arguments = ' '.join(options.arguments)
-options.func(options)
+if options.command is None:
+    parser.print_help()
+else:
+    if not options.command == 'new':
+        if not options.campaign_id:
+            options.campaign_id = utilities.get_last_campaign()
+        if options.campaign_id:
+            options.architecture = \
+                utilities.get_campaign_data(options.campaign_id)['architecture']
+    if options.command == 'new' or options.campaign_id:
+        if options.architecture == 'p2020':
+            if options.dut_serial_port is None:
+                options.dut_serial_port = '/dev/ttyUSB1'
+            if options.dut_prompt is None:
+                options.dut_prompt = 'root@p2020rdb:~#'
+            if options.aux_serial_port is None:
+                options.aux_serial_port = '/dev/ttyUSB0'
+            if options.aux_prompt is None:
+                options.aux_prompt = 'root@p2020rdb:~#'
+        elif options.architecture == 'a9':
+            if options.dut_serial_port is None:
+                options.dut_serial_port = '/dev/ttyACM0'
+            if options.dut_prompt is None:
+                options.dut_prompt = '[root@ZED]#'
+            if options.aux_serial_port is None:
+                options.aux_serial_port = '/dev/ttyACM1'
+            if options.aux_prompt is None:
+                options.aux_prompt = '[root@ZED]#'
+    if options.command == 'new' and options.arguments:
+        options.arguments = ' '.join(options.arguments)
+    options.func(options)
