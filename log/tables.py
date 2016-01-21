@@ -9,7 +9,7 @@ class campaigns_table(tables.Table):
         '<a href="/campaign/{{ value }}/results">{{ value }}</a>',
         accessor='id')
     num_cycles = tables.Column()
-    results = tables.Column(empty_values=())
+    results = tables.Column(empty_values=(), orderable=False)
 
     def render_num_cycles(self, record):
         return '{:,}'.format(record.num_cycles)
@@ -30,7 +30,7 @@ class campaigns_table(tables.Table):
 class campaign_table(campaigns_table):
     num_checkpoints = tables.Column()
     cycles_between = tables.Column()
-    results = tables.Column(empty_values=())
+    results = tables.Column(empty_values=(), orderable=False)
 
     def render_num_checkpoints(self, record):
         return '{:,}'.format(record.num_checkpoints)
@@ -51,11 +51,26 @@ class campaign_table(campaigns_table):
 class results_table(tables.Table):
     id_ = tables.TemplateColumn(  # LinkColumn()
         '<a href="./result/{{ value }}">{{ value }}</a>', accessor='id')
-    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
-    targets = tables.Column(empty_values=())
+    registers = tables.Column(empty_values=(), orderable=False)
     select = tables.TemplateColumn(
         '<input type="checkbox" name="select_box" value="{{ record.id }}">',
         verbose_name='', orderable=False)
+    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+    targets = tables.Column(empty_values=(), orderable=False)
+
+    def render_registers(self, record):
+        if record is not None:
+            registers = [injection_.register for injection_
+                         in injection.objects.filter(result=record.id)]
+        else:
+            registers = []
+        for index in range(len(registers)):
+            if registers[index] is None:
+                registers[index] = '-'
+        if len(registers) > 0:
+            return ', '.join(registers)
+        else:
+            return '-'
 
     def render_targets(self, record):
         if record is not None:
@@ -75,7 +90,8 @@ class results_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = result
         fields = ('select', 'id_', 'timestamp', 'outcome_category', 'outcome',
-                  'data_diff', 'detected_errors', 'num_injections', 'targets')
+                  'data_diff', 'detected_errors', 'num_injections', 'targets',
+                  'registers')
         order_by = 'id_'
 
 
