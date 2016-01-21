@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 
 import utilities
 
+# TODO: use formatting strings
 # TODO: add ip address override
 # TODO: remove output image buttons if not needed from log viewer result page
 # TODO: move rsakey back into campaign_data/db

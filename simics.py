@@ -8,6 +8,7 @@ import sys
 from termcolor import colored
 from threading import Thread
 from time import sleep, time
+from traceback import print_exc
 
 from dut import dut
 from error import DrSEUsError
@@ -127,10 +128,18 @@ class simics(object):
                                 stdin=PIPE, stdout=PIPE)
             try:
                 self.__command()
-            except DrSEUsError:
+            except:
+                print_exc()
                 self.simics.kill()
-                print(colored('error launching simics (attempt ' +
-                              str(attempt+1)+'/'+str(attempts)+')', 'red'))
+                out = ''
+                try:
+                    out += self.dut.serial.port+' '
+                except AttributeError:
+                    pass
+                out += (str(self.result_data['id'])+': '
+                        'error launching simics (attempt ' +
+                        str(attempt+1)+'/'+str(attempts)+')')
+                print(colored(out, 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 elif attempt == attempts-1:

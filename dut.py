@@ -1,13 +1,11 @@
 from collections import OrderedDict
 from paramiko import AutoAddPolicy, SSHClient
-from paramiko.ssh_exception import NoValidConnectionsError, SSHException
-from scp import SCPClient, SCPException
+from scp import SCPClient
 from serial import Serial
-from socket import error as SocketError
-from socket import timeout as SocketTimeout
 import sys
 from termcolor import colored
 from time import sleep
+from traceback import print_exc
 
 from error import DrSEUsError
 from sql import sql
@@ -48,11 +46,12 @@ class dut(object):
             # workaround for pyserial 3
             self.serial._dsrdtr = True
         self.serial.port = serial_port
-        # try:
-        self.serial.open()
-        # except:
-        #     raise Exception('error opening serial port', serial_port,
-        #                     ', are you a member of dialout?')
+        try:
+            self.serial.open()
+        except:
+            print_exc()
+            raise Exception('error opening serial port', serial_port,
+                            ', are you a member of dialout?')
         self.serial.reset_input_buffer()
         self.prompt = options.dut_prompt if not aux else options.aux_prompt
         self.prompt += ' '
@@ -86,10 +85,17 @@ class dut(object):
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-            except (EOFError, NoValidConnectionsError, SocketError,
-                    SSHException) as error:
-                print(colored('error sending file(s) (attempt '+str(attempt+1) +
-                              '/'+str(attempts)+'): '+str(error), 'red'))
+            except:
+                print_exc()
+                out = ''
+                try:
+                    out += self.serial.port+' '
+                except AttributeError:
+                    pass
+                out += (str(self.result_data['id'])+': '
+                        'error sending file(s) (attempt '+str(attempt+1)+'/' +
+                        str(attempts)+')')
+                print(colored(out, 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 else:
@@ -98,12 +104,19 @@ class dut(object):
                 dut_scp = SCPClient(ssh.get_transport())
                 try:
                     dut_scp.put(files)
-                except (SCPException, SocketError, SocketTimeout) as error:
+                except:
+                    print_exc()
+                    out = ''
+                    try:
+                        out += self.serial.port+' '
+                    except AttributeError:
+                        pass
+                    out += (str(self.result_data['id'])+': '
+                            'error sending file(s) (attempt '+str(attempt+1) +
+                            '/'+str(attempts)+')')
+                    print(colored(out, 'red'))
                     dut_scp.close()
                     ssh.close()
-                    print(colored('error sending file(s) (attempt ' +
-                                  str(attempt+1)+'/'+str(attempts)+'): ' +
-                                  str(error), 'red'))
                     if attempt < attempts-1:
                         sleep(30)
                     else:
@@ -129,10 +142,17 @@ class dut(object):
                                                    self.options.aux_scp_port),
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
-            except (EOFError, NoValidConnectionsError, SocketError,
-                    SSHException) as error:
-                print(colored('error getting file (attempt '+str(attempt+1) +
-                              '/'+str(attempts)+'): '+str(error), 'red'))
+            except:
+                print_exc()
+                out = ''
+                try:
+                    out += self.serial.port+' '
+                except AttributeError:
+                    pass
+                out += (str(self.result_data['id'])+': '
+                        'error getting file (attempt '+str(attempt+1) +
+                        '/'+str(attempts)+')')
+                print(colored(out, 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 else:
@@ -141,12 +161,19 @@ class dut(object):
                 dut_scp = SCPClient(ssh.get_transport())
                 try:
                     dut_scp.get(file_, local_path=local_path)
-                except (SCPException, SocketError, SocketTimeout) as error:
+                except:
+                    print_exc()
+                    out = ''
+                    try:
+                        out += self.serial.port+' '
+                    except AttributeError:
+                        pass
+                    out += (str(self.result_data['id'])+': '
+                            'error getting file (attempt '+str(attempt+1) +
+                            '/'+str(attempts)+')')
+                    print(colored(out, 'red'))
                     dut_scp.close()
                     ssh.close()
-                    print(colored('error getting file (attempt ' +
-                                  str(attempt+1)+'/'+str(attempts)+'): ' +
-                                  str(error), 'red'))
                     if attempt < attempts-1:
                         sleep(30)
                     else:

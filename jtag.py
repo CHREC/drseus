@@ -6,6 +6,7 @@ from time import sleep, time
 from random import randrange, uniform
 import socket
 from subprocess import DEVNULL, Popen
+from traceback import print_exc
 
 from dut import dut
 from error import DrSEUsError
@@ -174,10 +175,11 @@ class bdi(jtag):
         try:
             self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                                  timeout=self.timeout)
-        except socket.timeout:
+        except:
             self.telnet = None
-            print('Could not connect to debugger, '
-                  'running in supervisor-only mode')
+            print_exc()
+            print(colored('Could not connect to debugger, '
+                          'running in supervisor-only mode', 'red'))
         else:
             self.command('', error_message='Debugger not ready')
 

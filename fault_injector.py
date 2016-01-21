@@ -6,6 +6,7 @@ from subprocess import PIPE, Popen
 from termcolor import colored
 from threading import Thread
 from time import sleep
+from traceback import print_exc
 
 from error import DrSEUsError
 from jtag import bdi_p2020, openocd
@@ -273,19 +274,19 @@ class fault_injector(object):
         return outcome, outcome_category
 
     def log_result(self):
+        out = ''
         try:
-            print(colored(self.debugger.dut.serial.port+' ', 'blue'), end='')
+            out += self.debugger.dut.serial.port+' '
         except AttributeError:
             pass
-        print(colored('result id '+str(self.result_data['id'])+' outcome: ' +
-                      self.result_data['outcome_category']+' - ' +
-                      self.result_data['outcome'], 'blue'), end='')
+        out += (str(self.result_data['id'])+': ' +
+                self.result_data['outcome_category']+' - ' +
+                self.result_data['outcome'])
         if self.result_data['data_diff'] is not None and \
                 self.result_data['data_diff'] < 1.0:
-            print(colored(', data diff: '+str(self.result_data['data_diff']),
-                          'blue'))
-        else:
-            print()
+            out += ' {0:.2f}%'.format(max(self.result_data['data_diff']*100,
+                                          99.99))
+        print(colored(out, 'blue'))
         with sql() as db:
             db.cursor.execute('SELECT COUNT(*) FROM log_injection '
                               'WHERE result_id=?', (self.result_data['id'],))
@@ -310,10 +311,17 @@ class fault_injector(object):
                 for attempt in range(attempts):
                     try:
                         self.debugger.reset_dut()
-                    except DrSEUsError as error:
-                        print(colored('Error resetting DUT (attempt ' +
-                                      str(attempt+1)+'/'+str(attempts) +
-                                      '): '+str(error), 'red'))
+                    except:
+                        print_exc()
+                        out = ''
+                        try:
+                            out += self.debugger.dut.serial.port+' '
+                        except AttributeError:
+                            pass
+                        out += (str(self.result_data['id'])+': '
+                                'Error resetting DUT (attempt '+str(attempt+1) +
+                                '/'+str(attempts)+')')
+                        print(colored(out, 'red'))
                         if attempt < attempts-1:
                             sleep(30)
                         else:

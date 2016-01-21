@@ -2,6 +2,7 @@
 
 set -e
 
+rm update_workstation.py
 python3 simics_config.py
 python3 -m compileall -l -b .
 rm -rf __pycache__
