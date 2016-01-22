@@ -274,14 +274,9 @@ class fault_injector(object):
         return outcome, outcome_category
 
     def log_result(self):
-        out = ''
-        try:
-            out += self.debugger.dut.serial.port+' '
-        except AttributeError:
-            pass
-        out += (str(self.result_data['id'])+': ' +
-                self.result_data['outcome_category']+' - ' +
-                self.result_data['outcome'])
+        out = (self.debugger.dut.serial.port+', '+str(self.result_data['id']) +
+               ': '+self.result_data['outcome_category']+' - ' +
+               self.result_data['outcome'])
         if self.result_data['data_diff'] is not None and \
                 self.result_data['data_diff'] < 1.0:
             out += ' {0:.2f}%'.format(max(self.result_data['data_diff']*100,
@@ -313,12 +308,12 @@ class fault_injector(object):
                         self.debugger.reset_dut()
                     except Exception as error:
                         with sql() as db:
-                            db.log_event_exception(
+                            db.log_event_trace(
                                 self.result_data['id'],
                                 'Debugger',  # TODO: update source
-                                'Error resetting DUT')
+                                'Error resetting DUT', exception=True)
                         print(colored(
-                            self.debugger.dut.serial.port+' ' +
+                            self.debugger.dut.serial.port+', ' +
                             str(self.result_data['id'])+': '
                             'Error resetting DUT (attempt '+str(attempt+1) +
                             '/'+str(attempts)+'): '+str(error), 'red'))

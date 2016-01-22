@@ -56,6 +56,7 @@ class results_table(tables.Table):
     select = tables.TemplateColumn(
         '<input type="checkbox" name="select_box" value="{{ record.id }}">',
         verbose_name='', orderable=False)
+    injection_success = tables.Column(empty_values=(), orderable=False)
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
     targets = tables.Column(empty_values=(), orderable=False)
 
@@ -77,6 +78,19 @@ class results_table(tables.Table):
         else:
             return '-'
 
+    def render_injection_success(self, record):
+        success = '-'
+        if record is not None:
+            for injection_ in injection.objects.filter(result=record.id):
+                if injection_.success is None:
+                    success = '-'
+                elif not injection_.success:
+                    success = False
+                    break
+                else:
+                    success = True
+        return success
+
     def render_targets(self, record):
         if record is not None:
             targets = [injection_.target for injection_
@@ -95,8 +109,8 @@ class results_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = result
         fields = ('select', 'id_', 'timestamp', 'outcome_category', 'outcome',
-                  'data_diff', 'detected_errors', 'num_injections', 'targets',
-                  'registers')
+                  'data_diff', 'detected_errors', 'events', 'num_injections',
+                  'targets', 'registers', 'injection_success')
         order_by = 'id_'
 
 

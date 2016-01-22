@@ -65,10 +65,10 @@ class simics(object):
             except Exception as error:
                 self.simics.kill()
                 with sql() as db:
-                    db.log_event_exception(self.result_data['id'], 'Simics',
-                                           'Error launching Simics')
+                    db.log_event_trace(self.result_data['id'], 'Simics',
+                                       'Error launching Simics', exception=True)
                 print(colored(
-                    self.dut.serial.port+' '+str(self.result_data['id'])+': '
+                    self.dut.serial.port+', '+str(self.result_data['id'])+': '
                     'error launching simics (attempt ' +
                     str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:

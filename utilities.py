@@ -60,13 +60,28 @@ def get_campaign_data(campaign_id):
 
 
 def backup_database(none=None):
-    print('backing up database...', end='')
-    db_backup = ('campaign-data/' +
-                 '-'.join([str(unit).zfill(2)
-                           for unit in datetime.now().timetuple()[:6]]) +
-                 '.db.sqlite3')
-    copy('campaign-data/db.sqlite3', db_backup)
-    print('done')
+    if os.path.exists('campaign-data/db.sqlite3'):
+        print('backing up database...', end='')
+        db_backup = ('campaign-data/' +
+                     '-'.join([str(unit).zfill(2)
+                               for unit in datetime.now().timetuple()[:6]]) +
+                     '.db.sqlite3')
+        copy('campaign-data/db.sqlite3', db_backup)
+        print('done')
+
+
+def clean(none=None):
+    if os.path.exists('campaign-data/'):
+        deleted_backup = False
+        for item in os.listdir('campaign-data/'):
+            if '.db.sqlite3' in item:
+                os.remove('campaign-data/'+item)
+                deleted_backup = True
+        if deleted_backup:
+            print('deleted database backup(s)')
+    if os.path.exists('simics-workspace/injected-checkpoints'):
+        rmtree('simics-workspace/injected-checkpoints')
+        print('deleted injected checkpoints')
 
 
 def delete(options):
@@ -113,11 +128,11 @@ def delete(options):
             print('deleted gold checkpoints')
 
 # def delete(options):
-    if options.delete == 'results':
+    if options.delete in ('results', 'r'):
         delete_results(options.campaign_id)
-    elif options.delete == 'campaign':
+    elif options.delete in ('campaign', 'c'):
         delete_campaign(options.campaign_id)
-    elif options.delete == 'all':
+    elif options.delete in ('all', 'a'):
         if os.path.exists('simics-workspace/gold-checkpoints'):
             rmtree('simics-workspace/gold-checkpoints')
             print('deleted gold checkpoints')

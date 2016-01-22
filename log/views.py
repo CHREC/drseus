@@ -101,7 +101,10 @@ def results_page(request, campaign_id, filter_events=False):
         filter_objects = injection.objects.filter(
             result__campaign_id=campaign_id)
     if len(filter_objects) == 0:
-        return redirect('/campaign/'+str(campaign_id)+'/info')
+        if filter_events:
+            return redirect('/campaign/'+str(campaign_id)+'/results')
+        else:
+            return redirect('/campaign/'+str(campaign_id)+'/info')
     if filter_events:
         filter_ = event_filter(request.GET, queryset=filter_objects,
                                campaign=campaign_id)

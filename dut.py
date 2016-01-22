@@ -29,6 +29,7 @@ class dut(object):
         ('Call Trace:', 'Kernel error'),
         ('detected stalls on CPU', 'Stall detected'),
         ('malloc(), memory corruption', 'Kernel error'),
+        ('malloc(): memory corruption', 'Kernel error'),
         ('Bad swap file entry', 'Kernel error'),
         ('Unable to handle kernel paging request', 'Kernel error'),
         ('Alignment trap', 'Kernel error'),
@@ -46,6 +47,8 @@ class dut(object):
         self.aux = aux
         self.uboot_command = self.options.dut_uboot if not self.aux \
             else self.options.aux_uboot
+        self.login_command = self.options.dut_login if not self.aux \
+            else self.options.aux_login
         serial_port = (options.dut_serial_port if not aux
                        else options.aux_serial_port)
         baud_rate = (options.dut_baud_rate if not aux
@@ -92,12 +95,12 @@ class dut(object):
             except Exception as error:
                 if self.options.command != 'new':
                     with sql() as db:
-                        db.log_event_exception(
+                        db.log_event_trace(
                             self.result_data['id'],
                             ('DUT' if not self.aux else 'AUX'),
-                            'SSH error')
+                            'SSH error', exception=True)
                 print(colored(
-                    self.serial.port+' '+str(self.result_data['id'])+': '
+                    self.serial.port+', '+str(self.result_data['id'])+': '
                     'error sending file(s) (attempt '+str(attempt+1)+'/' +
                     str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
@@ -111,12 +114,12 @@ class dut(object):
                 except Exception as error:
                     if self.options.command != 'new':
                         with sql() as db:
-                            db.log_event_exception(
+                            db.log_event_trace(
                                 self.result_data['id'],
                                 ('DUT' if not self.aux else 'AUX'),
-                                'SCP error')
+                                'SCP error', exception=True)
                     print(colored(
-                        self.serial.port+' '+str(self.result_data['id'])+': '
+                        self.serial.port+', '+str(self.result_data['id'])+': '
                         'error sending file(s) (attempt '+str(attempt+1)+'/' +
                         str(attempts)+'): '+str(error), 'red'))
                     dut_scp.close()
@@ -148,12 +151,12 @@ class dut(object):
             except Exception as error:
                 if self.options.command != 'new':
                     with sql() as db:
-                        db.log_event_exception(
+                        db.log_event_trace(
                             self.result_data['id'],
                             ('DUT' if not self.aux else 'AUX'),
-                            'SSH error')
+                            'SSH error', exception=True)
                 print(colored(
-                    self.serial.port+' '+str(self.result_data['id'])+': '
+                    self.serial.port+', '+str(self.result_data['id'])+': '
                     'error receiving file (attempt '+str(attempt+1)+'/' +
                     str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
@@ -164,15 +167,15 @@ class dut(object):
                 dut_scp = SCPClient(ssh.get_transport())
                 try:
                     dut_scp.get(file_, local_path=local_path)
-                except:
+                except Exception as error:
                     if self.options.command != 'new':
                         with sql() as db:
-                            db.log_event_exception(
+                            db.log_event_trace(
                                 self.result_data['id'],
                                 ('DUT' if not self.aux else 'AUX'),
-                                'SCP error')
+                                'SCP error', exception=True)
                     print(colored(
-                        self.serial.port+' '+str(self.result_data['id'])+': '
+                        self.serial.port+', '+str(self.result_data['id'])+': '
                         'error receiving file (attempt '+str(attempt+1)+'/' +
                         str(attempts)+'): '+str(error), 'red'))
                     dut_scp.close()
@@ -198,16 +201,17 @@ class dut(object):
         event_buff = ''
         event_buff_logged = ''
         errors = 0
+        hanging = False
         while True:
             char = self.serial.read().decode('utf-8', 'replace')
             if not char:
+                hanging = True
                 if self.options.command != 'new':
                     with sql() as db:
-                        event_buff = buff.replace(event_buff_logged, '')
-                        db.log_event(self.result_data['id'],
-                                     ('DUT' if not self.aux else 'AUX'),
-                                     'Read timeout', event_buff)
-                        event_buff_logged += event_buff
+                        db.log_event_trace(
+                            self.result_data['id'],
+                            ('DUT' if not self.aux else 'AUX'),
+                            'Read timeout')
                 if not continuous:
                     break
             if self.options.command == 'new':
@@ -265,6 +269,8 @@ class dut(object):
                 db.update_dict('campaign', self.campaign_data)
             else:
                 db.update_dict('result', self.result_data)
+        if hanging:
+            raise DrSEUsError(DrSEUsError.hanging)
         if errors and not boot:
             for message, category in self.error_messages:
                 if message in buff:
@@ -289,6 +295,8 @@ class dut(object):
             self.read_until('export PS1=\"DrSEUs# \"')
             self.prompt = 'DrSEUs# '
             self.read_until()
+        if self.login_command:
+            self.command(self.login_command)
         self.command('mkdir ~/.ssh')
         self.command('touch ~/.ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +

@@ -2,89 +2,6 @@
 
 {% block body %}
 {% load django_tables2 %}
-{% if campaign_data.use_simics %}
-<div class="source" align="center">
-    <h2>
-        <a name="result">
-        </a>
-        Result
-    </h2>
-    <form action="" method="post">
-        {% csrf_token %}
-        {% render_table table %}
-    </form>
-    <br>
-    <form action="" method="get">
-        <input type="submit" name="launch" value="Launch in Simics" />
-    </form>
-    <h3>
-        <a name="injections">
-        </a>
-        Injections
-    </h3>
-    {% render_table injection_table %}
-    <h3>
-        <a name="injections">
-        </a>
-        Events
-    </h3>
-    {% render_table event_table %}
-    {% if output_image %}
-    <h3>
-        <a name="output_image">
-        </a>
-        Output Image
-    </h3>
-    <img src="../output/{{ result.id }}">
-    {% endif %}
-    <table>
-        <tr>
-            <td valign="top">
-                <div class="section">
-                    <h3 align="center">
-                        <a name="dut_output">
-                        </a>
-                        DUT Output
-                    </h3>
-                    <code class="console">{{ result.dut_output }}</code>
-                    {% if campaign_data.use_aux %}
-                    <h3 align="center">
-                        <a name="aux_output">
-                        </a>
-                        AUX Output
-                    </h3>
-                    <code class="console">{{ result.aux_output }}</code>
-                    {% endif %}
-                    <h3 align="center">
-                        <a name="debugger_output">
-                        </a>
-                        Debugger Output
-                    </h3>
-                    <code class="console">{{ result.debugger_output }}</code>
-                </div>
-            </td>
-            <td valign="top">
-                <div class="section" align="center">
-                    <h3>
-                        <a name="register_diffs">
-                        </a>
-                        Register Diffs
-                    </h3>
-                    {% render_table register_table %}
-                </div>
-                <div class="section" align="center">
-                    <h3>
-                        <a name="memory_diffs">
-                        </a>
-                        Memory Diffs
-                    </h3>
-                    {% render_table memory_table %}
-                </div>
-            </td>
-        </tr>
-    </table>
-</div>
-{% else %}
 <div class="source">
     <h2 align="center">
         <a name="result">
@@ -124,6 +41,54 @@
             <img src="../output/{{ result.id }}">
         </div>
         {% endif %}
+        {% if campaign_data.use_simics %}
+        <table>
+            <tr>
+                <td valign="top">
+                    <div class="section">
+                        <h3 align="center">
+                            <a name="dut_output">
+                            </a>
+                            DUT Output
+                        </h3>
+                        <code class="console">{{ result.dut_output }}</code>
+                        {% if campaign_data.use_aux %}
+                        <h3 align="center">
+                            <a name="aux_output">
+                            </a>
+                            AUX Output
+                        </h3>
+                        <code class="console">{{ result.aux_output }}</code>
+                        {% endif %}
+                        <h3 align="center">
+                            <a name="debugger_output">
+                            </a>
+                            Debugger Output
+                        </h3>
+                        <code class="console">{{ result.debugger_output }}</code>
+                    </div>
+                </td>
+                <td valign="top">
+                    <div class="section" align="center">
+                        <h3>
+                            <a name="register_diffs">
+                            </a>
+                            Register Diffs
+                        </h3>
+                        {% render_table register_table %}
+                    </div>
+                    <div class="section" align="center">
+                        <h3>
+                            <a name="memory_diffs">
+                            </a>
+                            Memory Diffs
+                        </h3>
+                        {% render_table memory_table %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+        {% else %}
         <h3 align="center">
             <a name="dut_output">
             </a>
@@ -144,7 +109,8 @@
             Debugger Output
         </h3>
         <code class="console">{{ result.debugger_output }}</code>
+        {% endif %}
     </div>
 </div>
-{% endif %}
+
 {% endblock %}

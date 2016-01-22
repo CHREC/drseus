@@ -22,10 +22,10 @@
                                                     checkboxes[i].checked = !checkboxes[i].checked;
                                                 }
                                             }
-                                            function open_selected() {
+                                            function open_results(only_selected) {
                                                 checkboxes = document.getElementsByName('select_box');
                                                 for(var i=0, n=checkboxes.length; i<n; i++) {
-                                                    if (checkboxes[i].checked) {
+                                                    if (checkboxes[i].checked || !only_selected) {
                                                         window.open('./result/'+checkboxes[i].value, '_blank');
                                                     }
                                                 }
@@ -67,7 +67,7 @@
                                             </td>
                                             <td>
                                                 <div style="text-align: center;">
-                                                    <input type="button" onclick="open_selected()" value="Open Selected">
+                                                    <input type="button" onclick="open_results(true)" value="Open Selected">
                                                 </div>
                                             </td>
                                             <td>
@@ -98,6 +98,9 @@
                                                 </div>
                                             </td>
                                             <td>
+                                                <div style="text-align: center;">
+                                                    <input type="button" onclick="open_results(false)" value="Open All (Displayed)">
+                                                </div>
                                             </td>
                                             <td>
                                                 <div style="text-align: center;">

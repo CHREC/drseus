@@ -3,14 +3,11 @@ from argparse import ArgumentParser
 
 import utilities
 
-# TODO: add option for device password
 # TODO: add options for custom error messages
 # TODO: use formatting strings
 # TODO: add ip address override
 # TODO: remove output image buttons if not needed from log viewer result page
 # TODO: move rsakey back into campaign_data/db
-# TODO: add boot commands option
-# TODO: add modes to backup database and delete backups
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
@@ -50,6 +47,8 @@ parser.add_argument('--pass', action='store', dest='password', default='chrec',
                     help='device password')
 parser.add_argument('--uboot', action='store', metavar='COMMAND',
                     dest='dut_uboot', default='', help='DUT u-boot command')
+parser.add_argument('--login', action='store', metavar='COMMAND',
+                    dest='dut_login', default='', help='DUT post-login command')
 parser.add_argument('--aux_serial', action='store', metavar='PORT',
                     dest='aux_serial_port',
                     help='AUX serial port [p2020 default=/dev/ttyUSB1] '
@@ -66,6 +65,8 @@ parser.add_argument('--aux_prompt', action='store', metavar='PROMPT',
                          '[a9 default=[root@ZED]#] (overridden by Simics)')
 parser.add_argument('--aux_uboot', action='store', metavar='COMMAND',
                     dest='aux_uboot', default='', help='AUX u-boot command')
+parser.add_argument('--aux_login', action='store', metavar='COMMAND',
+                    dest='aux_login', default='', help='AUX post-login command')
 parser.add_argument('--debugger_ip', action='store', metavar='ADDRESS',
                     dest='debugger_ip_address', default='10.42.0.50',
                     help='debugger ip address [default=10.42.0.50] '
@@ -84,7 +85,7 @@ new_campaign = subparsers.add_parser('new', aliases=['n'],
 new_campaign.add_argument('application', action='store', metavar='APPLICATION',
                           help='application to run on device')
 new_campaign.add_argument('-A', '--arch', action='store',
-                          choices=('a9', 'p2020'), dest='architecture',
+                          choices=['a9', 'p2020'], dest='architecture',
                           default='p2020',
                           help='target architecture [default=p2020]')
 new_campaign.add_argument('-t', '--timing', action='store', type=int,
@@ -191,10 +192,10 @@ delete = subparsers.add_parser('delete', aliases=['d', 'D'],
                                description='delete results and campaigns',
                                help='delete results and campaigns')
 delete.add_argument('delete', action='store',
-                    choices=('all', 'results', 'campaign'),
-                    help='delete {results} for the selected campaign, '
-                         'delete selected {campaign} and its results, '
-                         'or delete {all} campaigns and results')
+                    choices=['results', 'campaign', 'all', 'r', 'c', 'a'],
+                    help='delete {results, r} for the selected campaign, '
+                         'delete selected {campaign, c} and its results, '
+                         'or delete {all, a} campaigns and results')
 delete.set_defaults(func=utilities.delete)
 
 merge = subparsers.add_parser('merge', aliases=['m', 'M'],
@@ -237,10 +238,23 @@ backup = subparsers.add_parser('backup', aliases=['b', 'B'],
                                description='backup the results database')
 backup.set_defaults(func=utilities.backup_database)
 
+backup = subparsers.add_parser('clean', aliases=['c', 'C'],
+                               help='delete database backups and injected '
+                                    'checkpoints',
+                               description='delete database backups and '
+                                           'injected checkpoints')
+backup.set_defaults(func=utilities.clean)
+
 options = parser.parse_args()
 if options.command is None:
     parser.print_help()
 else:
+    if options.command == 'n':
+        options.command = 'new'
+    elif options.command == 'i':
+        options.command = 'inject'
+    elif options.command == 's':
+        options.command = 'supervise'
     if options.command != 'new':
         if not options.campaign_id:
             options.campaign_id = utilities.get_last_campaign()
