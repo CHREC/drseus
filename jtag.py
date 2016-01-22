@@ -171,15 +171,11 @@ class bdi(jtag):
 
     def __init__(self, campaign_data, result_data, options, rsakey):
         self.port = 23
-        jtag.__init__(self, campaign_data, result_data, options, rsakey)
-        try:
+        super(bdi, self).__init__(self, campaign_data, result_data, options,
+                                  rsakey)
+        if self.options.jtag:
             self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                                  timeout=self.timeout)
-        except:
-            self.telnet = None
-            print_exc()
-            print(colored('Could not connect to debugger, '
-                          'running in supervisor-only mode', 'red'))
         else:
             self.command('', error_message='Debugger not ready')
 
@@ -191,7 +187,7 @@ class bdi(jtag):
     def close(self):
         if self.telnet:
             self.telnet.write(bytes('quit\r', encoding='utf-8'))
-        jtag.close(self)
+        super(bdi, self).close()
 
     def command(self, command, expected_output=[], error_message=None):
         expected_output = [bytes(output, encoding='utf-8')
@@ -261,23 +257,25 @@ class bdi_arm(bdi):
     def __init__(self, campaign_data, result_data, options, rsakey):
         self.prompts = ['A9#0>', 'A9#1>']
         self.targets = devices['a9_bdi']
-        bdi.__init__(self, campaign_data, result_data, options, rsakey)
+        super(bdi_arm, self).__init__(campaign_data, result_data, options,
+                                      rsakey)
 
     def reset_dut(self):
-        jtag.reset_dut(self, ['- TARGET: processing reset request',
-                              '- TARGET: BDI removes TRST',
-                              '- TARGET: Bypass check',
-                              '- TARGET: JTAG exists check passed',
-                              '- Core#0: ID code', '- Core#0: DP-CSW',
-                              '- Core#0: DBG-AP', '- Core#0: DIDR',
-                              '- Core#1: ID code', '- Core#1: DP-CSW',
-                              '- Core#1: DBG-AP', '- Core#1: DIDR',
-                              '- TARGET: BDI removes RESET',
-                              '- TARGET: BDI waits for RESET inactive',
-                              '- TARGET: Reset sequence passed',
-                              '- TARGET: resetting target passed',
-                              '- TARGET: processing target startup',
-                              '- TARGET: processing target startup passed'])
+        super(bdi_arm, self).reset_dut([
+            '- TARGET: processing reset request',
+            '- TARGET: BDI removes TRST',
+            '- TARGET: Bypass check',
+            '- TARGET: JTAG exists check passed',
+            '- Core#0: ID code', '- Core#0: DP-CSW',
+            '- Core#0: DBG-AP', '- Core#0: DIDR',
+            '- Core#1: ID code', '- Core#1: DP-CSW',
+            '- Core#1: DBG-AP', '- Core#1: DIDR',
+            '- TARGET: BDI removes RESET',
+            '- TARGET: BDI waits for RESET inactive',
+            '- TARGET: Reset sequence passed',
+            '- TARGET: resetting target passed',
+            '- TARGET: processing target startup',
+            '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
         self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
@@ -308,21 +306,23 @@ class bdi_p2020(bdi):
     def __init__(self, campaign_data, result_data, options, rsakey):
         self.prompts = ['P2020>']
         self.targets = devices['p2020']
-        bdi.__init__(self, campaign_data, result_data, options, rsakey)
+        super(bdi_p2020, self).__init__(campaign_data, result_data, options,
+                                        rsakey)
 
     def reset_dut(self):
-        jtag.reset_dut(self, ['- TARGET: processing user reset request',
-                              '- BDI asserts HRESET',
-                              '- Reset JTAG controller passed',
-                              '- JTAG exists check passed',
-                              '- IDCODE',
-                              '- SVR',
-                              '- PVR',
-                              '- CCSRBAR',
-                              '- BDI removes HRESET',
-                              '- TARGET: resetting target passed',
-                              # '- TARGET: processing target startup',
-                              '- TARGET: processing target startup passed'])
+        super(bdi_p2020, self).reset_dut([
+            '- TARGET: processing user reset request',
+            '- BDI asserts HRESET',
+            '- Reset JTAG controller passed',
+            '- JTAG exists check passed',
+            '- IDCODE',
+            '- SVR',
+            '- PVR',
+            '- CCSRBAR',
+            '- BDI removes HRESET',
+            '- TARGET: resetting target passed',
+            # '- TARGET: processing target startup',
+            '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
         self.command('halt 0; halt 1', ['Target CPU', 'Core state',
@@ -375,10 +375,12 @@ class openocd(jtag):
                              stderr=(DEVNULL if options.command != 'openocd'
                                      else None))
         if options.command != 'openocd':
-            jtag.__init__(self, campaign_data, result_data, options, rsakey)
-            sleep(1)
-            self.telnet = Telnet(self.options.debugger_ip_address, self.port,
-                                 timeout=self.timeout)
+            super(openocd, self).__init__(campaign_data, result_data, options,
+                                          rsakey)
+            if self.options.jtag:
+                sleep(1)
+                self.telnet = Telnet(self.options.debugger_ip_address,
+                                     self.port, timeout=self.timeout)
 
     def __str__(self):
         string = 'OpenOCD at localhost port '+str(self.port)
@@ -386,7 +388,7 @@ class openocd(jtag):
 
     def close(self):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
-        jtag.close(self)
+        super(openocd, self).close()
         self.openocd.wait()
 
     def command(self, command, expected_output=[], error_message=None):
@@ -456,8 +458,8 @@ class openocd(jtag):
         return return_buffer
 
     def reset_dut(self):
-        jtag.reset_dut(self,
-                       ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'])
+        super(openocd, self).reset_dut(
+            ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'])
 
     def halt_dut(self):
         self.command('halt',

@@ -35,6 +35,14 @@ class result(models.Model):
     timestamp = models.DateTimeField()
 
 
+class event(models.Model):
+    result = models.ForeignKey(result)
+    source = models.TextField()
+    event_type = models.TextField()
+    description = models.TextField(null=True)
+    timestamp = models.DateTimeField()
+
+
 class injection(models.Model):
     result = models.ForeignKey(result)
     injection_number = models.IntegerField()

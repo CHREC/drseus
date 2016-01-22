@@ -23,6 +23,12 @@
         Injections
     </h3>
     {% render_table injection_table %}
+    <h3>
+        <a name="injections">
+        </a>
+        Events
+    </h3>
+    {% render_table event_table %}
     {% if output_image %}
     <h3>
         <a name="output_image">
@@ -99,6 +105,14 @@
         </h3>
         <div align="center">
             {% render_table injection_table %}
+        </div>
+        <h3 align="center">
+            <a name="injections">
+            </a>
+            Events
+        </h3>
+        <div align="center">
+            {% render_table event_table %}
         </div>
         {% if output_image %}
         <h3 align="center">

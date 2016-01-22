@@ -1,6 +1,6 @@
 import django_tables2 as tables
 
-from .models import (campaign, injection, result, simics_memory_diff,
+from .models import (campaign, event, injection, result, simics_memory_diff,
                      simics_register_diff)
 
 
@@ -49,6 +49,7 @@ class campaign_table(campaigns_table):
 
 
 class results_table(tables.Table):
+    events = tables.Column(empty_values=(), orderable=False)
     id_ = tables.TemplateColumn(  # LinkColumn()
         '<a href="./result/{{ value }}">{{ value }}</a>', accessor='id')
     registers = tables.Column(empty_values=(), orderable=False)
@@ -57,6 +58,10 @@ class results_table(tables.Table):
         verbose_name='', orderable=False)
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
     targets = tables.Column(empty_values=(), orderable=False)
+
+    def render_events(self, record):
+        return '{:,}'.format(
+            event.objects.filter(result_id=record.id).count())
 
     def render_registers(self, record):
         if record is not None:
@@ -113,6 +118,17 @@ class result_table(results_table):
         exclude = ('id_', 'select', 'targets')
         fields = ('id', 'timestamp', 'outcome_category', 'outcome',
                   'num_injections', 'data_diff', 'detected_errors')
+
+
+class event_table(tables.Table):
+    description = tables.TemplateColumn(
+        '<code class="console">{{ value }}</code>')
+    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+
+    class Meta:
+        attrs = {"class": "paleblue"}
+        model = event
+        fields = ('timestamp', 'source', 'event_type', 'description')
 
 
 class hw_injection_table(tables.Table):

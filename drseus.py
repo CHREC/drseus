@@ -3,6 +3,8 @@ from argparse import ArgumentParser
 
 import utilities
 
+# TODO: add option for device password
+# TODO: add options for custom error messages
 # TODO: use formatting strings
 # TODO: add ip address override
 # TODO: remove output image buttons if not needed from log viewer result page
@@ -42,6 +44,12 @@ parser.add_argument('--prompt', action='store', metavar='PROMPT',
                     dest='dut_prompt',
                     help='DUT console prompt [p2020 default=root@p2020rdb:~#] '
                          '[a9 default=[root@ZED]#] (overridden by Simics)')
+parser.add_argument('--user', action='store', dest='username', default='root',
+                    help='device username')
+parser.add_argument('--pass', action='store', dest='password', default='chrec',
+                    help='device password')
+parser.add_argument('--uboot', action='store', metavar='COMMAND',
+                    dest='dut_uboot', default='', help='DUT u-boot command')
 parser.add_argument('--aux_serial', action='store', metavar='PORT',
                     dest='aux_serial_port',
                     help='AUX serial port [p2020 default=/dev/ttyUSB1] '
@@ -56,10 +64,14 @@ parser.add_argument('--aux_prompt', action='store', metavar='PROMPT',
                     dest='aux_prompt',
                     help='AUX console prompt [p2020 default=root@p2020rdb:~#] '
                          '[a9 default=[root@ZED]#] (overridden by Simics)')
+parser.add_argument('--aux_uboot', action='store', metavar='COMMAND',
+                    dest='aux_uboot', default='', help='AUX u-boot command')
 parser.add_argument('--debugger_ip', action='store', metavar='ADDRESS',
                     dest='debugger_ip_address', default='10.42.0.50',
                     help='debugger ip address [default=10.42.0.50] '
                          '(ignored by Simics and ZedBoards)')
+parser.add_argument('--no_jtag', action='store_false', dest='jtag',
+                    help='do not connect to jtag debugger (ignored by Simics)')
 subparsers = parser.add_subparsers(
     title='commands',
     description='Run "%(prog)s COMMAND -h" to get additional help for each '
@@ -150,9 +162,6 @@ inject.set_defaults(func=utilities.inject_campaign)
 supervise = subparsers.add_parser('supervise',
                                   help='run interactive supervisor',
                                   description='run interactive supervisor')
-supervise.add_argument('-d', '--dir', action='store', dest='directory',
-                       default='fiapps',
-                       help='directory to look for files [default=fiapps]')
 supervise.add_argument('-w', '--wireshark', action='store_true', dest='capture',
                        help='run remote packet capture')
 supervise.set_defaults(func=utilities.launch_supervisor)

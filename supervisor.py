@@ -14,9 +14,10 @@ class supervisor(Cmd):
     def __init__(self, campaign_data, options):
         self.campaign_data = campaign_data
         self.capture = options.capture
-        self.directory = options.directory
         options.debug = True
         self.drseus = fault_injector(campaign_data, options)
+        self.drseus.create_result(outcome_category='Supervisor',
+                                  outcome='Start')
         if not self.campaign_data['use_simics']:
             booted = False
             while not booted:
@@ -60,11 +61,6 @@ class supervisor(Cmd):
 
     def do_command_dut(self, arg, aux=False):
         """Send DUT device a command and interact, interrupt with ctrl-c"""
-        self.drseus.create_result()
-        if aux:
-            self.drseus.debugger.aux.write(arg+'\n')
-        else:
-            self.drseus.debugger.dut.write(arg+'\n')
 
         def read_thread_worker():
             try:
@@ -74,6 +70,12 @@ class supervisor(Cmd):
                     self.drseus.debugger.dut.read_until()
             except DrSEUsError:
                 pass
+
+        self.drseus.create_result()
+        if aux:
+            self.drseus.debugger.aux.write(arg+'\n')
+        else:
+            self.drseus.debugger.dut.write(arg+'\n')
         read_thread = Thread(target=read_thread_worker)
         read_thread.start()
         try:
@@ -97,72 +99,45 @@ class supervisor(Cmd):
             'outcome_category': ('AUX' if aux else 'DUT')+' command',
             'outcome': arg})
         self.drseus.log_result()
+        self.drseus.create_result()
 
     def do_read_dut(self, arg=None, aux=False):
         """Read from DUT, interrupt with ctrl-c"""
         self.drseus.create_result()
         try:
             if aux:
-                self.drseus.debugger.aux.read_until('toinfinityandbeyond!')
+                self.drseus.debugger.aux.read_until(continuous=True)
             else:
-                self.drseus.debugger.dut.read_until('toinfinityandbeyond!')
-        except DrSEUsError as error:
-            self.drsue.result_data['outcome'] = error.type
+                self.drseus.debugger.dut.read_until(continuous=True)
         except KeyboardInterrupt:
-            self.drsue.result_data['outcome'] = 'Interrupted'
             if self.campaign_data['use_simics']:
                 self.drseus.debugger.continue_dut()
-        else:
-            self.drsue.result_data['outcome'] = 'No error'
         self.drseus.result_data['outcome_category'] = \
             'Read '+('AUX' if aux else 'DUT')
+        self.drseus.result_data['outcome'] = 'Read '+('AUX' if aux else 'DUT')
         self.drseus.log_result()
+        self.drseus.create_result()
 
-    def do_send_dut_files(self, arg, aux=False):
-        """Send (comma-seperated) files to DUT, defaults to campaign files"""
-        try:
-            if arg:
-                files = []
-                for item in arg.split(','):
-                    files.append(self.directory+'/'+item.lstrip().rstrip())
-                if aux:
-                    self.drseus.debugger.aux.send_files(files)
-                else:
-                    self.drseus.debugger.dut.send_files(files)
+    def do_send_dut_file(self, arg, aux=False):
+        """Send file to DUT, defaults to campaign files"""
+        if arg:
+            if aux:
+                self.drseus.debugger.aux.send_files(arg, attempts=1)
             else:
-                self.drseus.send_dut_files(aux)
-        except KeyboardInterrupt:
-            print('Transfer interrupted')
-            if self.campaign_data['use_simics']:
-                self.drseus.debugger.continue_dut()
+                self.drseus.debugger.dut.send_files(arg, attempts=1)
+        else:
+            self.drseus.send_dut_files(aux)
 
     def do_get_dut_file(self, arg, aux=False):
         """Retrieve file from DUT device"""
-        self.drseus.create_result()
         directory = ('campaign-data/'+str(self.campaign_data['id']) +
                      '/results/'+str(self.drseus.result_id)+'/')
         makedirs(directory)
-        try:
-            if aux:
-                self.drseus.debugger.aux.get_file(arg, directory)
-            else:
-                self.drseus.debugger.dut.get_file(arg, directory)
-        except KeyboardInterrupt:
-            self.drseus.result_data.update({
-                'outcome_category':
-                    'Get '+('AUX' if aux else 'DUT')+' file interrupted',
-                'outcome': arg})
-            if self.campaign_data['use_simics']:
-                self.drseus.debugger.continue_dut()
+        if aux:
+            self.drseus.debugger.aux.get_file(arg, directory, attempts=1)
         else:
-            self.drseus.log_result(arg, 'Get '+('AUX' if aux else 'DUT') +
-                                        ' file')
-            self.drseus.result_data.update({
-                'outcome_category':
-                    'Get '+('AUX' if aux else 'DUT')+' file',
-                'outcome': arg})
-            print('File saved to '+directory)
-        self.drseus.log_result()
+            self.drseus.debugger.dut.get_file(arg, directory, attempts=1)
+        print('File saved to '+directory)
 
     def do_supervise(self, arg):
         """Supervise for targeted runtime (in seconds) or iterations"""
@@ -197,6 +172,10 @@ class supervisor(Cmd):
         if self.campaign_data['use_simics']:
             self.drseus.debugger.close()
         self.drseus.close()
+        self.drseus.result_data.update({
+            'outcome_category': 'Supervisor',
+            'outcome': 'Exit'})
+        self.drseus.log_result()
         sys.exit()
 
 

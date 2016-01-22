@@ -6,7 +6,6 @@ from subprocess import PIPE, Popen
 from termcolor import colored
 from threading import Thread
 from time import sleep
-from traceback import print_exc
 
 from error import DrSEUsError
 from jtag import bdi_p2020, openocd
@@ -144,15 +143,16 @@ class fault_injector(object):
         else:
             self.debugger.dut.send_files(files)
 
-    def create_result(self, num_injections=0):
+    def create_result(self, num_injections=0, outcome_category='Incomplete',
+                      outcome='Incomplete'):
         self.result_data.update({'aux_output': '',
                                  'data_diff': None,
                                  'debugger_output': '',
                                  'detected_errors': None,
                                  'dut_output': '',
                                  'num_injections': num_injections,
-                                 'outcome_category': 'Incomplete',
-                                 'outcome': 'Incomplete',
+                                 'outcome_category': outcome_category,
+                                 'outcome': outcome,
                                  'timestamp': None})
         if 'id' in self.result_data:
             del self.result_data['id']
@@ -311,17 +311,17 @@ class fault_injector(object):
                 for attempt in range(attempts):
                     try:
                         self.debugger.reset_dut()
-                    except:
-                        print_exc()
-                        out = ''
-                        try:
-                            out += self.debugger.dut.serial.port+' '
-                        except AttributeError:
-                            pass
-                        out += (str(self.result_data['id'])+': '
-                                'Error resetting DUT (attempt '+str(attempt+1) +
-                                '/'+str(attempts)+')')
-                        print(colored(out, 'red'))
+                    except Exception as error:
+                        with sql() as db:
+                            db.log_event_exception(
+                                self.result_data['id'],
+                                'Debugger',  # TODO: update source
+                                'Error resetting DUT')
+                        print(colored(
+                            self.debugger.dut.serial.port+' ' +
+                            str(self.result_data['id'])+': '
+                            'Error resetting DUT (attempt '+str(attempt+1) +
+                            '/'+str(attempts)+'): '+str(error), 'red'))
                         if attempt < attempts-1:
                             sleep(30)
                         else:

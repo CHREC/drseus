@@ -8,7 +8,6 @@ import sys
 from termcolor import colored
 from threading import Thread
 from time import sleep, time
-from traceback import print_exc
 
 from dut import dut
 from error import DrSEUsError
@@ -54,71 +53,6 @@ class simics(object):
         return string
 
     def __launch_simics(self, checkpoint=None):
-
-        def do_uboot():
-            if self.campaign_data['use_aux']:
-                def stop_aux_boot():
-                    self.aux.read_until('autoboot: ')
-                    self.aux.write('\n')
-                aux_process = Thread(target=stop_aux_boot)
-                aux_process.start()
-            self.dut.read_until('autoboot: ')
-            self.dut.write('\n')
-            if self.campaign_data['use_aux']:
-                aux_process.join()
-            self.halt_dut()
-            if self.board == 'p2020rdb':
-                self.__command('DUT_p2020rdb.soc.phys_mem.load-file '
-                               '$initrd_image $initrd_addr')
-                if self.campaign_data['use_aux']:
-                    self.__command('AUX_p2020rdb_1.soc.phys_mem.load-file '
-                                   '$initrd_image $initrd_addr')
-                self.continue_dut()
-                self.dut.write('setenv ethaddr 00:01:af:07:9b:8a\n'
-                               'setenv eth1addr 00:01:af:07:9b:8b\n'
-                               'setenv eth2addr 00:01:af:07:9b:8c\n'
-                               'setenv consoledev ttyS0\n'
-                               'setenv bootargs root=/dev/ram rw '
-                               'console=$consoledev,$baudrate\n'
-                               'bootm ef080000 10000000 ef040000\n')
-                if self.campaign_data['use_aux']:
-                    self.aux.write('setenv ethaddr 00:01:af:07:9b:8d\n'
-                                   'setenv eth1addr 00:01:af:07:9b:8e\n'
-                                   'setenv eth2addr 00:01:af:07:9b:8f\n'
-                                   'setenv consoledev ttyS0\n'
-                                   'setenv bootargs root=/dev/ram rw '
-                                   'console=$consoledev,$baudrate\n'
-                                   'bootm ef080000 10000000 ef040000\n')
-            elif self.board == 'a9x2':
-                self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
-                               '$kernel_image $kernel_addr')
-                self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
-                               '$initrd_image $initrd_addr')
-                if self.campaign_data['use_aux']:
-                    self.__command('AUX_a9x2_1.coretile.mpcore.phys_mem.'
-                                   'load-file $kernel_image $kernel_addr')
-                    self.__command('AUX_a9x2_1.coretile.mpcore.phys_mem.'
-                                   'load-file $initrd_image $initrd_addr')
-                self.continue_dut()
-                self.dut.read_until('VExpress# ')
-                self.dut.write('setenv bootargs console=ttyAMA0 root=/dev/ram0 '
-                               'rw\n')
-                self.dut.read_until('VExpress# ')
-                self.dut.write('bootm 0x40800000 0x70000000\n')
-                # TODO: remove these after fixing command prompt
-                self.dut.read_until('##')
-                self.dut.read_until('##')
-                if self.campaign_data['use_aux']:
-                    self.aux.read_until('VExpress# ')
-                    self.aux.write('setenv bootargs console=ttyAMA0 '
-                                   'root=/dev/ram0 rw\n')
-                    self.aux.read_until('VExpress# ')
-                    self.aux.write('bootm 0x40800000 0x70000000\n')
-                    # TODO: remove these after fixing command prompt
-                    self.aux.read_until('##')
-                    self.aux.read_until('##')
-
-    # def __launch_simics(self, checkpoint=None):
         attempts = 10
         for attempt in range(attempts):
             self.simics = Popen([os.getcwd()+'/simics-workspace/simics',
@@ -128,18 +62,15 @@ class simics(object):
                                 stdin=PIPE, stdout=PIPE)
             try:
                 self.__command()
-            except:
-                print_exc()
+            except Exception as error:
                 self.simics.kill()
-                out = ''
-                try:
-                    out += self.dut.serial.port+' '
-                except AttributeError:
-                    pass
-                out += (str(self.result_data['id'])+': '
-                        'error launching simics (attempt ' +
-                        str(attempt+1)+'/'+str(attempts)+')')
-                print(colored(out, 'red'))
+                with sql() as db:
+                    db.log_event_exception(self.result_data['id'], 'Simics',
+                                           'Error launching Simics')
+                print(colored(
+                    self.dut.serial.port+' '+str(self.result_data['id'])+': '
+                    'error launching simics (attempt ' +
+                    str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 elif attempt == attempts-1:
@@ -189,10 +120,39 @@ class simics(object):
         if self.board == 'p2020rdb':
             self.options.aux_prompt = self.options.dut_prompt = \
                 'root@p2020rdb:~#'
+            if self.options.dut_uboot:
+                self.options.dut_uboot += '; '
+            self.options.dut_uboot += ('setenv ethaddr 00:01:af:07:9b:8a; '
+                                       'setenv eth1addr 00:01:af:07:9b:8b; '
+                                       'setenv eth2addr 00:01:af:07:9b:8c; '
+                                       'setenv consoledev ttyS0; '
+                                       'setenv bootargs root=/dev/ram rw '
+                                       'console=$consoledev,$baudrate; '
+                                       'bootm ef080000 10000000 ef040000')
+            if self.options.aux_uboot:
+                self.options.aux_uboot += '; '
+            self.options.aux_uboot += ('setenv ethaddr 00:01:af:07:9b:8d; '
+                                       'setenv eth1addr 00:01:af:07:9b:8e; '
+                                       'setenv eth2addr 00:01:af:07:9b:8f; '
+                                       'setenv consoledev ttyS0; '
+                                       'setenv bootargs root=/dev/ram rw '
+                                       'console=$consoledev,$baudrate; '
+                                       'bootm ef080000 10000000 ef040000; ')
         elif self.board == 'a9x2':
             self.options.aux_prompt = self.options.dut_prompt = '#'
+            if self.options.dut_uboot:
+                self.options.dut_uboot += ';'
+            self.options.dut_uboot += ('setenv bootargs console=ttyAMA0 '
+                                       'root=/dev/ram0 rw;'
+                                       'bootm 0x40800000 0x70000000')
+            if self.options.aux_uboot:
+                self.options.aux_uboot += ';'
+            self.options.aux_uboot += ('setenv bootargs console=ttyAMA0 '
+                                       'root=/dev/ram0 rw;'
+                                       'bootm 0x40800000 0x70000000')
         self.options.dut_serial_port = serial_ports[0]
         self.options.dut_scp_port = ssh_ports[0]
+
         self.dut = dut(self.campaign_data, self.result_data, self.options,
                        self.rsakey)
         if self.campaign_data['use_aux']:
@@ -202,7 +162,25 @@ class simics(object):
                            self.rsakey, aux=True)
         if checkpoint is None:
             self.continue_dut()
-            do_uboot()
+            self.dut.read_until('Hit any key')
+            self.halt_dut()
+            if self.board == 'p2020rdb':
+                self.__command('DUT_p2020rdb.soc.phys_mem.load-file '
+                               '$initrd_image $initrd_addr')
+                if self.campaign_data['use_aux']:
+                    self.__command('AUX_p2020rdb_1.soc.phys_mem.load-file '
+                                   '$initrd_image $initrd_addr')
+            elif self.board == 'a9x2':
+                self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
+                               '$kernel_image $kernel_addr')
+                self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
+                               '$initrd_image $initrd_addr')
+                if self.campaign_data['use_aux']:
+                    self.__command('AUX_a9x2_1.coretile.mpcore.phys_mem.'
+                                   'load-file $kernel_image $kernel_addr')
+                    self.__command('AUX_a9x2_1.coretile.mpcore.phys_mem.'
+                                   'load-file $initrd_image $initrd_addr')
+            self.continue_dut()
             if self.campaign_data['use_aux']:
                 aux_process = Thread(
                     target=self.aux.do_login,
@@ -346,6 +324,8 @@ class simics(object):
                 buff += char
                 if buff[-len('simics> '):] == 'simics> ':
                     break
+            if self.options.debug:
+                print()
             if not self.options.command == 'supervise':
                 with sql() as db:
                     if self.options.command == 'new':

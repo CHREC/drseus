@@ -1,6 +1,8 @@
 from datetime import datetime
+from io import StringIO
 import os
 import sqlite3
+from traceback import print_exc
 
 
 class sql(object):
@@ -53,6 +55,21 @@ class sql(object):
                 str(row_id)),
             list(dictionary.values()))
         self.connection.commit()
+
+    def log_event(self, result_id, source, event_type, description=None):
+        event_data = {'result_id': result_id,
+                      'source': source,
+                      'event_type': event_type,
+                      'description': description,
+                      'timestamp': None}
+        self.insert_dict('event', event_data)
+
+    def log_event_exception(self, result_id, source, event_type):
+        string_file = StringIO()
+        print_exc(file=string_file)
+        exception = string_file.getvalue()
+        string_file.close()
+        self.log_event(result_id, source, event_type, exception)
 
     def __exit__(self, type_, value, traceback):
         self.connection.close()

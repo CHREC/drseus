@@ -11,7 +11,7 @@ for file in files.split('\n'):
     file = file.split()
     if file:
         if file[0] in ('A', 'M', 'AM', 'MM'):
-            check_call(['scp', file[1], 'drseus:drseus/'],
+            check_call(['scp', file[1], 'drseus:drseus/'+file[1]],
                        cwd=getcwd())
         else:
             ignored_files.append(file[1])

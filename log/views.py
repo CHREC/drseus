@@ -7,17 +7,19 @@ from subprocess import Popen
 import os
 
 from .charts import campaigns_chart, results_charts, target_bits_chart
-from .filters import injection_filter, simics_register_diff_filter
-from .models import (campaign, injection, result, simics_memory_diff,
+from .filters import event_filter, injection_filter, simics_register_diff_filter
+from .models import (campaign, event, injection, result, simics_memory_diff,
                      simics_register_diff)
-from .tables import (campaign_table, campaigns_table, hw_injection_table,
-                     result_table, results_table, simics_injection_table,
-                     simics_memory_diff_table, simics_register_diff_table)
+from .tables import (campaign_table, campaigns_table, event_table,
+                     hw_injection_table, result_table, results_table,
+                     simics_injection_table, simics_memory_diff_table,
+                     simics_register_diff_table)
 
 navigation_items = (('Campaign Information', 'info'),
                     ('Charts (Grouped by Category)', 'category_charts'),
                     ('Charts (Grouped by Outcome)', 'outcome_charts'),
-                    ('Results Table', 'results'))
+                    ('Results Table', 'results'),
+                    ('Results Table (Filtered by Events)', 'events'))
 
 
 def campaigns_page(request):
@@ -59,11 +61,7 @@ def category_charts_page(request, campaign_id):
     return charts_page(request, campaign_id, True)
 
 
-def outcome_charts_page(request, campaign_id):
-    return charts_page(request, campaign_id, False)
-
-
-def charts_page(request, campaign_id, group_categories):
+def charts_page(request, campaign_id, group_categories=False):
     campaign_data = campaign.objects.get(id=campaign_id)
     page_items = [('Results Overview', 'overview_chart'),
                   ('Injections By Target', 'targets_charts')]
@@ -90,14 +88,26 @@ def charts_page(request, campaign_id, group_categories):
         'page_items': page_items})
 
 
-def results_page(request, campaign_id):
+def events_page(request, campaign_id):
+    return results_page(request, campaign_id, True)
+
+
+def results_page(request, campaign_id, filter_events=False):
     campaign_data = campaign.objects.get(id=campaign_id)
-    injection_objects = injection.objects.filter(
-        result__campaign_id=campaign_id)
-    if len(injection_objects) == 0:
+    if filter_events:
+        filter_objects = event.objects.filter(
+            result__campaign_id=campaign_id)
+    else:
+        filter_objects = injection.objects.filter(
+            result__campaign_id=campaign_id)
+    if len(filter_objects) == 0:
         return redirect('/campaign/'+str(campaign_id)+'/info')
-    filter_ = injection_filter(request.GET, queryset=injection_objects,
+    if filter_events:
+        filter_ = event_filter(request.GET, queryset=filter_objects,
                                campaign=campaign_id)
+    else:
+        filter_ = injection_filter(request.GET, queryset=filter_objects,
+                                   campaign=campaign_id)
     result_ids = filter_.qs.values('result_id').distinct()
     result_objects = result.objects.filter(id__in=result_ids)
     if request.method == 'POST':
@@ -179,6 +189,7 @@ def result_page(request, campaign_id, result_id):
                            ('Memory Diffs', 'memory_diffs')])
     result_object = result.objects.get(id=result_id)
     table = result_table(result.objects.filter(id=result_id))
+    event_table_ = event_table(event.objects.filter(result_id=result_id))
     if request.method == 'GET' and 'launch' in request.GET:
         drseus = 'drseus.py'
         if not os.path.exists(drseus):
@@ -214,13 +225,15 @@ def result_page(request, campaign_id, result_id):
         register_table = None
         injection_table = hw_injection_table(injection_objects)
     RequestConfig(request, paginate=False).configure(table)
+    RequestConfig(request, paginate=False).configure(event_table_)
     RequestConfig(request, paginate=False).configure(injection_table)
     return render(request, 'result.html', {
-        'campaign_data': campaign_data, 'filter': register_filter,
-        'injection_table': injection_table, 'memory_table': memory_table,
-        'navigation_items': navigation_items_, 'output_image': output_image,
-        'page_items': page_items, 'register_table': register_table,
-        'result': result_object, 'table': table})
+        'campaign_data': campaign_data, 'event_table': event_table_,
+        'filter': register_filter, 'injection_table': injection_table,
+        'memory_table': memory_table, 'navigation_items': navigation_items_,
+        'output_image': output_image, 'page_items': page_items,
+        'register_table': register_table, 'result': result_object,
+        'table': table})
 
 
 def output(request, campaign_id, result_id):

@@ -2,7 +2,7 @@ from django.forms import SelectMultiple, Textarea
 import django_filters
 from re import split
 
-from .models import (injection, result, simics_register_diff)
+from .models import (event, injection, result, simics_register_diff)
 
 
 def fix_sort(string):
@@ -12,16 +12,6 @@ def fix_sort(string):
 
 def fix_sort_list(list):
     return fix_sort(list[0])
-
-
-def injection_choices(campaign, attribute):
-    choices = []
-    for item in injection.objects.filter(
-        result__campaign_id=campaign).values_list(
-            attribute, flat=True).distinct():
-        if item is not None:
-            choices.append((item, item))
-    return sorted(choices, key=fix_sort_list)
 
 
 def result_choices(campaign, attribute):
@@ -38,23 +28,24 @@ class injection_filter(django_filters.FilterSet):
         campaign = kwargs['campaign']
         del kwargs['campaign']
         super(injection_filter, self).__init__(*args, **kwargs)
-        bit_choices = injection_choices(campaign, 'bit')
+        bit_choices = self.injection_choices(campaign, 'bit')
         self.filters['bit'].extra.update(choices=bit_choices)
         self.filters['bit'].widget.attrs['size'] = min(len(bit_choices), 10)
-        checkpoint_number_choices = injection_choices(
+        checkpoint_number_choices = self.injection_choices(
             campaign, 'checkpoint_number')
         self.filters['checkpoint_number'].extra.update(
             choices=checkpoint_number_choices)
         self.filters['checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), 10)
-        field_choices = injection_choices(campaign, 'field')
+        field_choices = self.injection_choices(campaign, 'field')
         self.filters['field'].extra.update(choices=field_choices)
         self.filters['field'].widget.attrs['size'] = min(len(field_choices), 10)
-        register_choices = injection_choices(campaign, 'register')
+        register_choices = self.injection_choices(campaign, 'register')
         self.filters['register'].extra.update(choices=register_choices)
         self.filters['register'].widget.attrs['size'] = min(
             len(register_choices), 10)
-        register_index_choices = injection_choices(campaign, 'register_index')
+        register_index_choices = self.injection_choices(
+            campaign, 'register_index')
         self.filters['register_index'].extra.update(
             choices=register_index_choices)
         self.filters['register_index'].widget.attrs['size'] = min(
@@ -74,14 +65,23 @@ class injection_filter(django_filters.FilterSet):
         self.filters['result__outcome_category'].widget.attrs['size'] = min(
             len(outcome_category_choices), 10)
         self.filters['success'].extra.update(help_text='')
-        target_choices = injection_choices(campaign, 'target')
+        target_choices = self.injection_choices(campaign, 'target')
         self.filters['target'].extra.update(choices=target_choices)
         self.filters['target'].widget.attrs['size'] = min(
             len(target_choices), 10)
-        target_index_choices = injection_choices(campaign, 'target_index')
+        target_index_choices = self.injection_choices(campaign, 'target_index')
         self.filters['target_index'].extra.update(choices=target_index_choices)
         self.filters['target_index'].widget.attrs['size'] = min(
             len(target_index_choices), 10)
+
+    def injection_choices(self, campaign, attribute):
+        choices = []
+        for item in injection.objects.filter(
+            result__campaign_id=campaign).values_list(
+                attribute, flat=True).distinct():
+            if item is not None:
+                choices.append((item, item))
+        return sorted(choices, key=fix_sort_list)
 
     bit = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
@@ -143,6 +143,43 @@ class injection_filter(django_filters.FilterSet):
                   'success')
 
 
+class event_filter(django_filters.FilterSet):
+    def __init__(self, *args, **kwargs):
+        campaign = kwargs['campaign']
+        del kwargs['campaign']
+        super(event_filter, self).__init__(*args, **kwargs)
+        event_type_choices = self.event_choices(campaign, 'event_type')
+        self.filters['event_type'].extra.update(choices=event_type_choices)
+        self.filters['event_type'].widget.attrs['size'] = min(
+            len(event_type_choices), 10)
+        source_choices = self.event_choices(campaign, 'source')
+        self.filters['source'].extra.update(choices=source_choices)
+        self.filters['source'].widget.attrs['size'] = min(
+            len(source_choices), 10)
+
+    def event_choices(self, campaign, attribute):
+        choices = []
+        for item in event.objects.filter(
+            result__campaign_id=campaign).values_list(
+                attribute, flat=True).distinct():
+            if item is not None:
+                choices.append((item, item))
+        return sorted(choices, key=fix_sort_list)
+
+    description = django_filters.CharFilter(
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
+    event_type = django_filters.MultipleChoiceFilter(
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    source = django_filters.MultipleChoiceFilter(
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+
+    class Meta:
+        model = event
+        fields = ('source', 'event_type', 'description')
+
+
 class simics_register_diff_filter(django_filters.FilterSet):
     def __init__(self, *args, **kwargs):
         self.campaign = kwargs['campaign']
@@ -162,10 +199,10 @@ class simics_register_diff_filter(django_filters.FilterSet):
 
     def simics_register_diff_choices(self, attribute):
         choices = []
-        for item in sorted(self.queryset.filter(
+        for item in self.queryset.filter(
             result__campaign_id=self.campaign
-                ).values(attribute).distinct()):
-            choices.append((item[attribute], item[attribute]))
+                ).values_list(attribute, flat=True).distinct():
+            choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
 
     checkpoint_number = django_filters.MultipleChoiceFilter(
