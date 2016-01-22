@@ -203,10 +203,11 @@ class dut(object):
             if not char:
                 if self.options.command != 'new':
                     with sql() as db:
+                        event_buff = buff.replace(event_buff_logged, '')
                         db.log_event(self.result_data['id'],
                                      ('DUT' if not self.aux else 'AUX'),
-                                     'Read timeout',
-                                     buff)
+                                     'Read timeout', event_buff)
+                        event_buff_logged += event_buff
                 if not continuous:
                     break
             if self.options.command == 'new':
