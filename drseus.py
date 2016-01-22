@@ -78,7 +78,8 @@ subparsers = parser.add_subparsers(
                 'command',
     metavar='COMMAND', dest='command')
 
-new_campaign = subparsers.add_parser('new', help='create a new campaign',
+new_campaign = subparsers.add_parser('new', aliases=['n'],
+                                     help='create a new campaign',
                                      description='create a new campaign')
 new_campaign.add_argument('application', action='store', metavar='APPLICATION',
                           help='application to run on device')
@@ -131,7 +132,7 @@ new_simics_campaign.add_argument('-c', '--checkpoints', action='store',
                                       'may be different) [default=50]')
 new_campaign.set_defaults(func=utilities.create_campaign)
 
-inject = subparsers.add_parser('inject',
+inject = subparsers.add_parser('inject', aliases=['i', 'I', 'inj'],
                                help='perform fault injections on a campaign',
                                description='perform fault injections on a '
                                            'campaign')
@@ -159,32 +160,34 @@ inject_simics.add_argument('-a', '--compare_all', action='store_true',
                                 'campaign')
 inject.set_defaults(func=utilities.inject_campaign)
 
-supervise = subparsers.add_parser('supervise',
+supervise = subparsers.add_parser('supervise', aliases=['s', 'S'],
                                   help='run interactive supervisor',
                                   description='run interactive supervisor')
 supervise.add_argument('-w', '--wireshark', action='store_true', dest='capture',
                        help='run remote packet capture')
 supervise.set_defaults(func=utilities.launch_supervisor)
 
-log_viewer = subparsers.add_parser('log', help='start the log web server',
+log_viewer = subparsers.add_parser('log', aliases=['l'],
+                                   help='start the log web server',
                                    description='start the log web server')
 log_viewer.add_argument('-p', '--port', action='store', type=int,
                         dest='port', default=8000,
                         help='log web server port [default=8000]')
 log_viewer.set_defaults(func=utilities.view_logs)
 
-zedboards = subparsers.add_parser('zedboards',
+zedboards = subparsers.add_parser('zedboards', aliases=['z', 'Z'],
                                   help='print information about attached '
                                        'ZedBoards',
                                   description='print information about '
                                               'attached ZedBoards')
 zedboards.set_defaults(func=utilities.print_zedboard_info)
 
-list_campaigns = subparsers.add_parser('list', help='list campaigns',
+list_campaigns = subparsers.add_parser('list', aliases=['L', 'ls'],
+                                       help='list campaigns',
                                        description='list campaigns')
 list_campaigns.set_defaults(func=utilities.list_campaigns)
 
-delete = subparsers.add_parser('delete',
+delete = subparsers.add_parser('delete', aliases=['d', 'D'],
                                description='delete results and campaigns',
                                help='delete results and campaigns')
 delete.add_argument('delete', action='store',
@@ -194,21 +197,22 @@ delete.add_argument('delete', action='store',
                          'or delete {all} campaigns and results')
 delete.set_defaults(func=utilities.delete)
 
-merge = subparsers.add_parser('merge', help='merge campaigns',
+merge = subparsers.add_parser('merge', aliases=['m', 'M'],
+                              help='merge campaigns',
                               description='merge campaigns')
 merge.add_argument('directory', action='store', metavar='DIRECTORY',
                    help='merge campaigns from external directory into the '
                         'local directory')
 merge.set_defaults(func=utilities.merge_campaigns)
 
-openocd = subparsers.add_parser('openocd',
+openocd = subparsers.add_parser('openocd', aliases=['o', 'O'],
                                 help='launch openocd for DUT '
                                      '(only supported for ZedBoards)',
                                 description='launch openocd for DUT '
                                             '(only supported for ZedBoards)')
 openocd.set_defaults(func=utilities.launch_openocd)
 
-regenerate = subparsers.add_parser('regenerate',
+regenerate = subparsers.add_parser('regenerate', aliases=['r', 'R'],
                                    help='regenerate injected state and launch '
                                         'in Simics (only supported for Simics '
                                         'campaigns)',
@@ -220,7 +224,7 @@ regenerate.add_argument('result_id', action='store', metavar='RESULT_ID',
                         help='result to regenerate')
 regenerate.set_defaults(func=utilities.regenerate)
 
-update = subparsers.add_parser('update',
+update = subparsers.add_parser('update', aliases=['u', 'U'],
                                help='update gold checkpoint dependency paths '
                                     '(only supported for Simics campaigns)',
                                description='update gold checkpoint dependency '
@@ -228,7 +232,8 @@ update = subparsers.add_parser('update',
                                            'campaigns)')
 update.set_defaults(func=utilities.update_dependencies)
 
-backup = subparsers.add_parser('backup', help='backup the results database',
+backup = subparsers.add_parser('backup', aliases=['b', 'B'],
+                               help='backup the results database',
                                description='backup the results database')
 backup.set_defaults(func=utilities.backup_database)
 
