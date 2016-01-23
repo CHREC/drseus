@@ -3,8 +3,8 @@ from django.shortcuts import redirect, render
 from django_tables2 import RequestConfig
 from imghdr import what
 from mimetypes import guess_type
+from os.path import exists
 from subprocess import Popen
-import os
 
 from .charts import campaigns_chart, results_charts, target_bits_chart
 from .filters import event_filter, injection_filter, simics_register_diff_filter
@@ -40,7 +40,7 @@ def campaign_page(request, campaign_id):
                   ('Injection Targets', 'target_bits_chart')]
     output_file = ('campaign-data/'+str(campaign_id) +
                    '/gold_'+campaign_data.output_file)
-    if os.path.exists(output_file) and what(output_file) is not None:
+    if exists(output_file) and what(output_file) is not None:
         output_image = True
         page_items.append(('Output Image', 'output_image'))
     else:
@@ -178,7 +178,7 @@ def result_page(request, campaign_id, result_id):
     page_items = [('Result', 'result'), ('Injections', 'injections')]
     output_file = ('campaign-data/'+campaign_id+'/results/'+result_id +
                    '/'+campaign_data.output_file)
-    if os.path.exists(output_file) and what(output_file) is not None:
+    if exists(output_file) and what(output_file) is not None:
         output_image = True
         page_items.append(('Output Image', 'output_image'))
     else:
@@ -195,7 +195,7 @@ def result_page(request, campaign_id, result_id):
     event_table_ = event_table(event.objects.filter(result_id=result_id))
     if request.method == 'GET' and 'launch' in request.GET:
         drseus = 'drseus.py'
-        if not os.path.exists(drseus):
+        if not exists(drseus):
             drseus = 'drseus.sh'
         Popen(['./'+drseus, 'regenerate', result_id])
     if request.method == 'POST' and 'save' in request.POST:
@@ -247,7 +247,7 @@ def output(request, campaign_id, result_id):
     else:
         output_file = ('campaign-data/'+campaign_id+'/results/' +
                        result_id+'/'+campaign_data.output_file)
-    if os.path.exists(output_file):
+    if exists(output_file):
         return HttpResponse(open(output_file, 'rb').read(),
                             content_type=guess_type(output_file))
     else:

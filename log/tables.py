@@ -108,9 +108,10 @@ class results_table(tables.Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = result
-        fields = ('select', 'id_', 'timestamp', 'outcome_category', 'outcome',
-                  'data_diff', 'detected_errors', 'events', 'num_injections',
-                  'targets', 'registers', 'injection_success')
+        fields = ('select', 'id_', 'dut_serial_port', 'timestamp',
+                  'outcome_category', 'outcome', 'data_diff', 'detected_errors',
+                  'events', 'num_injections', 'targets', 'registers',
+                  'injection_success')
         order_by = 'id_'
 
 
@@ -130,8 +131,8 @@ class result_table(results_table):
         attrs = {"class": "paleblue"}
         model = result
         exclude = ('id_', 'select', 'targets')
-        fields = ('id', 'timestamp', 'outcome_category', 'outcome',
-                  'num_injections', 'data_diff', 'detected_errors')
+        fields = ('id', 'dut_serial_port', 'timestamp', 'outcome_category',
+                  'outcome', 'num_injections', 'data_diff', 'detected_errors')
 
 
 class event_table(tables.Table):

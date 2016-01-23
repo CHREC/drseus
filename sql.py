@@ -1,15 +1,14 @@
 from datetime import datetime
-import os
-import sqlite3
+from os.path import exists
+from sqlite3 import connect
 from traceback import format_exc, format_stack
 
 
 class sql(object):
-    def __init__(self, database='campaign-data/db.sqlite3', row_factory=''):
-        if not os.path.exists(database):
+    def __init__(self, database='campaign-data/db.sqlite3'):
+        if not exists(database):
             raise Exception('could not find database file: '+database)
         self.database = database
-        self.row_factory = row_factory
 
     def __enter__(self):
 
@@ -20,11 +19,8 @@ class sql(object):
             return dictionary
 
     # def __enter__(self):
-        self.connection = sqlite3.connect(self.database, timeout=60)
-        if self.row_factory == 'row':
-            self.connection.row_factory = sqlite3.Row
-        elif self.row_factory == 'dict':
-            self.connection.row_factory = dict_factory
+        self.connection = connect(self.database, timeout=60)
+        self.connection.row_factory = dict_factory
         self.cursor = self.connection.cursor()
         return self
 
@@ -37,7 +33,10 @@ class sql(object):
                 ','.join(dictionary.keys()),
                 ','.join('?'*len(dictionary))),
             list(dictionary.values()))
-        self.connection.commit()
+        if table == 'injection' and dictionary['injection_number'] == 1:
+            self.cursor.execute('DELETE FROM log_injection '
+                                'WHERE injection_number=0 AND result_id=?',
+                                [dictionary['result_id']])
 
     def update_dict(self, table, dictionary, row_id=None):
         if row_id is None:
@@ -53,7 +52,6 @@ class sql(object):
                 '=?,'.join(dictionary.keys()),
                 str(row_id)),
             list(dictionary.values()))
-        self.connection.commit()
 
     def log_event(self, result_id, source, event_type, description=None):
         event_data = {'result_id': result_id,
@@ -70,7 +68,54 @@ class sql(object):
             description = ''.join(format_stack()[:-2])
         self.log_event(result_id, source, event_type, description)
 
+    def get_campaign_data(self, campaign_id):
+        if not campaign_id:
+            self.cursor.execute('SELECT * FROM log_campaign '
+                                'ORDER BY id DESC LIMIT 1')
+            return self.cursor.fetchone()
+        elif campaign_id == '*':
+            self.cursor.execute('SELECT * FROM log_campaign ORDER BY id')
+            return self.cursor.fetchall()
+        else:
+            self.cursor.execute('SELECT * FROM log_campaign WHERE id=?',
+                                [campaign_id])
+            return self.cursor.fetchone()
+
+    def get_result_data(self, campaign_id):
+        self.cursor.execute('SELECT * FROM log_result WHERE campaign_id=?',
+                            [campaign_id])
+        return self.cursor.fetchall()
+
+    def get_result_item_data(self, result_id, item):
+        self.cursor.execute('SELECT * FROM log_'+item+' WHERE result_id=? ',
+                            [result_id])
+        return self.cursor.fetchall()
+
+    def get_result_item_count(self, result_id, item):
+        self.cursor.execute('SELECT COUNT(*) FROM log_'+item+' '
+                            'WHERE result_id=?', [result_id])
+        return self.cursor.fetchone()['COUNT(*)']
+
+    def delete_results(self, campaign_id):
+        self.cursor.execute('DELETE FROM log_simics_memory_diff WHERE '
+                            'result_id IN (SELECT id FROM log_result '
+                            'WHERE campaign_id=?)', [campaign_id])
+        self.cursor.execute('DELETE FROM log_simics_register_diff WHERE '
+                            'result_id IN (SELECT id FROM log_result '
+                            'WHERE campaign_id=?)', [campaign_id])
+        self.cursor.execute('DELETE FROM log_injection WHERE '
+                            'result_id IN (SELECT id FROM log_result '
+                            'WHERE campaign_id=?)', [campaign_id])
+        self.cursor.execute('DELETE FROM log_result WHERE campaign_id=?',
+                            [campaign_id])
+
+    def delete_campaign(self, campaign_id):
+        self.delete_results(campaign_id)
+        self.cursor.execute('DELETE FROM log_campaign WHERE id=?',
+                            [campaign_id])
+
     def __exit__(self, type_, value, traceback):
+        self.connection.commit()
         self.connection.close()
         if type_ is not None or value is not None or traceback is not None:
             return False  # reraise exception

@@ -1,10 +1,11 @@
-import os
+from os import getcwd, listdir, makedirs, mkdir
+from os.path import exists
 from random import choice, randrange
 from re import findall
 from shutil import copyfile
 from signal import SIGINT
-from subprocess import check_call, check_output, DEVNULL, PIPE, Popen
-import sys
+from subprocess import call, check_call, check_output, DEVNULL, PIPE, Popen
+from sys import stdout
 from termcolor import colored
 from threading import Thread
 from time import sleep, time
@@ -24,12 +25,11 @@ class simics(object):
                       'dropping memop (peer attribute not set)',
                       'where nothing is mapped', 'Error']
 
-    def __init__(self, campaign_data, result_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options):
         self.simics = None
         self.campaign_data = campaign_data
         self.result_data = result_data
         self.options = options
-        self.rsakey = rsakey
         if campaign_data['architecture'] == 'p2020':
             self.board = 'p2020rdb'
         elif campaign_data['architecture'] == 'a9':
@@ -55,9 +55,9 @@ class simics(object):
     def __launch_simics(self, checkpoint=None):
         attempts = 10
         for attempt in range(attempts):
-            self.simics = Popen([os.getcwd()+'/simics-workspace/simics',
+            self.simics = Popen([getcwd()+'/simics-workspace/simics',
                                  '-no-win', '-no-gui', '-q'], bufsize=0,
-                                cwd=os.getcwd()+'/simics-workspace',
+                                cwd=getcwd()+'/simics-workspace',
                                 universal_newlines=True,
                                 stdin=PIPE, stdout=PIPE)
             try:
@@ -153,13 +153,12 @@ class simics(object):
         self.options.dut_serial_port = serial_ports[0]
         self.options.dut_scp_port = ssh_ports[0]
 
-        self.dut = dut(self.campaign_data, self.result_data, self.options,
-                       self.rsakey)
+        self.dut = dut(self.campaign_data, self.result_data, self.options)
         if self.campaign_data['use_aux']:
             self.options.aux_serial_port = serial_ports[1]
             self.options.aux_scp_port = ssh_ports[1]
             self.aux = dut(self.campaign_data, self.result_data, self.options,
-                           self.rsakey, aux=True)
+                           aux=True)
         if checkpoint is None:
             self.continue_dut()
             self.dut.read_until('Hit any key')
@@ -225,8 +224,8 @@ class simics(object):
                                 ' '+aux_board+'.'+serial_port+';'
                                 'connect-real-network-port-in ssh '
                                 'ethernet_switch0 target-ip=10.10.0.104;')
-        os.system('cd simics-workspace; '
-                  './simics-gui -e \"'+simics_commands+'\"')
+        call([getcwd()+'/simics-workspace/simics-gui', '-e', simics_commands],
+             cwd=getcwd()+'/simics-workspace')
 
     def close(self):
 
@@ -320,7 +319,7 @@ class simics(object):
                     self.result_data['debugger_output'] += char
                 if self.options.debug:
                     print(colored(char, 'yellow'), end='')
-                    sys.stdout.flush()
+                    stdout.flush()
                 buff += char
                 if buff[-len('simics> '):] == 'simics> ':
                     break
@@ -351,11 +350,11 @@ class simics(object):
     def __merge_checkpoint(self, checkpoint):
         if self.options.debug:
             print(colored('merging checkpoint...', 'blue'), end='')
-            sys.stdout.flush()
+            stdout.flush()
         merged_checkpoint = checkpoint+'_merged'
-        check_call([os.getcwd()+'/simics-workspace/bin/checkpoint-merge',
+        check_call([getcwd()+'/simics-workspace/bin/checkpoint-merge',
                     checkpoint, merged_checkpoint],
-                   cwd=os.getcwd()+'/simics-workspace', stdout=DEVNULL)
+                   cwd=getcwd()+'/simics-workspace', stdout=DEVNULL)
         if self.options.debug:
             print(colored('done', 'blue'))
         return merged_checkpoint
@@ -363,8 +362,8 @@ class simics(object):
     def time_application(self):
 
         def create_checkpoints():
-            os.makedirs('simics-workspace/gold-checkpoints/' +
-                        str(self.campaign_data['id']))
+            makedirs('simics-workspace/gold-checkpoints/' +
+                     str(self.campaign_data['id']))
             self.campaign_data['cycles_between'] = \
                 int(self.campaign_data['num_cycles'] / self.options.checkpoints)
             self.halt_dut()
@@ -437,20 +436,13 @@ class simics(object):
     def inject_faults(self):
 
         def persistent_faults():
-            with sql(row_factory='row') as db:
-                db.cursor.execute('SELECT config_object,register,'
-                                  'register_index,injected_value '
-                                  'FROM log_injection WHERE result_id=?',
-                                  (self.result_data['id'],))
-                injections = db.cursor.fetchall()
-                db.cursor.execute('SELECT * FROM log_simics_register_diff '
-                                  'WHERE result_id=?',
-                                  (self.result_data['id'],))
-                register_diffs = db.cursor.fetchall()
-                db.cursor.execute('SELECT COUNT(*) FROM log_simics_memory_diff '
-                                  'WHERE result_id=?',
-                                  (self.result_data['id'],))
-                memory_diffs = db.cursor.fetchone()[0]
+            with sql() as db:
+                injections = \
+                    db.get_result_item_data(self.result_data['id'], 'injection')
+                register_diffs = db.get_result_item_data(self.result_data['id'],
+                                                         'simics_register_diff')
+                memory_diffs = db.get_result_item_count(self.result_data['id'],
+                                                        'simics_memory_diff')
             if memory_diffs > 0:
                 return False
             for register_diff in register_diffs:
@@ -723,9 +715,9 @@ class simics(object):
                                str(self.campaign_data['id'])+'/' +
                                str(self.result_data['id'])+'/' +
                                str(checkpoint_number)+'_injected')
-        os.makedirs(injected_checkpoint)
+        makedirs(injected_checkpoint)
         # copy gold checkpoint files
-        checkpoint_files = os.listdir(gold_checkpoint)
+        checkpoint_files = listdir(gold_checkpoint)
         for checkpoint_file in checkpoint_files:
             copyfile(gold_checkpoint+'/'+checkpoint_file,
                      injected_checkpoint+'/'+checkpoint_file)
@@ -841,14 +833,12 @@ class simics(object):
                         log_diffs(db, config_object, register,
                                   gold_registers[config_object][register],
                                   monitored_registers[config_object][register])
-                db.cursor.execute('SELECT COUNT(*) FROM '
-                                  'log_simics_register_diff WHERE result_id=?',
-                                  (self.result_data['id'],))
-                diffs = db.cursor.fetchone()[0]
+                diffs = db.get_result_item_count(self.result_data['id'],
+                                                 'simics_register_diff')
             return diffs
 
         def compare_memory(checkpoint_number, gold_checkpoint,
-                           monitored_checkpoint, extract_blocks=False):
+                           monitored_checkpoint):
             """
             Compare the memory contents of gold_checkpoint with
             monitored_checkpoint and return the list of blocks that do not
@@ -883,24 +873,24 @@ class simics(object):
                 image.
                 """
                 if len(addresses) > 0:
-                    os.mkdir(incremental_checkpoint+'/memory-blocks')
+                    mkdir(incremental_checkpoint+'/memory-blocks')
                     for address in addresses:
                         gold_block = (incremental_checkpoint+'/memory-blocks/' +
                                       hex(address)+'_gold.raw')
                         monitored_block = (incremental_checkpoint +
                                            '/memory-blocks/'+hex(address) +
                                            '_monitored.raw')
-                        os.system('simics-workspace/bin/craff '+gold_ram +
-                                  ' --extract='+hex(address) +
-                                  ' --extract-block-size='+str(block_size) +
-                                  ' --output='+gold_block)
-                        os.system('simics-workspace/bin/craff '+monitored_ram +
-                                  ' --extract='+hex(address) +
-                                  ' --extract-block-size='+str(block_size) +
-                                  ' --output='+monitored_block)
+                        check_call([getcwd()+'/simics-workspace/bin/craff',
+                                    gold_ram, '--extract='+hex(address),
+                                    '--extract-block-size='+str(block_size),
+                                    '--output='+gold_block])
+                        check_call([getcwd()+'/simics-workspace/bin/craff',
+                                    monitored_ram, '--extract='+hex(address),
+                                    '--extract-block-size='+str(block_size),
+                                    '--output='+monitored_block])
 
         # def compare_memory(checkpoint_number, gold_checkpoint,
-        #                    monitored_checkpoint, extract_blocks=False):
+        #                    monitored_checkpoint):
             if self.board == 'p2020rdb':
                 gold_rams = [gold_checkpoint+'/DUT_'+self.board +
                              '.soc.ram_image['+str(index)+'].craff'
@@ -925,26 +915,26 @@ class simics(object):
                      ram_diff, diff_content_map) in zip(
                         range(len(monitored_rams)), gold_rams, monitored_rams,
                         ram_diffs, diff_content_maps):
-                    check_call([os.getcwd()+'/simics-workspace/bin/craff',
+                    check_call([getcwd()+'/simics-workspace/bin/craff',
                                 '--diff', gold_ram, monitored_ram,
                                 '--output='+ram_diff],
-                               cwd=os.getcwd()+'/simics-workspace',
+                               cwd=getcwd()+'/simics-workspace',
                                stdout=DEVNULL)
-                    check_call([os.getcwd()+'/simics-workspace/bin/craff',
+                    check_call([getcwd()+'/simics-workspace/bin/craff',
                                 '--content-map', ram_diff,
                                 '--output='+diff_content_map],
-                               cwd=os.getcwd()+'/simics-workspace',
+                               cwd=getcwd()+'/simics-workspace',
                                stdout=DEVNULL)
                     craff_output = check_output(
-                        [os.getcwd()+'/simics-workspace/bin/craff', '--info',
-                         ram_diff], cwd=os.getcwd()+'/simics-workspace',
+                        [getcwd()+'/simics-workspace/bin/craff', '--info',
+                         ram_diff], cwd=getcwd()+'/simics-workspace',
                         universal_newlines=True)
                     block_size = int(findall(r'\d+',
                                              craff_output.split('\n')[2])[1])
                     changed_blocks = parse_content_map(diff_content_map,
                                                        block_size)
                     diffs += len(changed_blocks)
-                    if extract_blocks:
+                    if self.options.extract_blocks:
                         extract_diff_blocks(gold_ram, monitored_ram,
                                             monitored_checkpoint,
                                             changed_blocks, block_size)
@@ -973,7 +963,7 @@ class simics(object):
                                                str(self.campaign_data['id']) +
                                                '/'+str(checkpoint_number))
                 gold_checkpoint = gold_incremental_checkpoint+'_merged'
-                if not os.path.exists('simics-workspace/'+gold_checkpoint):
+                if not exists('simics-workspace/'+gold_checkpoint):
                     self.__merge_checkpoint(gold_incremental_checkpoint)
                 errors = compare_registers(
                     checkpoint_number, gold_checkpoint, monitored_checkpoint)

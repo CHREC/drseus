@@ -3,7 +3,7 @@ from multiprocessing import Value
 from os import makedirs, system
 from pdb import set_trace
 from select import select
-import sys
+from sys import stdin
 from threading import Thread
 
 from error import DrSEUsError
@@ -80,13 +80,11 @@ class supervisor(Cmd):
         read_thread.start()
         try:
             while read_thread.is_alive():
-                if select([sys.stdin], [], [], 0.1)[0]:
+                if select([stdin], [], [], 0.1)[0]:
                     if aux:
-                        self.drseus.debugger.aux.write(sys.stdin.readline() +
-                                                       '\n')
+                        self.drseus.debugger.aux.write(stdin.readline()+'\n')
                     else:
-                        self.drseus.debugger.dut.write(sys.stdin.readline() +
-                                                       '\n')
+                        self.drseus.debugger.dut.write(stdin.readline()+'\n')
         except KeyboardInterrupt:
             if self.campaign_data['use_simics']:
                 self.drseus.debugger.continue_dut()
@@ -176,7 +174,7 @@ class supervisor(Cmd):
             'outcome_category': 'Supervisor',
             'outcome': 'Exit'})
         self.drseus.log_result()
-        sys.exit()
+        return True
 
 
 class aux_supervisor(supervisor):

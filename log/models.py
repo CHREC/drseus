@@ -20,6 +20,7 @@ class campaign(models.Model):
     cycles_between = models.IntegerField(null=True)
     timestamp = models.DateTimeField()
     kill_dut = models.BooleanField()
+    rsakey = models.TextField()
 
 
 class result(models.Model):
@@ -29,6 +30,8 @@ class result(models.Model):
     outcome_category = models.TextField()
     data_diff = models.FloatField(null=True)
     detected_errors = models.IntegerField(null=True)
+    dut_serial_port = models.TextField(null=True)
+    aux_serial_port = models.TextField(null=True)
     dut_output = models.TextField(null=True)
     aux_output = models.TextField(null=True)
     debugger_output = models.TextField(null=True)

@@ -3,11 +3,11 @@ from argparse import ArgumentParser
 
 import utilities
 
+# TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
 # TODO: use formatting strings
 # TODO: add ip address override
 # TODO: remove output image buttons if not needed from log viewer result page
-# TODO: move rsakey back into campaign_data/db
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
@@ -159,6 +159,9 @@ inject_simics.add_argument('-a', '--compare_all', action='store_true',
                                 '"-p" or "--processes" when using this '
                                 'option for the first time in a '
                                 'campaign')
+inject_simics.add_argument('-x', '--extract', action='store_true',
+                           dest='extract_blocks',
+                           help='extract diff memory blocks')
 inject.set_defaults(func=utilities.inject_campaign)
 
 supervise = subparsers.add_parser('supervise', aliases=['s', 'S'],
@@ -257,7 +260,11 @@ else:
         options.command = 'supervise'
     if options.command != 'new':
         if not options.campaign_id:
-            options.campaign_id = utilities.get_last_campaign()
+            try:
+                options.campaign_id = \
+                    utilities.get_campaign_data(options.campaign_id)['id']
+            except:
+                pass
         if options.campaign_id:
             options.architecture = \
                 utilities.get_campaign_data(options.campaign_id)['architecture']

@@ -1,7 +1,8 @@
-from paramiko import AutoAddPolicy, SSHClient
+from io import StringIO
+from paramiko import AutoAddPolicy, RSAKey, SSHClient
 from scp import SCPClient
 from serial import Serial
-import sys
+from sys import stdout
 from termcolor import colored
 from time import sleep
 
@@ -36,11 +37,12 @@ class dut(object):
         ('Unhandled fault', 'Kernel error'),
         ('free(), invalid next size', 'Kernel error'),
         ('double free or corruption', 'Kernel error'),
+        ('Rebooting in', 'Kernel error'),
         ('????????', '????????'),
         ('Hit any key to stop autoboot:', 'Reboot'),
         ('can\'t get kernel image', 'Error booting')]
 
-    def __init__(self, campaign_data, result_data, options, rsakey, aux=False):
+    def __init__(self, campaign_data, result_data, options, aux=False):
         self.campaign_data = campaign_data
         self.result_data = result_data
         self.options = options
@@ -51,6 +53,8 @@ class dut(object):
             else self.options.aux_login
         serial_port = (options.dut_serial_port if not aux
                        else options.aux_serial_port)
+        self.result_data[('dut' if not aux else 'aux') +
+                         '_serial_port'] = serial_port
         baud_rate = (options.dut_baud_rate if not aux
                      else options.aux_baud_rate)
         self.serial = Serial(port=None, baudrate=baud_rate,
@@ -63,7 +67,9 @@ class dut(object):
         self.serial.reset_input_buffer()
         self.prompt = options.dut_prompt if not aux else options.aux_prompt
         self.prompt += ' '
-        self.rsakey = rsakey
+        rsakey_file = StringIO(self.campaign_data['rsakey'])
+        self.rsakey = RSAKey.from_private_key(rsakey_file)
+        rsakey_file.close()
 
     def __str__(self):
         string = ('Serial Port: '+self.serial.port+'\n\tTimeout: ' +
@@ -138,7 +144,7 @@ class dut(object):
     def get_file(self, file_, local_path='', attempts=10):
         if self.options.debug:
             print(colored('getting file...', 'blue'), end='')
-            sys.stdout.flush()
+            stdout.flush()
         ssh = SSHClient()
         ssh.set_missing_host_key_policy(AutoAddPolicy())
         for attempt in range(attempts):
@@ -223,7 +229,7 @@ class dut(object):
             if self.options.debug:
                 print(colored(char, 'green' if not self.aux else 'cyan'),
                       end='')
-                sys.stdout.flush()
+                stdout.flush()
             buff += char
             if not continuous and buff[-len(string):] == string:
                 break
@@ -269,12 +275,12 @@ class dut(object):
                 db.update_dict('campaign', self.campaign_data)
             else:
                 db.update_dict('result', self.result_data)
-        if hanging:
-            raise DrSEUsError(DrSEUsError.hanging)
         if errors and not boot:
             for message, category in self.error_messages:
                 if message in buff:
                     raise DrSEUsError(category)
+        if hanging:
+            raise DrSEUsError(DrSEUsError.hanging)
         return buff
 
     def command(self, command=''):

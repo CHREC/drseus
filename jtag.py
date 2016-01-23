@@ -4,9 +4,8 @@ from termcolor import colored
 from threading import Thread
 from time import sleep, time
 from random import randrange, uniform
-import socket
+from socket import AF_INET, SOCK_STREAM, socket
 from subprocess import DEVNULL, Popen
-from traceback import print_exc
 
 from dut import dut
 from error import DrSEUsError
@@ -40,7 +39,7 @@ def find_uart_serials():
 
 
 class jtag(object):
-    def __init__(self, campaign_data, result_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options):
         self.campaign_data = campaign_data
         self.result_data = result_data
         self.options = options
@@ -51,10 +50,9 @@ class jtag(object):
             for target in options.selected_targets:
                 if target not in self.targets:
                     raise Exception('invalid injection target: '+target)
-        self.dut = dut(campaign_data, result_data, options, rsakey)
+        self.dut = dut(campaign_data, result_data, options)
         if campaign_data['use_aux']:
-            self.aux = dut(campaign_data, result_data, options, rsakey,
-                           aux=True)
+            self.aux = dut(campaign_data, result_data, options, aux=True)
 
     def __str__(self):
         string = 'JTAG Debugger at '+self.options.debugger_ip_address
@@ -73,7 +71,26 @@ class jtag(object):
 
     def reset_dut(self, expected_output):
         if self.telnet:
-            self.command('reset', expected_output, 'Error resetting DUT')
+            attempts = 10
+            for attempt in range(attempts):
+                try:
+                    self.command('reset', expected_output,
+                                 'Error resetting DUT')
+                except DrSEUsError as error:
+                    with sql() as db:
+                        db.log_event_exception(self.result_data['id'],
+                                               'Debugger',
+                                               'Error resetting DUT')
+                    print(colored(
+                        self.dut.serial.port+' '+str(self.result_data['id']) +
+                        ': Error resetting DUT (attempt '+str(attempt+1) +
+                        '/'+str(attempts)+'): '+str(error), 'red'))
+                    if attempt < attempts-1:
+                        sleep(30)
+                    else:
+                        raise DrSEUsError(error.type)
+                else:
+                    break
         else:
             self.dut.serial.write('\x03')
         self.dut.do_login()
@@ -169,10 +186,9 @@ class bdi(jtag):
     error_messages = ['timeout while waiting for halt',
                       'wrong state for requested command', 'read access failed']
 
-    def __init__(self, campaign_data, result_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options):
         self.port = 23
-        super(bdi, self).__init__(self, campaign_data, result_data, options,
-                                  rsakey)
+        super(bdi, self).__init__(campaign_data, result_data, options)
         if self.options.jtag:
             self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                                  timeout=self.timeout)
@@ -254,11 +270,10 @@ class bdi(jtag):
 
 class bdi_arm(bdi):
     # BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
-    def __init__(self, campaign_data, result_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options):
         self.prompts = ['A9#0>', 'A9#1>']
         self.targets = devices['a9_bdi']
-        super(bdi_arm, self).__init__(campaign_data, result_data, options,
-                                      rsakey)
+        super(bdi_arm, self).__init__(campaign_data, result_data, options)
 
     def reset_dut(self):
         super(bdi_arm, self).reset_dut([
@@ -303,11 +318,10 @@ class bdi_arm(bdi):
 
 
 class bdi_p2020(bdi):
-    def __init__(self, campaign_data, result_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options):
         self.prompts = ['P2020>']
         self.targets = devices['p2020']
-        super(bdi_p2020, self).__init__(campaign_data, result_data, options,
-                                        rsakey)
+        super(bdi_p2020, self).__init__(campaign_data, result_data, options)
 
     def reset_dut(self):
         super(bdi_p2020, self).reset_dut([
@@ -353,16 +367,16 @@ class bdi_p2020(bdi):
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
 
-    def __init__(self, campaign_data, result_data, options, rsakey):
+    def __init__(self, campaign_data, result_data, options):
 
         def find_open_port():
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock = socket(AF_INET, SOCK_STREAM)
             sock.bind(('', 0))
             port = sock.getsockname()[1]
             sock.close()
             return port
 
-    # def __init__(self, campaign_data, result_data, options, rsakey):
+    # def __init__(self, campaign_data, result_data, options):
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = devices['a9']
@@ -375,8 +389,7 @@ class openocd(jtag):
                              stderr=(DEVNULL if options.command != 'openocd'
                                      else None))
         if options.command != 'openocd':
-            super(openocd, self).__init__(campaign_data, result_data, options,
-                                          rsakey)
+            super(openocd, self).__init__(campaign_data, result_data, options)
             if self.options.jtag:
                 sleep(1)
                 self.telnet = Telnet(self.options.debugger_ip_address,
