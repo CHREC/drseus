@@ -78,9 +78,9 @@ class jtag(object):
                                  'Error resetting DUT')
                 except DrSEUsError as error:
                     with sql() as db:
-                        db.log_event_exception(self.result_data['id'],
-                                               'Debugger',
-                                               'Error resetting DUT')
+                        db.log_event_trace(self.result_data['id'], 'Debugger',
+                                           'Error resetting DUT',
+                                           exception=True)
                     print(colored(
                         self.dut.serial.port+' '+str(self.result_data['id']) +
                         ': Error resetting DUT (attempt '+str(attempt+1) +
