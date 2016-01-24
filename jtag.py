@@ -10,7 +10,6 @@ from subprocess import DEVNULL, Popen
 from dut import dut
 from error import DrSEUsError
 from jtag_targets import devices
-from sql import sql
 from targets import choose_register, choose_target
 
 # TODO: refactor command()
@@ -41,9 +40,10 @@ def find_uart_serials():
 
 
 class jtag(object):
-    def __init__(self, campaign_data, result_data, options):
+    def __init__(self, campaign_data, result_data, database, options):
         self.campaign_data = campaign_data
         self.result_data = result_data
+        self.database = database
         self.options = options
         self.timeout = 30
         self.prompts = [bytes(prompt, encoding='utf-8')
@@ -52,9 +52,10 @@ class jtag(object):
             for target in options.selected_targets:
                 if target not in self.targets:
                     raise Exception('invalid injection target: '+target)
-        self.dut = dut(campaign_data, result_data, options)
+        self.dut = dut(campaign_data, result_data, database, options)
         if campaign_data['use_aux']:
-            self.aux = dut(campaign_data, result_data, options, aux=True)
+            self.aux = dut(campaign_data, result_data, database, options,
+                           aux=True)
 
     def __str__(self):
         string = 'JTAG Debugger at '+self.options.debugger_ip_address
@@ -67,21 +68,15 @@ class jtag(object):
     def connect_telnet(self):
         self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                              timeout=self.timeout)
-        with sql() as db:
-            db.log_event((self.result_data['id'] if self.result_data
-                          else self.campaign_data['id']), 'Information',
-                         'Debugger', 'Connected to telnet',
-                         (self.options.debugger_ip_address+':' +
-                          str(self.port)), bool(self.result_data))
+        with self.database as db:
+            db.log_event('Information', 'Debugger', 'Connected to telnet',
+                         self.options.debugger_ip_address+':'+str(self.port))
 
     def close(self):
         if self.telnet:
             self.telnet.close()
-            with sql() as db:
-                db.log_event((self.result_data['id'] if self.result_data
-                              else self.campaign_data['id']), 'Information',
-                             'Debugger', 'Closed telnet', None,
-                             bool(self.result_data))
+            with self.database as db:
+                db.log_event('Information', 'Debugger', 'Closed telnet')
         self.dut.close()
         if self.campaign_data['use_aux']:
             self.aux.close()
@@ -94,13 +89,10 @@ class jtag(object):
                     self.command('reset', expected_output,
                                  'Error resetting DUT', False)
                 except DrSEUsError as error:
-                    with sql() as db:
-                        db.log_event((self.result_data['id'] if self.result_data
-                                      else self.campaign_data['id']),
-                                     ('Warning' if attempt < attempts-1
+                    with self.database as db:
+                        db.log_event(('Warning' if attempt < attempts-1
                                       else 'Error'), 'Debugger',
-                                     'Error resetting DUT', sql.log_exception,
-                                     bool(self.result_data))
+                                     'Error resetting DUT', db.log_exception)
                     print(colored(
                         self.dut.serial.port+' '+str(self.result_data['id']) +
                         ': Error resetting DUT (attempt '+str(attempt+1) +
@@ -110,11 +102,8 @@ class jtag(object):
                     else:
                         raise DrSEUsError(error.type)
                 else:
-                    with sql() as db:
-                        db.log_event((self.result_data['id'] if self.result_data
-                                      else self.campaign_data['id']),
-                                     'Information', 'Debugger', 'Reset DUT',
-                                     None, bool(self.result_data))
+                    with self.database as db:
+                        db.log_event('Information', 'Debugger', 'Reset DUT')
                     break
         else:
             self.dut.serial.write('\x03')
@@ -122,19 +111,14 @@ class jtag(object):
 
     def halt_dut(self, halt_command, expected_output):
         self.command(halt_command, expected_output, 'Error halting DUT', False)
-        with sql() as db:
-            db.log_event((self.result_data['id'] if self.result_data
-                          else self.campaign_data['id']), 'Information',
-                         'Debugger', 'Halt DUT', None, bool(self.result_data))
+        with self.database as db:
+            db.log_event('Information', 'Debugger', 'Halt DUT')
 
     def continue_dut(self, continue_command):
         self.command(continue_command, error_message='Error continuing DUT',
                      log_event=False)
-        with sql() as db:
-            db.log_event((self.result_data['id'] if self.result_data
-                          else self.campaign_data['id']), 'Information',
-                         'Debugger', 'Continue DUT', None,
-                         bool(self.result_data))
+        with self.database as db:
+            db.log_event('Information', 'Debugger', 'Continue DUT')
 
     def time_application(self):
         start = time()
@@ -156,9 +140,9 @@ class jtag(object):
         end = time()
         self.campaign_data['exec_time'] = \
             (end - start) / self.options.iterations
-        with sql() as db:
-            db.log_event(self.campaign_data['id'], 'Information', 'Debugger',
-                         'Timed application', None, False)
+        with self.database as db:
+            db.log_event('Information', 'Debugger', 'Timed application',
+                         campaign=True)
 
     def inject_faults(self):
         injection_times = []
@@ -222,16 +206,14 @@ class jtag(object):
                                             injection_data['target']),
                     base=16):
                 injection_data['success'] = True
-                with sql() as db:
+                with self.database as db:
                     db.insert_dict('injection', injection_data)
-                    db.log_event(self.result_data['id'], 'Information',
-                                 'Debugger', 'Fault injected', None, True)
+                    db.log_event('Information', 'Debugger', 'Fault injected')
             else:
                 injection_data['success'] = False
-                with sql() as db:
+                with self.database as db:
                     db.insert_dict('injection', injection_data)
-                    db.log_event(self.result_data['id'], 'Warning', 'Debugger',
-                                 'Injection failed', None, True)
+                    db.log_event('Warning', 'Debugger', 'Injection failed')
         return 0, False
 
 
@@ -239,9 +221,9 @@ class bdi(jtag):
     error_messages = ['timeout while waiting for halt',
                       'wrong state for requested command', 'read access failed']
 
-    def __init__(self, campaign_data, result_data, options):
+    def __init__(self, campaign_data, result_data, database, options):
         self.port = 23
-        super(bdi, self).__init__(campaign_data, result_data, options)
+        super(bdi, self).__init__(campaign_data, result_data, database, options)
         if options.jtag:
             self.connect_telnet()
             self.command('', error_message='Debugger not ready')
@@ -304,31 +286,29 @@ class bdi(jtag):
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
-        with sql() as db:
+        with self.database as db:
             if self.result_data:
-                db.update_dict('result', self.result_data)
+                db.update_dict('result')
             else:
-                db.update_dict('campaign', self.campaign_data)
+                db.update_dict('campaign')
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
             if message in return_buffer:
                 raise DrSEUsError(error_message)
         if log_event:
-            with sql() as db:
-                db.log_event((self.result_data['id'] if self.result_data
-                              else self.campaign_data['id']), 'Information',
-                             'Debugger', 'Command', command,
-                             bool(self.result_data))
+            with self.database as db:
+                db.log_event('Information', 'Debugger', 'Command', command)
         return return_buffer
 
 
 class bdi_arm(bdi):
     # BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
-    def __init__(self, campaign_data, result_data, options):
+    def __init__(self, campaign_data, result_data, database, options):
         self.prompts = ['A9#0>', 'A9#1>']
         self.targets = devices['a9_bdi']
-        super(bdi_arm, self).__init__(campaign_data, result_data, options)
+        super(bdi_arm, self).__init__(campaign_data, result_data, database,
+                                      options)
 
     def reset_dut(self):
         super(bdi_arm, self).reset_dut([
@@ -373,10 +353,11 @@ class bdi_arm(bdi):
 
 
 class bdi_p2020(bdi):
-    def __init__(self, campaign_data, result_data, options):
+    def __init__(self, campaign_data, result_data, database, options):
         self.prompts = ['P2020>']
         self.targets = devices['p2020']
-        super(bdi_p2020, self).__init__(campaign_data, result_data, options)
+        super(bdi_p2020, self).__init__(campaign_data, result_data, database,
+                                        options)
 
     def reset_dut(self):
         super(bdi_p2020, self).reset_dut([
@@ -421,7 +402,7 @@ class bdi_p2020(bdi):
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
 
-    def __init__(self, campaign_data, result_data, options):
+    def __init__(self, campaign_data, result_data, database, options):
 
         def find_open_port():
             sock = socket(AF_INET, SOCK_STREAM)
@@ -430,7 +411,7 @@ class openocd(jtag):
             sock.close()
             return port
 
-    # def __init__(self, campaign_data, result_data, options):
+    # def __init__(self, campaign_data, result_data, database, options):
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = devices['a9']
@@ -443,13 +424,11 @@ class openocd(jtag):
                                   ' '+serial+';', '-f', 'openocd_zedboard.cfg'],
                                  stderr=(DEVNULL if options.command != 'openocd'
                                          else None))
-            with sql() as db:
-                db.log_event((result_data['id'] if result_data
-                              else campaign_data['id']), 'Information',
-                             'Debugger', 'Launched openocd', None,
-                             bool(result_data))
         if options.command != 'openocd':
-            super(openocd, self).__init__(campaign_data, result_data, options)
+            with database as db:
+                db.log_event('Information', 'Debugger', 'Launched openocd')
+            super(openocd, self).__init__(campaign_data, result_data, database,
+                                          options)
             if options.jtag:
                 sleep(1)
                 self.connect_telnet()
@@ -462,11 +441,8 @@ class openocd(jtag):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
         super(openocd, self).close()
         self.openocd.wait()
-        with sql() as db:
-                db.log_event((self.result_data['id'] if self.result_data
-                              else self.campaign_data['id']), 'Information',
-                             'Debugger', 'Closed openocd', None,
-                             bool(self.result_data))
+        with self.database as db:
+                db.log_event('Information', 'Debugger', 'Closed openocd')
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
@@ -522,22 +498,19 @@ class openocd(jtag):
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
-        with sql() as db:
+        with self.database as db:
             if self.result_data:
-                db.update_dict('result', self.result_data)
+                db.update_dict('result')
             else:
-                db.update_dict('campaign', self.campaign_data)
+                db.update_dict('campaign')
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
             if message in return_buffer:
                 raise DrSEUsError(error_message)
         if log_event:
-            with sql() as db:
-                db.log_event((self.result_data['id'] if self.result_data
-                              else self.campaign_data['id']), 'Information',
-                             'Debugger', 'Command', command,
-                             bool(self.result_data))
+            with self.database as db:
+                db.log_event('Information', 'Debugger', 'Command', command)
         return return_buffer
 
     def reset_dut(self):

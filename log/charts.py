@@ -3,7 +3,7 @@ from django.db.models import (Avg, Case, Count, IntegerField, Sum, TextField,
                               Value, When)
 from django.db.models.functions import Concat, Length, Substr
 import numpy
-from simplejson import dumps
+from json import dumps
 from threading import Thread
 
 from .filters import fix_sort, fix_sort_list

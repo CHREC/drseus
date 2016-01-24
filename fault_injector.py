@@ -5,30 +5,30 @@ from subprocess import check_call, PIPE, Popen
 from termcolor import colored
 from threading import Thread
 
+from database import database
 from error import DrSEUsError
 from jtag import bdi_p2020, openocd
 from simics import simics
-from sql import sql
 
 
 class fault_injector(object):
     def __init__(self, campaign_data, options):
         self.campaign_data = campaign_data
         self.options = options
-        if options.command == 'new':
-            self.result_data = None
-        else:
-            self.result_data = {'id': None}
+        self.result_data = {}
+        self.database = database(campaign_data, self.result_data)
+        if options.command != 'new':
             self.__create_result()
         if campaign_data['use_simics']:
-            self.debugger = simics(campaign_data, self.result_data, options)
+            self.debugger = simics(campaign_data, self.result_data,
+                                   self.database, options)
         else:
             if campaign_data['architecture'] == 'p2020':
                 self.debugger = bdi_p2020(campaign_data, self.result_data,
-                                          options)
+                                          self.database, options)
             elif campaign_data['architecture'] == 'a9':
                 self.debugger = openocd(campaign_data, self.result_data,
-                                        options)
+                                        self.database, options)
         if not campaign_data['use_simics']:
             if campaign_data['use_aux']:
                 self.debugger.aux.serial.write('\x03')
@@ -62,13 +62,12 @@ class fault_injector(object):
         return string
 
     def close(self):
+        self.debugger.close()
         if self.result_data:
             self.result_data.update({
                 'outcome_category': 'DrSEUs',
                 'outcome': 'Closed DrSEUs'})
-            self.log_result()
-        if not self.campaign_data['use_simics']:
-            self.debugger.close()
+            self.log_result(True)
 
     def setup_campaign(self):
 
@@ -95,8 +94,8 @@ class fault_injector(object):
             aux_process = Thread(target=send_dut_files, args=[True])
             aux_process.start()
         send_dut_files()
-        # if self.campaign_data['use_aux']:
-        #     aux_process.join()
+        if self.campaign_data['use_aux']:
+            aux_process.join()
         #     aux_process = Thread(target=self.debugger.aux.command)
         #     aux_process.start()
         # self.debugger.dut.command()
@@ -116,8 +115,8 @@ class fault_injector(object):
                     self.campaign_data['output_file'])
         if self.campaign_data['use_simics']:
             self.debugger.close()
-        with sql() as db:
-            db.update_dict('campaign', self.campaign_data)
+        with self.database as db:
+            db.update_dict('campaign')
         self.close()
 
     def send_dut_files(self, aux=False):
@@ -135,7 +134,6 @@ class fault_injector(object):
             self.debugger.dut.send_files(files)
 
     def __create_result(self):
-        del self.result_data['id']
         self.result_data.update({'campaign_id': self.campaign_data['id'],
                                  'aux_output': '',
                                  'data_diff': None,
@@ -146,11 +144,8 @@ class fault_injector(object):
                                  'outcome_category': 'Incomplete',
                                  'outcome': 'Incomplete',
                                  'timestamp': None})
-        with sql() as db:
-            db.insert_dict('result', self.result_data)
-            self.result_data['id'] = db.cursor.lastrowid
-            db.insert_dict('injection', {'result_id': self.result_data['id'],
-                                         'injection_number': 0})
+        with self.database as db:
+            db.insert_dict('result')
 
     def __monitor_execution(self, latent_faults=0, persistent_faults=False):
 
@@ -266,7 +261,7 @@ class fault_injector(object):
                 outcome_category = 'No error'
         return outcome, outcome_category
 
-    def log_result(self):
+    def log_result(self, close=False):
         out = (self.debugger.dut.serial.port+', '+str(self.result_data['id']) +
                ': '+self.result_data['outcome_category']+' - ' +
                self.result_data['outcome'])
@@ -275,9 +270,10 @@ class fault_injector(object):
             out += ' {0:.2f}%'.format(max(self.result_data['data_diff']*100,
                                           99.990))
         print(colored(out, 'blue'))
-        with sql() as db:
-            db.update_dict('result', self.result_data)
-        self.__create_result()
+        with self.database as db:
+            db.update_dict('result')
+        if not close:
+            self.__create_result()
 
     def inject_campaign(self, iteration_counter):
 

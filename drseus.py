@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+
 from argparse import ArgumentParser
 
 import utilities
 
+# TODO: add description field to campaign model
 # TODO: update dut.write/aux.write to dut.command/aux.command in fault_injector
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
@@ -79,7 +81,7 @@ subparsers = parser.add_subparsers(
                 'command',
     metavar='COMMAND', dest='command')
 
-new_campaign = subparsers.add_parser('new', aliases=['n'],
+new_campaign = subparsers.add_parser('new', aliases=['n', 'N'],
                                      help='create a new campaign',
                                      description='create a new campaign')
 new_campaign.add_argument('application', action='store', metavar='APPLICATION',
@@ -133,7 +135,7 @@ new_simics_campaign.add_argument('-c', '--checkpoints', action='store',
                                       'may be different) [default=50]')
 new_campaign.set_defaults(func=utilities.create_campaign)
 
-inject = subparsers.add_parser('inject', aliases=['i', 'I', 'inj'],
+inject = subparsers.add_parser('inject', aliases=['i', 'I'],
                                help='perform fault injections on a campaign',
                                description='perform fault injections on a '
                                            'campaign')
@@ -252,12 +254,14 @@ options = parser.parse_args()
 if options.command is None:
     parser.print_help()
 else:
-    if options.command == 'n':
+    if options.command in ['n', 'N']:
         options.command = 'new'
-    elif options.command == 'i':
+    elif options.command in ['i', 'I']:
         options.command = 'inject'
-    elif options.command == 's':
+    elif options.command in ['s', 'S']:
         options.command = 'supervise'
+    elif options.command in ['o', 'O']:
+        options.command = 'openocd'
     if options.command != 'new':
         if not options.campaign_id:
             try:

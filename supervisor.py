@@ -6,7 +6,6 @@ from select import select
 from sys import stdin
 from threading import Thread
 
-from error import DrSEUsError
 from fault_injector import fault_injector
 
 
@@ -19,14 +18,7 @@ class supervisor(Cmd):
         options.debug = True
         self.drseus = fault_injector(campaign_data, options)
         if not campaign_data['use_simics']:
-            booted = False
-            while not booted:
-                try:
-                    self.drseus.debugger.reset_dut()
-                except DrSEUsError:
-                    continue
-                else:
-                    booted = True
+            self.drseus.debugger.reset_dut()
             self.drseus.send_dut_files()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
@@ -61,21 +53,9 @@ class supervisor(Cmd):
 
     def do_command_dut(self, arg, aux=False):
         """Send DUT device a command and interact, interrupt with ctrl-c"""
-
-        def read_thread_worker():
-            try:
-                if aux:
-                    self.drseus.debugger.aux.read_until()
-                else:
-                    self.drseus.debugger.dut.read_until()
-            except DrSEUsError:
-                pass
-
-        if aux:
-            self.drseus.debugger.aux.write(arg+'\n')
-        else:
-            self.drseus.debugger.dut.write(arg+'\n')
-        read_thread = Thread(target=read_thread_worker)
+        read_thread = Thread(target=(self.drseus.debugger.aux.command if aux
+                                     else self.drseus.debugger.dut.command),
+                             args=[arg])
         read_thread.start()
         try:
             while read_thread.is_alive():
@@ -167,12 +147,6 @@ class supervisor(Cmd):
 
     def do_exit(self, arg=None):
         """Exit DrSEUs"""
-        self.drseus.result_data.update({
-            'outcome_category': 'Supervisor',
-            'outcome': 'Exit supervisor'})
-        self.drseus.log_result()
-        if self.campaign_data['use_simics']:
-            self.drseus.debugger.close()
         self.drseus.close()
         return True
 

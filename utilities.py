@@ -9,10 +9,10 @@ from shutil import copy, copytree, rmtree
 from subprocess import check_call
 from sys import stdout
 
+from database import database
 from fault_injector import fault_injector
 from jtag import find_ftdi_serials, find_uart_serials, openocd
 from simics_config import simics_config
-from sql import sql
 from supervisor import supervisor
 
 
@@ -29,8 +29,8 @@ def print_zedboard_info(none=None):
 
 
 def list_campaigns(none=None):
-    with sql() as db:
-        campaign_list = db.get_campaign_data('*')
+    with database(campaign_data={'id': '*'}) as db:
+        campaign_list = db.get_campaign_data()
     print('DrSEUs Campaigns:')
     print('ID\t\tApplication\t\t\tArchitecture\tSimics')
     for campaign in campaign_list:
@@ -39,8 +39,8 @@ def list_campaigns(none=None):
 
 
 def get_campaign_data(campaign_id):
-    with sql() as db:
-        campaign_data = db.get_campaign_data(campaign_id)
+    with database(campaign_data={'id': campaign_id}) as db:
+        campaign_data = db.get_campaign_data()
     if campaign_data is None:
         raise Exception('could not find campaign ID '+str(campaign_id))
     return campaign_data
@@ -79,8 +79,8 @@ def delete(options):
             rmtree('campaign-data/'+str(campaign_id)+'/results')
             print('deleted results')
         if exists('campaign-data/db.sqlite3'):
-            with sql() as db:
-                db.delete_results(campaign_id)
+            with database(campaign_data={'id': campaign_id}) as db:
+                db.delete_results()
             print('flushed database')
         if exists('simics-workspace/injected-checkpoints/'+str(campaign_id)):
             rmtree('simics-workspace/injected-checkpoints/'+str(campaign_id))
@@ -88,8 +88,8 @@ def delete(options):
 
     def delete_campaign(campaign_id):
         if exists('campaign-data/db.sqlite3'):
-            with sql() as db:
-                db.delete_campaign(campaign_id)
+            with database(campaign_data={'id': campaign_id}) as db:
+                db.delete_campaign()
             print('deleted campaign '+str(campaign_id)+' from database')
         if exists('campaign-data/'+str(campaign_id)):
             rmtree('campaign-data/'+str(campaign_id))
@@ -158,8 +158,8 @@ def create_campaign(options):
         'use_simics': options.use_simics}
     if options.aux_application is None:
         options.aux_application = options.application
-    with sql() as db:
-        db.insert_dict('campaign', campaign_data)
+    with database(campaign_data) as db:
+        db.insert_dict('campaign')
         campaign_data['id'] = db.cursor.lastrowid
     campaign_directory = 'campaign-data/'+str(campaign_data['id'])
     if exists(campaign_directory):
@@ -213,8 +213,8 @@ def regenerate(options):
     campaign_data = get_campaign_data(options.campaign_id)
     if not campaign_data['use_simics']:
         raise Exception('This feature is only available for Simics campaigns')
-    with sql() as db:
-        injection_data = db.get_result_item_data(options.result_id, 'injection')
+    with database(result_data={'id': options.result_id}) as db:
+        injection_data = db.get_result_item_data('injection')
     drseus = fault_injector(campaign_data, options)
     checkpoint = drseus.debugger.regenerate_checkpoints(injection_data)
     drseus.debugger.launch_simics_gui(checkpoint)
@@ -254,26 +254,26 @@ def update_dependencies(none=None):
 
 def merge_campaigns(options):
     backup_database()
-    with sql() as db, sql(database=options.directory +
-                          '/campaign-data/db.sqlite3') as db_new:
-        new_campaigns = db_new.get_campaign_data('*')
-        for new_campaign in new_campaigns:
+    with database() as db, database(campaign_data={'id': '*'},
+                                    database_file=options.directory +
+                                    '/campaign-data/db.sqlite3') as db_new:
+        for new_campaign in db_new.get_campaign_data():
             print('merging campaign: \"'+options.directory+'/' +
                   new_campaign['command']+'\"')
-            old_campaign_id = new_campaign['id']
+            db_new.campaign_data['id'] = new_campaign['id']
             db.insert_dict('campaign', new_campaign)
-            new_campaign['id'] = db.cursor.lastrowid
-            if exists(options.directory+'/campaign-data/'+str(old_campaign_id)):
+            if exists(options.directory+'/campaign-data/' +
+                      str(db_new.campaign_data['id'])):
                 print('\tcopying campaign data...', end='')
                 copytree(options.directory+'/campaign-data/' +
-                         str(old_campaign_id),
+                         str(db_new.campaign_data['id']),
                          'campaign-data/'+str(new_campaign['id']))
                 print('done')
             if exists(options.directory+'/simics-workspace/gold-checkpoints/' +
-                      str(old_campaign_id)):
+                      str(db_new.campaign_data['id'])):
                 print('\tcopying gold checkpoints...', end='')
                 copytree(options.directory+'/simics-workspace/'
-                         'gold-checkpoints/'+str(old_campaign_id),
+                         'gold-checkpoints/'+str(db_new.campaign_data['id']),
                          'simics-workspace/gold-checkpoints/' +
                          str(new_campaign['id']))
                 print('done')
@@ -282,20 +282,13 @@ def merge_campaigns(options):
                 __update_checkpoint_dependencies(new_campaign['id'])
                 print('done')
             print('\tcopying results...', end='')
-            new_results = db_new.get_result_data(old_campaign_id)
-            for new_result in new_results:
-                old_result_id = new_result['id']
-                new_result['campaign_id'] = new_campaign['id']
-                del new_result['id']
+            for new_result in db_new.get_result_data():
+                db_new.result_data['id'] = new_result['id']
                 db.insert_dict('result', new_result)
-                new_result_id = sql.lastrowid
                 for table in ['injection', 'simics_register_diff',
                               'simics_memory_diff']:
-                    new_result_items = \
-                        db_new.get_result_item_data(old_result_id, table)
-                    for new_result_item in new_result_items:
-                        new_result_item['result_id'] = new_result_id
-                        del new_result_item['id']
+                    for new_result_item in db_new.get_result_item_data(table):
+                        new_result_item['result_id'] = new_result['id']
                         db.insert_dict(table, new_result_item)
             print('done')
 
