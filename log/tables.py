@@ -137,13 +137,13 @@ class result_table(results_table):
 
 class event_table(tables.Table):
     description = tables.TemplateColumn(
-        '<code class="console">{{ value }}</code>')
+        '{% if value %}<code class="console">{{ value }}</code>{% endif %}')
     timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
         attrs = {"class": "paleblue"}
         model = event
-        fields = ('timestamp', 'source', 'event_type', 'description')
+        fields = ('timestamp', 'level', 'source', 'event_type', 'description')
 
 
 class hw_injection_table(tables.Table):

@@ -16,10 +16,10 @@ from .tables import (campaign_table, campaigns_table, event_table,
                      simics_register_diff_table)
 
 navigation_items = (('Campaign Information', 'info'),
-                    ('Charts (Grouped by Category)', 'category_charts'),
-                    ('Charts (Grouped by Outcome)', 'outcome_charts'),
-                    ('Results Table', 'results'),
-                    ('Results Table (Filtered by Events)', 'events'))
+                    ('Charts (Outcome Categories)', 'category_charts'),
+                    ('Charts (Outcomes)', 'outcome_charts'),
+                    ('Results Table (Injection Filter)', 'results'),
+                    ('Results Table (Event Filter)', 'events'))
 
 
 def campaigns_page(request):
@@ -50,11 +50,13 @@ def campaign_page(request, campaign_id):
         page_items.append(('AUX Output', 'aux_output'))
     page_items.append(('Debugger Output', 'debugger_output'))
     table = campaign_table(campaign.objects.filter(id=campaign_id))
+    event_table_ = event_table(event.objects.filter(campaign_id=campaign_id))
     RequestConfig(request, paginate=False).configure(table)
+    RequestConfig(request, paginate=False).configure(event_table_)
     return render(request, 'campaign.html', {
         'campaign_data': campaign_data, 'chart_array': chart_array,
-        'navigation_items': navigation_items, 'output_image': output_image,
-        'page_items': page_items, 'table': table})
+        'event_table': event_table_, 'navigation_items': navigation_items,
+        'output_image': output_image, 'page_items': page_items, 'table': table})
 
 
 def category_charts_page(request, campaign_id):
@@ -117,12 +119,14 @@ def results_page(request, campaign_id, filter_events=False):
         if 'delete' in request.POST and 'select_box' in request.POST:
             result_ids = [int(result_id) for result_id
                           in dict(request.POST)['select_box']]
+            event.objects.filter(result_id__in=result_ids).delete()
             injection.objects.filter(result_id__in=result_ids).delete()
             simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
             simics_register_diff.objects.filter(
                 result_id__in=result_ids).delete()
             result.objects.filter(id__in=result_ids).delete()
         elif 'delete_all' in request.POST:
+            event.objects.filter(result_id__in=result_ids).delete()
             injection.objects.filter(result_id__in=result_ids).delete()
             simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
             simics_register_diff.objects.filter(
@@ -203,6 +207,7 @@ def result_page(request, campaign_id, result_id):
         result_object.outcome_category = request.POST['outcome_category']
         result_object.save()
     elif request.method == 'POST' and 'delete' in request.POST:
+        event.objects.filter(result_id=result_object.id).delete()
         injection.objects.filter(result_id=result_object.id).delete()
         simics_register_diff.objects.filter(result_id=result_object.id).delete()
         simics_memory_diff.objects.filter(result_id=result_object.id).delete()

@@ -5,6 +5,9 @@ from traceback import format_exc, format_stack
 
 
 class sql(object):
+    log_trace = '__LOG_TRACE__'
+    log_exception = '__LOG_EXCEPTION__'
+
     def __init__(self, database='campaign-data/db.sqlite3'):
         if not exists(database):
             raise Exception('could not find database file: '+database)
@@ -53,20 +56,19 @@ class sql(object):
                 str(row_id)),
             list(dictionary.values()))
 
-    def log_event(self, result_id, source, event_type, description=None):
-        event_data = {'result_id': result_id,
+    def log_event(self, id_, level, source, event_type, description, campaign):
+        if description == self.log_trace:
+            description = ''.join(format_stack()[:-2])
+        elif description == self.log_exception:
+            description = ''.join(format_exc())
+        event_data = {'campaign_id': id_ if campaign else None,
+                      'result_id': id_ if not campaign else None,
+                      'level': level,
                       'source': source,
                       'event_type': event_type,
                       'description': description,
                       'timestamp': None}
         self.insert_dict('event', event_data)
-
-    def log_event_trace(self, result_id, source, event_type, exception=False):
-        if exception:
-            description = ''.join(format_exc())
-        else:
-            description = ''.join(format_stack()[:-2])
-        self.log_event(result_id, source, event_type, description)
 
     def get_campaign_data(self, campaign_id):
         if not campaign_id:
@@ -106,11 +108,16 @@ class sql(object):
         self.cursor.execute('DELETE FROM log_injection WHERE '
                             'result_id IN (SELECT id FROM log_result '
                             'WHERE campaign_id=?)', [campaign_id])
+        self.cursor.execute('DELETE FROM log_event WHERE '
+                            'result_id IN (SELECT id FROM log_result '
+                            'WHERE campaign_id=?)', [campaign_id])
         self.cursor.execute('DELETE FROM log_result WHERE campaign_id=?',
                             [campaign_id])
 
     def delete_campaign(self, campaign_id):
         self.delete_results(campaign_id)
+        self.cursor.execute('DELETE FROM log_event WHERE campaign_id=?',
+                            [campaign_id])
         self.cursor.execute('DELETE FROM log_campaign WHERE id=?',
                             [campaign_id])
 

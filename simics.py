@@ -65,12 +65,17 @@ class simics(object):
             except Exception as error:
                 self.simics.kill()
                 with sql() as db:
-                    db.log_event_trace(self.result_data['id'], 'Simics',
-                                       'Error launching Simics', exception=True)
+                    db.log_event((self.campaign_data['id']
+                                  if self.options.command == 'new'
+                                  else self.result_data['id']),
+                                 ('Warning' if attempt < attempts-1
+                                  else 'Error'), 'Simics',
+                                 'Error launching Simics', sql.log_exception,
+                                 (self.options.command == 'new'))
                 print(colored(
-                    self.dut.serial.port+', '+str(self.result_data['id'])+': '
-                    'error launching simics (attempt ' +
-                    str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
+                    str(self.result_data['id'])+': error launching simics '
+                    '(attempt '+str(attempt+1)+'/'+str(attempts)+'): ' +
+                    str(error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 elif attempt == attempts-1:
@@ -91,6 +96,12 @@ class simics(object):
             if self.campaign_data['use_aux']:
                 buff += self.__command('connect-real-network-port-in ssh '
                                        'ethernet_switch0 target-ip=10.10.0.104')
+        with sql() as db:
+            db.log_event((self.campaign_data['id']
+                          if self.options.command == 'new'
+                          else self.result_data['id']), 'Information',
+                         'Simics', 'Launched Simics', checkpoint,
+                         (self.options.command == 'new'))
         found_settings = 0
         if checkpoint is None:
             serial_ports = []
@@ -236,45 +247,51 @@ class simics(object):
                 pass
 
     # def close(self):
-        try:
-            self.dut.close()
-            if self.campaign_data['use_aux']:
-                self.aux.close()
-        except AttributeError:
-            pass
+        self.dut.close()
+        if self.campaign_data['use_aux']:
+            self.aux.close()
         if self.simics:
             self.simics.send_signal(SIGINT)
-            try:
-                self.simics.stdin.write('quit\n')
-            except IOError:
-                pass
             read_thread = Thread(target=read_worker)
             read_thread.start()
-            read_thread.join(timeout=5)  # must be shorter than timeout in read
-            if read_thread.is_alive():
-                self.simics.kill()
-                if self.options.command == 'new':
-                    self.campaign_data['debugger_output'] += \
-                        '\nkilled unresponsive simics process\n'
-                else:
-                    self.result_data['debugger_output'] += \
-                        '\nkilled unresponsive simics process\n'
-                if self.options.debug:
-                    print(colored('killed unresponsive simics process',
-                                  'yellow'))
-            else:
+            try:
+                self.simics.stdin.write('quit\n')
                 if self.options.command == 'new':
                     self.campaign_data['debugger_output'] += 'quit\n'
                 else:
                     self.result_data['debugger_output'] += 'quit\n'
                 if self.options.debug:
                     print(colored('quit', 'yellow'))
+            except IOError:
+                pass
+            read_thread.join(timeout=5)  # must be shorter than timeout in read
+            if read_thread.is_alive():
+                self.simics.kill()
+                with sql() as db:
+                    db.log_event((self.campaign_data['id']
+                                  if self.options.command == 'new'
+                                  else self.result_data['id']), 'Warning',
+                                 'Simics', 'Killed unresponsive Simics', None,
+                                 (self.options.command == 'new'))
+            else:
                 self.simics.wait()
+                with sql() as db:
+                    db.log_event((self.campaign_data['id']
+                                  if self.options.command == 'new'
+                                  else self.result_data['id']), 'Information',
+                                 'Simics', 'Closed Simics', None,
+                                 (self.options.command == 'new'))
         self.simics = None
 
     def halt_dut(self):
         self.simics.send_signal(SIGINT)
         self.__command()
+        with sql() as db:
+            db.log_event((self.campaign_data['id']
+                          if self.options.command == 'new'
+                          else self.result_data['id']), 'Information',
+                         'Simics', 'Halt DUT', None,
+                         (self.options.command == 'new'))
         return True
 
     def continue_dut(self):
@@ -285,6 +302,12 @@ class simics(object):
             self.result_data['debugger_output'] += 'run\n'
         if self.options.debug:
             print(colored('run', 'yellow'))
+        with sql() as db:
+            db.log_event((self.campaign_data['id']
+                          if self.options.command == 'new'
+                          else self.result_data['id']), 'Information',
+                         'Simics', 'Continue DUT', None,
+                         (self.options.command == 'new'))
 
     def __command(self, command=None):
 
@@ -325,14 +348,19 @@ class simics(object):
                     break
             if self.options.debug:
                 print()
-            if not self.options.command == 'supervise':
-                with sql() as db:
-                    if self.options.command == 'new':
-                        db.update_dict('campaign', self.campaign_data)
-                    else:
-                        db.update_dict('result', self.result_data)
+            with sql() as db:
+                if self.options.command == 'new':
+                    db.update_dict('campaign', self.campaign_data)
+                else:
+                    db.update_dict('result', self.result_data)
             for message in self.error_messages:
                 if message in buff:
+                    with sql() as db:
+                        db.log_event((self.campaign_data['id']
+                                      if self.options.command == 'new'
+                                      else self.result_data['id']),
+                                     'Error', 'Simics', message, buff,
+                                     (self.options.command == 'new'))
                     raise DrSEUsError(message)
             return buff
 
@@ -345,7 +373,15 @@ class simics(object):
                 self.result_data['debugger_output'] += command+'\n'
             if self.options.debug:
                 print(colored(command, 'yellow'))
-        return read_until()
+        buff = read_until()
+        if command:
+            with sql() as db:
+                db.log_event((self.campaign_data['id']
+                              if self.options.command == 'new'
+                              else self.result_data['id']), 'Information',
+                             'Simics', 'Command', command,
+                             (self.options.command == 'new'))
+        return buff
 
     def __merge_checkpoint(self, checkpoint):
         if self.options.debug:
@@ -393,6 +429,9 @@ class simics(object):
                     self.__merge_checkpoint(incremental_checkpoint)
                     break
             self.campaign_data['num_checkpoints'] = checkpoint
+            with sql() as db:
+                db.log_event(self.campaign_data['id'], 'Information', 'Simics',
+                             'Created gold checkpoints', None, True)
             self.continue_dut()
             if self.campaign_data['use_aux']:
                 aux_process.join()
@@ -413,12 +452,15 @@ class simics(object):
                     target=self.aux.command,
                     args=('./'+self.campaign_data['aux_command'], ))
                 aux_process.start()
-            self.dut.write('./'+self.campaign_data['command']+'\n')
+            dut_process = Thread(
+                target=self.dut.command,
+                args=('./'+self.campaign_data['command'], ))
+            dut_process.start()
             if self.campaign_data['use_aux']:
                 aux_process.join()
             if self.campaign_data['kill_dut']:
                 self.dut.serial.write('\x03')
-            self.dut.read_until()
+            dut_process.join()
         self.halt_dut()
         end_time = time()
         time_data = self.__command('print-time').split('\n')[-2].split()
@@ -431,6 +473,9 @@ class simics(object):
             int((end_cycles - start_cycles) / self.options.iterations)
         self.campaign_data['sim_time'] = \
             (end_sim_time - start_sim_time) / self.options.iterations
+        with sql() as db:
+            db.log_event(self.campaign_data['id'], 'Information', 'Simics',
+                         'Timed application', None, True)
         create_checkpoints()
 
     def inject_faults(self):
@@ -531,11 +576,10 @@ class simics(object):
                 value_to_inject and return the new value.
                 """
                 if bit_to_inject >= num_bits_to_inject or bit_to_inject < 0:
-                    raise Exception('simics.py:flip_bit():'
-                                    ' invalid bit_to_inject: ' +
-                                    str(bit_to_inject) +
-                                    ' for num_bits_to_inject: ' +
-                                    str(num_bits_to_inject))
+                    raise DrSEUsError('invalid bit_to_inject: ' +
+                                      str(bit_to_inject) +
+                                      ' for num_bits_to_inject: ' +
+                                      str(num_bits_to_inject))
                 value_to_inject = int(value_to_inject, base=0)
                 binary_list = list(
                     str(bin(value_to_inject))[2:].zfill(num_bits_to_inject))
@@ -593,8 +637,7 @@ class simics(object):
                             field_to_inject = field[0]
                             break
                     else:
-                        raise Exception('simics.py:inject_register(): '
-                                        'Error choosing TLB field to inject')
+                        raise DrSEUsError('Error choosing TLB field to inject')
                     injection_data['field'] = field_to_inject
                     if 'split' in fields[field_to_inject] and \
                             fields[field_to_inject]['split']:
@@ -649,10 +692,10 @@ class simics(object):
                                 field_to_inject = field_name
                                 break
                         else:
-                            raise Exception('checkpoints.py:inject_register(): '
-                                            'Error finding register field name '
-                                            'for bit '+str(bit_to_inject) +
-                                            ' in register '+register)
+                            raise DrSEUsError('Error finding register field '
+                                              'name for bit ' +
+                                              str(bit_to_inject) +
+                                              ' in register '+register)
                         injection_data['field'] = field_to_inject
                     else:
                         injection_data['field'] = None
@@ -735,17 +778,21 @@ class simics(object):
                 # perform fault injection
                 injection_data.update(inject_register(injected_checkpoint,
                                                       register, target))
-            except Exception as error:
+            except:
                 injection_data['success'] = False
                 with sql() as db:
                     db.insert_dict('injection', injection_data)
-                print(error)
+                    db.log_event(self.result_data['id'], 'Error', 'Simics',
+                                 'Error injecting fault', sql.log_exception,
+                                 False)
                 raise DrSEUsError('Error injecting fault')
             else:
                 injection_data['success'] = True
             # log injection data
             with sql() as db:
                 db.insert_dict('injection', injection_data)
+                db.log_event(self.result_data['id'], 'Information', 'Simics',
+                             'Fault injected', None, False)
             if self.options.debug:
                 print(colored('result id: '+str(self.result_data['id']),
                               'magenta'))

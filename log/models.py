@@ -39,7 +39,9 @@ class result(models.Model):
 
 
 class event(models.Model):
-    result = models.ForeignKey(result)
+    campaign = models.ForeignKey(campaign, null=True)
+    result = models.ForeignKey(result, null=True)
+    level = models.TextField()
     source = models.TextField()
     event_type = models.TextField()
     description = models.TextField(null=True)

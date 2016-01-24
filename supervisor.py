@@ -10,6 +10,7 @@ from error import DrSEUsError
 from fault_injector import fault_injector
 
 
+# TODO: add background read thread
 class supervisor(Cmd):
     def __init__(self, campaign_data, options):
         self.campaign_data = campaign_data

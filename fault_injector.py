@@ -91,13 +91,13 @@ class fault_injector(object):
             aux_process = Thread(target=send_dut_files, args=[True])
             aux_process.start()
         send_dut_files()
-        if self.campaign_data['use_aux']:
-            aux_process.join()
-            aux_process = Thread(target=self.debugger.aux.command)
-            aux_process.start()
-        self.debugger.dut.command()
-        if self.campaign_data['use_aux']:
-            aux_process.join()
+        # if self.campaign_data['use_aux']:
+        #     aux_process.join()
+        #     aux_process = Thread(target=self.debugger.aux.command)
+        #     aux_process.start()
+        # self.debugger.dut.command()
+        # if self.campaign_data['use_aux']:
+        #     aux_process.join()
         self.debugger.time_application()
         if self.campaign_data['output_file']:
             if self.campaign_data['use_aux_output']:

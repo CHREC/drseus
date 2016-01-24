@@ -62,9 +62,27 @@ class jtag(object):
             pass
         return string
 
+    def connect_telnet(self):
+        self.telnet = Telnet(self.options.debugger_ip_address, self.port,
+                             timeout=self.timeout)
+        with sql() as db:
+            db.log_event((self.campaign_data['id']
+                          if self.options.command == 'new'
+                          else self.result_data['id']), 'Information',
+                         'Debugger', 'Connected to telnet',
+                         (self.options.debugger_ip_address+':' +
+                          str(self.port)),
+                         (self.options.command == 'new'))
+
     def close(self):
         if self.telnet:
             self.telnet.close()
+            with sql() as db:
+                db.log_event((self.campaign_data['id']
+                              if self.options.command == 'new'
+                              else self.result_data['id']), 'Information',
+                             'Debugger', 'Closed telnet', None,
+                             (self.options.command == 'new'))
         self.dut.close()
         if self.campaign_data['use_aux']:
             self.aux.close()
@@ -78,9 +96,13 @@ class jtag(object):
                                  'Error resetting DUT')
                 except DrSEUsError as error:
                     with sql() as db:
-                        db.log_event_trace(self.result_data['id'], 'Debugger',
-                                           'Error resetting DUT',
-                                           exception=True)
+                        db.log_event((self.campaign_data['id']
+                                      if self.options.command == 'new'
+                                      else self.result_data['id']),
+                                     ('Warning' if attempt < attempts-1
+                                      else 'Error'), 'Debugger',
+                                     'Error resetting DUT', sql.log_exception,
+                                     (self.options.command == 'new'))
                     print(colored(
                         self.dut.serial.port+' '+str(self.result_data['id']) +
                         ': Error resetting DUT (attempt '+str(attempt+1) +
@@ -91,9 +113,33 @@ class jtag(object):
                         raise DrSEUsError(error.type)
                 else:
                     break
+                with sql() as db:
+                    db.log_event((self.campaign_data['id']
+                                  if self.options.command == 'new'
+                                  else self.result_data['id']), 'Information',
+                                 'Debugger', 'Reset DUT', None,
+                                 (self.options.command == 'new'))
         else:
             self.dut.serial.write('\x03')
         self.dut.do_login()
+
+    def halt_dut(self, halt_command, expected_output):
+        self.command(halt_command, expected_output, 'Error halting DUT')
+        with sql() as db:
+            db.log_event((self.campaign_data['id']
+                          if self.options.command == 'new'
+                          else self.result_data['id']), 'Information',
+                         'Debugger', 'Halt DUT', None,
+                         (self.options.command == 'new'))
+
+    def continue_dut(self, continue_command):
+        self.command(continue_command, error_message='Error continuing DUT')
+        with sql() as db:
+            db.log_event((self.campaign_data['id']
+                          if self.options.command == 'new'
+                          else self.result_data['id']), 'Information',
+                         'Debugger', 'Continue DUT', None,
+                         (self.options.command == 'new'))
 
     def time_application(self):
         start = time()
@@ -103,15 +149,21 @@ class jtag(object):
                     target=self.aux.command,
                     args=('./'+self.campaign_data['aux_command'], ))
                 aux_process.start()
-            self.dut.write('./'+self.campaign_data['command']+'\n')
+            dut_process = Thread(
+                target=self.dut.command,
+                args=('./'+self.campaign_data['command'], ))
+            dut_process.start()
             if self.campaign_data['use_aux']:
                 aux_process.join()
             if self.campaign_data['kill_dut']:
                 self.dut.serial.write('\x03')
-            self.dut.read_until()
+            dut_process.join()
         end = time()
         self.campaign_data['exec_time'] = \
             (end - start) / self.options.iterations
+        with sql() as db:
+            db.log_event(self.campaign_data['id'], 'Information', 'Debugger',
+                         'Timed application', None, True)
 
     def inject_faults(self):
         injection_times = []
@@ -175,10 +227,16 @@ class jtag(object):
                                             injection_data['target']),
                     base=16):
                 injection_data['success'] = True
+                with sql() as db:
+                    db.insert_dict('injection', injection_data)
+                    db.log_event(self.result_data['id'], 'Information',
+                                 'Debugger', 'Fault injected', None, False)
             else:
                 injection_data['success'] = False
-            with sql() as db:
-                db.insert_dict('injection', injection_data)
+                with sql() as db:
+                    db.insert_dict('injection', injection_data)
+                    db.log_event(self.result_data['id'], 'Warning',
+                                 'Debugger', 'Injection failed', None, False)
         return 0, False
 
 
@@ -190,9 +248,7 @@ class bdi(jtag):
         self.port = 23
         super(bdi, self).__init__(campaign_data, result_data, options)
         if self.options.jtag:
-            self.telnet = Telnet(self.options.debugger_ip_address, self.port,
-                                 timeout=self.timeout)
-        else:
+            self.connect_telnet()
             self.command('', error_message='Debugger not ready')
 
     def __str__(self):
@@ -219,13 +275,11 @@ class bdi(jtag):
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
-            command = command+'\r'
-            self.telnet.write(bytes(command, encoding='utf-8'))
-            self.telnet.write(bytes('\r', encoding='utf-8'))
+            self.telnet.write(bytes(command+'\r\r', encoding='utf-8'))
             if self.options.command == 'new':
-                self.campaign_data['debugger_output'] += command
+                self.campaign_data['debugger_output'] += command+'\n'
             else:
-                self.result_data['debugger_output'] += command
+                self.result_data['debugger_output'] += command+'\n'
             if self.options.debug:
                 print(colored(command, 'yellow'))
         for i in range(len(expected_output)):
@@ -254,17 +308,22 @@ class bdi(jtag):
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
-        if not self.options.command == 'supervise':
-            with sql() as db:
-                if self.options.command == 'new':
-                    db.update_dict('campaign', self.campaign_data)
-                else:
-                    db.update_dict('result', self.result_data)
+        with sql() as db:
+            if self.options.command == 'new':
+                db.update_dict('campaign', self.campaign_data)
+            else:
+                db.update_dict('result', self.result_data)
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
             if message in return_buffer:
                 raise DrSEUsError(error_message)
+        with sql() as db:
+            db.log_event((self.campaign_data['id']
+                          if self.options.command == 'new'
+                          else self.result_data['id']), 'Information',
+                         'Debugger', 'Command', command,
+                         (self.options.command == 'new'))
         return return_buffer
 
 
@@ -293,12 +352,12 @@ class bdi_arm(bdi):
             '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
-        self.command('halt 3', ['- TARGET: core #0 has entered debug mode',
-                                '- TARGET: core #1 has entered debug mode'],
-                     'Error halting DUT')
+        super(bdi_arm, self).halt_dut('halt 3', [
+            '- TARGET: core #0 has entered debug mode',
+            '- TARGET: core #1 has entered debug mode'])
 
     def continue_dut(self):
-        self.command('cont 3', error_message='Error continuing DUT')
+        super(bdi_arm, self).continue_dut('cont 3')
 
     def select_core(self, core):
         # TODO: check if cores are running (not in debug mode)
@@ -339,13 +398,12 @@ class bdi_p2020(bdi):
             '- TARGET: processing target startup passed'])
 
     def halt_dut(self):
-        self.command('halt 0; halt 1', ['Target CPU', 'Core state',
-                                        'Debug entry cause', 'Current PC',
-                                        'Current CR', 'Current MSR',
-                                        'Current LR']*2, 'Error halting DUT')
+        super(bdi_p2020, self).halt_dut('halt 0; halt 1', [
+            'Target CPU', 'Core state', 'Debug entry cause', 'Current PC',
+            'Current CR', 'Current MSR', 'Current LR']*2)
 
     def continue_dut(self):
-        self.command('go 0 1', error_message='Error continuing DUT')
+        super(bdi_p2020, self).continue_dut('go 0 1')
 
     def select_core(self, core):
         self.command('select '+str(core), ['Target CPU', 'Core state',
@@ -380,20 +438,26 @@ class openocd(jtag):
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = devices['a9']
-        serial = zedboards[find_uart_serials()[options.dut_serial_port]]
         self.port = find_open_port()
-        self.openocd = Popen(['openocd', '-c',
-                              'gdb_port 0; tcl_port 0; telnet_port ' +
-                              str(self.port)+'; interface ftdi; ftdi_serial ' +
-                              serial+';', '-f', 'openocd_zedboard.cfg'],
-                             stderr=(DEVNULL if options.command != 'openocd'
-                                     else None))
+        if self.options.jtag:
+            serial = zedboards[find_uart_serials()[options.dut_serial_port]]
+            self.openocd = Popen(['openocd', '-c',
+                                  'gdb_port 0; tcl_port 0; telnet_port ' +
+                                  str(self.port)+'; interface ftdi; ftdi_serial'
+                                  ' '+serial+';', '-f', 'openocd_zedboard.cfg'],
+                                 stderr=(DEVNULL if options.command != 'openocd'
+                                         else None))
+            with sql() as db:
+                db.log_event((self.campaign_data['id']
+                              if self.options.command == 'new'
+                              else self.result_data['id']), 'Information',
+                             'Debugger', 'Launched openocd', None,
+                             (self.options.command == 'new'))
         if options.command != 'openocd':
             super(openocd, self).__init__(campaign_data, result_data, options)
             if self.options.jtag:
                 sleep(1)
-                self.telnet = Telnet(self.options.debugger_ip_address,
-                                     self.port, timeout=self.timeout)
+                self.connect_telnet()
 
     def __str__(self):
         string = 'OpenOCD at localhost port '+str(self.port)
@@ -403,6 +467,12 @@ class openocd(jtag):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
         super(openocd, self).close()
         self.openocd.wait()
+        with sql() as db:
+                db.log_event((self.campaign_data['id']
+                              if self.options.command == 'new'
+                              else self.result_data['id']), 'Information',
+                             'Debugger', 'Closed openocd', None,
+                             (self.options.command == 'new'))
 
     def command(self, command, expected_output=[], error_message=None):
         expected_output = [bytes(output, encoding='utf-8')
@@ -457,17 +527,22 @@ class openocd(jtag):
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
-        if not self.options.command == 'supervise':
-            with sql() as db:
-                if self.options.command == 'new':
-                    db.update_dict('campaign', self.campaign_data)
-                else:
-                    db.update_dict('result', self.result_data)
+        with sql() as db:
+            if self.options.command == 'new':
+                db.update_dict('campaign', self.campaign_data)
+            else:
+                db.update_dict('result', self.result_data)
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
             if message in return_buffer:
                 raise DrSEUsError(error_message)
+        with sql() as db:
+            db.log_event((self.campaign_data['id']
+                          if self.options.command == 'new'
+                          else self.result_data['id']), 'Information',
+                         'Debugger', 'Command', command,
+                         (self.options.command == 'new'))
         return return_buffer
 
     def reset_dut(self):
@@ -475,14 +550,13 @@ class openocd(jtag):
             ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'])
 
     def halt_dut(self):
-        self.command('halt',
-                     ['target state: halted',
-                      'target halted in ARM state due to debug-request, '
-                      'current mode:', 'cpsr:', 'MMU:']*2,
-                     'Error halting DUT')
+        super(openocd, self).halt_dut('halt', [
+            'target state: halted',
+            'target halted in ARM state due to debug-request, current mode:',
+            'cpsr:', 'MMU:']*2)
 
     def continue_dut(self):
-        self.command('resume', error_message='Error continuing DUT')
+        super(openocd, self).continue_dut('resume')
 
     def select_core(self, core):
         self.command('targets zynq.cpu'+str(core),

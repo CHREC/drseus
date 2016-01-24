@@ -152,6 +152,10 @@ class event_filter(django_filters.FilterSet):
         self.filters['event_type'].extra.update(choices=event_type_choices)
         self.filters['event_type'].widget.attrs['size'] = min(
             len(event_type_choices), 10)
+        level_choices = self.event_choices(campaign, 'level')
+        self.filters['level'].extra.update(choices=level_choices)
+        self.filters['level'].widget.attrs['size'] = min(
+            len(level_choices), 10)
         outcome_choices = result_choices(campaign, 'outcome')
         self.filters['result__outcome'].extra.update(choices=outcome_choices)
         self.filters['result__outcome'].widget.attrs['size'] = min(
@@ -181,6 +185,8 @@ class event_filter(django_filters.FilterSet):
         help_text='')
     event_type = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    level = django_filters.MultipleChoiceFilter(
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     result__outcome = django_filters.MultipleChoiceFilter(
         label='Outcome',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
@@ -192,8 +198,8 @@ class event_filter(django_filters.FilterSet):
 
     class Meta:
         model = event
-        fields = ('result__outcome_category', 'result__outcome', 'source',
-                  'event_type', 'description')
+        fields = ('result__outcome_category', 'result__outcome', 'level',
+                  'source', 'event_type', 'description')
 
 
 class simics_register_diff_filter(django_filters.FilterSet):

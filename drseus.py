@@ -12,7 +12,6 @@ import utilities
 # TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
 # TODO: add option for number of times to rerun app for latent fault case
-# TODO: change Exception in simics.py to DrSEUsError
 
 parser = ArgumentParser(
     description='The Dynamic Robust Single Event Upset Simulator '
