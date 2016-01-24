@@ -56,18 +56,17 @@ class sql(object):
                 str(row_id)),
             list(dictionary.values()))
 
-    def log_event(self, id_, level, source, event_type, description, campaign):
+    def log_event(self, id_, level, source, event_type, description, result):
         if description == self.log_trace:
             description = ''.join(format_stack()[:-2])
         elif description == self.log_exception:
             description = ''.join(format_exc())
-        event_data = {'campaign_id': id_ if campaign else None,
-                      'result_id': id_ if not campaign else None,
-                      'level': level,
+        event_data = {'level': level,
                       'source': source,
                       'event_type': event_type,
                       'description': description,
                       'timestamp': None}
+        event_data[('result' if result else 'campaign')+'_id'] = id_
         self.insert_dict('event', event_data)
 
     def get_campaign_data(self, campaign_id):

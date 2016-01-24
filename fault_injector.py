@@ -15,13 +15,12 @@ class fault_injector(object):
     def __init__(self, campaign_data, options):
         self.campaign_data = campaign_data
         self.options = options
-        self.result_data = {'campaign_id': self.campaign_data['id'],
-                            'aux_output': '',
-                            'data_diff': None,
-                            'debugger_output': '',
-                            'detected_errors': None,
-                            'dut_output': ''}
-        if self.campaign_data['use_simics']:
+        if options.command == 'new':
+            self.result_data = None
+        else:
+            self.result_data = {'id': None}
+            self.__create_result()
+        if campaign_data['use_simics']:
             self.debugger = simics(campaign_data, self.result_data, options)
         else:
             if campaign_data['architecture'] == 'p2020':
@@ -30,8 +29,8 @@ class fault_injector(object):
             elif campaign_data['architecture'] == 'a9':
                 self.debugger = openocd(campaign_data, self.result_data,
                                         options)
-        if not self.campaign_data['use_simics']:
-            if self.campaign_data['use_aux']:
+        if not campaign_data['use_simics']:
+            if campaign_data['use_aux']:
                 self.debugger.aux.serial.write('\x03')
                 self.debugger.aux.do_login()
                 if options.command != 'new':
@@ -63,6 +62,11 @@ class fault_injector(object):
         return string
 
     def close(self):
+        if self.result_data:
+            self.result_data.update({
+                'outcome_category': 'DrSEUs',
+                'outcome': 'Closed DrSEUs'})
+            self.log_result()
         if not self.campaign_data['use_simics']:
             self.debugger.close()
 
@@ -130,19 +134,18 @@ class fault_injector(object):
         else:
             self.debugger.dut.send_files(files)
 
-    def create_result(self, num_injections=0, outcome_category='Incomplete',
-                      outcome='Incomplete'):
-        self.result_data.update({'aux_output': '',
+    def __create_result(self):
+        del self.result_data['id']
+        self.result_data.update({'campaign_id': self.campaign_data['id'],
+                                 'aux_output': '',
                                  'data_diff': None,
                                  'debugger_output': '',
                                  'detected_errors': None,
                                  'dut_output': '',
-                                 'num_injections': num_injections,
-                                 'outcome_category': outcome_category,
-                                 'outcome': outcome,
+                                 'num_injections': 0,
+                                 'outcome_category': 'Incomplete',
+                                 'outcome': 'Incomplete',
                                  'timestamp': None})
-        if 'id' in self.result_data:
-            del self.result_data['id']
         with sql() as db:
             db.insert_dict('result', self.result_data)
             self.result_data['id'] = db.cursor.lastrowid
@@ -274,6 +277,7 @@ class fault_injector(object):
         print(colored(out, 'blue'))
         with sql() as db:
             db.update_dict('result', self.result_data)
+        self.__create_result()
 
     def inject_campaign(self, iteration_counter):
 
@@ -333,7 +337,7 @@ class fault_injector(object):
                         iteration_counter.value -= 1
                     else:
                         break
-            self.create_result(self.options.injections)
+            self.result_data['num_injections'] = self.options.injections
             if not self.campaign_data['use_simics']:
                 if not prepare_dut():
                     continue
@@ -400,7 +404,6 @@ class fault_injector(object):
                     iteration_counter.value -= 1
                 else:
                     break
-            self.create_result()
             if packet_capture:
                 start_packet_capture()
             if self.campaign_data['use_aux']:

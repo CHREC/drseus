@@ -13,6 +13,8 @@ from jtag_targets import devices
 from sql import sql
 from targets import choose_register, choose_target
 
+# TODO: refactor command()
+
 # zedboards[uart_serial] = ftdi_serial
 zedboards = {'844301CF3718': '210248585809',
              '8410A3D8431C': '210248657631',
@@ -66,23 +68,20 @@ class jtag(object):
         self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                              timeout=self.timeout)
         with sql() as db:
-            db.log_event((self.campaign_data['id']
-                          if self.options.command == 'new'
-                          else self.result_data['id']), 'Information',
+            db.log_event((self.result_data['id'] if self.result_data
+                          else self.campaign_data['id']), 'Information',
                          'Debugger', 'Connected to telnet',
                          (self.options.debugger_ip_address+':' +
-                          str(self.port)),
-                         (self.options.command == 'new'))
+                          str(self.port)), bool(self.result_data))
 
     def close(self):
         if self.telnet:
             self.telnet.close()
             with sql() as db:
-                db.log_event((self.campaign_data['id']
-                              if self.options.command == 'new'
-                              else self.result_data['id']), 'Information',
+                db.log_event((self.result_data['id'] if self.result_data
+                              else self.campaign_data['id']), 'Information',
                              'Debugger', 'Closed telnet', None,
-                             (self.options.command == 'new'))
+                             bool(self.result_data))
         self.dut.close()
         if self.campaign_data['use_aux']:
             self.aux.close()
@@ -93,16 +92,15 @@ class jtag(object):
             for attempt in range(attempts):
                 try:
                     self.command('reset', expected_output,
-                                 'Error resetting DUT')
+                                 'Error resetting DUT', False)
                 except DrSEUsError as error:
                     with sql() as db:
-                        db.log_event((self.campaign_data['id']
-                                      if self.options.command == 'new'
-                                      else self.result_data['id']),
+                        db.log_event((self.result_data['id'] if self.result_data
+                                      else self.campaign_data['id']),
                                      ('Warning' if attempt < attempts-1
                                       else 'Error'), 'Debugger',
                                      'Error resetting DUT', sql.log_exception,
-                                     (self.options.command == 'new'))
+                                     bool(self.result_data))
                     print(colored(
                         self.dut.serial.port+' '+str(self.result_data['id']) +
                         ': Error resetting DUT (attempt '+str(attempt+1) +
@@ -112,34 +110,31 @@ class jtag(object):
                     else:
                         raise DrSEUsError(error.type)
                 else:
+                    with sql() as db:
+                        db.log_event((self.result_data['id'] if self.result_data
+                                      else self.campaign_data['id']),
+                                     'Information', 'Debugger', 'Reset DUT',
+                                     None, bool(self.result_data))
                     break
-                with sql() as db:
-                    db.log_event((self.campaign_data['id']
-                                  if self.options.command == 'new'
-                                  else self.result_data['id']), 'Information',
-                                 'Debugger', 'Reset DUT', None,
-                                 (self.options.command == 'new'))
         else:
             self.dut.serial.write('\x03')
         self.dut.do_login()
 
     def halt_dut(self, halt_command, expected_output):
-        self.command(halt_command, expected_output, 'Error halting DUT')
+        self.command(halt_command, expected_output, 'Error halting DUT', False)
         with sql() as db:
-            db.log_event((self.campaign_data['id']
-                          if self.options.command == 'new'
-                          else self.result_data['id']), 'Information',
-                         'Debugger', 'Halt DUT', None,
-                         (self.options.command == 'new'))
+            db.log_event((self.result_data['id'] if self.result_data
+                          else self.campaign_data['id']), 'Information',
+                         'Debugger', 'Halt DUT', None, bool(self.result_data))
 
     def continue_dut(self, continue_command):
-        self.command(continue_command, error_message='Error continuing DUT')
+        self.command(continue_command, error_message='Error continuing DUT',
+                     log_event=False)
         with sql() as db:
-            db.log_event((self.campaign_data['id']
-                          if self.options.command == 'new'
-                          else self.result_data['id']), 'Information',
+            db.log_event((self.result_data['id'] if self.result_data
+                          else self.campaign_data['id']), 'Information',
                          'Debugger', 'Continue DUT', None,
-                         (self.options.command == 'new'))
+                         bool(self.result_data))
 
     def time_application(self):
         start = time()
@@ -163,7 +158,7 @@ class jtag(object):
             (end - start) / self.options.iterations
         with sql() as db:
             db.log_event(self.campaign_data['id'], 'Information', 'Debugger',
-                         'Timed application', None, True)
+                         'Timed application', None, False)
 
     def inject_faults(self):
         injection_times = []
@@ -230,13 +225,13 @@ class jtag(object):
                 with sql() as db:
                     db.insert_dict('injection', injection_data)
                     db.log_event(self.result_data['id'], 'Information',
-                                 'Debugger', 'Fault injected', None, False)
+                                 'Debugger', 'Fault injected', None, True)
             else:
                 injection_data['success'] = False
                 with sql() as db:
                     db.insert_dict('injection', injection_data)
-                    db.log_event(self.result_data['id'], 'Warning',
-                                 'Debugger', 'Injection failed', None, False)
+                    db.log_event(self.result_data['id'], 'Warning', 'Debugger',
+                                 'Injection failed', None, True)
         return 0, False
 
 
@@ -247,7 +242,7 @@ class bdi(jtag):
     def __init__(self, campaign_data, result_data, options):
         self.port = 23
         super(bdi, self).__init__(campaign_data, result_data, options)
-        if self.options.jtag:
+        if options.jtag:
             self.connect_telnet()
             self.command('', error_message='Debugger not ready')
 
@@ -261,35 +256,36 @@ class bdi(jtag):
             self.telnet.write(bytes('quit\r', encoding='utf-8'))
         super(bdi, self).close()
 
-    def command(self, command, expected_output=[], error_message=None):
+    def command(self, command, expected_output=[], error_message=None,
+                log_event=True):
         expected_output = [bytes(output, encoding='utf-8')
                            for output in expected_output]
         return_buffer = ''
         if error_message is None:
             error_message = command
         buff = self.telnet.read_very_eager().decode('utf-8', 'replace')
-        if self.options.command == 'new':
-            self.campaign_data['debugger_output'] += buff
-        else:
+        if self.result_data:
             self.result_data['debugger_output'] += buff
+        else:
+            self.campaign_data['debugger_output'] += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
             self.telnet.write(bytes(command+'\r\r', encoding='utf-8'))
-            if self.options.command == 'new':
-                self.campaign_data['debugger_output'] += command+'\n'
-            else:
+            if self.result_data:
                 self.result_data['debugger_output'] += command+'\n'
+            else:
+                self.campaign_data['debugger_output'] += command+'\n'
             if self.options.debug:
                 print(colored(command, 'yellow'))
         for i in range(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
             buff = buff.decode('utf-8', 'replace')
-            if self.options.command == 'new':
-                self.campaign_data['debugger_output'] += buff
-            else:
+            if self.result_data:
                 self.result_data['debugger_output'] += buff
+            else:
+                self.campaign_data['debugger_output'] += buff
             return_buffer += buff
             if self.options.debug:
                 print(colored(buff, 'yellow'), end='')
@@ -301,29 +297,29 @@ class bdi(jtag):
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
         buff = buff.decode('utf-8', 'replace')
-        if self.options.command == 'new':
-            self.campaign_data['debugger_output'] += buff
-        else:
+        if self.result_data:
             self.result_data['debugger_output'] += buff
+        else:
+            self.campaign_data['debugger_output'] += buff
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
         with sql() as db:
-            if self.options.command == 'new':
-                db.update_dict('campaign', self.campaign_data)
-            else:
+            if self.result_data:
                 db.update_dict('result', self.result_data)
+            else:
+                db.update_dict('campaign', self.campaign_data)
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
             if message in return_buffer:
                 raise DrSEUsError(error_message)
-        with sql() as db:
-            db.log_event((self.campaign_data['id']
-                          if self.options.command == 'new'
-                          else self.result_data['id']), 'Information',
-                         'Debugger', 'Command', command,
-                         (self.options.command == 'new'))
+        if log_event:
+            with sql() as db:
+                db.log_event((self.result_data['id'] if self.result_data
+                              else self.campaign_data['id']), 'Information',
+                             'Debugger', 'Command', command,
+                             bool(self.result_data))
         return return_buffer
 
 
@@ -439,7 +435,7 @@ class openocd(jtag):
         self.prompts = ['>']
         self.targets = devices['a9']
         self.port = find_open_port()
-        if self.options.jtag:
+        if options.jtag:
             serial = zedboards[find_uart_serials()[options.dut_serial_port]]
             self.openocd = Popen(['openocd', '-c',
                                   'gdb_port 0; tcl_port 0; telnet_port ' +
@@ -448,14 +444,13 @@ class openocd(jtag):
                                  stderr=(DEVNULL if options.command != 'openocd'
                                          else None))
             with sql() as db:
-                db.log_event((self.campaign_data['id']
-                              if self.options.command == 'new'
-                              else self.result_data['id']), 'Information',
+                db.log_event((result_data['id'] if result_data
+                              else campaign_data['id']), 'Information',
                              'Debugger', 'Launched openocd', None,
-                             (self.options.command == 'new'))
+                             bool(result_data))
         if options.command != 'openocd':
             super(openocd, self).__init__(campaign_data, result_data, options)
-            if self.options.jtag:
+            if options.jtag:
                 sleep(1)
                 self.connect_telnet()
 
@@ -468,23 +463,23 @@ class openocd(jtag):
         super(openocd, self).close()
         self.openocd.wait()
         with sql() as db:
-                db.log_event((self.campaign_data['id']
-                              if self.options.command == 'new'
-                              else self.result_data['id']), 'Information',
+                db.log_event((self.result_data['id'] if self.result_data
+                              else self.campaign_data['id']), 'Information',
                              'Debugger', 'Closed openocd', None,
-                             (self.options.command == 'new'))
+                             bool(self.result_data))
 
-    def command(self, command, expected_output=[], error_message=None):
+    def command(self, command, expected_output=[], error_message=None,
+                log_event=True):
         expected_output = [bytes(output, encoding='utf-8')
                            for output in expected_output]
         return_buffer = ''
         if error_message is None:
             error_message = command
         buff = self.telnet.read_very_eager().decode('utf-8', 'replace')
-        if self.options.command == 'new':
-            self.campaign_data['debugger_output'] += buff
-        else:
+        if self.result_data:
             self.result_data['debugger_output'] += buff
+        else:
+            self.campaign_data['debugger_output'] += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
@@ -492,10 +487,10 @@ class openocd(jtag):
             index, match, buff = self.telnet.expect(
                 [bytes(command, encoding='utf-8')], timeout=self.timeout)
             buff = buff.decode('utf-8', 'replace')
-            if self.options.command == 'new':
-                self.campaign_data['debugger_output'] += buff
-            else:
+            if self.result_data:
                 self.result_data['debugger_output'] += buff
+            else:
+                self.campaign_data['debugger_output'] += buff
             return_buffer += buff
             if self.options.debug:
                 print(colored(buff, 'yellow'))
@@ -505,10 +500,10 @@ class openocd(jtag):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
             buff = buff.decode('utf-8', 'replace')
-            if self.options.command == 'new':
-                self.campaign_data['debugger_output'] += buff
-            else:
+            if self.result_data:
                 self.result_data['debugger_output'] += buff
+            else:
+                self.campaign_data['debugger_output'] += buff
             return_buffer += buff
             if self.options.debug:
                 print(colored(buff, 'yellow'), end='')
@@ -520,29 +515,29 @@ class openocd(jtag):
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
         buff = buff.decode('utf-8', 'replace')
-        if self.options.command == 'new':
-            self.campaign_data['debugger_output'] += buff
-        else:
+        if self.result_data:
             self.result_data['debugger_output'] += buff
+        else:
+            self.campaign_data['debugger_output'] += buff
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
         with sql() as db:
-            if self.options.command == 'new':
-                db.update_dict('campaign', self.campaign_data)
-            else:
+            if self.result_data:
                 db.update_dict('result', self.result_data)
+            else:
+                db.update_dict('campaign', self.campaign_data)
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
             if message in return_buffer:
                 raise DrSEUsError(error_message)
-        with sql() as db:
-            db.log_event((self.campaign_data['id']
-                          if self.options.command == 'new'
-                          else self.result_data['id']), 'Information',
-                         'Debugger', 'Command', command,
-                         (self.options.command == 'new'))
+        if log_event:
+            with sql() as db:
+                db.log_event((self.result_data['id'] if self.result_data
+                              else self.campaign_data['id']), 'Information',
+                             'Debugger', 'Command', command,
+                             bool(self.result_data))
         return return_buffer
 
     def reset_dut(self):

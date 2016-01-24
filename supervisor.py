@@ -10,16 +10,15 @@ from error import DrSEUsError
 from fault_injector import fault_injector
 
 
-# TODO: add background read thread
+# TODO: add background read thread and interact command
+#       (remove dut read and dut command)
 class supervisor(Cmd):
     def __init__(self, campaign_data, options):
         self.campaign_data = campaign_data
         self.capture = options.capture
         options.debug = True
         self.drseus = fault_injector(campaign_data, options)
-        self.drseus.create_result(outcome_category='Supervisor',
-                                  outcome='Start')
-        if not self.campaign_data['use_simics']:
+        if not campaign_data['use_simics']:
             booted = False
             while not booted:
                 try:
@@ -31,7 +30,7 @@ class supervisor(Cmd):
             self.drseus.send_dut_files()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
-        if self.campaign_data['use_aux']:
+        if campaign_data['use_aux']:
             self.__class__ = aux_supervisor
 
     def preloop(self):
@@ -72,7 +71,6 @@ class supervisor(Cmd):
             except DrSEUsError:
                 pass
 
-        self.drseus.create_result()
         if aux:
             self.drseus.debugger.aux.write(arg+'\n')
         else:
@@ -98,11 +96,9 @@ class supervisor(Cmd):
             'outcome_category': ('AUX' if aux else 'DUT')+' command',
             'outcome': arg})
         self.drseus.log_result()
-        self.drseus.create_result()
 
     def do_read_dut(self, arg=None, aux=False):
         """Read from DUT, interrupt with ctrl-c"""
-        self.drseus.create_result()
         try:
             if aux:
                 self.drseus.debugger.aux.read_until(continuous=True)
@@ -111,11 +107,10 @@ class supervisor(Cmd):
         except KeyboardInterrupt:
             if self.campaign_data['use_simics']:
                 self.drseus.debugger.continue_dut()
-        self.drseus.result_data['outcome_category'] = \
-            'Read '+('AUX' if aux else 'DUT')
-        self.drseus.result_data['outcome'] = 'Read '+('AUX' if aux else 'DUT')
+        self.drseus.result_data.update({
+            'outcome_category': 'Read '+('AUX' if aux else 'DUT'),
+            'outcome': 'Read '+('AUX' if aux else 'DUT')})
         self.drseus.log_result()
-        self.drseus.create_result()
 
     def do_send_dut_file(self, arg, aux=False):
         """Send file to DUT, defaults to campaign files"""
@@ -156,6 +151,10 @@ class supervisor(Cmd):
                 return
         print('Performing '+str(supervise_iterations)+' iteration(s)...\n')
         iteration_counter = Value('L', supervise_iterations)
+        self.drseus.result_data.update({
+            'outcome_category': 'Supervisor',
+            'outcome': 'Pre supervise'})
+        self.drseus.log_result()
         self.drseus.supervise(iteration_counter, self.capture)
 
     def do_debug(self, arg=None):
@@ -168,13 +167,13 @@ class supervisor(Cmd):
 
     def do_exit(self, arg=None):
         """Exit DrSEUs"""
+        self.drseus.result_data.update({
+            'outcome_category': 'Supervisor',
+            'outcome': 'Exit supervisor'})
+        self.drseus.log_result()
         if self.campaign_data['use_simics']:
             self.drseus.debugger.close()
         self.drseus.close()
-        self.drseus.result_data.update({
-            'outcome_category': 'Supervisor',
-            'outcome': 'Exit'})
-        self.drseus.log_result()
         return True
 
 

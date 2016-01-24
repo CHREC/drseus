@@ -49,34 +49,34 @@ class dut(object):
         self.aux = aux
         self.prompt = options.dut_prompt if not aux else options.aux_prompt
         self.prompt += ' '
-        rsakey_file = StringIO(self.campaign_data['rsakey'])
+        rsakey_file = StringIO(campaign_data['rsakey'])
         self.rsakey = RSAKey.from_private_key(rsakey_file)
         rsakey_file.close()
-        self.uboot_command = self.options.dut_uboot if not self.aux \
-            else self.options.aux_uboot
-        self.login_command = self.options.dut_login if not self.aux \
-            else self.options.aux_login
+        self.uboot_command = options.dut_uboot if not self.aux \
+            else options.aux_uboot
+        self.login_command = options.dut_login if not self.aux \
+            else options.aux_login
         serial_port = (options.dut_serial_port if not aux
                        else options.aux_serial_port)
-        self.result_data[('dut' if not aux else 'aux') +
-                         '_serial_port'] = serial_port
+        if result_data:
+            result_data[('dut' if not aux else 'aux') +
+                        '_serial_port'] = serial_port
         baud_rate = (options.dut_baud_rate if not aux
                      else options.aux_baud_rate)
         self.serial = Serial(port=None, baudrate=baud_rate,
                              timeout=options.timeout, rtscts=True)
-        if self.campaign_data['use_simics']:
+        if campaign_data['use_simics']:
             # workaround for pyserial 3
             self.serial._dsrdtr = True
         self.serial.port = serial_port
         self.serial.open()
         self.serial.reset_input_buffer()
         with sql() as db:
-            db.log_event((self.campaign_data['id']
-                          if self.options.command == 'new'
-                          else self.result_data['id']), 'Information',
+            db.log_event((self.result_data['id'] if self.result_data
+                          else self.campaign_data['id']), 'Information',
                          ('DUT' if not self.aux else 'AUX'),
                          'Connected to serial port', serial_port,
-                         (self.options.command == 'new'))
+                         bool(result_data))
 
     def __str__(self):
         string = ('Serial Port: '+self.serial.port+'\n\tTimeout: ' +
@@ -93,12 +93,11 @@ class dut(object):
     def close(self):
         self.serial.close()
         with sql() as db:
-            db.log_event((self.campaign_data['id']
-                          if self.options.command == 'new'
-                          else self.result_data['id']), 'Information',
+            db.log_event((self.result_data['id'] if self.result_data
+                          else self.campaign_data['id']), 'Information',
                          ('DUT' if not self.aux else 'AUX'),
                          'Closed serial port', None,
-                         (self.options.command == 'new'))
+                         bool(self.result_data))
 
     def send_files(self, files, attempts=10):
         if self.options.debug:
@@ -114,14 +113,13 @@ class dut(object):
                             allow_agent=False, look_for_keys=False)
             except Exception as error:
                 with sql() as db:
-                    db.log_event((self.campaign_data['id']
-                                  if self.options.command == 'new'
-                                  else self.result_data['id']),
+                    db.log_event((self.result_data['id'] if self.result_data
+                                  else self.campaign_data['id']),
                                  ('Warning' if attempt < attempts-1
                                   else 'Error'),
                                  ('DUT' if not self.aux else 'AUX'),
                                  'SSH error', sql.log_exception,
-                                 (self.options.command == 'new'))
+                                 bool(self.result_data))
                 print(colored(
                     self.serial.port+', '+str(self.result_data['id'])+': '
                     'error sending file(s) (attempt '+str(attempt+1)+'/' +
@@ -136,14 +134,13 @@ class dut(object):
                     dut_scp.put(files)
                 except Exception as error:
                     with sql() as db:
-                        db.log_event((self.campaign_data['id']
-                                      if self.options.command == 'new'
-                                      else self.result_data['id']),
+                        db.log_event((self.result_data['id'] if self.result_data
+                                      else self.campaign_data['id']),
                                      ('Warning' if attempt < attempts-1
                                       else 'Error'),
                                      ('DUT' if not self.aux else 'AUX'),
                                      'SCP error', sql.log_exception,
-                                     (self.options.command == 'new'))
+                                     bool(self.result_data))
                     print(colored(
                         self.serial.port+', '+str(self.result_data['id'])+': '
                         'error sending file(s) (attempt '+str(attempt+1)+'/' +
@@ -160,13 +157,12 @@ class dut(object):
                     if self.options.debug:
                         print(colored('done', 'blue'))
                     with sql() as db:
-                        db.log_event((self.campaign_data['id']
-                                      if self.options.command == 'new'
-                                      else self.result_data['id']),
+                        db.log_event((self.result_data['id'] if self.result_data
+                                      else self.campaign_data['id']),
                                      'Information',
                                      ('DUT' if not self.aux else 'AUX'),
                                      'Sent files', ', '.join(files),
-                                     (self.options.command == 'new'))
+                                     bool(self.result_data))
                     break
 
     def get_file(self, file_, local_path='', attempts=10):
@@ -184,14 +180,13 @@ class dut(object):
                             allow_agent=False, look_for_keys=False)
             except Exception as error:
                 with sql() as db:
-                    db.log_event((self.campaign_data['id']
-                                  if self.options.command == 'new'
-                                  else self.result_data['id']),
+                    db.log_event((self.result_data['id'] if self.result_data
+                                  else self.campaign_data['id']),
                                  ('Warning' if attempt < attempts-1
                                   else 'Error'),
                                  ('DUT' if not self.aux else 'AUX'),
                                  'SSH error', sql.log_exception,
-                                 (self.options.command == 'new'))
+                                 bool(self.result_data))
                 print(colored(
                     self.serial.port+', '+str(self.result_data['id'])+': '
                     'error receiving file (attempt '+str(attempt+1)+'/' +
@@ -206,14 +201,13 @@ class dut(object):
                     dut_scp.get(file_, local_path=local_path)
                 except Exception as error:
                     with sql() as db:
-                        db.log_event((self.campaign_data['id']
-                                      if self.options.command == 'new'
-                                      else self.result_data['id']),
+                        db.log_event((self.result_data['id'] if self.result_data
+                                      else self.campaign_data['id']),
                                      ('Warning' if attempt < attempts-1
                                       else 'Error'),
                                      ('DUT' if not self.aux else 'AUX'),
                                      'SCP error', sql.log_exception,
-                                     (self.options.command == 'new'))
+                                     bool(self.result_data))
                     print(colored(
                         self.serial.port+', '+str(self.result_data['id'])+': '
                         'error receiving file (attempt '+str(attempt+1)+'/' +
@@ -230,13 +224,12 @@ class dut(object):
                     if self.options.debug:
                         print(colored('done', 'blue'))
                     with sql() as db:
-                        db.log_event((self.campaign_data['id']
-                                      if self.options.command == 'new'
-                                      else self.result_data['id']),
+                        db.log_event((self.result_data['id'] if self.result_data
+                                      else self.campaign_data['id']),
                                      'Information',
                                      ('DUT' if not self.aux else 'AUX'),
                                      'Received file', file_,
-                                     (self.options.command == 'new'))
+                                     bool(self.result_data))
                     break
 
     def write(self, string):
@@ -255,21 +248,20 @@ class dut(object):
             if not char:
                 hanging = True
                 with sql() as db:
-                    db.log_event((self.campaign_data['id']
-                                  if self.options.command == 'new'
-                                  else self.result_data['id']),
+                    db.log_event((self.result_data['id'] if self.result_data
+                                  else self.campaign_data['id']),
                                  ('Warning' if boot else 'Error'),
                                  ('DUT' if not self.aux else 'AUX'),
                                  'Read timeout', sql.log_trace,
-                                 (self.options.command == 'new'))
+                                 bool(self.result_data))
                 if not continuous:
                     break
-            if self.options.command == 'new':
-                self.campaign_data['dut_output' if not self.aux
-                                   else 'aux_output'] += char
-            else:
+            if self.result_data:
                 self.result_data['dut_output' if not self.aux
                                  else 'aux_output'] += char
+            else:
+                self.campaign_data['dut_output' if not self.aux
+                                   else 'aux_output'] += char
             if self.options.debug:
                 print(colored(char, 'green' if not self.aux else 'cyan'),
                       end='')
@@ -292,38 +284,37 @@ class dut(object):
             for message, category in self.error_messages:
                 if buff[-len(message):] == message:
                     if boot:
-                        if category == 'Missing file':
+                        if category in ('Reboot', 'Missing file'):
                             continue
                     elif not continuous:
                         self.serial.timeout = 30
                         errors += 1
                     event_buff = buff.replace(event_buff_logged, '')
                     with sql() as db:
-                        db.log_event((self.campaign_data['id']
-                                      if self.options.command == 'new'
-                                      else self.result_data['id']),
+                        db.log_event((self.result_data['id'] if self.result_data
+                                      else self.campaign_data['id']),
                                      ('Warning' if boot else 'Error'),
                                      ('DUT' if not self.aux else 'AUX'),
                                      category, event_buff,
-                                     (self.options.command == 'new'))
+                                     bool(self.result_data))
                     event_buff_logged += event_buff
             if not continuous and errors > 10:
                 break
             if not boot and buff and buff[-1] == '\n':
                 with sql() as db:
-                    if self.options.command == 'new':
-                        db.update_dict('campaign', self.campaign_data)
-                    else:
+                    if self.result_data:
                         db.update_dict('result', self.result_data)
+                    else:
+                        db.update_dict('campaign', self.campaign_data)
         if self.serial.timeout != self.options.timeout:
             self.serial.timeout = self.options.timeout
         if self.options.debug:
             print()
         with sql() as db:
-            if self.options.command == 'new':
-                db.update_dict('campaign', self.campaign_data)
-            else:
+            if self.result_data:
                 db.update_dict('result', self.result_data)
+            else:
+                db.update_dict('campaign', self.campaign_data)
         if errors and not boot:
             for message, category in self.error_messages:
                 if message in buff:
@@ -332,11 +323,10 @@ class dut(object):
             raise DrSEUsError(DrSEUsError.hanging)
         if boot:
             with sql() as db:
-                db.log_event((self.campaign_data['id']
-                              if self.options.command == 'new'
-                              else self.result_data['id']), 'Information',
+                db.log_event((self.result_data['id'] if self.result_data
+                              else self.campaign_data['id']), 'Information',
                              ('DUT' if not self.aux else 'AUX'), 'Booted', None,
-                             (self.options.command == 'new'))
+                             bool(self.result_data))
         return buff
 
     def command(self, command=None):
@@ -346,11 +336,10 @@ class dut(object):
             self.write('\n')
         buff = self.read_until()
         with sql() as db:
-            db.log_event((self.campaign_data['id']
-                          if self.options.command == 'new'
-                          else self.result_data['id']), 'Information',
+            db.log_event((self.result_data['id'] if self.result_data
+                          else self.campaign_data['id']), 'Information',
                          ('DUT' if not self.aux else 'AUX'), 'Command', command,
-                         (self.options.command == 'new'))
+                         bool(self.result_data))
         return buff
 
     def do_login(self, ip_address=None, change_prompt=False, simics=False):
@@ -399,8 +388,7 @@ class dut(object):
         else:
             self.ip_address = ip_address
         with sql() as db:
-            db.log_event((self.campaign_data['id']
-                          if self.options.command == 'new'
-                          else self.result_data['id']), 'Information',
+            db.log_event((self.result_data['id'] if self.result_data
+                          else self.campaign_data['id']), 'Information',
                          ('DUT' if not self.aux else 'AUX'), 'Logged in', None,
-                         (self.options.command == 'new'))
+                         bool(self.result_data))

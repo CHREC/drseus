@@ -41,54 +41,6 @@
             <img src="../output/{{ result.id }}">
         </div>
         {% endif %}
-        {% if campaign_data.use_simics %}
-        <table>
-            <tr>
-                <td valign="top">
-                    <div class="section">
-                        <h3 align="center">
-                            <a name="dut_output">
-                            </a>
-                            DUT Output
-                        </h3>
-                        <code class="console">{{ result.dut_output }}</code>
-                        {% if campaign_data.use_aux %}
-                        <h3 align="center">
-                            <a name="aux_output">
-                            </a>
-                            AUX Output
-                        </h3>
-                        <code class="console">{{ result.aux_output }}</code>
-                        {% endif %}
-                        <h3 align="center">
-                            <a name="debugger_output">
-                            </a>
-                            Debugger Output
-                        </h3>
-                        <code class="console">{{ result.debugger_output }}</code>
-                    </div>
-                </td>
-                <td valign="top">
-                    <div class="section" align="center">
-                        <h3>
-                            <a name="register_diffs">
-                            </a>
-                            Register Diffs
-                        </h3>
-                        {% render_table register_table %}
-                    </div>
-                    <div class="section" align="center">
-                        <h3>
-                            <a name="memory_diffs">
-                            </a>
-                            Memory Diffs
-                        </h3>
-                        {% render_table memory_table %}
-                    </div>
-                </td>
-            </tr>
-        </table>
-        {% else %}
         <h3 align="center">
             <a name="dut_output">
             </a>
@@ -109,6 +61,23 @@
             Debugger Output
         </h3>
         <code class="console">{{ result.debugger_output }}</code>
+        {% if campaign_data.use_simics %}
+        <div class="section" align="center">
+            <h3>
+                <a name="register_diffs">
+                </a>
+                Register Diffs
+            </h3>
+            {% render_table register_table %}
+        </div>
+        <div class="section" align="center">
+            <h3>
+                <a name="memory_diffs">
+                </a>
+                Memory Diffs
+            </h3>
+            {% render_table memory_table %}
+        </div>
         {% endif %}
     </div>
 </div>
