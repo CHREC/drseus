@@ -96,7 +96,8 @@ class dut(object):
 
     def flush(self):
         if self.serial.in_waiting:
-            buff = self.serial.read(self.serial.in_waiting)
+            buff = self.serial.read(
+                self.serial.in_waiting).decode('utf-8', 'replace')
             if self.result_data:
                 self.result_data['dut_output' if not self.aux
                                  else 'aux_output'] += buff
