@@ -74,8 +74,8 @@ class fault_injector(object):
         def send_dut_files(aux=False):
             files = []
             files.append(self.options.directory+'/' +
-                         (self.campaign_data['aux_application'] if aux
-                          else self.campaign_data['application']))
+                         (self.options.aux_application if aux
+                          else self.options.application))
             if self.options.files:
                 for file_ in self.options.files:
                     files.append(self.options.directory+'/'+file_)
@@ -113,8 +113,9 @@ class fault_injector(object):
                     self.campaign_data['output_file'],
                     'campaign-data/'+str(self.campaign_data['id'])+'/gold_' +
                     self.campaign_data['output_file'])
-        if self.campaign_data['use_simics']:
-            self.debugger.close()
+        self.debugger.dut.flush()
+        if self.campaign_data['use_aux']:
+            self.debugger.aux.flush()
         with self.database as db:
             db.update_dict('campaign')
         self.close()
@@ -150,7 +151,6 @@ class fault_injector(object):
     def __monitor_execution(self, latent_faults=0, persistent_faults=False):
 
         def check_output():
-            missing_output = False
             result_folder = ('campaign-data/'+str(self.campaign_data['id'])+'/'
                              'results/'+str(self.result_data['id']))
             makedirs(result_folder)
@@ -159,33 +159,36 @@ class fault_injector(object):
             gold_location = ('campaign-data/'+str(self.campaign_data['id'])+'/'
                              'gold_'+self.campaign_data['output_file'])
             if self.campaign_data['use_aux_output']:
-                self.debugger.aux.get_file(self.campaign_data['output_file'],
-                                           output_location)
+                directory_listing = self.debugger.aux.command('ls -l')
             else:
-                self.debugger.dut.get_file(self.campaign_data['output_file'],
-                                           output_location)
-            if not listdir(result_folder):
-                rmdir(result_folder)
-                missing_output = True
+                directory_listing = self.debugger.dut.command('ls -l')
+            if self.campaign_data['output_file'] in directory_listing:
+                if self.campaign_data['use_aux_output']:
+                    self.debugger.aux.get_file(
+                        self.campaign_data['output_file'], output_location)
+                else:
+                    self.debugger.dut.get_file(
+                        self.campaign_data['output_file'], output_location)
             else:
-                with open(gold_location, 'rb') as solution:
-                    solutionContents = solution.read()
-                with open(output_location, 'rb') as result:
-                    resultContents = result.read()
-                self.result_data['data_diff'] = SequenceMatcher(
-                    None, solutionContents, resultContents).quick_ratio()
-                if self.result_data['data_diff'] == 1.0:
-                    remove(output_location)
-                    if not listdir(result_folder):
-                        rmdir(result_folder)
+                if not listdir(result_folder):
+                    rmdir(result_folder)
+                raise DrSEUsError(DrSEUsError.missing_output)
+            with open(gold_location, 'rb') as solution:
+                solutionContents = solution.read()
+            with open(output_location, 'rb') as result:
+                resultContents = result.read()
+            self.result_data['data_diff'] = SequenceMatcher(
+                None, solutionContents, resultContents).quick_ratio()
+            if self.result_data['data_diff'] == 1.0:
+                remove(output_location)
+                if not listdir(result_folder):
+                    rmdir(result_folder)
             if self.campaign_data['use_aux_output']:
                 self.debugger.aux.command('rm ' +
                                           self.campaign_data['output_file'])
             else:
                 self.debugger.dut.command('rm ' +
                                           self.campaign_data['output_file'])
-            if missing_output:
-                raise DrSEUsError(DrSEUsError.missing_output)
 
     # def __monitor_execution(self, latent_faults=0, persistent_faults=False):
         outcome = ''
@@ -262,6 +265,9 @@ class fault_injector(object):
         return outcome, outcome_category
 
     def log_result(self, close=False):
+        self.debugger.dut.flush()
+        if self.campaign_data['use_aux']:
+            self.debugger.aux.flush()
         out = (self.debugger.dut.serial.port+', '+str(self.result_data['id']) +
                ': '+self.result_data['outcome_category']+' - ' +
                self.result_data['outcome'])

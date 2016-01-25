@@ -94,6 +94,16 @@ class dut(object):
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                          'Closed serial port')
 
+    def flush(self):
+        if self.serial.in_waiting:
+            buff = self.serial.read(self.serial.in_waiting)
+            if self.result_data:
+                self.result_data['dut_output' if not self.aux
+                                 else 'aux_output'] += buff
+            else:
+                self.campaign_data['dut_output' if not self.aux
+                                   else 'aux_output'] += buff
+
     def send_files(self, files, attempts=10):
         if self.options.debug:
             print(colored('sending file(s)...', 'blue'), end='')

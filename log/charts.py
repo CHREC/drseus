@@ -230,7 +230,7 @@ def overview_chart(queryset, campaign_data, outcomes, group_categories,
                    for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
-            'filename': campaign_data.application+' overview',
+            'filename': str(campaign_data.id)+' overview',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -300,7 +300,7 @@ def targets_charts(queryset, campaign_data, outcomes, group_categories,
                    for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
-            'filename': campaign_data.application+' targets',
+            'filename': str(campaign_data.id)+' targets',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -405,7 +405,7 @@ def propagation_chart(queryset, campaign_data, outcomes, group_categories,
         'colors': ('#77bfc7', '#a74ac7'),
         'exporting': {
             'chartOptions': export_options,
-            'filename': campaign_data.application+' target diffs',
+            'filename': str(campaign_data.id)+' target diffs',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -471,7 +471,7 @@ def diff_targets_chart(queryset, campaign_data, outcomes, group_categories,
         'colors': ('#008080', ),
         'exporting': {
             'chartOptions': export_options,
-            'filename': campaign_data.application+' data errors by target',
+            'filename': str(campaign_data.id)+' data errors by target',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -565,7 +565,7 @@ def registers_tlbs_charts(tlb, queryset, campaign_data, outcomes,
                    for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
-            'filename': (campaign_data.application+' ' +
+            'filename': (str(campaign_data.id)+' ' +
                          ('registers' if not tlb else 'tlb entries')),
             'sourceWidth': 480,
             'sourceHeight': 360,
@@ -668,7 +668,7 @@ def tlb_fields_chart(queryset, campaign_data, outcomes, group_categories,
                    for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
-            'filename': campaign_data.application+' tlb fields',
+            'filename': str(campaign_data.id)+' tlb fields',
             'sourceWidth': 512,
             'sourceHeight': 384,
             'scale': 2
@@ -737,7 +737,7 @@ def register_bits_chart(queryset, campaign_data, outcomes, group_categories,
                    for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
-            'filename': campaign_data.application+' register bits',
+            'filename': str(campaign_data.id)+' register bits',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -813,7 +813,7 @@ def times_charts(queryset, campaign_data, outcomes, group_categories,
                    for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
-            'filename': campaign_data.application+' injections over time',
+            'filename': str(campaign_data.id)+' injections over time',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -927,7 +927,7 @@ def diff_times_chart(queryset, campaign_data, outcomes, group_categories,
         'colors': ('#008080', ),
         'exporting': {
             'chartOptions': export_options,
-            'filename': campaign_data.application+' data errors over time',
+            'filename': str(campaign_data.id)+' data errors over time',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -1021,7 +1021,7 @@ def counts_chart(queryset, campaign_data, outcomes, group_categories,
                    for outcome in outcomes],
         'exporting': {
             'chartOptions': export_options,
-            'filename': campaign_data.application+' injection quantity',
+            'filename': str(campaign_data.id)+' injection quantity',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2

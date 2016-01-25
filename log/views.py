@@ -1,3 +1,4 @@
+from django.forms import Form, ChoiceField
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django_tables2 import RequestConfig
@@ -16,10 +17,16 @@ from .tables import (campaign_table, campaigns_table, event_table,
                      simics_register_diff_table)
 
 navigation_items = (('Campaign Information', 'info'),
-                    ('Charts (Outcome Categories)', 'category_charts'),
-                    ('Charts (Outcomes)', 'outcome_charts'),
-                    ('Results Table (Injection Filter)', 'results'),
-                    ('Results Table (Event Filter)', 'events'))
+                    ('Charts By Category', 'category_charts'),
+                    ('Charts By Outcomes', 'outcome_charts'),
+                    ('Results Table', 'results'))
+
+
+class filter_type_form(Form):
+    filter_type = ChoiceField(choices=(('results', 'Results'),
+                                       ('events', 'Events'),
+                                       ('injections', 'Injections')),
+                              required=False)
 
 
 def campaigns_page(request):
@@ -90,29 +97,29 @@ def charts_page(request, campaign_id, group_categories=False):
         'page_items': page_items})
 
 
-def events_page(request, campaign_id):
-    return results_page(request, campaign_id, True)
-
-
-def results_page(request, campaign_id, filter_events=False):
+def results_page(request, campaign_id):
     campaign_data = campaign.objects.get(id=campaign_id)
-    if filter_events:
+    if request.method == 'GET':
+        form = filter_type_form(request.GET)
+        if form.is_valid():
+            filter_type = form.cleaned_data['filter_type']
+        else:
+            filter_type = 'results'
+    else:
+        form = filter_type_form()
+        filter_type = 'results'
+    if filter_type == 'events':
         filter_objects = event.objects.filter(
             result__campaign_id=campaign_id)
-    else:
-        filter_objects = injection.objects.filter(
-            result__campaign_id=campaign_id)
-    if len(filter_objects) == 0:
-        if filter_events:
-            return redirect('/campaign/'+str(campaign_id)+'/results')
-        else:
-            return redirect('/campaign/'+str(campaign_id)+'/info')
-    if filter_events:
         filter_ = event_filter(request.GET, queryset=filter_objects,
                                campaign=campaign_id)
     else:
+        filter_objects = injection.objects.filter(
+            result__campaign_id=campaign_id)
         filter_ = injection_filter(request.GET, queryset=filter_objects,
                                    campaign=campaign_id)
+    if len(filter_objects) == 0:
+        return redirect('/campaign/'+str(campaign_id)+'/info')
     result_ids = filter_.qs.values('result_id').distinct()
     result_objects = result.objects.filter(id__in=result_ids)
     if request.method == 'POST':
@@ -172,7 +179,8 @@ def results_page(request, campaign_id, filter_events=False):
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {
         'campaign_data': campaign_data, 'filter': filter_,
-        'navigation_items': navigation_items, 'table': table})
+        'filter_type_form': form, 'navigation_items': navigation_items,
+        'table': table})
 
 
 def result_page(request, campaign_id, result_id):

@@ -104,6 +104,11 @@
                     <form action="" method="get">
                         <input type="submit" style="display:block;margin-left:auto;margin-right:auto;width:65%;" value="Apply">
                         <ul>
+                            {% if filter_type_form %}
+                            <p>
+                                Filter by: {{ filter_type_form.filter_type }}
+                            </p>
+                            {% endif %}
                             {{ filter.form.as_p }}
                         </ul>
                     </form>

@@ -32,10 +32,10 @@ def list_campaigns(none=None):
     with database(campaign_data={'id': '*'}) as db:
         campaign_list = db.get_campaign_data()
     print('DrSEUs Campaigns:')
-    print('ID\t\tApplication\t\t\tArchitecture\tSimics')
+    print('ID\tArchitecture\tSimics\tCommand')
     for campaign in campaign_list:
-        print(str(campaign['id'])+'\t\t'+campaign['application']+'\t\t' +
-              campaign['architecture']+'\t\t'+str(bool(campaign['use_simics'])))
+        print(str(campaign['id'])+'\t'+campaign['architecture']+'\t\t' +
+              str(bool(campaign['use_simics']))+'\t'+campaign['command'])
 
 
 def get_campaign_data(campaign_id):
@@ -148,6 +148,7 @@ def create_campaign(options):
         'command': options.application+((' '+options.arguments)
                                         if options.arguments else ''),
         'debugger_output': '',
+        'description': options.description,
         'dut_output': '',
         'kill_dut': options.kill_dut,
         'output_file': options.file,

@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 
 import utilities
 
+# TODO: add filter type form to charts page and to chart click functions
 # TODO: add description field to campaign model
 # TODO: update dut.write/aux.write to dut.command/aux.command in fault_injector
 # TODO: add unique id to campaign and add capability to merge campaign results
@@ -86,6 +87,9 @@ new_campaign = subparsers.add_parser('new', aliases=['n', 'N'],
                                      description='create a new campaign')
 new_campaign.add_argument('application', action='store', metavar='APPLICATION',
                           help='application to run on device')
+new_campaign.add_argument('-D', '--descr', action='store',
+                          metavar='DESCRIPTION', dest='description',
+                          help='campaign description')
 new_campaign.add_argument('-A', '--arch', action='store',
                           choices=['a9', 'p2020'], dest='architecture',
                           default='p2020',
