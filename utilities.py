@@ -138,7 +138,6 @@ def create_campaign(options):
     rsakey = rsakey_file.getvalue()
     rsakey_file.close()
     campaign_data = {
-        'application': options.application,
         'architecture': options.architecture,
         'aux_command': ((options.aux_application if options.aux_application
                          else options.application) +
