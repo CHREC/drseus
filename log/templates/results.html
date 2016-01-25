@@ -49,9 +49,11 @@
                                             <th style="text-align: center;">
                                                 Console Output
                                             </th>
+                                            {% if output_image %}
                                             <th style="text-align: center;">
                                                 Image Output
                                             </th>
+                                            {% endif %}
                                             <th style="text-align: center;">
                                                 Edit Filtered Results
                                             </th>
@@ -75,11 +77,13 @@
                                                     <input type="submit" name="view_output" value="View Selected">
                                                 </div>
                                             </td>
+                                            {% if output_image %}
                                             <td>
                                                 <div style="text-align: center;">
                                                     <input type="submit" name="view_output_image" value="View Selected">
                                                 </div>
                                             </td>
+                                            {% endif %}
                                             <td>
                                                 <div style="text-align: center;">
                                                     <input type="submit" name="refresh" value="Edit Outcome Categories" onclick="edit_outcome_category_click()">
@@ -107,11 +111,13 @@
                                                     <input type="submit" name="view_output_all" value="View All (Filtered)">
                                                 </div>
                                             </td>
+                                            {% if output_image %}
                                             <td>
                                                 <div style="text-align: center;">
                                                     <input type="submit" name="view_output_image_all" value="View All (Filtered)">
                                                 </div>
                                             </td>
+                                            {% endif %}
                                             <td>
                                                 <div style="text-align: center;">
                                                     <input type="submit" name="refresh" value="Edit Outcomes" onclick="edit_outcome_click()">

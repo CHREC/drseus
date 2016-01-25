@@ -23,6 +23,64 @@ def result_choices(campaign, attribute):
     return sorted(choices, key=fix_sort_list)
 
 
+class result_filter(django_filters.FilterSet):
+    def __init__(self, *args, **kwargs):
+        campaign = kwargs['campaign']
+        del kwargs['campaign']
+        super(result_filter, self).__init__(*args, **kwargs)
+        num_injections_choices = result_choices(campaign, 'num_injections')
+        self.filters['num_injections'].extra.update(
+            choices=num_injections_choices)
+        self.filters['num_injections'].widget.attrs['size'] = min(
+            len(num_injections_choices), 10)
+        outcome_choices = result_choices(campaign, 'outcome')
+        self.filters['outcome'].extra.update(choices=outcome_choices)
+        self.filters['outcome'].widget.attrs['size'] = min(
+            len(outcome_choices), 10)
+        outcome_category_choices = result_choices(campaign, 'outcome_category')
+        self.filters['outcome_category'].extra.update(
+            choices=outcome_category_choices)
+        self.filters['outcome_category'].widget.attrs['size'] = min(
+            len(outcome_category_choices), 10)
+
+    aux_output = django_filters.CharFilter(
+        label='AUX output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
+    data_diff_gt = django_filters.NumberFilter(
+        name='data_diff', label='Data diff (>)', lookup_type='gt',
+        help_text='')
+    data_diff_lt = django_filters.NumberFilter(
+        name='data_diff', label='Data diff (<)', lookup_type='lt',
+        help_text='')
+    debugger_output = django_filters.CharFilter(
+        label='Debugger output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
+    dut_output = django_filters.CharFilter(
+        label='DUT output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
+    num_injections = django_filters.MultipleChoiceFilter(
+        label='Number of injections',
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    outcome = django_filters.MultipleChoiceFilter(
+        label='Outcome',
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    outcome_category = django_filters.MultipleChoiceFilter(
+        label='Outcome category',
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+
+    class Meta:
+        model = result
+        fields = ('outcome_category', 'outcome', 'data_diff_gt', 'data_diff_lt',
+                  'dut_output', 'aux_output', 'debugger_output',
+                  'num_injections')
+
+
 class injection_filter(django_filters.FilterSet):
     def __init__(self, *args, **kwargs):
         campaign = kwargs['campaign']
@@ -156,6 +214,11 @@ class event_filter(django_filters.FilterSet):
         self.filters['level'].extra.update(choices=level_choices)
         self.filters['level'].widget.attrs['size'] = min(
             len(level_choices), 10)
+        num_injections_choices = result_choices(campaign, 'num_injections')
+        self.filters['result__num_injections'].extra.update(
+            choices=num_injections_choices)
+        self.filters['result__num_injections'].widget.attrs['size'] = min(
+            len(num_injections_choices), 10)
         outcome_choices = result_choices(campaign, 'outcome')
         self.filters['result__outcome'].extra.update(choices=outcome_choices)
         self.filters['result__outcome'].widget.attrs['size'] = min(
@@ -187,6 +250,30 @@ class event_filter(django_filters.FilterSet):
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     level = django_filters.MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    result__aux_output = django_filters.CharFilter(
+        label='AUX output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
+    result__data_diff_gt = django_filters.NumberFilter(
+        name='result__data_diff', label='Data diff (>)', lookup_type='gt',
+        help_text='')
+    result__data_diff_lt = django_filters.NumberFilter(
+        name='result__data_diff', label='Data diff (<)', lookup_type='lt',
+        help_text='')
+    result__debugger_output = django_filters.CharFilter(
+        label='Debugger output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
+    result__dut_output = django_filters.CharFilter(
+        label='DUT output',
+        lookup_type='icontains',
+        widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
+        help_text='')
+    result__num_injections = django_filters.MultipleChoiceFilter(
+        label='Number of injections',
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     result__outcome = django_filters.MultipleChoiceFilter(
         label='Outcome',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
@@ -198,7 +285,10 @@ class event_filter(django_filters.FilterSet):
 
     class Meta:
         model = event
-        fields = ('result__outcome_category', 'result__outcome', 'level',
+        fields = ('result__outcome_category', 'result__outcome',
+                  'result__data_diff_gt', 'result__data_diff_lt',
+                  'result__dut_output', 'result__aux_output',
+                  'result__debugger_output', 'result__num_injections', 'level',
                   'source', 'event_type', 'description')
 
 

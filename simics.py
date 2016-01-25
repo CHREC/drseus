@@ -239,6 +239,7 @@ class simics(object):
                 self.aux.close()
             self.simics.send_signal(SIGINT)
             try:
+                self.__command()
                 self.__command('quit')
             except:
                 self.simics.kill()

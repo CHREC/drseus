@@ -4,14 +4,12 @@ from argparse import ArgumentParser
 
 import utilities
 
-# TODO: add filter type form to charts page and to chart click functions
 # TODO: add description field to campaign model
 # TODO: update dut.write/aux.write to dut.command/aux.command in fault_injector
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
 # TODO: use formatting strings
 # TODO: add ip address override
-# TODO: remove output image buttons if not needed from log viewer result page
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets

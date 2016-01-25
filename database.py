@@ -110,6 +110,18 @@ class database(object):
                             'WHERE result_id=?', [self.result_data['id']])
         return self.cursor.fetchone()['COUNT(*)']
 
+    def delete_result(self):
+        self.cursor.execute('DELETE FROM log_simics_memory_diff '
+                            'WHERE result_id=?', [self.result_data['id']])
+        self.cursor.execute('DELETE FROM log_simics_register_diff '
+                            'WHERE result_id=?', [self.result_data['id']])
+        self.cursor.execute('DELETE FROM log_injection WHERE result_id=?',
+                            [self.result_data['id']])
+        self.cursor.execute('DELETE FROM log_event WHERE result_id=?',
+                            [self.result_data['id']])
+        self.cursor.execute('DELETE FROM log_result WHERE id=?',
+                            [self.result_data['id']])
+
     def delete_results(self):
         self.cursor.execute('DELETE FROM log_simics_memory_diff WHERE '
                             'result_id IN (SELECT id FROM log_result '

@@ -95,7 +95,7 @@ class dut(object):
                          'Closed serial port')
 
     def flush(self):
-        if self.serial.in_waiting:
+        if not self.campaign_data['use_simics'] and self.serial.in_waiting:
             buff = self.serial.read(
                 self.serial.in_waiting).decode('utf-8', 'replace')
             if self.result_data:

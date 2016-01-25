@@ -64,10 +64,22 @@ class fault_injector(object):
     def close(self):
         self.debugger.close()
         if self.result_data:
-            self.result_data.update({
-                'outcome_category': 'DrSEUs',
-                'outcome': 'Closed DrSEUs'})
-            self.log_result(True)
+            with self.database as db:
+                result_items = db.get_result_item_count('event')
+                result_items += db.get_result_item_count('injection')
+                result_items += db.get_result_item_count('simics_memory_diff')
+                result_items += db.get_result_item_count('simics_register_diff')
+            if (self.result_data['dut_output'] or
+                    self.result_data['aux_output'] or
+                    self.result_data['debugger_output'] or
+                    result_items):
+                self.result_data.update({
+                    'outcome_category': 'DrSEUs',
+                    'outcome': 'Closed DrSEUs'})
+                self.log_result(True)
+            else:
+                with self.database as db:
+                    db.delete_result()
 
     def setup_campaign(self):
 

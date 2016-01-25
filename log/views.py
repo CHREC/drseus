@@ -8,7 +8,8 @@ from os.path import exists
 from subprocess import Popen
 
 from .charts import campaigns_chart, results_charts, target_bits_chart
-from .filters import event_filter, injection_filter, simics_register_diff_filter
+from .filters import (event_filter, injection_filter, result_filter,
+                      simics_register_diff_filter)
 from .models import (campaign, event, injection, result, simics_memory_diff,
                      simics_register_diff)
 from .tables import (campaign_table, campaigns_table, event_table,
@@ -20,13 +21,6 @@ navigation_items = (('Campaign Information', 'info'),
                     ('Charts By Category', 'category_charts'),
                     ('Charts By Outcomes', 'outcome_charts'),
                     ('Results Table', 'results'))
-
-
-class filter_type_form(Form):
-    filter_type = ChoiceField(choices=(('results', 'Results'),
-                                       ('events', 'Events'),
-                                       ('injections', 'Injections')),
-                              required=False)
 
 
 def campaigns_page(request):
@@ -71,6 +65,13 @@ def category_charts_page(request, campaign_id):
 
 
 def charts_page(request, campaign_id, group_categories=False):
+
+    class filter_type_form(Form):
+        filter_type = ChoiceField(choices=(('injections', 'Injections'),
+                                           ('events', 'Events'),
+                                           ('results', 'Results')),
+                                  required=False)
+
     campaign_data = campaign.objects.get(id=campaign_id)
     page_items = [('Results Overview', 'overview_chart'),
                   ('Injections By Target', 'targets_charts')]
@@ -84,43 +85,83 @@ def charts_page(request, campaign_id, group_categories=False):
                           ('Injections By TLB Field', 'tlb_fields_chart')])
     page_items.extend([('Injections Over Time', 'times_charts'),
                        ('Results By Injection Count', 'counts_charts')])
-    filter_ = injection_filter(request.GET, queryset=injection.objects.filter(
-        result__campaign_id=campaign_id), campaign=campaign_id)
-    if filter_.qs.count() > 0:
-        chart_array = results_charts(filter_.qs, campaign_data,
-                                     group_categories)
-    else:
-        chart_array = None
-    return render(request, 'charts.html', {
-        'campaign_data': campaign_data, 'chart_array': chart_array,
-        'filter': filter_, 'navigation_items': navigation_items,
-        'page_items': page_items})
-
-
-def results_page(request, campaign_id):
-    campaign_data = campaign.objects.get(id=campaign_id)
+    filter_type = 'injections'
     if request.method == 'GET':
         form = filter_type_form(request.GET)
-        if form.is_valid():
+        if form.is_valid() and form.cleaned_data['filter_type']:
             filter_type = form.cleaned_data['filter_type']
-        else:
-            filter_type = 'results'
     else:
         form = filter_type_form()
-        filter_type = 'results'
     if filter_type == 'events':
         filter_objects = event.objects.filter(
             result__campaign_id=campaign_id)
         filter_ = event_filter(request.GET, queryset=filter_objects,
                                campaign=campaign_id)
-    else:
+        chart_queryset = injection.objects.filter(
+            result_id__in=filter_.qs.values('result_id'))
+    elif filter_type == 'injections':
         filter_objects = injection.objects.filter(
             result__campaign_id=campaign_id)
         filter_ = injection_filter(request.GET, queryset=filter_objects,
                                    campaign=campaign_id)
+        chart_queryset = filter_.qs
+    if filter_type == 'results':
+        filter_objects = result.objects.filter(campaign_id=campaign_id)
+        filter_ = result_filter(request.GET, queryset=filter_objects,
+                                campaign=campaign_id)
+        chart_queryset = injection.objects.filter(
+            result_id__in=filter_.qs.values('id'))
+    if chart_queryset.count() > 0:
+        chart_array = results_charts(chart_queryset, campaign_data,
+                                     group_categories)
+    else:
+        chart_array = None
+    return render(request, 'charts.html', {
+        'campaign_data': campaign_data, 'chart_array': chart_array,
+        'filter': filter_, 'filter_type_form': form,
+        'navigation_items': navigation_items, 'page_items': page_items})
+
+
+def results_page(request, campaign_id):
+    class filter_type_form(Form):
+        filter_type = ChoiceField(choices=(('results', 'Results'),
+                                           ('injections', 'Injections'),
+                                           ('events', 'Events')),
+                                  required=False)
+
+    campaign_data = campaign.objects.get(id=campaign_id)
+    output_file = ('campaign-data/'+campaign_id+'/gold_' +
+                   campaign_data.output_file)
+    if exists(output_file) and what(output_file) is not None:
+        output_image = True
+    else:
+        output_image = False
+    filter_type = 'results'
+    if request.method == 'GET':
+        form = filter_type_form(request.GET)
+        if form.is_valid() and form.cleaned_data['filter_type']:
+            filter_type = form.cleaned_data['filter_type']
+    else:
+        form = filter_type_form()
+    if filter_type == 'events':
+        filter_objects = event.objects.filter(
+            result__campaign_id=campaign_id)
+        filter_ = event_filter(request.GET, queryset=filter_objects,
+                               campaign=campaign_id)
+        result_ids = filter_.qs.values('result_id').distinct()
+    elif filter_type == 'injections':
+        filter_objects = injection.objects.filter(
+            result__campaign_id=campaign_id)
+        filter_ = injection_filter(request.GET, queryset=filter_objects,
+                                   campaign=campaign_id)
+        result_ids = filter_.qs.values('result_id').distinct()
+    if filter_type == 'results':
+        filter_objects = result.objects.filter(campaign_id=campaign_id)
+        filter_ = result_filter(request.GET, queryset=filter_objects,
+                                campaign=campaign_id)
+        result_ids = filter_.qs.values('id').distinct()
     if len(filter_objects) == 0:
         return redirect('/campaign/'+str(campaign_id)+'/info')
-    result_ids = filter_.qs.values('result_id').distinct()
     result_objects = result.objects.filter(id__in=result_ids)
     if request.method == 'POST':
         if 'delete' in request.POST and 'select_box' in request.POST:
@@ -180,7 +221,7 @@ def results_page(request, campaign_id):
     return render(request, 'results.html', {
         'campaign_data': campaign_data, 'filter': filter_,
         'filter_type_form': form, 'navigation_items': navigation_items,
-        'table': table})
+        'output_image': output_image, 'table': table})
 
 
 def result_page(request, campaign_id, result_id):
