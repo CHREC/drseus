@@ -95,15 +95,19 @@ class dut(object):
                          'Closed serial port')
 
     def flush(self):
-        if not self.campaign_data['use_simics'] and self.serial.in_waiting:
-            buff = self.serial.read(
-                self.serial.in_waiting).decode('utf-8', 'replace')
-            if self.result_data:
-                self.result_data['dut_output' if not self.aux
-                                 else 'aux_output'] += buff
-            else:
-                self.campaign_data['dut_output' if not self.aux
-                                   else 'aux_output'] += buff
+        try:
+            in_bytes = self.serial.in_waiting
+        except:
+            pass
+        else:
+            if in_bytes:
+                buff = self.serial.read(in_bytes).decode('utf-8', 'replace')
+                if self.result_data:
+                    self.result_data['dut_output' if not self.aux
+                                     else 'aux_output'] += buff
+                else:
+                    self.campaign_data['dut_output' if not self.aux
+                                       else 'aux_output'] += buff
 
     def send_files(self, files, attempts=10):
         if self.options.debug:

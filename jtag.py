@@ -226,7 +226,7 @@ class bdi(jtag):
         super(bdi, self).__init__(campaign_data, result_data, database, options)
         if options.jtag:
             self.connect_telnet()
-            self.command('', error_message='Debugger not ready')
+            # self.command('', error_message='Debugger not ready')
 
     def __str__(self):
         string = ('BDI3000 at '+self.options.debugger_ip_address +

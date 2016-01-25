@@ -30,7 +30,7 @@ parser.add_argument('-T', '--timeout', action='store', type=int,
                     help='device read timeout [default=300]')
 parser.add_argument('--serial', action='store', metavar='PORT',
                     dest='dut_serial_port',
-                    help='DUT serial port [p2020 default=/dev/ttyUSB1] '
+                    help='DUT serial port [p2020 default=/dev/ttyUSB0] '
                          '[a9 default=/dev/ttyACM0] (overridden by Simics)')
 parser.add_argument('--baud', action='store', type=int, metavar='RATE',
                     dest='dut_baud_rate', default=115200,
@@ -277,11 +277,11 @@ else:
     if options.command == 'new' or options.campaign_id:
         if options.architecture == 'p2020':
             if options.dut_serial_port is None:
-                options.dut_serial_port = '/dev/ttyUSB1'
+                options.dut_serial_port = '/dev/ttyUSB0'
             if options.dut_prompt is None:
                 options.dut_prompt = 'root@p2020rdb:~#'
             if options.aux_serial_port is None:
-                options.aux_serial_port = '/dev/ttyUSB0'
+                options.aux_serial_port = '/dev/ttyUSB1'
             if options.aux_prompt is None:
                 options.aux_prompt = 'root@p2020rdb:~#'
         elif options.architecture == 'a9':
