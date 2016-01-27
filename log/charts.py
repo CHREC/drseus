@@ -125,7 +125,7 @@ def campaigns_chart(queryset):
     chart = chart.replace('\"chart_click\"', """
     function(event) {
         window.location.assign('/campaign/'+this.category+'/results?'+
-                               'filter_type=injections'+
+                               'filter_type=results'+
                                '&result__outcome_category='+this.series.name);
     }
     """)
@@ -269,7 +269,7 @@ def overview_chart(queryset, campaign_data, outcomes, group_categories,
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         var outcomes = outcome_list;
-        window.location.assign('results?filter_type=injections'+
+        window.location.assign('results?filter_type=results'+
                                '&result__outcome='+outcomes[this.x]);
     }
     """.replace('outcome_list', outcome_list))
@@ -804,7 +804,7 @@ def times_charts(queryset, campaign_data, outcomes, group_categories,
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
-        xaxis_length = queryset.count() / 25
+        xaxis_length = min(queryset.count() / 25, 50)
         times = numpy.linspace(0, campaign_data.exec_time, xaxis_length,
                                endpoint=False).tolist()
         times = [round(time, 4) for time in times]
@@ -919,7 +919,7 @@ def diff_times_chart(queryset, campaign_data, outcomes, group_categories,
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
-        xaxis_length = queryset.count() / 25
+        xaxis_length = min(queryset.count() / 25, 50)
         times = numpy.linspace(0, campaign_data.exec_time, xaxis_length,
                                endpoint=False).tolist()
         times = [round(time, 4) for time in times]
@@ -1012,10 +1012,10 @@ def diff_times_chart(queryset, campaign_data, outcomes, group_categories,
 
 def counts_chart(queryset, campaign_data, outcomes, group_categories,
                  chart_array):
-    qs_result_ids = queryset.values('result__id').distinct()
-    injection_counts = list(result.objects.filter(
-        id__in=qs_result_ids).values_list('num_injections', flat=True).distinct(
-        ).order_by('num_injections'))
+    result_objects = result.objects.filter(
+        id__in=queryset.values('result__id').distinct())
+    injection_counts = list(result_objects.values_list(
+        'num_injections', flat=True).distinct().order_by('num_injections'))
     if len(injection_counts) <= 1:
         return
     extra_colors = list(colors_extra)
@@ -1059,15 +1059,16 @@ def counts_chart(queryset, campaign_data, outcomes, group_categories,
             }
         }
     }
-    filter_kwargs = {'id__in': qs_result_ids}
     for outcome in outcomes:
-        chart_data = []
-        filter_kwargs['outcome_category' if group_categories
-                      else 'outcome'] = outcome
-        for injection_count in injection_counts:
-            filter_kwargs['num_injections'] = injection_count
-            chart_data.append(result.objects.filter(**filter_kwargs).count())
-        chart['series'].append({'data': chart_data, 'name': outcome})
+        when_kwargs = {'then': 1}
+        when_kwargs['outcome_category' if group_categories
+                    else 'outcome'] = outcome
+        data = list(result_objects.values_list('num_injections').distinct(
+            ).order_by('num_injections').annotate(
+                count=Sum(Case(When(**when_kwargs), default=0,
+                               output_field=IntegerField()))
+            ).values_list('count', flat=True))
+        chart['series'].append({'data': data, 'name': outcome})
     chart_percent = deepcopy(chart)
     chart_percent['chart']['renderTo'] = 'counts_percent_chart'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'

@@ -1,5 +1,5 @@
 from difflib import SequenceMatcher
-from os import listdir, makedirs, remove, rmdir
+from os import listdir, makedirs
 from shutil import copy, rmtree
 from subprocess import check_call, PIPE, Popen
 from termcolor import colored
@@ -120,11 +120,15 @@ class fault_injector(object):
                     self.campaign_data['output_file'],
                     'campaign-data/'+str(self.campaign_data['id'])+'/gold_' +
                     self.campaign_data['output_file'])
+                self.debugger.aux.command('rm ' +
+                                          self.campaign_data['output_file'])
             else:
                 self.debugger.dut.get_file(
                     self.campaign_data['output_file'],
                     'campaign-data/'+str(self.campaign_data['id'])+'/gold_' +
                     self.campaign_data['output_file'])
+                self.debugger.dut.command('rm ' +
+                                          self.campaign_data['output_file'])
         self.debugger.dut.flush()
         if self.campaign_data['use_aux']:
             self.debugger.aux.flush()
@@ -163,28 +167,39 @@ class fault_injector(object):
     def __monitor_execution(self, latent_faults=0, persistent_faults=False):
 
         def check_output():
-            result_folder = ('campaign-data/'+str(self.campaign_data['id'])+'/'
-                             'results/'+str(self.result_data['id']))
-            makedirs(result_folder)
-            output_location = \
-                result_folder+'/'+self.campaign_data['output_file']
-            gold_location = ('campaign-data/'+str(self.campaign_data['id'])+'/'
-                             'gold_'+self.campaign_data['output_file'])
-            if self.campaign_data['use_aux_output']:
-                directory_listing = self.debugger.aux.command('ls -l')
-            else:
-                directory_listing = self.debugger.dut.command('ls -l')
-            if self.campaign_data['output_file'] in directory_listing:
+            try:
                 if self.campaign_data['use_aux_output']:
-                    self.debugger.aux.get_file(
-                        self.campaign_data['output_file'], output_location)
+                    directory_listing = self.debugger.aux.command('ls -l')
                 else:
-                    self.debugger.dut.get_file(
-                        self.campaign_data['output_file'], output_location)
+                    directory_listing = self.debugger.dut.command('ls -l')
+            except DrSEUsError as error:
+                self.result_data['outcome_category'] = 'Post execution error'
+                self.result_data['outcome'] = error.type
+                return
+            if self.campaign_data['output_file'] in directory_listing:
+                result_folder = (
+                    'campaign-data/'+str(self.campaign_data['id']) +
+                    '/results/'+str(self.result_data['id']))
+                makedirs(result_folder)
+                output_location = \
+                    result_folder+'/'+self.campaign_data['output_file']
+                gold_location = (
+                    'campaign-data/'+str(self.campaign_data['id']) +
+                    '/gold_'+self.campaign_data['output_file'])
+                try:
+                    if self.campaign_data['use_aux_output']:
+                        self.debugger.aux.get_file(
+                            self.campaign_data['output_file'], output_location)
+                    else:
+                        self.debugger.dut.get_file(
+                            self.campaign_data['output_file'], output_location)
+                except DrSEUsError as error:
+                    self.result_data['outcome_category'] = 'File transfer error'
+                    self.result_data['outcome'] = error.type
+                    return
             else:
-                if not listdir(result_folder):
-                    rmdir(result_folder)
-                raise DrSEUsError(DrSEUsError.missing_output)
+                self.result_data['outcome_category'] = 'Data error'
+                self.result_data['outcome'] = 'Missing output file'
             with open(gold_location, 'rb') as solution:
                 solutionContents = solution.read()
             with open(output_location, 'rb') as result:
@@ -192,89 +207,55 @@ class fault_injector(object):
             self.result_data['data_diff'] = SequenceMatcher(
                 None, solutionContents, resultContents).quick_ratio()
             if self.result_data['data_diff'] == 1.0:
-                remove(output_location)
-                if not listdir(result_folder):
-                    rmdir(result_folder)
-            if self.campaign_data['use_aux_output']:
-                self.debugger.aux.command('rm ' +
-                                          self.campaign_data['output_file'])
+                rmtree(result_folder)
+                if self.result_data['detected_errors']:
+                    self.result_data['outcome_category'] = 'Data error'
+                    self.result_data['outcome'] = 'Corrected data error'
             else:
-                self.debugger.dut.command('rm ' +
-                                          self.campaign_data['output_file'])
+                self.result_data['outcome_category'] = 'Data error'
+                if self.result_data['detected_errors']:
+                    self.result_data['outcome'] = 'Detected data error'
+                else:
+                    self.result_data['outcome'] = 'Silent data error'
+            try:
+                if self.campaign_data['use_aux_output']:
+                    self.debugger.aux.command('rm ' +
+                                              self.campaign_data['output_file'])
+                else:
+                    self.debugger.dut.command('rm ' +
+                                              self.campaign_data['output_file'])
+            except DrSEUsError as error:
+                self.result_data['outcome_category'] = 'Post execution error'
+                self.result_data['outcome'] = error.type
+                return
 
     # def __monitor_execution(self, latent_faults=0, persistent_faults=False):
-        outcome = ''
-        outcome_category = ''
         if self.campaign_data['use_aux']:
             try:
-                aux_buff = self.debugger.aux.read_until()
+                self.debugger.aux.read_until()
             except DrSEUsError as error:
-                aux_buff = ''
                 self.debugger.dut.serial.write('\x03')
-                outcome = error.type
-                outcome_category = 'AUX execution error'
+                self.result_data['outcome_category'] = 'AUX execution error'
+                self.result_data['outcome'] = error.type
             else:
                 if self.campaign_data['kill_dut']:
                     self.debugger.dut.serial.write('\x03')
         try:
-            buff = self.debugger.dut.read_until()
+            self.debugger.dut.read_until()
         except DrSEUsError as error:
-            buff = ''
-            outcome = error.type
-            outcome_category = 'Execution error'
-        for line in buff.split('\n'):
-            if 'drseus_detected_errors:' in line:
-                self.result_data['detected_errors'] = \
-                    int(line.replace('drseus_detected_errors:', ''))
-                break
-        if self.campaign_data['use_aux']:
-            for line in aux_buff.split('\n'):
-                if 'drseus_detected_errors:' in line:
-                    if self.result_data['detected_errors'] is None:
-                        self.result_data['detected_errors'] = 0
-                    self.result_data['detected_errors'] += \
-                        int(line.replace('drseus_detected_errors:', ''))
-                    break
-        if self.campaign_data['output_file'] and not outcome:
-            try:
-                check_output()
-            except DrSEUsError as error:
-                if error.type == DrSEUsError.scp_error:
-                    outcome = 'Error getting output file'
-                    outcome_category = 'SCP error'
-                elif error.type == DrSEUsError.ssh_error:
-                    outcome = 'Error getting output file'
-                    outcome_category = 'SSH error'
-                elif error.type == DrSEUsError.missing_output:
-                    outcome = 'Missing output file'
-                    outcome_category = 'SCP error'
-                else:
-                    outcome = error.type
-                    outcome_category = 'Post execution error'
-        if not outcome:
-            if self.result_data['detected_errors']:
-                if self.result_data['data_diff'] is None or \
-                        self.result_data['data_diff'] < 1.0:
-                    outcome = 'Detected data error'
-                    outcome_category = 'Data error'
-                elif self.result_data['data_diff'] is not None and \
-                        self.result_data['data_diff'] == 1:
-                    outcome = 'Corrected data error'
-                    outcome_category = 'Data error'
-            elif self.result_data['data_diff'] is not None and \
-                    self.result_data['data_diff'] < 1.0:
-                outcome = 'Silent data error'
-                outcome_category = 'Data error'
-            elif persistent_faults:
-                outcome = 'Persistent faults'
-                outcome_category = 'No error'
+            self.result_data['outcome_category'] = 'Execution error'
+            self.result_data['outcome'] = error.type
+        if self.campaign_data['output_file'] and \
+                self.result_data['outcome'] == 'Incomplete':
+            check_output()
+        if self.result_data['outcome'] == 'Incomplete':
+            self.result_data['outcome_category'] = 'No error'
+            if persistent_faults:
+                self.result_data['outcome'] = 'Persistent faults'
             elif latent_faults:
-                outcome = 'Latent faults'
-                outcome_category = 'No error'
+                self.result_data['outcome'] = 'Latent faults'
             else:
-                outcome = 'Masked faults'
-                outcome_category = 'No error'
-        return outcome, outcome_category
+                self.result_data['outcome'] = 'Masked faults'
 
     def log_result(self, close=False):
         self.debugger.dut.flush()
@@ -342,6 +323,27 @@ class fault_injector(object):
                        str(self.campaign_data['id'])+'/' +
                        str(self.result_data['id']))
 
+        def check_latent_faults():
+            for i in range(self.options.latent_iterations):
+                if self.result_data['outcome'] == 'Latent faults' or \
+                    (not self.campaign_data['use_simics'] and
+                        self.result_data['outcome'] == 'Masked faults'):
+                    if self.campaign_data['use_aux']:
+                        self.debugger.aux.write(
+                            './'+self.campaign_data['aux_command']+'\n')
+                    self.debugger.dut.write(
+                        './'+self.campaign_data['command']+'\n')
+                    outcome_category = self.result_data['outcome_category']
+                    outcome = self.result_data['outcome']
+                    self.__monitor_execution()
+                    if self.result_data['outcome'] != 'Masked faults':
+                        self.result_data['outcome_category'] = \
+                            'Post execution error'
+                    else:
+                        self.result_data.update({
+                            'outcome_category': outcome_category,
+                            'outcome': outcome})
+
     # def inject_campaign(self, iteration_counter):
         while True:
             if iteration_counter is not None:
@@ -366,22 +368,8 @@ class fault_injector(object):
                     self.result_data['outcome_category'] = 'Debugger error'
                     continue_dut()
             else:
-                (self.result_data['outcome'],
-                 self.result_data['outcome_category']) = \
-                    self.__monitor_execution(latent_faults, persistent_faults)
-                if self.result_data['outcome'] == 'Latent faults' or \
-                    (not self.campaign_data['use_simics'] and
-                        self.result_data['outcome'] == 'Masked faults'):
-                    if self.campaign_data['use_aux']:
-                        self.debugger.aux.write(
-                            './'+self.campaign_data['aux_command']+'\n')
-                    self.debugger.dut.write(
-                        './'+self.campaign_data['command']+'\n')
-                    next_outcome = self.__monitor_execution()[0]
-                    if next_outcome != 'Masked faults':
-                        self.result_data.update({
-                            'outcome_category': 'Post execution error',
-                            'outcome': next_outcome})
+                self.__monitor_execution(latent_faults, persistent_faults)
+                check_latent_faults()
             if self.campaign_data['use_simics']:
                 close_simics()
             self.log_result()

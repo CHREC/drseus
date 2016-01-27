@@ -13,7 +13,6 @@ import utilities
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
-# TODO: add option for number of times to rerun app for latent fault case
 
 parser = ArgumentParser(
     description='The Dynamic Robust Single Event Upset Simulator '
@@ -150,6 +149,10 @@ inject.add_argument('-i', '--injections', action='store', type=int,
 inject.add_argument('-t', '--targets', action='store', nargs='+',
                     metavar='TARGET', dest='selected_targets',
                     help='list of targets for injection')
+inject.add_argument('-l', '--latent', action='store', metavar='ITERATIONS',
+                    type=int, dest='latent_iterations', default=1,
+                    help='execution iterations to perform if latent faults are '
+                         'detected [default=1]')
 inject.add_argument('-p', '--processes', action='store', type=int,
                     dest='processes', default=1,
                     help='number of injections to perform in parallel '

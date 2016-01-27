@@ -112,7 +112,7 @@ class results_table(tables.Table):
                   'outcome_category', 'outcome', 'data_diff', 'detected_errors',
                   'events', 'num_injections', 'targets', 'registers',
                   'injection_success')
-        order_by = 'id_'
+        order_by = '-id_'
 
 
 class result_table(results_table):

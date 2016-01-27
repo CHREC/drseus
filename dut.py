@@ -294,6 +294,14 @@ class dut(object):
             self.serial.timeout = self.options.timeout
         if self.options.debug:
             print()
+        if 'drseus_detected_errors:' in buff:
+            for line in buff.split('\n'):
+                if 'drseus_detected_errors:' in line:
+                    if self.result_data['detected_errors'] is None:
+                        self.result_data['detected_errors'] = 0
+                    # TODO: use regular expression
+                    self.result_data['detected_errors'] += \
+                        int(line.replace('drseus_detected_errors:', ''))
         with self.database as db:
             if self.result_data:
                 db.update_dict('result')
@@ -323,14 +331,7 @@ class dut(object):
         return buff
 
     def do_login(self, ip_address=None, change_prompt=False, simics=False):
-        # try:
-        self.write('\n')
         self.read_until(boot=True)
-        # except DrSEUsError as error:
-        #     if error.type == 'Reboot':
-        #         pass
-        #     else:
-        #         raise DrSEUsError(error.type)
         if change_prompt:
             self.write('export PS1=\"DrSEUs# \"\n')
             self.read_until('export PS1=\"DrSEUs# \"')

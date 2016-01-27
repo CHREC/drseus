@@ -13,6 +13,7 @@ from jtag_targets import devices
 from targets import choose_register, choose_target
 
 # TODO: refactor command()
+# TODO: use regular expressions in expect
 
 # zedboards[uart_serial] = ftdi_serial
 zedboards = {'844301CF3718': '210248585809',
@@ -81,9 +82,8 @@ class jtag(object):
         if self.campaign_data['use_aux']:
             self.aux.close()
 
-    def reset_dut(self, expected_output):
+    def reset_dut(self, expected_output, attempts):
         if self.telnet:
-            attempts = 10
             for attempt in range(attempts):
                 try:
                     self.command('reset', expected_output,
@@ -218,7 +218,8 @@ class jtag(object):
 
 
 class bdi(jtag):
-    error_messages = ['timeout while waiting for halt',
+    error_messages = ['syntax error in command',
+                      'timeout while waiting for halt',
                       'wrong state for requested command', 'read access failed']
 
     def __init__(self, campaign_data, result_data, database, options):
@@ -253,7 +254,7 @@ class bdi(jtag):
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
-            self.telnet.write(bytes(command+'\r\r', encoding='utf-8'))
+            self.telnet.write(bytes(command+'\r\n', encoding='utf-8'))
             if self.result_data:
                 self.result_data['debugger_output'] += command+'\n'
             else:
@@ -310,22 +311,18 @@ class bdi_arm(bdi):
         super(bdi_arm, self).__init__(campaign_data, result_data, database,
                                       options)
 
-    def reset_dut(self):
+    def reset_dut(self, attempts=10):
         super(bdi_arm, self).reset_dut([
             '- TARGET: processing reset request',
             '- TARGET: BDI removes TRST',
             '- TARGET: Bypass check',
             '- TARGET: JTAG exists check passed',
-            '- Core#0: ID code', '- Core#0: DP-CSW',
-            '- Core#0: DBG-AP', '- Core#0: DIDR',
-            '- Core#1: ID code', '- Core#1: DP-CSW',
-            '- Core#1: DBG-AP', '- Core#1: DIDR',
             '- TARGET: BDI removes RESET',
             '- TARGET: BDI waits for RESET inactive',
             '- TARGET: Reset sequence passed',
             '- TARGET: resetting target passed',
-            '- TARGET: processing target startup',
-            '- TARGET: processing target startup passed'])
+            '- TARGET: processing target startup \.\.\.\.',
+            '- TARGET: processing target startup passed'], attempts)
 
     def halt_dut(self):
         super(bdi_arm, self).halt_dut('halt 3', [
@@ -336,7 +333,6 @@ class bdi_arm(bdi):
         super(bdi_arm, self).continue_dut('cont 3')
 
     def select_core(self, core):
-        # TODO: check if cores are running (not in debug mode)
         self.command('select '+str(core), ['Core number', 'Core state',
                                            'Debug entry cause', 'Current PC',
                                            'Current CPSR'],
@@ -359,34 +355,28 @@ class bdi_p2020(bdi):
         super(bdi_p2020, self).__init__(campaign_data, result_data, database,
                                         options)
 
-    def reset_dut(self):
+    def reset_dut(self, attempts=10):
         super(bdi_p2020, self).reset_dut([
             '- TARGET: processing user reset request',
             '- BDI asserts HRESET',
             '- Reset JTAG controller passed',
             '- JTAG exists check passed',
-            '- IDCODE',
-            '- SVR',
-            '- PVR',
-            '- CCSRBAR',
             '- BDI removes HRESET',
             '- TARGET: resetting target passed',
-            # '- TARGET: processing target startup',
-            '- TARGET: processing target startup passed'])
+            '- TARGET: processing target startup \.\.\.\.',
+            '- TARGET: processing target startup passed'], attempts)
 
     def halt_dut(self):
-        super(bdi_p2020, self).halt_dut('halt 0; halt 1', [
-            'Target CPU', 'Core state', 'Debug entry cause', 'Current PC',
-            'Current CR', 'Current MSR', 'Current LR']*2)
+        super(bdi_p2020, self).halt_dut('halt 0 1', [
+            '- TARGET: core #0 has entered debug mode',
+            '- TARGET: core #1 has entered debug mode'])
 
     def continue_dut(self):
         super(bdi_p2020, self).continue_dut('go 0 1')
 
     def select_core(self, core):
         self.command('select '+str(core), ['Target CPU', 'Core state',
-                                           'Debug entry cause', 'Current PC',
-                                           'Current CR', 'Current MSR',
-                                           'Current LR', 'Current CCSRBAR'],
+                                           'Debug entry cause'],
                      'Error selecting core')
 
     def get_register_value(self, register, target):
@@ -513,15 +503,12 @@ class openocd(jtag):
                 db.log_event('Information', 'Debugger', 'Command', command)
         return return_buffer
 
-    def reset_dut(self):
+    def reset_dut(self, attempts=10):
         super(openocd, self).reset_dut(
-            ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'])
+            ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], attempts)
 
     def halt_dut(self):
-        super(openocd, self).halt_dut('halt', [
-            'target state: halted',
-            'target halted in ARM state due to debug-request, current mode:',
-            'cpsr:', 'MMU:']*2)
+        super(openocd, self).halt_dut('halt', ['target state: halted']*2)
 
     def continue_dut(self):
         super(openocd, self).continue_dut('resume')
