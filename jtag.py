@@ -375,7 +375,8 @@ class bdi_p2020(bdi):
                 '- BDI removes HRESET',
                 '- TARGET: resetting target passed',
                 '- TARGET: processing target startup \.\.\.\.',
-                '- TARGET: processing target startup passed'], int(attempts/2))
+                '- TARGET: processing target startup passed'],
+                max(int(attempts/2), 1))
 
     # def reset_dut(self, attempts=10):
         try:
