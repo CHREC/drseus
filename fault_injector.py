@@ -170,30 +170,30 @@ class fault_injector(object):
                 self.result_data['outcome_category'] = 'Post execution error'
                 self.result_data['outcome'] = error.type
                 return
-            if self.campaign_data['output_file'] in directory_listing:
-                result_folder = (
-                    'campaign-data/'+str(self.campaign_data['id']) +
-                    '/results/'+str(self.result_data['id']))
-                makedirs(result_folder)
-                output_location = \
-                    result_folder+'/'+self.campaign_data['output_file']
-                gold_location = (
-                    'campaign-data/'+str(self.campaign_data['id']) +
-                    '/gold_'+self.campaign_data['output_file'])
-                try:
-                    if self.campaign_data['use_aux_output']:
-                        self.debugger.aux.get_file(
-                            self.campaign_data['output_file'], output_location)
-                    else:
-                        self.debugger.dut.get_file(
-                            self.campaign_data['output_file'], output_location)
-                except DrSEUsError as error:
-                    self.result_data['outcome_category'] = 'File transfer error'
-                    self.result_data['outcome'] = error.type
-                    return
-            else:
+            if self.campaign_data['output_file'] not in directory_listing:
                 self.result_data['outcome_category'] = 'Data error'
                 self.result_data['outcome'] = 'Missing output file'
+                return
+            result_folder = (
+                'campaign-data/'+str(self.campaign_data['id']) +
+                '/results/'+str(self.result_data['id']))
+            makedirs(result_folder)
+            output_location = \
+                result_folder+'/'+self.campaign_data['output_file']
+            gold_location = (
+                'campaign-data/'+str(self.campaign_data['id']) +
+                '/gold_'+self.campaign_data['output_file'])
+            try:
+                if self.campaign_data['use_aux_output']:
+                    self.debugger.aux.get_file(
+                        self.campaign_data['output_file'], output_location)
+                else:
+                    self.debugger.dut.get_file(
+                        self.campaign_data['output_file'], output_location)
+            except DrSEUsError as error:
+                self.result_data['outcome_category'] = 'File transfer error'
+                self.result_data['outcome'] = error.type
+                return
             with open(gold_location, 'rb') as solution:
                 solutionContents = solution.read()
             with open(output_location, 'rb') as result:
