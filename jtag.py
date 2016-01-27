@@ -241,6 +241,10 @@ class bdi(jtag):
     def reset_bdi(self):
         self.telnet.write(bytes('boot\r\n', encoding='utf-8'))
         self.telnet.close()
+        if self.result_data:
+            self.result_data['debugger_output'] += 'boot\n'
+        else:
+            self.campaign_data['debugger_output'] += 'boot\n'
         with self.database as db:
             db.log_event('Warning', 'Debugger', 'Reset BDI')
         sleep(1)
