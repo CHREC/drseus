@@ -93,7 +93,7 @@ class supervisor(Cmd):
         self.drseus.log_result()
 
     def do_send_dut_file(self, arg, aux=False):
-        """Send file to DUT, defaults to campaign files"""
+        """Send file to DUT, defaults to sending campaign files"""
         if arg:
             if aux:
                 self.drseus.debugger.aux.send_files(arg, attempts=1)

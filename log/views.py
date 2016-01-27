@@ -163,17 +163,17 @@ def results_page(request, campaign_id):
     if len(filter_objects) == 0:
         return redirect('/campaign/'+str(campaign_id)+'/info')
     result_objects = result.objects.filter(id__in=result_ids)
-    if request.method == 'POST':
-        if 'delete' in request.POST and 'select_box' in request.POST:
+    if request.method == 'GET':
+        if 'delete' in request.GET and 'select_box' in request.GET:
             result_ids = [int(result_id) for result_id
-                          in dict(request.POST)['select_box']]
+                          in dict(request.GET)['select_box']]
             event.objects.filter(result_id__in=result_ids).delete()
             injection.objects.filter(result_id__in=result_ids).delete()
             simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
             simics_register_diff.objects.filter(
                 result_id__in=result_ids).delete()
             result.objects.filter(id__in=result_ids).delete()
-        elif 'delete_all' in request.POST:
+        elif 'delete_all' in request.GET:
             event.objects.filter(result_id__in=result_ids).delete()
             injection.objects.filter(result_id__in=result_ids).delete()
             simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
@@ -181,41 +181,40 @@ def results_page(request, campaign_id):
                 result_id__in=result_ids).delete()
             result.objects.filter(id__in=result_ids).delete()
             return redirect('/campaign/'+str(campaign_id)+'/results')
-        elif (('view_output' in request.POST or
-               'view_output_image' in request.POST) and
-              'select_box' in request.POST):
+        elif (('view_output' in request.GET or
+               'view_output_image' in request.GET) and
+              'select_box' in request.GET):
             result_ids = []
             page_items = []
-            for result_id in dict(request.POST)['select_box']:
+            for result_id in dict(request.GET)['select_box']:
                 result_ids.append(int(result_id))
                 page_items.append(('Result ID '+result_id, result_id))
             results = result.objects.filter(id__in=result_ids)
-            image = 'view_output_image' in request.POST
+            image = 'view_output_image' in request.GET
             return render(request, 'output.html', {'campaign': campaign_id,
                                                    'image': image,
                                                    'navigation_items':
                                                        navigation_items,
                                                    'page_items': page_items,
                                                    'results': results})
-        elif ('view_output_all' in request.POST or
-              'view_output_image_all' in request.POST):
+        elif ('view_output_all' in request.GET or
+              'view_output_image_all' in request.GET):
             page_items = [('Result ID '+str(result_id), result_id) for result_id
                           in result_objects.values_list('id', flat=True)]
-            image = 'view_output_image_all' in request.POST
+            image = 'view_output_image_all' in request.GET
             return render(request, 'output.html', {'campaign': campaign_id,
                                                    'image': image,
                                                    'navigation_items':
                                                        navigation_items,
                                                    'page_items': page_items,
                                                    'results': result_objects})
-        elif 'new_outcome_category' in request.POST:
+    if request.method == 'POST':
+        if 'new_outcome_category' in request.POST:
             result_objects.values('outcome_category').update(
                 outcome_category=request.POST['new_outcome_category'])
         elif 'new_outcome' in request.POST:
             result_objects.values('outcome').update(
                 outcome=request.POST['new_outcome'])
-        elif 'refresh' in request.POST:
-            return redirect('/campaign/'+str(campaign_id)+'/results')
     table = results_table(result_objects)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {
@@ -251,11 +250,11 @@ def result_page(request, campaign_id, result_id):
         if not exists(drseus):
             drseus = 'drseus.sh'
         Popen(['./'+drseus, 'regenerate', result_id])
-    if request.method == 'POST' and 'save' in request.POST:
-        result_object.outcome = request.POST['outcome']
-        result_object.outcome_category = request.POST['outcome_category']
+    if request.method == 'GET' and 'save' in request.GET:
+        result_object.outcome = request.GET['outcome']
+        result_object.outcome_category = request.GET['outcome_category']
         result_object.save()
-    elif request.method == 'POST' and 'delete' in request.POST:
+    elif request.method == 'GET' and 'delete' in request.GET:
         event.objects.filter(result_id=result_object.id).delete()
         injection.objects.filter(result_id=result_object.id).delete()
         simics_register_diff.objects.filter(result_id=result_object.id).delete()

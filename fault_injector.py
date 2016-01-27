@@ -29,14 +29,11 @@ class fault_injector(object):
             elif campaign_data['architecture'] == 'a9':
                 self.debugger = openocd(campaign_data, self.result_data,
                                         self.database, options)
-        if not campaign_data['use_simics']:
-            if campaign_data['use_aux']:
-                self.debugger.aux.serial.write('\x03')
-                self.debugger.aux.do_login()
-                if options.command != 'new':
-                    self.send_dut_files(aux=True)
-            if options.command == 'new':
-                self.debugger.reset_dut()
+        if campaign_data['use_aux'] and not campaign_data['use_simics']:
+            self.debugger.aux.serial.write('\x03')
+            self.debugger.aux.do_login()
+            if options.command != 'new':
+                self.send_dut_files(aux=True)
 
     def __str__(self):
         string = ('DrSEUs Attributes:\n\tDebugger: '+str(self.debugger) +
@@ -105,14 +102,11 @@ class fault_injector(object):
         if self.campaign_data['use_aux']:
             aux_process = Thread(target=send_dut_files, args=[True])
             aux_process.start()
+        if not self.campaign_data['use_simics']:
+            self.debugger.reset_dut()
         send_dut_files()
         if self.campaign_data['use_aux']:
             aux_process.join()
-        #     aux_process = Thread(target=self.debugger.aux.command)
-        #     aux_process.start()
-        # self.debugger.dut.command()
-        # if self.campaign_data['use_aux']:
-        #     aux_process.join()
         self.debugger.time_application()
         if self.campaign_data['output_file']:
             if self.campaign_data['use_aux_output']:

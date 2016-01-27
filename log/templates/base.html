@@ -49,61 +49,61 @@
             </h1>
         </div>
         <div class="document">
-            <div class="documentwrapper">
-                <div class="bodywrapper">
-                    <div class="body">
-                        {% block body %}
-                        {% endblock %}
+            <form action="" method="get">
+                <div class="documentwrapper">
+                    <div class="bodywrapper">
+                        <div class="body">
+                            {% block body %}
+                            {% endblock %}
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="sphinxsidebar">
-                <div class="sphinxsidebarwrapper">
-                    <h3>
-                        DrSEUs Navigation
-                    </h3>
-                    <ul>
-                        <li>
-                            <a class="reference internal" href="/">
-                                Campaigns
-                            </a>
-                        </li>
-                    </ul>
-                    {% if navigation_items %}
-                    <h3>
-                        Campaign Navigation
-                    </h3>
-                    <ul>
-                    {% for name, link in navigation_items %}
-                        <li>
-                            <a class="reference internal" href="{{ link }}">
-                                {{ name }}
-                            </a>
-                        </li>
-                    {% endfor %}
-                    </ul>
-                    {% endif %}
-                    {% if page_items %}
-                    <h3>
-                        Page Navigation
-                    </h3>
-                    <ul>
-                    {% for name, link in page_items %}
-                        <li>
-                            <a class="reference internal" href="#{{ link }}">
-                                {{ name }}
-                            </a>
-                        </li>
-                    {% endfor %}
-                    </ul>
-                    {% endif %}
-                    {% if filter.form %}
-                    <h3>
-                        Filter
-                    </h3>
-                    <form action="" method="get">
-                        <input type="submit" style="display:block;margin-left:auto;margin-right:auto;width:65%;" value="Apply">
+                <div class="sphinxsidebar">
+                    <div class="sphinxsidebarwrapper">
+                        <h3>
+                            DrSEUs Navigation
+                        </h3>
                         <ul>
+                            <li>
+                                <a class="reference internal" href="/">
+                                    Campaigns
+                                </a>
+                            </li>
+                        </ul>
+                        {% if navigation_items %}
+                        <h3>
+                            Campaign Navigation
+                        </h3>
+                        <ul>
+                        {% for name, link in navigation_items %}
+                            <li>
+                                <a class="reference internal" href="{{ link }}">
+                                    {{ name }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                        {% endif %}
+                        {% if page_items %}
+                        <h3>
+                            Page Navigation
+                        </h3>
+                        <ul>
+                        {% for name, link in page_items %}
+                            <li>
+                                <a class="reference internal" href="#{{ link }}">
+                                    {{ name }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                        {% endif %}
+                        {% if filter.form %}
+                        <h3>
+                            Filter
+                        </h3>
+                        <ul>
+                            <input type="submit" style="display:block;margin-left:auto;margin-right:auto;width:80%;" value="Apply">
                             {% if filter_type_form %}
                             <p>
                                 Filter by: {{ filter_type_form.filter_type }}
@@ -111,12 +111,12 @@
                             {% endif %}
                             {{ filter.form.as_p }}
                         </ul>
-                    </form>
-                    {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
-            <div class="clearer">
-            </div>
+                <div class="clearer">
+                </div>
+            </form>
         </div>
         <div class="footer">
             DrSEUs was created by Ed Carlisle IV
