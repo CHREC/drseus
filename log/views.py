@@ -97,22 +97,21 @@ def charts_page(request, campaign_id, group_categories=False):
             result__campaign_id=campaign_id)
         filter_ = event_filter(request.GET, queryset=filter_objects,
                                campaign=campaign_id)
-        chart_queryset = injection.objects.filter(
-            result_id__in=filter_.qs.values('result_id'))
+        result_ids = filter_.qs.values('result_id').distinct()
+
     elif filter_type == 'injections':
         filter_objects = injection.objects.filter(
             result__campaign_id=campaign_id)
         filter_ = injection_filter(request.GET, queryset=filter_objects,
                                    campaign=campaign_id)
-        chart_queryset = filter_.qs
+        result_ids = filter_.qs.values('result_id').distinct()
     if filter_type == 'results':
         filter_objects = result.objects.filter(campaign_id=campaign_id)
         filter_ = result_filter(request.GET, queryset=filter_objects,
                                 campaign=campaign_id)
-        chart_queryset = injection.objects.filter(
-            result_id__in=filter_.qs.values('id'))
-    if chart_queryset.count() > 0:
-        chart_array = results_charts(chart_queryset, campaign_data,
+        result_ids = filter_.qs.values('id').distinct()
+    if result_ids.count() > 0:
+        chart_array = results_charts(result_ids, campaign_data,
                                      group_categories)
     else:
         chart_array = None

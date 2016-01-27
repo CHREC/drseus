@@ -4,12 +4,11 @@ from argparse import ArgumentParser
 
 import utilities
 
-# TODO: add description field to campaign model
+# TODO: add campaign description to log viewer
 # TODO: update dut.write/aux.write to dut.command/aux.command in fault_injector
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
 # TODO: use formatting strings
-# TODO: add ip address override
 # TODO: add mode to redo injection iteration
 # TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
@@ -34,6 +33,10 @@ parser.add_argument('--serial', action='store', metavar='PORT',
 parser.add_argument('--baud', action='store', type=int, metavar='RATE',
                     dest='dut_baud_rate', default=115200,
                     help='DUT serial port baud rate [default=115200]')
+parser.add_argument('--ip', action='store', metavar='ADDRESS',
+                    dest='dut_ip_address',
+                    help='DUT IP address, attempt to automatically discover if '
+                         'not specified')
 parser.add_argument('--scp', action='store', type=int, metavar='PORT',
                     dest='dut_scp_port', default=22,
                     help='DUT scp port [default=22] (overridden by Simics)')
@@ -56,6 +59,10 @@ parser.add_argument('--aux_serial', action='store', metavar='PORT',
 parser.add_argument('--aux_baud', action='store', type=int, metavar='RATE',
                     dest='aux_baud_rate', default=115200,
                     help='AUX serial port baud rate [default=115200]')
+parser.add_argument('--aux_ip', action='store', metavar='ADDRESS',
+                    dest='aux_ip_address',
+                    help='AUX IP address, attempt to automatically discover if '
+                         'not specified')
 parser.add_argument('--aux_scp', action='store', type=int, metavar='PORT',
                     dest='aux_scp_port', default=22,
                     help='AUX scp port [default=22] (overridden by Simics)')

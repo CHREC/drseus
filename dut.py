@@ -48,14 +48,18 @@ class dut(object):
         self.database = database
         self.options = options
         self.aux = aux
+        self.ip_address = options.dut_ip_address if not aux \
+            else options.aux_ip_address
+        self.scp_port = options.dut_scp_port if not aux \
+            else options.aux_scp_port
         self.prompt = options.dut_prompt if not aux else options.aux_prompt
         self.prompt += ' '
         rsakey_file = StringIO(campaign_data['rsakey'])
         self.rsakey = RSAKey.from_private_key(rsakey_file)
         rsakey_file.close()
-        self.uboot_command = options.dut_uboot if not self.aux \
+        self.uboot_command = options.dut_uboot if not aux \
             else options.aux_uboot
-        self.login_command = options.dut_login if not self.aux \
+        self.login_command = options.dut_login if not aux \
             else options.aux_login
         serial_port = (options.dut_serial_port if not aux
                        else options.aux_serial_port)
@@ -72,20 +76,15 @@ class dut(object):
         self.serial.port = serial_port
         self.serial.open()
         self.serial.reset_input_buffer()
-        with self.database as db:
-            db.log_event('Information', 'DUT' if not self.aux else 'AUX',
+        with database as db:
+            db.log_event('Information', 'DUT' if not aux else 'AUX',
                          'Connected to serial port', serial_port)
 
     def __str__(self):
         string = ('Serial Port: '+self.serial.port+'\n\tTimeout: ' +
                   str(self.serial.timeout)+' seconds\n\tPrompt: \"' +
-                  self.prompt+'\"')
-        try:
-            string += '\n\tIP Address: '+self.ip_address
-        except AttributeError:
-            pass
-        string += '\n\tSCP Port: '+str(self.options.dut_scp_port if not self.aux
-                                       else self.options.aux_scp_port)
+                  self.prompt+'\"\n\tIP Address: '+str(self.ip_address) +
+                  '\n\tSCP Port: '+str(self.scp_port))
         return string
 
     def close(self):
@@ -108,6 +107,10 @@ class dut(object):
                 else:
                     self.campaign_data['dut_output' if not self.aux
                                        else 'aux_output'] += buff
+                with self.database as db:
+                    db.log_event('Information',
+                                 'DUT' if not self.aux else 'AUX',
+                                 'Flushed serial buffer')
 
     def send_files(self, files, attempts=10):
         if self.options.debug:
@@ -116,9 +119,7 @@ class dut(object):
         ssh.set_missing_host_key_policy(AutoAddPolicy())
         for attempt in range(attempts):
             try:
-                ssh.connect(self.ip_address, port=(self.options.dut_scp_port
-                                                   if not self.aux else
-                                                   self.options.aux_scp_port),
+                ssh.connect(self.ip_address, port=self.scp_port,
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
             except Exception as error:
@@ -127,9 +128,8 @@ class dut(object):
                                  'DUT' if not self.aux else 'AUX', 'SSH error',
                                  db.log_exception)
                 print(colored(
-                    self.serial.port+', '+str(self.result_data['id'])+': '
-                    'error sending file(s) (attempt '+str(attempt+1)+'/' +
-                    str(attempts)+'): '+str(error), 'red'))
+                    self.serial.port+': error sending file(s) (attempt ' +
+                    str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 else:
@@ -145,9 +145,9 @@ class dut(object):
                                      'DUT' if not self.aux else 'AUX',
                                      'SCP error', db.log_exception)
                     print(colored(
-                        self.serial.port+', '+str(self.result_data['id'])+': '
-                        'error sending file(s) (attempt '+str(attempt+1)+'/' +
-                        str(attempts)+'): '+str(error), 'red'))
+                        self.serial.port+': error sending file(s) (attempt ' +
+                        str(attempt+1)+'/'+str(attempts)+'): '+str(error),
+                        'red'))
                     dut_scp.close()
                     ssh.close()
                     if attempt < attempts-1:
@@ -173,9 +173,7 @@ class dut(object):
         ssh.set_missing_host_key_policy(AutoAddPolicy())
         for attempt in range(attempts):
             try:
-                ssh.connect(self.ip_address, port=(self.options.dut_scp_port
-                                                   if not self.aux else
-                                                   self.options.aux_scp_port),
+                ssh.connect(self.ip_address, port=self.scp_port,
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
             except Exception as error:
@@ -184,9 +182,8 @@ class dut(object):
                                  'DUT' if not self.aux else 'AUX', 'SSH error',
                                  db.log_exception)
                 print(colored(
-                    self.serial.port+', '+str(self.result_data['id'])+': '
-                    'error receiving file (attempt '+str(attempt+1)+'/' +
-                    str(attempts)+'): '+str(error), 'red'))
+                    self.serial.port+': error receiving file (attempt ' +
+                    str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 else:
@@ -202,9 +199,9 @@ class dut(object):
                                      'DUT' if not self.aux else 'AUX',
                                      'SCP error', db.log_exception)
                     print(colored(
-                        self.serial.port+', '+str(self.result_data['id'])+': '
-                        'error receiving file (attempt '+str(attempt+1)+'/' +
-                        str(attempts)+'): '+str(error), 'red'))
+                        self.serial.port+': error receiving file (attempt ' +
+                        str(attempt+1)+'/'+str(attempts)+'): '+str(error),
+                        'red'))
                     dut_scp.close()
                     ssh.close()
                     if attempt < attempts-1:
@@ -330,7 +327,7 @@ class dut(object):
                          'Command', command)
         return buff
 
-    def do_login(self, ip_address=None, change_prompt=False, simics=False):
+    def do_login(self, change_prompt=False):
         self.read_until(boot=True)
         if change_prompt:
             self.write('export PS1=\"DrSEUs# \"\n')
@@ -343,7 +340,12 @@ class dut(object):
         self.command('touch ~/.ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
                      '\" > ~/.ssh/authorized_keys')
-        if ip_address is None:
+        if self.campaign_data['use_simics']:
+            self.command('ip addr add '+self.ip_address+'/24 dev eth0')
+            self.command('ip link set eth0 up')
+            self.command('ip addr show')
+            self.ip_address = '127.0.0.1'
+        if self.ip_address is None:
             attempts = 10
             for attempt in range(attempts):
                 for line in self.command('ip addr show').split('\n'):
@@ -351,23 +353,15 @@ class dut(object):
                     if len(line) > 0 and line[0] == 'inet':
                         addr = line[1].split('/')[0]
                         if addr != '127.0.0.1':
-                            ip_address = addr
+                            self.ip_address = addr
                             break
                 else:
                     if attempt < attempts-1:
                         sleep(5)
                     else:
                         raise DrSEUsError('Error finding device ip address')
-                if ip_address is not None:
+                if self.ip_address is not None:
                     break
-        else:
-            self.command('ip addr add '+ip_address+'/24 dev eth0')
-            self.command('ip link set eth0 up')
-            self.command('ip addr show')
-        if simics:
-            self.ip_address = '127.0.0.1'
-        else:
-            self.ip_address = ip_address
         with self.database as db:
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                          'Logged in')

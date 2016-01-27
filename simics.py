@@ -69,9 +69,8 @@ class simics(object):
                                  'Simics', 'Error launching Simics',
                                  db.log_exception)
                 print(colored(
-                    str(self.result_data['id'])+': error launching simics '
-                    '(attempt '+str(attempt+1)+'/'+str(attempts)+'): ' +
-                    str(error), 'red'))
+                    'error launching simics (attempt '+str(attempt+1)+'/' +
+                    str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 elif attempt == attempts-1:
@@ -155,12 +154,13 @@ class simics(object):
                                        'root=/dev/ram0 rw;'
                                        'bootm 0x40800000 0x70000000')
         self.options.dut_serial_port = serial_ports[0]
+        self.options.dut_ip_address = '10.10.0.100'
         self.options.dut_scp_port = ssh_ports[0]
-
         self.dut = dut(self.campaign_data, self.result_data, self.database,
                        self.options)
         if self.campaign_data['use_aux']:
             self.options.aux_serial_port = serial_ports[1]
+            self.options.aux_ip_address = '10.10.0.104'
             self.options.aux_scp_port = ssh_ports[1]
             self.aux = dut(self.campaign_data, self.result_data, self.database,
                            self.options, aux=True)
@@ -186,15 +186,10 @@ class simics(object):
                                    'load-file $initrd_image $initrd_addr')
             self.continue_dut()
             if self.campaign_data['use_aux']:
-                aux_process = Thread(
-                    target=self.aux.do_login,
-                    kwargs={'ip_address': '10.10.0.104',
-                            'change_prompt': (self.board == 'a9x2'),
-                            'simics': True})
+                aux_process = Thread(target=self.aux.do_login,
+                                     args=[self.board == 'a9x2'])
                 aux_process.start()
-            self.dut.do_login(ip_address='10.10.0.100',
-                              change_prompt=(self.board == 'a9x2'),
-                              simics=True)
+            self.dut.do_login(change_prompt=(self.board == 'a9x2'))
             if self.campaign_data['use_aux']:
                 aux_process.join()
         else:

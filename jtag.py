@@ -94,9 +94,9 @@ class jtag(object):
                                       else 'Error'), 'Debugger',
                                      'Error resetting DUT', db.log_exception)
                     print(colored(
-                        self.dut.serial.port+' '+str(self.result_data['id']) +
-                        ': Error resetting DUT (attempt '+str(attempt+1) +
-                        '/'+str(attempts)+'): '+str(error), 'red'))
+                        self.dut.serial.port+' : Error resetting DUT (attempt'
+                        ' '+str(attempt+1)+'/'+str(attempts)+'): '+str(error),
+                        'red'))
                     if attempt < attempts-1:
                         sleep(30)
                     else:
@@ -107,7 +107,6 @@ class jtag(object):
                     break
         else:
             self.dut.serial.write('\x03')
-        self.dut.do_login()
 
     def halt_dut(self, halt_command, expected_output):
         self.command(halt_command, expected_output, 'Error halting DUT', False)
@@ -239,6 +238,16 @@ class bdi(jtag):
             self.telnet.write(bytes('quit\r', encoding='utf-8'))
         super(bdi, self).close()
 
+    def reset_bdi(self):
+        self.telnet.write(bytes('boot\r\n', encoding='utf-8'))
+        self.telnet.close()
+        with self.database as db:
+            db.log_event('Warning', 'Debugger', 'Reset BDI')
+        sleep(1)
+        self.connect_telnet()
+        sleep(1)
+        self.command(None)
+
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
         expected_output = [bytes(output, encoding='utf-8')
@@ -356,15 +365,24 @@ class bdi_p2020(bdi):
                                         options)
 
     def reset_dut(self, attempts=10):
-        super(bdi_p2020, self).reset_dut([
-            '- TARGET: processing user reset request',
-            '- BDI asserts HRESET',
-            '- Reset JTAG controller passed',
-            '- JTAG exists check passed',
-            '- BDI removes HRESET',
-            '- TARGET: resetting target passed',
-            '- TARGET: processing target startup \.\.\.\.',
-            '- TARGET: processing target startup passed'], attempts)
+
+        def reset_p2020():
+            super(bdi_p2020, self).reset_dut([
+                '- TARGET: processing user reset request',
+                '- BDI asserts HRESET',
+                '- Reset JTAG controller passed',
+                '- JTAG exists check passed',
+                '- BDI removes HRESET',
+                '- TARGET: resetting target passed',
+                '- TARGET: processing target startup \.\.\.\.',
+                '- TARGET: processing target startup passed'], int(attempts/2))
+
+    # def reset_dut(self, attempts=10):
+        try:
+            reset_p2020()
+        except DrSEUsError:
+            self.reset_bdi()
+            reset_p2020()
 
     def halt_dut(self):
         super(bdi_p2020, self).halt_dut('halt 0 1', [

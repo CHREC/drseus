@@ -104,6 +104,8 @@ class fault_injector(object):
             aux_process.start()
         if not self.campaign_data['use_simics']:
             self.debugger.reset_dut()
+            self.debugger.dut.serial.timeout = 30
+            self.debugger.dut.do_login()
         send_dut_files()
         if self.campaign_data['use_aux']:
             aux_process.join()
@@ -193,6 +195,8 @@ class fault_injector(object):
             except DrSEUsError as error:
                 self.result_data['outcome_category'] = 'File transfer error'
                 self.result_data['outcome'] = error.type
+                if not listdir(result_folder):
+                    rmtree(result_folder)
                 return
             with open(gold_location, 'rb') as solution:
                 solutionContents = solution.read()
@@ -276,6 +280,15 @@ class fault_injector(object):
             except DrSEUsError as error:
                 self.result_data.update({
                     'outcome_category': 'Debugger error',
+                    'outcome': str(error)})
+                self.log_result()
+                return False
+            try:
+                self.debugger.dut.serial.timeout = 30
+                self.debugger.dut.do_login()
+            except DrSEUsError as error:
+                self.result_data.update({
+                    'outcome_category': 'DUT login error',
                     'outcome': str(error)})
                 self.log_result()
                 return False
