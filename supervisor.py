@@ -12,19 +12,17 @@ from fault_injector import fault_injector
 # TODO: add background read thread and interact command
 #       (remove dut read and dut command)
 class supervisor(Cmd):
-    def __init__(self, campaign_data, options):
-        self.campaign_data = campaign_data
-        self.capture = options.capture
+    def __init__(self, campaign, options):
         options.debug = True
-        self.drseus = fault_injector(campaign_data, options)
-        if not campaign_data['use_simics']:
+        self.drseus = fault_injector(campaign, options)
+        if not campaign['simics']:
             self.drseus.debugger.reset_dut()
             self.drseus.debugger.dut.serial.timeout = 30
             self.drseus.debugger.dut.do_login()
             self.drseus.send_dut_files()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
-        if campaign_data['use_aux']:
+        if campaign['aux']:
             self.__class__ = aux_supervisor
 
     def preloop(self):
@@ -44,7 +42,7 @@ class supervisor(Cmd):
         except ValueError:
             print('Invalid value entered')
             return
-        if self.campaign_data['use_simics']:
+        if self.drseus.db.campaign['simics']:
             self.drseus.debugger.timeout = new_timeout
         if aux:
             self.drseus.debugger.aux.default_timeout = new_timeout
@@ -67,17 +65,18 @@ class supervisor(Cmd):
                     else:
                         self.drseus.debugger.dut.write(stdin.readline()+'\n')
         except KeyboardInterrupt:
-            if self.campaign_data['use_simics']:
+            if self.drseus.db.campaign['simics']:
                 self.drseus.debugger.continue_dut()
             if aux:
                 self.drseus.debugger.aux.serial.write('\x03')
             else:
                 self.drseus.debugger.dut.serial.write('\x03')
             read_thread.join()
-        self.drseus.result_data.update({
+        self.drseus.db.result.update({
             'outcome_category': ('AUX' if aux else 'DUT')+' command',
             'outcome': arg})
-        self.drseus.log_result()
+        with self.drseus.db as db:
+            db.log_result()
 
     def do_read_dut(self, arg=None, aux=False):
         """Read from DUT, interrupt with ctrl-c"""
@@ -87,12 +86,13 @@ class supervisor(Cmd):
             else:
                 self.drseus.debugger.dut.read_until(continuous=True)
         except KeyboardInterrupt:
-            if self.campaign_data['use_simics']:
+            if self.drseus.db.campaign['simics']:
                 self.drseus.debugger.continue_dut()
-        self.drseus.result_data.update({
+        self.drseus.db.result.update({
             'outcome_category': 'Read '+('AUX' if aux else 'DUT'),
             'outcome': 'Read '+('AUX' if aux else 'DUT')})
-        self.drseus.log_result()
+        with self.drseus.db as db:
+            db.log_result()
 
     def do_send_dut_file(self, arg, aux=False):
         """Send file to DUT, defaults to sending campaign files"""
@@ -106,8 +106,8 @@ class supervisor(Cmd):
 
     def do_get_dut_file(self, arg, aux=False):
         """Retrieve file from DUT device"""
-        directory = ('campaign-data/'+str(self.campaign_data['id']) +
-                     '/results/'+str(self.drseus.result_id)+'/')
+        directory = ('campaign-data/'+str(self.drseus.db.campaign['id']) +
+                     '/results/'+str(self.drseus.result['id'])+'/')
         makedirs(directory)
         if aux:
             self.drseus.debugger.aux.get_file(arg, directory, attempts=1)
@@ -124,7 +124,7 @@ class supervisor(Cmd):
                 print('Invalid value entered')
                 return
             supervise_iterations = max(
-                int(run_time / self.campaign_data['exec_time']), 1)
+                int(run_time / self.drseus.db.campaign['exec_time']), 1)
         else:
             try:
                 supervise_iterations = int(arg)
@@ -133,10 +133,11 @@ class supervisor(Cmd):
                 return
         print('Performing '+str(supervise_iterations)+' iteration(s)...\n')
         iteration_counter = Value('L', supervise_iterations)
-        self.drseus.result_data.update({
+        self.drseus.db.result.update({
             'outcome_category': 'Supervisor',
             'outcome': 'Pre supervise'})
-        self.drseus.log_result()
+        with self.drseus.db as db:
+            db.log_result()
         self.drseus.supervise(iteration_counter, self.capture)
 
     def do_debug(self, arg=None):

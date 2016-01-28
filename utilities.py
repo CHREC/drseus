@@ -29,21 +29,21 @@ def print_zedboard_info(none=None):
 
 
 def list_campaigns(none=None):
-    with database(campaign_data={'id': '*'}) as db:
-        campaign_list = db.get_campaign_data()
+    with database(campaign={'id': '*'}) as db:
+        campaign_list = db.get_campaign()
     print('DrSEUs Campaigns:')
     print('ID\tArchitecture\tSimics\tCommand')
     for campaign in campaign_list:
         print(str(campaign['id'])+'\t'+campaign['architecture']+'\t\t' +
-              str(bool(campaign['use_simics']))+'\t'+campaign['command'])
+              str(bool(campaign['simics']))+'\t'+campaign['command'])
 
 
-def get_campaign_data(campaign_id):
-    with database(campaign_data={'id': campaign_id}) as db:
-        campaign_data = db.get_campaign_data()
-    if campaign_data is None:
+def get_campaign(campaign_id):
+    with database(campaign={'id': campaign_id}) as db:
+        campaign = db.get_campaign()
+    if campaign is None:
         raise Exception('could not find campaign ID '+str(campaign_id))
-    return campaign_data
+    return campaign
 
 
 def backup_database(none=None):
@@ -79,7 +79,7 @@ def delete(options):
             rmtree('campaign-data/'+str(campaign_id)+'/results')
             print('deleted results')
         if exists('campaign-data/db.sqlite3'):
-            with database(campaign_data={'id': campaign_id}) as db:
+            with database(campaign={'id': campaign_id}) as db:
                 db.delete_results()
             print('flushed database')
         if exists('simics-workspace/injected-checkpoints/'+str(campaign_id)):
@@ -88,7 +88,7 @@ def delete(options):
 
     def delete_campaign(campaign_id):
         if exists('campaign-data/db.sqlite3'):
-            with database(campaign_data={'id': campaign_id}) as db:
+            with database(campaign={'id': campaign_id}) as db:
                 db.delete_campaign()
             print('deleted campaign '+str(campaign_id)+' from database')
         if exists('campaign-data/'+str(campaign_id)):
@@ -126,7 +126,7 @@ def create_campaign(options):
     else:
         if not exists(options.directory):
             raise Exception('cannot find directory '+options.directory)
-    if options.use_simics and not exists('simics-workspace'):
+    if options.simics and not exists('simics-workspace'):
         check_call('./setup_simics_workspace.sh')
     if not exists('campaign-data/db.sqlite3'):
         if not exists(('campaign-data')):
@@ -137,12 +137,13 @@ def create_campaign(options):
     RSAKey.generate(1024).write_private_key(rsakey_file)
     rsakey = rsakey_file.getvalue()
     rsakey_file.close()
-    campaign_data = {
+    campaign = {
         'architecture': options.architecture,
+        'aux': options.aux,
         'aux_command': ((options.aux_application if options.aux_application
                          else options.application) +
                         ((' '+options.aux_arguments) if options.aux_arguments
-                         else '')) if options.use_aux else None,
+                         else '')) if options.aux else None,
         'aux_output': '',
         'command': options.application+((' '+options.arguments)
                                         if options.arguments else ''),
@@ -152,32 +153,30 @@ def create_campaign(options):
         'kill_dut': options.kill_dut,
         'output_file': options.file,
         'rsakey': rsakey,
+        'simics': options.simics,
         'timestamp': None,
-        'use_aux': options.use_aux,
-        'use_aux_output': options.use_aux and options.use_aux_output,
-        'use_simics': options.use_simics}
+        'use_aux_output': options.aux and options.use_aux_output}
     if options.aux_application is None:
         options.aux_application = options.application
-    with database(campaign_data) as db:
+    with database(campaign) as db:
         db.insert_dict('campaign')
-        campaign_data['id'] = db.cursor.lastrowid
-    campaign_directory = 'campaign-data/'+str(campaign_data['id'])
+    campaign_directory = 'campaign-data/'+str(campaign['id'])
     if exists(campaign_directory):
         raise Exception('directory already exists: '
-                        'campaign-data/'+str(campaign_data['id']))
+                        'campaign-data/'+str(campaign['id']))
     else:
         mkdir(campaign_directory)
     options.debug = True
-    drseus = fault_injector(campaign_data, options)
+    drseus = fault_injector(campaign, options)
     drseus.setup_campaign()
     print('\nsuccessfully setup campaign')
 
 
 def inject_campaign(options):
-    campaign_data = get_campaign_data(options.campaign_id)
+    campaign = get_campaign(options.campaign_id)
 
     def perform_injections(iteration_counter):
-        drseus = fault_injector(campaign_data, options)
+        drseus = fault_injector(campaign, options)
         drseus.inject_campaign(iteration_counter)
 
 # def inject_campaign(options):
@@ -186,14 +185,14 @@ def inject_campaign(options):
         iteration_counter = Value('L', options.iterations)
     else:
         iteration_counter = None
-    if options.processes > 1 and (campaign_data['use_simics'] or
-                                  campaign_data['architecture'] == 'a9'):
-        if not campaign_data['use_simics'] and \
-                campaign_data['architecture'] == 'a9':
+    if options.processes > 1 and (campaign['simics'] or
+                                  campaign['architecture'] == 'a9'):
+        if not campaign['simics'] and \
+                campaign['architecture'] == 'a9':
             zedboards = list(find_uart_serials().keys())
         for i in range(options.processes):
-            if not campaign_data['use_simics'] and \
-                    campaign_data['architecture'] == 'a9':
+            if not campaign['simics'] and \
+                    campaign['architecture'] == 'a9':
                 if i < len(zedboards):
                     options.dut_serial_port = zedboards[i]
                 else:
@@ -210,15 +209,16 @@ def inject_campaign(options):
 
 
 def regenerate(options):
-    campaign_data = get_campaign_data(options.campaign_id)
-    if not campaign_data['use_simics']:
+    campaign = get_campaign(options.campaign_id)
+    if not campaign['simics']:
         raise Exception('This feature is only available for Simics campaigns')
-    with database(result_data={'id': options.result_id}) as db:
-        injection_data = db.get_result_item_data('injection')
-    drseus = fault_injector(campaign_data, options)
-    checkpoint = drseus.debugger.regenerate_checkpoints(injection_data)
+    with database() as db:
+        db.result['id'] = options.result_id
+        injections = db.get_item('injection')
+    drseus = fault_injector(campaign, options)
+    checkpoint = drseus.debugger.regenerate_checkpoints(injections)
     drseus.debugger.launch_simics_gui(checkpoint)
-    rmtree('simics-workspace/injected-checkpoints/'+str(campaign_data['id']) +
+    rmtree('simics-workspace/injected-checkpoints/'+str(campaign['id']) +
            '/'+str(options.result_id))
 
 
@@ -254,26 +254,26 @@ def update_dependencies(none=None):
 
 def merge_campaigns(options):
     backup_database()
-    with database() as db, database(campaign_data={'id': '*'},
+    with database() as db, database(campaign={'id': '*'},
                                     database_file=options.directory +
                                     '/campaign-data/db.sqlite3') as db_new:
-        for new_campaign in db_new.get_campaign_data():
+        for new_campaign in db_new.get_campaign():
             print('merging campaign: \"'+options.directory+'/' +
                   new_campaign['command']+'\"')
-            db_new.campaign_data['id'] = new_campaign['id']
+            db_new.campaign['id'] = new_campaign['id']
             db.insert_dict('campaign', new_campaign)
             if exists(options.directory+'/campaign-data/' +
-                      str(db_new.campaign_data['id'])):
+                      str(db_new.campaign['id'])):
                 print('\tcopying campaign data...', end='')
                 copytree(options.directory+'/campaign-data/' +
-                         str(db_new.campaign_data['id']),
+                         str(db_new.campaign['id']),
                          'campaign-data/'+str(new_campaign['id']))
                 print('done')
             if exists(options.directory+'/simics-workspace/gold-checkpoints/' +
-                      str(db_new.campaign_data['id'])):
+                      str(db_new.campaign['id'])):
                 print('\tcopying gold checkpoints...', end='')
                 copytree(options.directory+'/simics-workspace/'
-                         'gold-checkpoints/'+str(db_new.campaign_data['id']),
+                         'gold-checkpoints/'+str(db_new.campaign['id']),
                          'simics-workspace/gold-checkpoints/' +
                          str(new_campaign['id']))
                 print('done')
@@ -282,14 +282,14 @@ def merge_campaigns(options):
                 __update_checkpoint_dependencies(new_campaign['id'])
                 print('done')
             print('\tcopying results...', end='')
-            for new_result in db_new.get_result_data():
-                db_new.result_data['id'] = new_result['id']
+            for new_result in db_new.get_result():
+                db_new.result['id'] = new_result['id']
                 db.insert_dict('result', new_result)
                 for table in ['injection', 'simics_register_diff',
                               'simics_memory_diff']:
-                    for new_result_item in db_new.get_result_item_data(table):
-                        new_result_item['result_id'] = new_result['id']
-                        db.insert_dict(table, new_result_item)
+                    for new_item in db_new.get_item(table):
+                        new_item['result_id'] = new_result['id']
+                        db.insert_dict(table, new_item)
             print('done')
 
 
@@ -300,4 +300,4 @@ def launch_openocd(options):
 
 
 def launch_supervisor(options):
-    supervisor(get_campaign_data(options.campaign_id), options).cmdloop()
+    supervisor(get_campaign(options.campaign_id), options).cmdloop()

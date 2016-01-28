@@ -2,15 +2,15 @@ from copy import deepcopy
 from django.db.models import (Avg, Case, Count, IntegerField, Sum, TextField,
                               Value, When)
 from django.db.models.functions import Concat, Length, Substr
-import numpy
+from numpy import convolve, linspace, ones
 from json import dumps
 from threading import Thread
 from time import time
 
 from .filters import fix_sort, fix_sort_list
 from .models import injection, result
-from simics_targets import devices as simics_devices
 from jtag_targets import devices as hardware_devices
+from simics_targets import devices as simics_devices
 
 colors = {
     'Data error': '#ba79f2',
@@ -142,7 +142,7 @@ def campaigns_chart(queryset):
 
 
 def target_bits_chart(campaign_data):
-    if campaign_data.use_simics:
+    if campaign_data.simics:
         if campaign_data.architecture == 'p2020':
             targets = simics_devices['p2020rdb']
         elif campaign_data.architecture == 'a9':
@@ -425,7 +425,7 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
 def propagation_chart(campaign_data, result_objects, injection_objects,
                       outcomes, group_categories, chart_array):
     start = time()
-    if not campaign_data.use_simics:
+    if not campaign_data.simics:
         return
     targets = list(injection_objects.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -603,7 +603,7 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
     if len(registers) < 1:
         return
     registers = sorted(registers, key=fix_sort)
-    if campaign_data.use_simics and not tlb:
+    if campaign_data.simics and not tlb:
         registers = [reg.replace('gprs ', 'r') for reg in registers]
     extra_colors = list(colors_extra)
     chart = {
@@ -875,14 +875,14 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
 def times_charts(campaign_data, result_objects, injection_objects, outcomes,
                  group_categories, chart_array):
     start = time()
-    if campaign_data.use_simics:
+    if campaign_data.simics:
         times = list(injection_objects.values_list(
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
         xaxis_length = min(injection_objects.count() / 25, 50)
-        times = numpy.linspace(0, campaign_data.exec_time, xaxis_length,
-                               endpoint=False).tolist()
+        times = linspace(0, campaign_data.exec_time, xaxis_length,
+                         endpoint=False).tolist()
         times = [round(time, 4) for time in times]
     if len(times) < 1:
         return
@@ -919,7 +919,7 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Checkpoint' if campaign_data.use_simics else 'Seconds'
+                'text': 'Checkpoint' if campaign_data.simics else 'Seconds'
             }
         },
         'yAxis': {
@@ -936,7 +936,7 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
                                         str(window_size)+')')
 
     def plot_outcome(i):
-        if campaign_data.use_simics:
+        if campaign_data.simics:
             when_kwargs = {'then': 1}
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcomes[i]
@@ -961,9 +961,8 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
                         time__gte=times[j], **filter_kwargs).count())
         chart['series'][i] = {'data': data, 'name': outcomes[i]}
         chart_smoothed['series'][i] = {
-            'data': numpy.convolve(data,
-                                   numpy.ones(window_size)/window_size,
-                                   'same').tolist(),
+            'data': convolve(
+                data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcomes[i],
             'stacking': True}
     threads = []
@@ -974,7 +973,7 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
     for thread in threads:
         thread.join()
     chart_array.append(dumps(chart_smoothed))
-    if campaign_data.use_simics:
+    if campaign_data.simics:
         chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
             window.location.assign('results?filter_type=injections'+
@@ -1001,14 +1000,14 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
 def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
                      group_categories, chart_array):
     start = time()
-    if campaign_data.use_simics:
+    if campaign_data.simics:
         times = list(injection_objects.values_list(
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
         xaxis_length = min(injection_objects.count() / 25, 100)
-        times = numpy.linspace(0, campaign_data.exec_time, xaxis_length,
-                               endpoint=False).tolist()
+        times = linspace(0, campaign_data.exec_time, xaxis_length,
+                         endpoint=False).tolist()
         times = [round(time, 4) for time in times]
     if len(times) < 1:
         return
@@ -1045,7 +1044,7 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Checkpoint' if campaign_data.use_simics else 'Seconds'
+                'text': 'Checkpoint' if campaign_data.simics else 'Seconds'
             }
         },
         'yAxis': {
@@ -1058,7 +1057,7 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
             }
         }
     }
-    if campaign_data.use_simics:
+    if campaign_data.simics:
         data = injection_objects.values_list(
             'checkpoint_number').distinct().order_by(
             'checkpoint_number').annotate(
@@ -1080,7 +1079,7 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
                                  default='result__data_diff')))['avg'])
     chart['series'].append({'data': [x*100 if x is not None else 0
                                      for x in data]})
-    if campaign_data.use_simics:
+    if campaign_data.simics:
         chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
             window.location.assign('results?filter_type=injections'+

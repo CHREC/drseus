@@ -1,15 +1,15 @@
-import django_tables2 as tables
+from django_tables2 import Column, DateTimeColumn, Table, TemplateColumn
 
 from .models import (campaign, event, injection, result, simics_memory_diff,
                      simics_register_diff)
 
 
-class campaigns_table(tables.Table):
-    id_ = tables.TemplateColumn(
+class campaigns_table(Table):
+    id_ = TemplateColumn(
         '<a href="/campaign/{{ value }}/results">{{ value }}</a>',
         accessor='id')
-    num_cycles = tables.Column()
-    results = tables.Column(empty_values=(), orderable=False)
+    num_cycles = Column()
+    results = Column(empty_values=(), orderable=False)
 
     def render_num_cycles(self, record):
         return '{:,}'.format(record.num_cycles)
@@ -22,15 +22,14 @@ class campaigns_table(tables.Table):
         attrs = {"class": "paleblue"}
         model = campaign
         fields = ('id_', 'results', 'command', 'aux_command', 'architecture',
-                  'use_simics', 'exec_time', 'sim_time', 'num_cycles',
-                  'timestamp')
+                  'simics', 'exec_time', 'sim_time', 'num_cycles', 'timestamp')
         order_by = 'id_'
 
 
 class campaign_table(campaigns_table):
-    num_checkpoints = tables.Column()
-    cycles_between = tables.Column()
-    results = tables.Column(empty_values=(), orderable=False)
+    num_checkpoints = Column()
+    cycles_between = Column()
+    results = Column(empty_values=(), orderable=False)
 
     def render_num_checkpoints(self, record):
         return '{:,}'.format(record.num_checkpoints)
@@ -43,22 +42,22 @@ class campaign_table(campaigns_table):
         model = campaign
         exclude = ('id_',)
         fields = ('id', 'timestamp', 'results', 'command', 'aux_command',
-                  'architecture', 'use_simics', 'use_aux', 'exec_time',
-                  'sim_time', 'num_cycles', 'output_file', 'num_checkpoints',
+                  'architecture', 'simics', 'aux', 'exec_time', 'sim_time',
+                  'num_cycles', 'output_file', 'num_checkpoints',
                   'cycles_between')
 
 
-class results_table(tables.Table):
-    events = tables.Column(empty_values=(), orderable=False)
-    id_ = tables.TemplateColumn(  # LinkColumn()
+class results_table(Table):
+    events = Column(empty_values=(), orderable=False)
+    id_ = TemplateColumn(  # LinkColumn()
         '<a href="./result/{{ value }}">{{ value }}</a>', accessor='id')
-    registers = tables.Column(empty_values=(), orderable=False)
-    select = tables.TemplateColumn(
+    registers = Column(empty_values=(), orderable=False)
+    select = TemplateColumn(
         '<input type="checkbox" name="select_box" value="{{ record.id }}">',
         verbose_name='', orderable=False)
-    injection_success = tables.Column(empty_values=(), orderable=False)
-    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
-    targets = tables.Column(empty_values=(), orderable=False)
+    injection_success = Column(empty_values=(), orderable=False)
+    timestamp = DateTimeColumn(format='m/d/Y H:i:s.u')
+    targets = Column(empty_values=(), orderable=False)
 
     def render_events(self, record):
         return '{:,}'.format(
@@ -116,14 +115,14 @@ class results_table(tables.Table):
 
 
 class result_table(results_table):
-    outcome = tables.TemplateColumn(
+    outcome = TemplateColumn(
         '<input name="outcome" type="text" value="{{ value }}" />')
-    outcome_category = tables.TemplateColumn(
+    outcome_category = TemplateColumn(
         '<input name="outcome_category" type="text" value="{{ value }}" />')
-    edit = tables.TemplateColumn(
+    edit = TemplateColumn(
         '<input type="submit" name="save" value="Save" onclick="return confirm('
         '"Are you sure you want to edit this result?")"/>')
-    delete = tables.TemplateColumn(
+    delete = TemplateColumn(
         '<input type="submit" name="delete" value="Delete" onclick="return '
         'confirm("Are you sure you want to delete this result?")" />')
 
@@ -135,10 +134,10 @@ class result_table(results_table):
                   'outcome', 'num_injections', 'data_diff', 'detected_errors')
 
 
-class event_table(tables.Table):
-    description = tables.TemplateColumn(
+class event_table(Table):
+    description = TemplateColumn(
         '{% if value %}<code class="console">{{ value }}</code>{% endif %}')
-    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+    timestamp = DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
         attrs = {"class": "paleblue"}
@@ -146,8 +145,8 @@ class event_table(tables.Table):
         fields = ('timestamp', 'level', 'source', 'event_type', 'description')
 
 
-class hw_injection_table(tables.Table):
-    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+class hw_injection_table(Table):
+    timestamp = DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
         attrs = {"class": "paleblue"}
@@ -156,8 +155,8 @@ class hw_injection_table(tables.Table):
                    'id', 'register_index', 'result')
 
 
-class simics_injection_table(tables.Table):
-    timestamp = tables.DateTimeColumn(format='m/d/Y H:i:s.u')
+class simics_injection_table(Table):
+    timestamp = DateTimeColumn(format='m/d/Y H:i:s.u')
 
     class Meta:
         attrs = {"class": "paleblue"}
@@ -167,14 +166,14 @@ class simics_injection_table(tables.Table):
                   'field', 'gold_value', 'injected_value', 'success')
 
 
-class simics_register_diff_table(tables.Table):
+class simics_register_diff_table(Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = simics_register_diff
         exclude = ('id', 'result')
 
 
-class simics_memory_diff_table(tables.Table):
+class simics_memory_diff_table(Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = simics_memory_diff

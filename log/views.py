@@ -33,19 +33,19 @@ def campaigns_page(request):
 
 
 def campaign_page(request, campaign_id):
-    campaign_data = campaign.objects.get(id=campaign_id)
-    chart_array = target_bits_chart(campaign_data)
+    campaign_object = campaign.objects.get(id=campaign_id)
+    chart_array = target_bits_chart(campaign_object)
     page_items = [('Campaign Data', 'campaign_data'),
                   ('Injection Targets', 'target_bits_chart')]
     output_file = ('campaign-data/'+str(campaign_id) +
-                   '/gold_'+campaign_data.output_file)
+                   '/gold_'+campaign_object.output_file)
     if exists(output_file) and what(output_file) is not None:
         output_image = True
         page_items.append(('Output Image', 'output_image'))
     else:
         output_image = False
     page_items.append(('DUT Output', 'dut_output'))
-    if campaign_data.use_aux:
+    if campaign_object.aux:
         page_items.append(('AUX Output', 'aux_output'))
     page_items.append(('Debugger Output', 'debugger_output'))
     table = campaign_table(campaign.objects.filter(id=campaign_id))
@@ -53,7 +53,7 @@ def campaign_page(request, campaign_id):
     RequestConfig(request, paginate=False).configure(table)
     RequestConfig(request, paginate=False).configure(event_table_)
     return render(request, 'campaign.html', {
-        'campaign_data': campaign_data, 'chart_array': chart_array,
+        'campaign_data': campaign_object, 'chart_array': chart_array,
         'event_table': event_table_, 'navigation_items': navigation_items,
         'output_image': output_image, 'page_items': page_items, 'table': table})
 
@@ -63,15 +63,15 @@ def category_charts_page(request, campaign_id):
 
 
 def charts_page(request, campaign_id, group_categories=False):
-    campaign_data = campaign.objects.get(id=campaign_id)
+    campaign_object = campaign.objects.get(id=campaign_id)
     page_items = [('Results Overview', 'overview_chart'),
                   ('Injections By Target', 'targets_charts')]
-    if campaign_data.use_simics:
+    if campaign_object.simics:
         page_items.append(('Fault Propagation', 'propagation_chart'))
     page_items.extend([('Data Diff By Target', 'diff_targets_chart'),
                        ('Injections By Register', 'registers_chart'),
                        ('Injections By Register Bit', 'register_bits_chart')])
-    if campaign_data.use_simics:
+    if campaign_object.simics:
         page_items.extend([('Injections By TLB Entry', 'tlbs_chart'),
                           ('Injections By TLB Field', 'tlb_fields_chart')])
     page_items.extend([('Injections Over Time', 'times_charts'),
@@ -81,20 +81,20 @@ def charts_page(request, campaign_id, group_categories=False):
         queryset=result.objects.filter(campaign_id=campaign_id))
     result_ids = filter_.qs.values('id').distinct()
     if result_ids.count() > 0:
-        chart_array = results_charts(result_ids, campaign_data,
+        chart_array = results_charts(result_ids, campaign_object,
                                      group_categories)
     else:
         chart_array = None
     return render(request, 'charts.html', {
-        'campaign_data': campaign_data, 'chart_array': chart_array,
+        'campaign_data': campaign_object, 'chart_array': chart_array,
         'filter': filter_, 'navigation_items': navigation_items,
         'page_items': page_items})
 
 
 def results_page(request, campaign_id):
-    campaign_data = campaign.objects.get(id=campaign_id)
+    campaign_object = campaign.objects.get(id=campaign_id)
     output_file = ('campaign-data/'+campaign_id+'/gold_' +
-                   campaign_data.output_file)
+                   campaign_object.output_file)
     if exists(output_file) and what(output_file) is not None:
         output_image = True
     else:
@@ -161,28 +161,28 @@ def results_page(request, campaign_id):
     table = results_table(result_objects)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {
-        'campaign_data': campaign_data, 'filter': filter_,
+        'campaign_data': campaign_object, 'filter': filter_,
         'navigation_items': navigation_items, 'output_image': output_image,
         'table': table})
 
 
 def result_page(request, campaign_id, result_id):
-    campaign_data = campaign.objects.get(id=campaign_id)
+    campaign_object = campaign.objects.get(id=campaign_id)
     navigation_items_ = [(item[0], '../'+item[1])
                          for item in navigation_items]
     page_items = [('Result', 'result'), ('Injections', 'injections')]
     output_file = ('campaign-data/'+campaign_id+'/results/'+result_id +
-                   '/'+campaign_data.output_file)
+                   '/'+campaign_object.output_file)
     if exists(output_file) and what(output_file) is not None:
         output_image = True
         page_items.append(('Output Image', 'output_image'))
     else:
         output_image = False
     page_items.append(('DUT Output', 'dut_output'))
-    if campaign_data.use_aux:
+    if campaign_object.aux:
         page_items.append(('AUX Output', 'aux_output'))
     page_items.append(('Debugger Output', 'debugger_output'))
-    if campaign_data.use_simics:
+    if campaign_object.simics:
         page_items.extend([('Register Diffs', 'register_diffs'),
                            ('Memory Diffs', 'memory_diffs')])
     result_object = result.objects.get(id=result_id)
@@ -205,7 +205,7 @@ def result_page(request, campaign_id, result_id):
         result_object.delete()
         return HttpResponse('Result deleted.')
     injection_objects = injection.objects.filter(result_id=result_id)
-    if campaign_data.use_simics:
+    if campaign_object.simics:
         injection_table = simics_injection_table(injection_objects)
         register_objects = simics_register_diff.objects.filter(
             result_id=result_id)
@@ -227,7 +227,7 @@ def result_page(request, campaign_id, result_id):
     RequestConfig(request, paginate=False).configure(event_table_)
     RequestConfig(request, paginate=False).configure(injection_table)
     return render(request, 'result.html', {
-        'campaign_data': campaign_data, 'event_table': event_table_,
+        'campaign_data': campaign_object, 'event_table': event_table_,
         'filter': register_filter, 'injection_table': injection_table,
         'memory_table': memory_table, 'navigation_items': navigation_items_,
         'output_image': output_image, 'page_items': page_items,
@@ -236,13 +236,13 @@ def result_page(request, campaign_id, result_id):
 
 
 def output(request, campaign_id, result_id):
-    campaign_data = campaign.objects.get(id=campaign_id)
+    campaign_object = campaign.objects.get(id=campaign_id)
     if result_id == '0':
         output_file = ('campaign-data/'+campaign_id+'/'
-                       'gold_'+campaign_data.output_file)
+                       'gold_'+campaign_object.output_file)
     else:
         output_file = ('campaign-data/'+campaign_id+'/results/' +
-                       result_id+'/'+campaign_data.output_file)
+                       result_id+'/'+campaign_object.output_file)
     if exists(output_file):
         return HttpResponse(open(output_file, 'rb').read(),
                             content_type=guess_type(output_file))

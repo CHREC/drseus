@@ -41,11 +41,9 @@ class dut(object):
         ('Hit any key to stop autoboot:', 'Reboot'),
         ('can\'t get kernel image', 'Error booting')]
 
-    def __init__(self, campaign_data, result_data, database, options,
-                 aux=False):
-        self.campaign_data = campaign_data
-        self.result_data = result_data
-        self.database = database
+    def __init__(self, database, options, aux=False):
+
+        self.db = database
         self.options = options
         self.aux = aux
         self.ip_address = options.dut_ip_address if not aux \
@@ -54,7 +52,7 @@ class dut(object):
             else options.aux_scp_port
         self.prompt = options.dut_prompt if not aux else options.aux_prompt
         self.prompt += ' '
-        rsakey_file = StringIO(campaign_data['rsakey'])
+        rsakey_file = StringIO(database.campaign['rsakey'])
         self.rsakey = RSAKey.from_private_key(rsakey_file)
         rsakey_file.close()
         self.uboot_command = options.dut_uboot if not aux \
@@ -63,14 +61,14 @@ class dut(object):
             else options.aux_login
         serial_port = (options.dut_serial_port if not aux
                        else options.aux_serial_port)
-        if result_data:
-            result_data[('dut' if not aux else 'aux') +
-                        '_serial_port'] = serial_port
+        if database.result:
+            database.result[('dut' if not aux else 'aux') +
+                            '_serial_port'] = serial_port
         baud_rate = (options.dut_baud_rate if not aux
                      else options.aux_baud_rate)
         self.serial = Serial(port=None, baudrate=baud_rate,
                              timeout=options.timeout, rtscts=True)
-        if campaign_data['use_simics']:
+        if database.campaign['simics']:
             # workaround for pyserial 3
             self.serial._dsrdtr = True
         self.serial.port = serial_port
@@ -89,7 +87,7 @@ class dut(object):
 
     def close(self):
         self.serial.close()
-        with self.database as db:
+        with self.db as db:
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                          'Closed serial port')
 
@@ -101,13 +99,13 @@ class dut(object):
         else:
             if in_bytes:
                 buff = self.serial.read(in_bytes).decode('utf-8', 'replace')
-                if self.result_data:
-                    self.result_data['dut_output' if not self.aux
-                                     else 'aux_output'] += buff
+                if self.db.result:
+                    self.db.result['dut_output' if not self.aux
+                                   else 'aux_output'] += buff
                 else:
-                    self.campaign_data['dut_output' if not self.aux
-                                       else 'aux_output'] += buff
-                with self.database as db:
+                    self.db.campaign['dut_output' if not self.aux
+                                     else 'aux_output'] += buff
+                with self.db as db:
                     db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX',
                                  'Flushed serial buffer')
@@ -123,7 +121,7 @@ class dut(object):
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
             except Exception as error:
-                with self.database as db:
+                with self.db as db:
                     db.log_event('Warning' if attempt < attempts-1 else 'Error',
                                  'DUT' if not self.aux else 'AUX', 'SSH error',
                                  db.log_exception)
@@ -139,7 +137,7 @@ class dut(object):
                 try:
                     dut_scp.put(files)
                 except Exception as error:
-                    with self.database as db:
+                    with self.db as db:
                         db.log_event('Warning' if attempt < attempts-1
                                      else 'Error',
                                      'DUT' if not self.aux else 'AUX',
@@ -159,7 +157,7 @@ class dut(object):
                     ssh.close()
                     if self.options.debug:
                         print(colored('done', 'blue'))
-                    with self.database as db:
+                    with self.db as db:
                         db.log_event('Information',
                                      'DUT' if not self.aux else 'AUX',
                                      'Sent files', ', '.join(files))
@@ -177,7 +175,7 @@ class dut(object):
                             username='root', pkey=self.rsakey,
                             allow_agent=False, look_for_keys=False)
             except Exception as error:
-                with self.database as db:
+                with self.db as db:
                     db.log_event('Warning' if attempt < attempts-1 else 'Error',
                                  'DUT' if not self.aux else 'AUX', 'SSH error',
                                  db.log_exception)
@@ -193,7 +191,7 @@ class dut(object):
                 try:
                     dut_scp.get(file_, local_path=local_path)
                 except Exception as error:
-                    with self.database as db:
+                    with self.db as db:
                         db.log_event('Warning' if attempt < attempts-1
                                      else 'Error',
                                      'DUT' if not self.aux else 'AUX',
@@ -213,7 +211,7 @@ class dut(object):
                     ssh.close()
                     if self.options.debug:
                         print(colored('done', 'blue'))
-                    with self.database as db:
+                    with self.db as db:
                         db.log_event('Information',
                                      'DUT' if not self.aux else 'AUX',
                                      'Received file', file_)
@@ -234,18 +232,18 @@ class dut(object):
             char = self.serial.read().decode('utf-8', 'replace')
             if not char:
                 hanging = True
-                with self.database as db:
+                with self.db as db:
                     db.log_event('Warning' if boot else 'Error',
                                  'DUT' if not self.aux else 'AUX',
                                  'Read timeout', db.log_trace)
                 if not continuous:
                     break
-            if self.result_data:
-                self.result_data['dut_output' if not self.aux
-                                 else 'aux_output'] += char
+            if self.db.result:
+                self.db.result['dut_output' if not self.aux
+                               else 'aux_output'] += char
             else:
-                self.campaign_data['dut_output' if not self.aux
-                                   else 'aux_output'] += char
+                self.db.campaign['dut_output' if not self.aux
+                                 else 'aux_output'] += char
             if self.options.debug:
                 print(colored(char, 'green' if not self.aux else 'cyan'),
                       end='')
@@ -274,7 +272,7 @@ class dut(object):
                         self.serial.timeout = 30
                         errors += 1
                     event_buff = buff.replace(event_buff_logged, '')
-                    with self.database as db:
+                    with self.db as db:
                         db.log_event('Warning' if boot else 'Error',
                                      'DUT' if not self.aux else 'AUX',
                                      category, event_buff)
@@ -282,8 +280,8 @@ class dut(object):
             if not continuous and errors > 10:
                 break
             if not boot and buff and buff[-1] == '\n':
-                with self.database as db:
-                    if self.result_data:
+                with self.db as db:
+                    if self.db.result:
                         db.update_dict('result')
                     else:
                         db.update_dict('campaign')
@@ -294,13 +292,13 @@ class dut(object):
         if 'drseus_detected_errors:' in buff:
             for line in buff.split('\n'):
                 if 'drseus_detected_errors:' in line:
-                    if self.result_data['detected_errors'] is None:
-                        self.result_data['detected_errors'] = 0
+                    if self.db.result['detected_errors'] is None:
+                        self.db.result['detected_errors'] = 0
                     # TODO: use regular expression
-                    self.result_data['detected_errors'] += \
+                    self.db.result['detected_errors'] += \
                         int(line.replace('drseus_detected_errors:', ''))
-        with self.database as db:
-            if self.result_data:
+        with self.db as db:
+            if self.db.result:
                 db.update_dict('result')
             else:
                 db.update_dict('campaign')
@@ -311,7 +309,7 @@ class dut(object):
         if hanging:
             raise DrSEUsError(DrSEUsError.hanging)
         if boot:
-            with self.database as db:
+            with self.db as db:
                 db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                              'Booted')
         return buff
@@ -322,7 +320,7 @@ class dut(object):
         else:
             self.write('\n')
         buff = self.read_until()
-        with self.database as db:
+        with self.db as db:
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                          'Command', command)
         return buff
@@ -340,7 +338,7 @@ class dut(object):
         self.command('touch ~/.ssh/authorized_keys')
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
                      '\" > ~/.ssh/authorized_keys')
-        if self.campaign_data['use_simics']:
+        if self.db.campaign['simics']:
             self.command('ip addr add '+self.ip_address+'/24 dev eth0')
             self.command('ip link set eth0 up')
             self.command('ip addr show')
@@ -362,6 +360,6 @@ class dut(object):
                         raise DrSEUsError('Error finding device ip address')
                 if self.ip_address is not None:
                     break
-        with self.database as db:
+        with self.db as db:
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                          'Logged in')

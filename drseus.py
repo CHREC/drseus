@@ -113,7 +113,7 @@ new_campaign.add_argument('-o', '--output', action='store', dest='file',
                           default='result.dat',
                           help='target application output file '
                                '[default=result.dat]')
-new_campaign.add_argument('-x', '--aux', action='store_true', dest='use_aux',
+new_campaign.add_argument('-x', '--aux', action='store_true', dest='aux',
                           help='use auxiliary device during testing')
 new_campaign.add_argument('-y', '--aux_app', action='store',
                           metavar='APPLICATION', dest='aux_application',
@@ -132,7 +132,7 @@ new_campaign.add_argument('-k', '--kill_dut', action='store_true',
                           help='send ctrl-c to DUT after auxiliary device '
                                'completes execution')
 new_campaign.add_argument('-s', '--simics', action='store_true',
-                          dest='use_simics', help='use Simics simulator')
+                          dest='simics', help='use Simics simulator')
 new_simics_campaign = new_campaign.add_argument_group(
     'Simics campaigns', 'Additional options for Simics campaigns only')
 new_simics_campaign.add_argument('-c', '--checkpoints', action='store',
@@ -278,12 +278,12 @@ else:
         if not options.campaign_id:
             try:
                 options.campaign_id = \
-                    utilities.get_campaign_data(options.campaign_id)['id']
+                    utilities.get_campaign(options.campaign_id)['id']
             except:
                 pass
         if options.campaign_id:
             options.architecture = \
-                utilities.get_campaign_data(options.campaign_id)['architecture']
+                utilities.get_campaign(options.campaign_id)['architecture']
     if options.command == 'new' or options.campaign_id:
         if options.architecture == 'p2020':
             if options.dut_serial_port is None:

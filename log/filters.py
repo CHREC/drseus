@@ -1,5 +1,6 @@
 from django.forms import SelectMultiple, Textarea
-import django_filters
+from django_filters import (BooleanFilter, CharFilter, FilterSet,
+                            MultipleChoiceFilter, NumberFilter)
 from re import split
 
 from .models import (event, injection, result, simics_register_diff)
@@ -14,7 +15,7 @@ def fix_sort_list(list):
     return fix_sort(list[0])
 
 
-class result_filter(django_filters.FilterSet):
+class result_filter(FilterSet):
     def __init__(self, *args, **kwargs):
         campaign = kwargs['campaign']
         del kwargs['campaign']
@@ -108,72 +109,72 @@ class result_filter(django_filters.FilterSet):
                 choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
 
-    aux_output = django_filters.CharFilter(
+    aux_output = CharFilter(
         label='AUX output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
-    data_diff_gt = django_filters.NumberFilter(
+    data_diff_gt = NumberFilter(
         name='data_diff', label='Data diff (>)', lookup_type='gt',
         help_text='')
-    data_diff_lt = django_filters.NumberFilter(
+    data_diff_lt = NumberFilter(
         name='data_diff', label='Data diff (<)', lookup_type='lt',
         help_text='')
-    debugger_output = django_filters.CharFilter(
+    debugger_output = CharFilter(
         label='Debugger output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
-    detected_errors = django_filters.NumberFilter(
+    detected_errors = NumberFilter(
         name='detected_errors', label='Detected errors (>)', lookup_type='gt',
         help_text='')
-    detected_errors_lt = django_filters.NumberFilter(
+    detected_errors_lt = NumberFilter(
         name='detected_errors', label='Detected errors (<)', lookup_type='lt',
         help_text='')
-    dut_output = django_filters.CharFilter(
+    dut_output = CharFilter(
         label='DUT output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
-    event__description = django_filters.CharFilter(
+    event__description = CharFilter(
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
-    event__event_type = django_filters.MultipleChoiceFilter(
+    event__event_type = MultipleChoiceFilter(
         conjoined=True, label='Event type',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    event__level = django_filters.MultipleChoiceFilter(
+    event__level = MultipleChoiceFilter(
         conjoined=True,
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    event__source = django_filters.MultipleChoiceFilter(
+    event__source = MultipleChoiceFilter(
         conjoined=True,
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    injection__bit = django_filters.MultipleChoiceFilter(
+    injection__bit = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    injection__checkpoint_number = django_filters.MultipleChoiceFilter(
+    injection__checkpoint_number = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    injection__field = django_filters.MultipleChoiceFilter(
+    injection__field = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    injection__register = django_filters.MultipleChoiceFilter(
+    injection__register = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    injection__register_index = django_filters.MultipleChoiceFilter(
+    injection__register_index = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    injection__success = django_filters.BooleanFilter(help_text='')
-    injection__target = django_filters.MultipleChoiceFilter(
+    injection__success = BooleanFilter(help_text='')
+    injection__target = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    injection__target_index = django_filters.MultipleChoiceFilter(
+    injection__target_index = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    injection__time_gt = django_filters.NumberFilter(
+    injection__time_gt = NumberFilter(
         name='time', label='Injection time (>)', lookup_type='gt', help_text='')
-    injection__time_lt = django_filters.NumberFilter(
+    injection__time_lt = NumberFilter(
         name='time', label='Injection time (<)', lookup_type='lt', help_text='')
-    num_injections = django_filters.MultipleChoiceFilter(
+    num_injections = MultipleChoiceFilter(
         label='Number of injections',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    outcome = django_filters.MultipleChoiceFilter(
+    outcome = MultipleChoiceFilter(
         label='Outcome',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    outcome_category = django_filters.MultipleChoiceFilter(
+    outcome_category = MultipleChoiceFilter(
         label='Outcome category',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
 
@@ -183,7 +184,7 @@ class result_filter(django_filters.FilterSet):
                    'detected_errors', 'dut_serial_port', 'timestamp')
 
 
-class simics_register_diff_filter(django_filters.FilterSet):
+class simics_register_diff_filter(FilterSet):
     def __init__(self, *args, **kwargs):
         self.campaign = kwargs['campaign']
         del kwargs['campaign']
@@ -208,9 +209,9 @@ class simics_register_diff_filter(django_filters.FilterSet):
             choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
 
-    checkpoint_number = django_filters.MultipleChoiceFilter(
+    checkpoint_number = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
-    register = django_filters.MultipleChoiceFilter(
+    register = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
 
     class Meta:

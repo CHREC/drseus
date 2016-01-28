@@ -1,41 +1,39 @@
 {% extends "base.html" %}
 
 {% block body %}
-<div class="source">
-    {% for result in results %}
-        <h2 align="center">
-            <a href="./result/{{ result.id }}" name="{{ result.id }}">
-                Result ID {{ result.id }}
-            </a>
-             | {{ result.timestamp|date:"m/d/Y H:i:s.u" }} | {{ result.outcome_category }} -
-             {% if result.outcome_category == "Data error" %}
-             {{ result.outcome }}, data diff: {{ result.data_diff }}
-             {% else %}
-             {{ result.outcome }}
-             {% endif %}
-        </h2>
-        {% if image %}
-        <div align="center">
-            <img src="./output/{{ result.id }}">
-        </div>
-        {% else %}
-        {% if campaign_data.use_aux %}
-        <h3 align="center">
-            <a name="dut_output">
-            </a>
-            DUT Output
-        </h3>
-        {% endif %}
-        <code class="console">{{ result.dut_output }}</code>
-        {% if campaign_data.use_aux %}
-        <h3 align="center">
-            <a name="aux_output">
-            </a>
-            AUX Output
-        </h3>
-        <code class="console">{{ result.aux_output }}</code>
-        {% endif %}
-        {% endif %}
-    {% endfor %}
-</div>
+    <div class="source">
+        {% for result in results %}
+            <h2 align="center">
+                <a href="./result/{{ result.id }}" name="{{ result.id }}">
+                    Result ID {{ result.id }}
+                </a>
+                 | {{ result.timestamp|date:"m/d/Y H:i:s.u" }} | {{ result.outcome_category }} -
+                 {% if result.outcome_category == "Data error" %}
+                    {{ result.outcome }}, data diff: {{ result.data_diff }}
+                 {% else %}
+                    {{ result.outcome }}
+                 {% endif %}
+            </h2>
+            {% if image %}
+                <div align="center">
+                    <img src="./output/{{ result.id }}">
+                </div>
+            {% else %}
+                {% if campaign.aux %}
+                    <h3 align="center">
+                        <a name="dut_output"></a>
+                        DUT Output
+                    </h3>
+                {% endif %}
+                <code class="console">{{ result.dut_output }}</code>
+                {% if campaign.aux %}
+                    <h3 align="center">
+                        <a name="aux_output"></a>
+                        AUX Output
+                    </h3>
+                    <code class="console">{{ result.aux_output }}</code>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
 {% endblock %}
