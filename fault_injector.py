@@ -51,7 +51,7 @@ class fault_injector(object):
 
     def close(self):
         self.debugger.dut.flush()
-        if self.campaign['aux']:
+        if self.db.campaign['aux']:
             self.debugger.aux.flush()
         self.debugger.close()
         if self.db.result:
