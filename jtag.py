@@ -179,8 +179,8 @@ class jtag(object):
             else:
                 num_bits_to_inject = 32
             injection['bit'] = randrange(num_bits_to_inject)
-            injection['injected_value'] = '0x%x' % \
-                int(injection['gold_value'], base=16) ^ (1 << injection['bit'])
+            injection['injected_value'] = '0x%x' % (
+                int(injection['gold_value'], base=16) ^ (1 << injection['bit']))
             if self.options.debug:
                 print(colored('target: '+injection['target'], 'magenta'))
                 if 'target_index' in injection:
