@@ -126,7 +126,7 @@ class dut(object):
                                  'DUT' if not self.aux else 'AUX', 'SSH error',
                                  db.log_exception)
                 print(colored(
-                    self.serial.port+': error sending file(s) (attempt ' +
+                    self.serial.port+': Error sending file(s) (attempt ' +
                     str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
@@ -143,7 +143,7 @@ class dut(object):
                                      'DUT' if not self.aux else 'AUX',
                                      'SCP error', db.log_exception)
                     print(colored(
-                        self.serial.port+': error sending file(s) (attempt ' +
+                        self.serial.port+': Error sending file(s) (attempt ' +
                         str(attempt+1)+'/'+str(attempts)+'): '+str(error),
                         'red'))
                     dut_scp.close()
@@ -180,7 +180,7 @@ class dut(object):
                                  'DUT' if not self.aux else 'AUX', 'SSH error',
                                  db.log_exception)
                 print(colored(
-                    self.serial.port+': error receiving file (attempt ' +
+                    self.serial.port+': Error receiving file (attempt ' +
                     str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
@@ -197,7 +197,7 @@ class dut(object):
                                      'DUT' if not self.aux else 'AUX',
                                      'SCP error', db.log_exception)
                     print(colored(
-                        self.serial.port+': error receiving file (attempt ' +
+                        self.serial.port+': Error receiving file (attempt ' +
                         str(attempt+1)+'/'+str(attempts)+'): '+str(error),
                         'red'))
                     dut_scp.close()
