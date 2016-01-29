@@ -107,26 +107,9 @@ def results_page(request, campaign_id):
         return redirect('/campaign/'+str(campaign_id)+'/info')
     result_objects = result.objects.filter(id__in=result_ids)
     if request.method == 'GET':
-        if 'delete' in request.GET and 'select_box' in request.GET:
-            result_ids = [int(result_id) for result_id
-                          in dict(request.GET)['select_box']]
-            event.objects.filter(result_id__in=result_ids).delete()
-            injection.objects.filter(result_id__in=result_ids).delete()
-            simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
-            simics_register_diff.objects.filter(
-                result_id__in=result_ids).delete()
-            result.objects.filter(id__in=result_ids).delete()
-        elif 'delete_all' in request.GET:
-            event.objects.filter(result_id__in=result_ids).delete()
-            injection.objects.filter(result_id__in=result_ids).delete()
-            simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
-            simics_register_diff.objects.filter(
-                result_id__in=result_ids).delete()
-            result.objects.filter(id__in=result_ids).delete()
-            return redirect('/campaign/'+str(campaign_id)+'/results')
-        elif (('view_output' in request.GET or
-               'view_output_image' in request.GET) and
-              'select_box' in request.GET):
+        if (('view_output' in request.GET or
+                'view_output_image' in request.GET) and
+                'select_box' in request.GET):
             result_ids = []
             page_items = []
             for result_id in dict(request.GET)['select_box']:
@@ -151,13 +134,30 @@ def results_page(request, campaign_id):
                                                        navigation_items,
                                                    'page_items': page_items,
                                                    'results': result_objects})
-    if request.method == 'POST':
+    elif request.method == 'POST':
         if 'new_outcome_category' in request.POST:
             result_objects.values('outcome_category').update(
                 outcome_category=request.POST['new_outcome_category'])
         elif 'new_outcome' in request.POST:
             result_objects.values('outcome').update(
                 outcome=request.POST['new_outcome'])
+        elif 'delete' in request.POST and 'results[]' in request.POST:
+            result_ids = [int(result_id) for result_id
+                          in dict(request.POST)['results[]']]
+            event.objects.filter(result_id__in=result_ids).delete()
+            injection.objects.filter(result_id__in=result_ids).delete()
+            simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
+            simics_register_diff.objects.filter(
+                result_id__in=result_ids).delete()
+            result.objects.filter(id__in=result_ids).delete()
+        elif 'delete_all' in request.POST:
+            event.objects.filter(result_id__in=result_ids).delete()
+            injection.objects.filter(result_id__in=result_ids).delete()
+            simics_memory_diff.objects.filter(result_id__in=result_ids).delete()
+            simics_register_diff.objects.filter(
+                result_id__in=result_ids).delete()
+            result.objects.filter(id__in=result_ids).delete()
+            return redirect('/campaign/'+str(campaign_id)+'/results')
     table = results_table(result_objects)
     RequestConfig(request, paginate={'per_page': 100}).configure(table)
     return render(request, 'results.html', {
@@ -193,17 +193,17 @@ def result_page(request, campaign_id, result_id):
         if not exists(drseus):
             drseus = 'drseus.sh'
         Popen(['./'+drseus, 'regenerate', result_id])
-    if request.method == 'GET' and 'save' in request.GET:
-        result_object.outcome = request.GET['outcome']
-        result_object.outcome_category = request.GET['outcome_category']
+    if request.method == 'POST' and 'save' in request.POST:
+        result_object.outcome = request.POST['outcome']
+        result_object.outcome_category = request.POST['outcome_category']
         result_object.save()
-    elif request.method == 'GET' and 'delete' in request.GET:
+    elif request.method == 'POST' and 'delete' in request.POST:
         event.objects.filter(result_id=result_object.id).delete()
         injection.objects.filter(result_id=result_object.id).delete()
         simics_register_diff.objects.filter(result_id=result_object.id).delete()
         simics_memory_diff.objects.filter(result_id=result_object.id).delete()
         result_object.delete()
-        return HttpResponse('Result deleted.')
+        return redirect('/campaign/'+str(campaign_id)+'/results')
     injection_objects = injection.objects.filter(result_id=result_id)
     if campaign_object.simics:
         injection_table = simics_injection_table(injection_objects)

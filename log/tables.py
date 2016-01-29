@@ -3,6 +3,8 @@ from django_tables2 import Column, DateTimeColumn, Table, TemplateColumn
 from .models import (campaign, event, injection, result, simics_memory_diff,
                      simics_register_diff)
 
+datetime_format = 'M j, Y h:i:s A'
+
 
 class campaigns_table(Table):
     id_ = TemplateColumn(
@@ -10,6 +12,7 @@ class campaigns_table(Table):
         accessor='id')
     num_cycles = Column()
     results = Column(empty_values=(), orderable=False)
+    timestamp = DateTimeColumn(format=datetime_format)
 
     def render_num_cycles(self, record):
         return '{:,}'.format(record.num_cycles)
@@ -27,9 +30,10 @@ class campaigns_table(Table):
 
 
 class campaign_table(campaigns_table):
-    num_checkpoints = Column()
     cycles_between = Column()
+    num_checkpoints = Column()
     results = Column(empty_values=(), orderable=False)
+    timestamp = DateTimeColumn(format=datetime_format)
 
     def render_num_checkpoints(self, record):
         return '{:,}'.format(record.num_checkpoints)
@@ -56,7 +60,7 @@ class results_table(Table):
         '<input type="checkbox" name="select_box" value="{{ record.id }}">',
         verbose_name='', orderable=False)
     injection_success = Column(empty_values=(), orderable=False)
-    timestamp = DateTimeColumn(format='m/d/Y H:i:s.u')
+    timestamp = DateTimeColumn(format=datetime_format)
     targets = Column(empty_values=(), orderable=False)
 
     def render_events(self, record):
@@ -115,16 +119,17 @@ class results_table(Table):
 
 
 class result_table(results_table):
+    delete = TemplateColumn(
+        '<input type="submit" name="delete" value="Delete" onclick="return '
+        'confirm("Are you sure you want to delete this result?")" />')
+    edit = TemplateColumn(
+        '<input type="submit" name="save" value="Save" onclick="return confirm('
+        '"Are you sure you want to edit this result?")"/>')
     outcome = TemplateColumn(
         '<input name="outcome" type="text" value="{{ value }}" />')
     outcome_category = TemplateColumn(
         '<input name="outcome_category" type="text" value="{{ value }}" />')
-    edit = TemplateColumn(
-        '<input type="submit" name="save" value="Save" onclick="return confirm('
-        '"Are you sure you want to edit this result?")"/>')
-    delete = TemplateColumn(
-        '<input type="submit" name="delete" value="Delete" onclick="return '
-        'confirm("Are you sure you want to delete this result?")" />')
+    timestamp = DateTimeColumn(format=datetime_format)
 
     class Meta:
         attrs = {"class": "paleblue"}
@@ -137,7 +142,7 @@ class result_table(results_table):
 class event_table(Table):
     description = TemplateColumn(
         '{% if value %}<code class="console">{{ value }}</code>{% endif %}')
-    timestamp = DateTimeColumn(format='m/d/Y H:i:s.u')
+    timestamp = DateTimeColumn(format=datetime_format)
 
     class Meta:
         attrs = {"class": "paleblue"}
@@ -146,7 +151,7 @@ class event_table(Table):
 
 
 class hw_injection_table(Table):
-    timestamp = DateTimeColumn(format='m/d/Y H:i:s.u')
+    timestamp = DateTimeColumn(format=datetime_format)
 
     class Meta:
         attrs = {"class": "paleblue"}
@@ -156,7 +161,7 @@ class hw_injection_table(Table):
 
 
 class simics_injection_table(Table):
-    timestamp = DateTimeColumn(format='m/d/Y H:i:s.u')
+    timestamp = DateTimeColumn(format=datetime_format)
 
     class Meta:
         attrs = {"class": "paleblue"}

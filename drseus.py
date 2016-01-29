@@ -185,12 +185,15 @@ supervise.add_argument('-w', '--wireshark', action='store_true', dest='capture',
                        help='run remote packet capture')
 supervise.set_defaults(func=utilities.launch_supervisor)
 
-log_viewer = subparsers.add_parser('log', aliases=['l'],
+log_viewer = subparsers.add_parser('log', aliases=['l', 'L'],
                                    help='start the log web server',
                                    description='start the log web server')
 log_viewer.add_argument('-p', '--port', action='store', type=int,
                         dest='port', default=8000,
                         help='log web server port [default=8000]')
+log_viewer.add_argument('-e', '--external', action='store_true',
+                        dest='external',
+                        help='allow connections from external IP addresses')
 log_viewer.set_defaults(func=utilities.view_logs)
 
 zedboards = subparsers.add_parser('zedboards', aliases=['z', 'Z'],
@@ -200,7 +203,7 @@ zedboards = subparsers.add_parser('zedboards', aliases=['z', 'Z'],
                                               'attached ZedBoards')
 zedboards.set_defaults(func=utilities.print_zedboard_info)
 
-list_campaigns = subparsers.add_parser('list', aliases=['L', 'ls'],
+list_campaigns = subparsers.add_parser('list', aliases=['ls'],
                                        help='list campaigns',
                                        description='list campaigns')
 list_campaigns.set_defaults(func=utilities.list_campaigns)

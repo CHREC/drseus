@@ -8,7 +8,10 @@
             Result
         </h2>
         <div align="center">
-            {% render_table table %}
+            <form action="" method="post">
+                {{ csrf_token }}
+                {% render_table table %}
+            </form>
         </div>
         <div class="section">
             <h3 align="center">

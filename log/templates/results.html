@@ -9,19 +9,19 @@
             <table style="width: 100%">
                 <script type="text/javascript">
                     function set_checkboxes(checked) {
-                        checkboxes = document.getElementsByName('select_box');
+                        var checkboxes = document.getElementsByName('select_box');
                         for(var i=0, n=checkboxes.length; i<n; i++) {
                             checkboxes[i].checked = checked;
                         }
                     }
                     function invert_checkboxes() {
-                        checkboxes = document.getElementsByName('select_box');
+                        var checkboxes = document.getElementsByName('select_box');
                         for(var i=0, n=checkboxes.length; i<n; i++) {
                             checkboxes[i].checked = !checkboxes[i].checked;
                         }
                     }
                     function open_results(only_selected) {
-                        checkboxes = document.getElementsByName('select_box');
+                        var checkboxes = document.getElementsByName('select_box');
                         for(var i=0, n=checkboxes.length; i<n; i++) {
                             if (checkboxes[i].checked || !only_selected) {
                                 window.open('./result/'+checkboxes[i].value, '_blank');
@@ -43,6 +43,31 @@
                             $.post('', {'new_outcome_category': outcome_category, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
                             setInterval(function () {
                                 window.location.assign(window.location.href.replace(/outcome_category=[^&]*&/g, 'outcome_category='+outcome_category+'&'));
+                            }, 500);
+                        }
+                    }
+                    function delete_selected_click() {
+                        var conf = confirm('Are you sure you want to delete the selected results?');
+                        if (conf) {
+                            var results = [];
+                            var checkboxes = document.getElementsByName('select_box');
+                            for(var i=0, n=checkboxes.length; i<n; i++) {
+                                if (checkboxes[i].checked) {
+                                    results.push(checkboxes[i].value);
+                                }
+                            }
+                            $.post('', {'delete': true, 'results': results, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
+                            setInterval(function () {
+                                window.location.reload();
+                            }, 500);
+                        }
+                    }
+                    function delete_all_click() {
+                        var conf = confirm('Are you sure you want to delete the currently filtered results?');
+                        if (conf) {
+                            $.post('', {'delete_all': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
+                            setInterval(function () {
+                                window.location.assign('results');
                             }, 500);
                         }
                     }
@@ -99,7 +124,7 @@
                     </td>
                     <td>
                         <div style="text-align: center;">
-                            <input type="submit" name="delete" value="Delete Selected" onclick="return confirm('Are you sure you want to delete the selected results?');">
+                            <input type="button" value="Delete Selected" onclick="delete_selected_click()">
                         </div>
                     </td>
                 </tr>
@@ -133,7 +158,7 @@
                     </td>
                     <td>
                         <div style="text-align: center;">
-                            <input type="submit" name="delete_all" value="Delete All (Filtered)" onclick="return confirm('Are you sure you want to delete the currently filtered results?');">
+                            <input type="button" value="Delete All (Filtered)" onclick="delete_all_click()">
                         </div>
                     </td>
                 </tr>

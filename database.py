@@ -135,9 +135,9 @@ class database(object):
                             [self.result['id']])
         return self.cursor.fetchall()
 
-    def get_count(self, item):
-        self.cursor.execute('SELECT COUNT(*) FROM log_'+item+' '
-                            'WHERE result_id=?', [self.result['id']])
+    def get_count(self, item, item_from='result'):
+        self.cursor.execute('SELECT COUNT(*) FROM log_'+item+' WHERE ' +
+                            item_from+'_id=?', [getattr(self, item_from)['id']])
         return self.cursor.fetchone()['COUNT(*)']
 
     def delete_result(self):

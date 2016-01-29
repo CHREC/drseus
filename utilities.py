@@ -8,6 +8,7 @@ from paramiko import RSAKey
 from shutil import copy, copytree, rmtree
 from subprocess import check_call
 from sys import stdout
+from terminaltables import AsciiTable
 
 from database import database
 from fault_injector import fault_injector
@@ -29,13 +30,24 @@ def print_zedboard_info(none=None):
 
 
 def list_campaigns(none=None):
+    table = AsciiTable([['ID', 'Results', 'Command', 'Arch', 'Simics']],
+                       'DrSEUs Campaigns')
     with database(campaign={'id': '*'}) as db:
         campaign_list = db.get_campaign()
-    print('DrSEUs Campaigns:')
-    print('ID\tArchitecture\tSimics\tCommand')
-    for campaign in campaign_list:
-        print(str(campaign['id'])+'\t'+campaign['architecture']+'\t\t' +
-              str(bool(campaign['simics']))+'\t'+campaign['command'])
+        for campaign in campaign_list:
+            db.campaign['id'] = campaign['id']
+            results = db.get_count('result', 'campaign')
+            items = []
+            for i, item in enumerate((str(campaign['id']), str(results),
+                                      campaign['command'],
+                                      campaign['architecture'],
+                                      str(bool(campaign['simics'])))):
+                if len(item) < table.column_max_width(i):
+                    items.append(item)
+                else:
+                    items.append(item[:table.column_max_width(i)-4]+'...')
+            table.table_data.append(items)
+    print(table.table)
 
 
 def get_campaign(campaign_id):
@@ -224,7 +236,8 @@ def regenerate(options):
 
 def view_logs(options):
     environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
-    django_command(['drseus', 'runserver', str(options.port)])
+    django_command(['drseus', 'runserver', ('0.0.0.0:' if options.external
+                                            else '')+str(options.port)])
 
 
 def __update_checkpoint_dependencies(campaign_id):
