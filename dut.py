@@ -2,6 +2,7 @@ from io import StringIO
 from paramiko import AutoAddPolicy, RSAKey, SSHClient
 from scp import SCPClient
 from serial import Serial
+from serial.serialutil import SerialException
 from sys import stdout
 from termcolor import colored
 from time import sleep
@@ -229,15 +230,22 @@ class dut(object):
         errors = 0
         hanging = False
         while True:
-            char = self.serial.read().decode('utf-8', 'replace')
-            if not char:
-                hanging = True
+            try:
+                char = self.serial.read().decode('utf-8', 'replace')
+            except SerialException:
+                char = ''
+                errors += 1
                 with self.db as db:
-                    db.log_event('Warning' if boot else 'Error',
-                                 'DUT' if not self.aux else 'AUX',
-                                 'Read timeout', db.log_trace)
-                if not continuous:
-                    break
+                    db.log_event('Error', 'DUT' if not self.aux else 'AUX',
+                                 'Read error', db.log_exception)
+            else:
+                if not char:
+                    hanging = True
+                    with self.db as db:
+                        db.log_event('Error', 'DUT' if not self.aux else 'AUX',
+                                     'Read timeout', db.log_trace)
+                    if not continuous:
+                        break
             if self.db.result:
                 self.db.result['dut_output' if not self.aux
                                else 'aux_output'] += char

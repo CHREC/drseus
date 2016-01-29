@@ -307,7 +307,7 @@ def merge_campaigns(options):
 
 
 def launch_openocd(options):
-    debugger = openocd(None, None, options, None)
+    debugger = openocd(None, options)
     print('Launched '+str(debugger))
     debugger.openocd.wait()
 

@@ -1061,16 +1061,41 @@ devices = {
                 'r9': {},
                 'r10': {},
                 'r11': {},
-                'r12': {}
+                'r12': {},
+                'r8_fiq': {},
+                'r9_fiq': {},
+                'r10_fiq': {},
+                'r11_fiq': {},
+                'r12_fiq': {}
             }
         },
         'CPU': {
             'count': 2,
             'registers': {
-                'pc': {},
                 'cpsr': {},
+                'lr': {},
+                'lr_abt': {},
+                'lr_fiq': {},
+                'lr_irq': {},
+                'lr_mon': {},
+                'lr_svc': {},
+                'lr_und': {},
+                'lr_usr': {},
+                'pc': {},
                 'sp': {},
-                'lr': {}
+                'sp_abt': {},
+                'sp_fiq': {},
+                'sp_irq': {},
+                'sp_mon': {},
+                'sp_svc': {},
+                'sp_und': {},
+                'sp_usr': {},
+                'spsr_abt': {},
+                'spsr_fiq': {},
+                'spsr_irq': {},
+                'spsr_mon': {},
+                'spsr_svc': {},
+                'spsr_und': {}
             }
         }
     },

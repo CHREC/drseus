@@ -157,12 +157,14 @@ class jtag(object):
                 self.continue_dut()
             sleep(injection_time)
             self.halt_dut()
+            mode = self.get_mode()
             target = choose_target(self.options.selected_targets, self.targets)
             register = choose_register(target, self.targets)
-            injection = {'result_id': self.db.result['id'],
-                         'injection_number': injection,
-                         'target': target,
+            injection = {'injection_number': injection,
+                         'processor_mode': mode,
                          'register': register,
+                         'result_id': self.db.result['id'],
+                         'target': target,
                          'time': injection_time,
                          'timestamp': None}
             if ':' in target:
@@ -170,6 +172,9 @@ class jtag(object):
                 target = target.split(':')[0]
                 injection['target'] = target
                 self.select_core(injection['target_index'])
+            if 'access' in self.targets[target]['registers'][register]:
+                injection['register_access'] = \
+                    self.targets[target]['registers'][register]['access']
             injection['gold_value'] = self.get_register_value(
                 injection['register'], injection['target'])
             if 'bits' in self.targets[target]['registers'][register]:
@@ -178,7 +183,7 @@ class jtag(object):
             else:
                 num_bits_to_inject = 32
             injection['bit'] = randrange(num_bits_to_inject)
-            injection['injected_value'] = '0x%x' % (
+            injection['injected_value'] = hex(
                 int(injection['gold_value'], base=16) ^ (1 << injection['bit']))
             if self.options.debug:
                 print(colored('target: '+injection['target'], 'magenta'))
@@ -195,18 +200,30 @@ class jtag(object):
                                     injection['target'],
                                     injection['injected_value'])
             if int(injection['injected_value'], base=16) == int(
-                    self.get_register_value(injection['register'],
-                                            injection['target']),
-                    base=16):
+                self.get_register_value(injection['register'],
+                                        injection['target']), base=16):
                 injection['success'] = True
                 with self.db as db:
                     db.insert_dict('injection', injection)
                     db.log_event('Information', 'Debugger', 'Fault injected')
             else:
+                self.set_mode()
+                self.set_register_value(injection['register'],
+                                        injection['target'],
+                                        injection['injected_value'])
+                self.set_mode(injection['processor_mode'])
                 injection['success'] = False
-                with self.db as db:
-                    db.insert_dict('injection', injection)
-                    db.log_event('Warning', 'Debugger', 'Injection failed')
+                if int(injection['injected_value'], base=16) == int(
+                    self.get_register_value(injection['register'],
+                                            injection['target']), base=16):
+                    with self.db as db:
+                            db.insert_dict('injection', injection)
+                            db.log_event('Warning', 'Debugger',
+                                         'Fault injected as supervisor')
+                else:
+                    with self.db as db:
+                        db.insert_dict('injection', injection)
+                        db.log_event('Warning', 'Debugger', 'Injection failed')
         return 0, False
 
 
@@ -245,6 +262,12 @@ class bdi(jtag):
         self.connect_telnet()
         sleep(1)
         self.command(None)
+
+    def get_mode(self):
+        pass
+
+    def set_mode(self, mode):
+        pass
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
@@ -408,6 +431,15 @@ class bdi_p2020(bdi):
 
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
+    modes = {'10000': 'usr',
+             '10001': 'fiq',
+             '10010': 'irq',
+             '10011': 'svc',
+             '10110': 'mon',
+             '10111': 'abt',
+             '11010': 'hyp',
+             '11011': 'und',
+             '11111': 'sys'}
 
     def __init__(self, database, options):
 
@@ -533,6 +565,17 @@ class openocd(jtag):
     def select_core(self, core):
         self.command('targets zynq.cpu'+str(core),
                      error_message='Error selecting core')
+
+    def get_mode(self):
+        cpsr = int(self.get_register_value('cpsr', 'CPU'), base=16)
+        return self.modes[str(bin(cpsr))[-5:]]
+
+    def set_mode(self, mode='svc'):
+        modes = {value: key for key, value in self.modes.items()}
+        mask = modes[mode]
+        cpsr = int(self.get_register_value('cpsr', 'CPU'), base=16)
+        self.set_register_value('cpsr', 'CPU',
+                                hex(int(str(bin(cpsr))[:-5]+mask, base=2)))
 
     def get_register_value(self, register, target):
         if target == 'CP':

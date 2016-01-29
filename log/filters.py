@@ -47,6 +47,12 @@ class result_filter(FilterSet):
         self.filters['injection__field'].extra.update(choices=field_choices)
         self.filters['injection__field'].widget.attrs['size'] = min(
             len(field_choices), 10)
+        processor_mode_choices = self.injection_choices(
+            campaign, 'processor_mode')
+        self.filters['injection__processor_mode'].extra.update(
+            choices=processor_mode_choices)
+        self.filters['injection__processor_mode'].widget.attrs['size'] = min(
+            len(processor_mode_choices), 10)
         register_choices = self.injection_choices(campaign, 'register')
         self.filters['injection__register'].extra.update(
             choices=register_choices)
@@ -154,6 +160,8 @@ class result_filter(FilterSet):
     injection__checkpoint_number = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__field = MultipleChoiceFilter(
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    injection__processor_mode = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__register = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
