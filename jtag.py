@@ -266,7 +266,7 @@ class bdi(jtag):
     def get_mode(self):
         pass
 
-    def set_mode(self, mode):
+    def set_mode(self, mode='supervisor'):
         pass
 
     def command(self, command, expected_output=[], error_message=None,
