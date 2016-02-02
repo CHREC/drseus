@@ -12,9 +12,6 @@ from error import DrSEUsError
 from jtag_targets import devices
 from targets import choose_register, choose_target
 
-# TODO: refactor command()
-# TODO: use regular expressions in expect
-
 # zedboards[uart_serial] = ftdi_serial
 zedboards = {'844301CF3718': '210248585809',
              '8410A3D8431C': '210248657631',
@@ -204,7 +201,7 @@ class jtag(object):
                                         injection['target']), base=16):
                 injection['success'] = True
                 with self.db as db:
-                    db.insert_dict('injection', injection)
+                    db.insert('injection', injection)
                     db.log_event('Information', 'Debugger', 'Fault injected')
             else:
                 self.set_mode()
@@ -217,60 +214,21 @@ class jtag(object):
                     self.get_register_value(injection['register'],
                                             injection['target']), base=16):
                     with self.db as db:
-                            db.insert_dict('injection', injection)
+                            db.insert('injection', injection)
                             db.log_event('Warning', 'Debugger',
                                          'Fault injected as supervisor')
                 else:
                     with self.db as db:
-                        db.insert_dict('injection', injection)
+                        db.insert('injection', injection)
                         db.log_event('Warning', 'Debugger', 'Injection failed')
         return 0, False
 
-
-class bdi(jtag):
-    error_messages = ['syntax error in command',
-                      'timeout while waiting for halt',
-                      'wrong state for requested command', 'read access failed']
-
-    def __init__(self, database, options):
-        self.port = 23
-        super(bdi, self).__init__(database, options)
-        if options.jtag:
-            self.connect_telnet()
-            # self.command('', error_message='Debugger not ready')
-
-    def __str__(self):
-        string = ('BDI3000 at '+self.options.debugger_ip_address +
-                  ' port '+str(self.port))
-        return string
-
-    def close(self):
-        if self.telnet:
-            self.telnet.write(bytes('quit\r', encoding='utf-8'))
-        super(bdi, self).close()
-
-    def reset_bdi(self):
-        self.telnet.write(bytes('boot\r\n', encoding='utf-8'))
-        self.telnet.close()
-        if self.db.result:
-            self.db.result['debugger_output'] += 'boot\n'
-        else:
-            self.db.campaign['debugger_output'] += 'boot\n'
-        with self.db as db:
-            db.log_event('Warning', 'Debugger', 'Reset BDI')
-        sleep(1)
-        self.connect_telnet()
-        sleep(1)
-        self.command(None)
-
-    def get_mode(self):
-        pass
-
-    def set_mode(self, mode='supervisor'):
-        pass
-
-    def command(self, command, expected_output=[], error_message=None,
-                log_event=True):
+    def command(self, command, expected_output, error_message,
+                log_event, echo):
+        if log_event:
+            with self.db as db:
+                event = db.log_event('Information', 'Debugger', 'Command',
+                                     command, success=False)
         expected_output = [bytes(output, encoding='utf-8')
                            for output in expected_output]
         return_buffer = ''
@@ -284,13 +242,21 @@ class bdi(jtag):
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
-            self.telnet.write(bytes(command+'\r\n', encoding='utf-8'))
-            if self.db.result:
-                self.db.result['debugger_output'] += command+'\n'
+            self.telnet.write(bytes(command+'\n', encoding='utf-8'))
+            if echo:
+                index, match, buff = self.telnet.expect(
+                    [bytes(command, encoding='utf-8')], timeout=self.timeout)
+                buff = buff.decode('utf-8', 'replace')
             else:
-                self.db.campaign['debugger_output'] += command+'\n'
+                buff = command+'\n'
+            if self.db.result:
+                self.db.result['debugger_output'] += buff
+            else:
+                self.db.campaign['debugger_output'] += buff
             if self.options.debug:
-                print(colored(command, 'yellow'))
+                print(colored(buff, 'yellow'))
+            if echo and index < 0:
+                raise DrSEUsError(error_message)
         for i in range(len(expected_output)):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
@@ -319,9 +285,9 @@ class bdi(jtag):
             print(colored(buff, 'yellow'))
         with self.db as db:
             if self.db.result:
-                db.update_dict('result')
+                db.update('result')
             else:
-                db.update_dict('campaign')
+                db.update('campaign')
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:
@@ -329,8 +295,66 @@ class bdi(jtag):
                 raise DrSEUsError(error_message)
         if log_event:
             with self.db as db:
-                db.log_event('Information', 'Debugger', 'Command', command)
+                db.log_event_success(event)
         return return_buffer
+
+
+class bdi(jtag):
+    error_messages = ['syntax error in command',
+                      'timeout while waiting for halt',
+                      'wrong state for requested command', 'read access failed']
+
+    def __init__(self, database, options):
+        self.port = 23
+        super().__init__(database, options)
+        if options.jtag:
+            self.connect_telnet()
+            # self.command('', error_message='Debugger not ready')
+
+    def __str__(self):
+        string = ('BDI3000 at '+self.options.debugger_ip_address +
+                  ' port '+str(self.port))
+        return string
+
+    def close(self):
+        if self.telnet:
+            self.telnet.write(bytes('quit\r', encoding='utf-8'))
+        super().close()
+
+    def reset_bdi(self):
+        with self.db as db:
+            event = db.log_event('Warning', 'Debugger', 'Reset BDI',
+                                 success=False)
+        self.telnet.write(bytes('boot\r\n', encoding='utf-8'))
+        self.telnet.close()
+        if self.db.result:
+            self.db.result['debugger_output'] += 'boot\n'
+        else:
+            self.db.campaign['debugger_output'] += 'boot\n'
+        sleep(1)
+        self.connect_telnet()
+        sleep(1)
+        self.command(None, log_event=False)
+        with self.db as db:
+            db.log_event_success(event)
+
+    def reset_dut(self, expected_output, attempts):
+        try:
+            super().reset_dut(expected_output, 1)
+        except DrSEUsError:
+            self.reset_bdi()
+            super().reset_dut(expected_output, max(attempts-1, 1))
+
+    def get_mode(self):
+        pass
+
+    def set_mode(self, mode='supervisor'):
+        pass
+
+    def command(self, command, expected_output=[], error_message=None,
+                log_event=True):
+        super().command(self, command, expected_output, error_message,
+                        log_event, echo=False)
 
 
 class bdi_arm(bdi):
@@ -338,11 +362,10 @@ class bdi_arm(bdi):
     def __init__(self, database, options):
         self.prompts = ['A9#0>', 'A9#1>']
         self.targets = devices['a9_bdi']
-        super(bdi_arm, self).__init__(database,
-                                      options)
+        super().__init__(database, options)
 
-    def reset_dut(self, attempts=10):
-        super(bdi_arm, self).reset_dut([
+    def reset_dut(self, attempts=5):
+        super().reset_dut([
             '- TARGET: processing reset request',
             '- TARGET: BDI removes TRST',
             '- TARGET: Bypass check',
@@ -355,12 +378,12 @@ class bdi_arm(bdi):
             '- TARGET: processing target startup passed'], attempts)
 
     def halt_dut(self):
-        super(bdi_arm, self).halt_dut('halt 3', [
+        super().halt_dut('halt 3', [
             '- TARGET: core #0 has entered debug mode',
             '- TARGET: core #1 has entered debug mode'])
 
     def continue_dut(self):
-        super(bdi_arm, self).continue_dut('cont 3')
+        super().continue_dut('cont 3')
 
     def select_core(self, core):
         self.command('select '+str(core), ['Core number', 'Core state',
@@ -382,13 +405,10 @@ class bdi_p2020(bdi):
     def __init__(self, database, options):
         self.prompts = ['P2020>']
         self.targets = devices['p2020']
-        super(bdi_p2020, self).__init__(database,
-                                        options)
+        super().__init__(database, options)
 
-    def reset_dut(self, attempts=10):
-
-        def reset_p2020():
-            super(bdi_p2020, self).reset_dut([
+    def reset_dut(self, attempts=5):
+            super().reset_dut([
                 '- TARGET: processing user reset request',
                 '- BDI asserts HRESET',
                 '- Reset JTAG controller passed',
@@ -396,23 +416,15 @@ class bdi_p2020(bdi):
                 '- BDI removes HRESET',
                 '- TARGET: resetting target passed',
                 '- TARGET: processing target startup \.\.\.\.',
-                '- TARGET: processing target startup passed'],
-                max(int(attempts/2), 1))
-
-    # def reset_dut(self, attempts=10):
-        try:
-            reset_p2020()
-        except DrSEUsError:
-            self.reset_bdi()
-            reset_p2020()
+                '- TARGET: processing target startup passed'], attempts)
 
     def halt_dut(self):
-        super(bdi_p2020, self).halt_dut('halt 0 1', [
+        super().halt_dut('halt 0 1', [
             '- TARGET: core #0 has entered debug mode',
             '- TARGET: core #1 has entered debug mode'])
 
     def continue_dut(self):
-        super(bdi_p2020, self).continue_dut('go 0 1')
+        super().continue_dut('go 0 1')
 
     def select_core(self, core):
         self.command('select '+str(core), ['Target CPU', 'Core state',
@@ -466,8 +478,7 @@ class openocd(jtag):
         if options.command != 'openocd':
             with database as db:
                 db.log_event('Information', 'Debugger', 'Launched openocd')
-            super(openocd, self).__init__(database,
-                                          options)
+            super().__init__(database, options)
             if options.jtag:
                 sleep(1)
                 self.connect_telnet()
@@ -478,89 +489,25 @@ class openocd(jtag):
 
     def close(self):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
-        super(openocd, self).close()
+        super().close()
         self.openocd.wait()
         with self.db as db:
                 db.log_event('Information', 'Debugger', 'Closed openocd')
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
-        expected_output = [bytes(output, encoding='utf-8')
-                           for output in expected_output]
-        return_buffer = ''
-        if error_message is None:
-            error_message = command
-        buff = self.telnet.read_very_eager().decode('utf-8', 'replace')
-        if self.db.result:
-            self.db.result['debugger_output'] += buff
-        else:
-            self.db.campaign['debugger_output'] += buff
-        if self.options.debug:
-            print(colored(buff, 'yellow'))
-        if command:
-            self.telnet.write(bytes(command+'\n', encoding='utf-8'))
-            index, match, buff = self.telnet.expect(
-                [bytes(command, encoding='utf-8')], timeout=self.timeout)
-            buff = buff.decode('utf-8', 'replace')
-            if self.db.result:
-                self.db.result['debugger_output'] += buff
-            else:
-                self.db.campaign['debugger_output'] += buff
-            return_buffer += buff
-            if self.options.debug:
-                print(colored(buff, 'yellow'))
-            if index < 0:
-                raise DrSEUsError(error_message)
-        for i in range(len(expected_output)):
-            index, match, buff = self.telnet.expect(expected_output,
-                                                    timeout=self.timeout)
-            buff = buff.decode('utf-8', 'replace')
-            if self.db.result:
-                self.db.result['debugger_output'] += buff
-            else:
-                self.db.campaign['debugger_output'] += buff
-            return_buffer += buff
-            if self.options.debug:
-                print(colored(buff, 'yellow'), end='')
-            if index < 0:
-                raise DrSEUsError(error_message)
-        else:
-            if self.options.debug:
-                print()
-        index, match, buff = self.telnet.expect(self.prompts,
-                                                timeout=self.timeout)
-        buff = buff.decode('utf-8', 'replace')
-        if self.db.result:
-            self.db.result['debugger_output'] += buff
-        else:
-            self.db.campaign['debugger_output'] += buff
-        return_buffer += buff
-        if self.options.debug:
-            print(colored(buff, 'yellow'))
-        with self.db as db:
-            if self.db.result:
-                db.update_dict('result')
-            else:
-                db.update_dict('campaign')
-        if index < 0:
-            raise DrSEUsError(error_message)
-        for message in self.error_messages:
-            if message in return_buffer:
-                raise DrSEUsError(error_message)
-        if log_event:
-            with self.db as db:
-                db.log_event('Information', 'Debugger', 'Command', command)
-        return return_buffer
+        super().command(self, command, expected_output, error_message,
+                        log_event, echo=True)
 
     def reset_dut(self, attempts=10):
-        super(openocd, self).reset_dut(
+        super().reset_dut(
             ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], attempts)
 
     def halt_dut(self):
-        super(openocd, self).halt_dut('halt', ['target state: halted']*2)
+        super().halt_dut('halt', ['target state: halted']*2)
 
     def continue_dut(self):
-        super(openocd, self).continue_dut('resume')
+        super().continue_dut('resume')
 
     def select_core(self, core):
         self.command('targets zynq.cpu'+str(core),

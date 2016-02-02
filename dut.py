@@ -60,24 +60,7 @@ class dut(object):
             else options.aux_uboot
         self.login_command = options.dut_login if not aux \
             else options.aux_login
-        serial_port = (options.dut_serial_port if not aux
-                       else options.aux_serial_port)
-        if database.result:
-            database.result[('dut' if not aux else 'aux') +
-                            '_serial_port'] = serial_port
-        baud_rate = (options.dut_baud_rate if not aux
-                     else options.aux_baud_rate)
-        self.serial = Serial(port=None, baudrate=baud_rate,
-                             timeout=options.timeout, rtscts=True)
-        if database.campaign['simics']:
-            # workaround for pyserial 3
-            self.serial._dsrdtr = True
-        self.serial.port = serial_port
-        self.serial.open()
-        self.serial.reset_input_buffer()
-        with database as db:
-            db.log_event('Information', 'DUT' if not aux else 'AUX',
-                         'Connected to serial port', serial_port)
+        self.open()
 
     def __str__(self):
         string = ('Serial Port: '+self.serial.port+'\n\tTimeout: ' +
@@ -85,6 +68,26 @@ class dut(object):
                   self.prompt+'\"\n\tIP Address: '+str(self.ip_address) +
                   '\n\tSCP Port: '+str(self.scp_port))
         return string
+
+    def open(self):
+        serial_port = (self.options.dut_serial_port if not self.aux
+                       else self.options.aux_serial_port)
+        if self.db.result:
+            self.db.result[('dut' if not self.aux else 'aux') +
+                           '_serial_port'] = serial_port
+        baud_rate = (self.options.dut_baud_rate if not self.aux
+                     else self.options.aux_baud_rate)
+        self.serial = Serial(port=None, baudrate=baud_rate,
+                             timeout=self.options.timeout, rtscts=True)
+        if self.db.campaign['simics']:
+            # workaround for pyserial 3
+            self.serial._dsrdtr = True
+        self.serial.port = serial_port
+        self.serial.open()
+        self.serial.reset_input_buffer()
+        with self.db as db:
+            db.log_event('Information', 'DUT' if not self.aux else 'AUX',
+                         'Connected to serial port', serial_port)
 
     def close(self):
         self.serial.close()
@@ -119,7 +122,7 @@ class dut(object):
         for attempt in range(attempts):
             try:
                 ssh.connect(self.ip_address, port=self.scp_port,
-                            username='root', pkey=self.rsakey,
+                            username='root', pkey=self.rsakey, timeout=30,
                             allow_agent=False, look_for_keys=False)
             except Exception as error:
                 with self.db as db:
@@ -173,7 +176,7 @@ class dut(object):
         for attempt in range(attempts):
             try:
                 ssh.connect(self.ip_address, port=self.scp_port,
-                            username='root', pkey=self.rsakey,
+                            username='root', pkey=self.rsakey, timeout=30,
                             allow_agent=False, look_for_keys=False)
             except Exception as error:
                 with self.db as db:
@@ -290,11 +293,18 @@ class dut(object):
             if not boot and buff and buff[-1] == '\n':
                 with self.db as db:
                     if self.db.result:
-                        db.update_dict('result')
+                        db.update('result')
                     else:
-                        db.update_dict('campaign')
+                        db.update('campaign')
         if self.serial.timeout != self.options.timeout:
-            self.serial.timeout = self.options.timeout
+            try:
+                self.serial.timeout = self.options.timeout
+            except:
+                with self.db as db:
+                    db.log_event('Error', 'DUT' if not self.aux else 'AUX',
+                                 'Error resetting timeout', db.log_exception)
+                self.close()
+                self.open()
         if self.options.debug:
             print()
         if 'drseus_detected_errors:' in buff:
@@ -307,9 +317,9 @@ class dut(object):
                         int(line.replace('drseus_detected_errors:', ''))
         with self.db as db:
             if self.db.result:
-                db.update_dict('result')
+                db.update('result')
             else:
-                db.update_dict('campaign')
+                db.update('campaign')
         if errors and not boot:
             for message, category in self.error_messages:
                 if message in buff:
@@ -323,14 +333,17 @@ class dut(object):
         return buff
 
     def command(self, command=None):
+        with self.db as db:
+            event = db.log_event('Information',
+                                 'DUT' if not self.aux else 'AUX', 'Command',
+                                 command, success=False)
         if command:
             self.write(command+'\n')
         else:
             self.write('\n')
         buff = self.read_until()
         with self.db as db:
-            db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                         'Command', command)
+            db.log_event_success(event)
         return buff
 
     def do_login(self, change_prompt=False):

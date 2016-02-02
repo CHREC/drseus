@@ -1544,7 +1544,28 @@ devices = {
                 'usprg0': {},
                 'xer': {}
             }
-        }
+        },
+        # 'TLB': {
+        #     'count': 2,
+        #     'registers': {
+        #         'tlb0': {
+        #             'bits': 32,
+        #             'count': (16),
+        #             'is_tlb': True,
+        #             'fields': {
+
+        #             }
+        #         },
+        #         'tlb1': {
+        #             'bits': 32,
+        #             'count': (512),
+        #             'is_tlb': True,
+        #             'fields': {
+
+        #             }
+        #         }
+        #     }
+        # }
     }
 }
 

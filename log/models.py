@@ -47,6 +47,7 @@ class event(Model):
     level = TextField()
     result = ForeignKey(result, null=True)
     source = TextField()
+    success = NullBooleanField()
     timestamp = DateTimeField()
 
 

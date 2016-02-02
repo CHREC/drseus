@@ -24,8 +24,9 @@ class campaigns_table(Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = campaign
-        fields = ('id_', 'results', 'command', 'aux_command', 'architecture',
-                  'simics', 'exec_time', 'sim_time', 'num_cycles', 'timestamp')
+        fields = ('id_', 'results', 'command', 'aux_command', 'description',
+                  'architecture', 'simics', 'exec_time', 'sim_time',
+                  'num_cycles', 'timestamp')
         order_by = 'id_'
 
 
@@ -46,8 +47,8 @@ class campaign_table(campaigns_table):
         model = campaign
         exclude = ('id_',)
         fields = ('id', 'timestamp', 'results', 'command', 'aux_command',
-                  'architecture', 'simics', 'aux', 'exec_time', 'sim_time',
-                  'num_cycles', 'output_file', 'num_checkpoints',
+                  'description', 'architecture', 'simics', 'aux', 'exec_time',
+                  'sim_time', 'num_cycles', 'output_file', 'num_checkpoints',
                   'cycles_between')
 
 
@@ -147,7 +148,8 @@ class event_table(Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = event
-        fields = ('timestamp', 'level', 'source', 'event_type', 'description')
+        fields = ('timestamp', 'level', 'source', 'event_type', 'description',
+                  'success')
 
 
 class hw_injection_table(Table):

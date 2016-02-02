@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 
 import utilities
 
-# TODO: add campaign description to log viewer
+# TODO: use regular expressions in telnet expect in jtag
 # TODO: update dut.write/aux.write to dut.command/aux.command in fault_injector
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
@@ -22,7 +22,7 @@ parser.add_argument('-C', '--campaign', action='store', type=int, metavar='ID',
                     dest='campaign_id', default=0,
                     help='campaign to use, defaults to last campaign created')
 parser.add_argument('-D', '--debug', action='store_true', dest='debug',
-                    help='display device output for parallel injections')
+                    help='display device output when performing injections')
 parser.add_argument('-T', '--timeout', action='store', type=int,
                     metavar='SECONDS', dest='timeout', default=300,
                     help='device read timeout [default=300]')

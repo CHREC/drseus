@@ -304,9 +304,9 @@ class simics(object):
                 print()
             with self.db as db:
                 if self.db.result:
-                    db.update_dict('result')
+                    db.update('result')
                 else:
-                    db.update_dict('campaign')
+                    db.update('campaign')
             for message in self.error_messages:
                 if message in buff:
                     with self.db as db:
@@ -315,6 +315,10 @@ class simics(object):
             return buff
 
     # def __command(self, command=None):
+        if command:
+            with self.db as db:
+                event = db.log_event('Information', 'Simics', 'Command',
+                                     command, success=False)
         if command is not None:
             self.simics.stdin.write(command+'\n')
             if self.db.result:
@@ -326,7 +330,7 @@ class simics(object):
         buff = read_until()
         if command:
             with self.db as db:
-                db.log_event('Information', 'Simics', 'Command', command)
+                db.log_event_success(event)
         return buff
 
     def __merge_checkpoint(self, checkpoint):
@@ -725,7 +729,7 @@ class simics(object):
             except:
                 injection['success'] = False
                 with self.db as db:
-                    db.insert_dict('injection', injection)
+                    db.insert('injection', injection)
                     db.log_event('Error', 'Simics', 'Error injecting fault',
                                  db.log_exception)
                 raise DrSEUsError('Error injecting fault')
@@ -733,7 +737,7 @@ class simics(object):
                 injection['success'] = True
             # log injection data
             with self.db as db:
-                db.insert_dict('injection', injection)
+                db.insert('injection', injection)
                 db.log_event('Information', 'Simics', 'Fault injected')
             if self.options.debug:
                 print(colored('result id: '+str(self.db.result['id']),
@@ -809,7 +813,7 @@ class simics(object):
                             'register': register,
                             'gold_value': gold_value,
                             'monitored_value': monitored_value}
-                        db.insert_dict('simics_register_diff', register_diff)
+                        db.insert('simics_register_diff', register_diff)
 
         # def compare_registers(checkpoint_number, gold_checkpoint,
         #                       monitored_checkpoint):
@@ -927,7 +931,7 @@ class simics(object):
                                             changed_blocks, block_size)
                     for block in changed_blocks:
                         memory_diff['block'] = hex(block)
-                        db.insert_dict('simics_memory_diff', memory_diff)
+                        db.insert('simics_memory_diff', memory_diff)
             return diffs
 
     # def __compare_checkpoints(self, checkpoint_number, last_checkpoint):

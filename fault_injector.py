@@ -124,7 +124,7 @@ class fault_injector(object):
         if self.db.campaign['aux']:
             self.debugger.aux.flush()
         with self.db as db:
-            db.update_dict('campaign')
+            db.update('campaign')
         self.close()
 
     def send_dut_files(self, aux=False):

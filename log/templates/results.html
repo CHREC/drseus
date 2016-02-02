@@ -32,7 +32,7 @@
                         var outcome = prompt('Enter the new outcome for all currently filtered results: ');
                         if (outcome) {
                             $.post('', {'new_outcome': outcome, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                            setInterval(function () {
+                            setTimeout(function () {
                                 window.location.assign(window.location.href.replace(/outcome=[^&]*&/g, 'outcome='+outcome+'&'));
                             }, 500);
                         }
@@ -41,7 +41,7 @@
                         var outcome_category = prompt('Enter the new outcome category for all currently filtered results: ');
                         if (outcome_category) {
                             $.post('', {'new_outcome_category': outcome_category, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                            setInterval(function () {
+                            setTimeout(function () {
                                 window.location.assign(window.location.href.replace(/outcome_category=[^&]*&/g, 'outcome_category='+outcome_category+'&'));
                             }, 500);
                         }
@@ -57,7 +57,7 @@
                                 }
                             }
                             $.post('', {'delete': true, 'results': results, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                            setInterval(function () {
+                            setTimeout(function () {
                                 window.location.reload();
                             }, 500);
                         }
@@ -66,7 +66,7 @@
                         var conf = confirm('Are you sure you want to delete the currently filtered results?');
                         if (conf) {
                             $.post('', {'delete_all': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                            setInterval(function () {
+                            setTimeout(function () {
                                 window.location.assign('results');
                             }, 500);
                         }

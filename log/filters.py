@@ -19,7 +19,7 @@ class result_filter(FilterSet):
     def __init__(self, *args, **kwargs):
         campaign = kwargs['campaign']
         del kwargs['campaign']
-        super(result_filter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         event_type_choices = self.event_choices(campaign, 'event_type')
         self.filters['event__event_type'].extra.update(
             choices=event_type_choices)
@@ -155,6 +155,7 @@ class result_filter(FilterSet):
     event__source = MultipleChoiceFilter(
         conjoined=True,
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
+    event__success = BooleanFilter(help_text='')
     injection__bit = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     injection__checkpoint_number = MultipleChoiceFilter(
@@ -196,7 +197,7 @@ class simics_register_diff_filter(FilterSet):
     def __init__(self, *args, **kwargs):
         self.campaign = kwargs['campaign']
         del kwargs['campaign']
-        super(simics_register_diff_filter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.queryset = kwargs['queryset']
         checkpoint_number_choices = self.simics_register_diff_choices(
             'checkpoint_number')

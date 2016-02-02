@@ -171,7 +171,7 @@ def create_campaign(options):
     if options.aux_application is None:
         options.aux_application = options.application
     with database(campaign) as db:
-        db.insert_dict('campaign')
+        db.insert('campaign')
     campaign_directory = 'campaign-data/'+str(campaign['id'])
     if exists(campaign_directory):
         raise Exception('directory already exists: '
@@ -216,7 +216,6 @@ def inject_campaign(options):
         for process in processes:
             process.join()
     else:
-        options.debug = True
         perform_injections(iteration_counter)
 
 
@@ -274,7 +273,7 @@ def merge_campaigns(options):
             print('merging campaign: \"'+options.directory+'/' +
                   new_campaign['command']+'\"')
             db_new.campaign['id'] = new_campaign['id']
-            db.insert_dict('campaign', new_campaign)
+            db.insert('campaign', new_campaign)
             if exists(options.directory+'/campaign-data/' +
                       str(db_new.campaign['id'])):
                 print('\tcopying campaign data...', end='')
@@ -297,12 +296,12 @@ def merge_campaigns(options):
             print('\tcopying results...', end='')
             for new_result in db_new.get_result():
                 db_new.result['id'] = new_result['id']
-                db.insert_dict('result', new_result)
+                db.insert('result', new_result)
                 for table in ['injection', 'simics_register_diff',
                               'simics_memory_diff']:
                     for new_item in db_new.get_item(table):
                         new_item['result_id'] = new_result['id']
-                        db.insert_dict(table, new_item)
+                        db.insert(table, new_item)
             print('done')
 
 

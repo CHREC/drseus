@@ -37,7 +37,7 @@ class database(object):
         self.cursor = self.connection.cursor()
         return self
 
-    def insert_dict(self, table, dictionary=None):
+    def insert(self, table, dictionary=None):
         if dictionary is None:
             if table == 'campaign':
                 dictionary = self.campaign
@@ -55,7 +55,7 @@ class database(object):
             list(dictionary.values()))
         dictionary['id'] = self.cursor.lastrowid
 
-    def update_dict(self, table, dictionary=None):
+    def update(self, table, dictionary=None):
         if table == 'campaign':
             dictionary = self.campaign
         elif table == 'result':
@@ -80,7 +80,7 @@ class database(object):
                             'outcome_category': 'Incomplete',
                             'outcome': 'Incomplete',
                             'timestamp': None})
-        self.insert_dict('result')
+        self.insert('result')
 
     def log_result(self, create_result=True):
         out = (self.result['dut_serial_port']+', '+str(self.result['id']) +
@@ -91,26 +91,32 @@ class database(object):
             out += ' {0:.2f}%'.format(max(self.result['data_diff']*100,
                                           99.990))
         print(colored(out, 'blue'))
-        self.update_dict('result')
+        self.update('result')
         if create_result:
             self.__create_result()
 
     def log_event(self, level, source, event_type, description=None,
-                  campaign=False):
+                  campaign=False, success=None):
         if description == self.log_trace:
             description = ''.join(format_stack()[:-2])
         elif description == self.log_exception:
             description = ''.join(format_exc())
-        event = {'level': level,
-                 'source': source,
+        event = {'description': description,
                  'event_type': event_type,
-                 'description': description,
+                 'level': level,
+                 'source': source,
+                 'success': success,
                  'timestamp': None}
         if self.result and not campaign:
             event['result_id'] = self.result['id']
         else:
             event['campaign_id'] = self.campaign['id']
-        self.insert_dict('event', event)
+        self.insert('event', event)
+        return event
+
+    def log_event_success(self, event, success=True):
+        event['success'] = success
+        self.update('event', event)
 
     def get_campaign(self):
         if not self.campaign['id']:
