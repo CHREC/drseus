@@ -1176,6 +1176,31 @@ devices = {
         }
     },
     'p2020': {
+        'CCSR': {
+            'base': [
+                p2020_ccsrbar
+            ],
+            'count': 1,
+            'memory_mapped': True,
+            'registers': {
+                'CCSRBAR': {
+                    'access': 'rw',
+                    'offset': 0x0
+                },
+                'ALTCBAR': {
+                    'access': 'rw',
+                    'offset': 0x8
+                },
+                'ALTCAR': {
+                    'access': 'rw',
+                    'offset': 0x10
+                },
+                'BPTR': {
+                    'access': 'rw',
+                    'offset': 0x20
+                }
+            }
+        },
         'CPU': {
             'count': 2,
             'registers': {
@@ -5365,32 +5390,7 @@ devices = {
                 }
             }
         },
-        'RESET': {
-            'base': [
-                p2020_ccsrbar
-            ],
-            'count': 1,
-            'memory_mapped': True,
-            'registers': {
-                'CCSRBAR': {
-                    'access': 'rw',
-                    'offset': 0x0
-                },
-                'ALTCBAR': {
-                    'access': 'rw',
-                    'offset': 0x8
-                },
-                'ALTCAR': {
-                    'access': 'rw',
-                    'offset': 0x10
-                },
-                'BPTR': {
-                    'access': 'rw',
-                    'offset': 0x20
-                }
-            }
-        },
-        'SRIO': {
+        'RAPIDIO': {
             'base': [
                 p2020_ccsrbar+0xC0000
             ],
