@@ -134,8 +134,7 @@ def campaigns_chart(queryset):
     chart = chart.replace('\"chart_click\"', """
     function(event) {
         window.location.assign('/campaign/'+this.category+
-                               '/results?filter_type=results'+
-                               '&outcome_category='+this.series.name);
+                               '/results?outcome_category='+this.series.name);
     }
     """)
     return '['+chart+']'
@@ -288,12 +287,11 @@ def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         var outcomes = outcome_list;
-        window.location.assign('results?filter_type=results'+
-                               '&outcome='+outcomes[this.x]);
+        window.location.assign('results?outcome='+outcomes[this.x]);
     }
     """.replace('outcome_list', outcome_list))
     if group_categories:
-        chart = chart.replace('&outcome=', '&outcome_category=')
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart = chart.replace('\"chart_formatter\"', """
     function() {
         var outcomes = outcome_list;
@@ -385,14 +383,12 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
     }
     chart_percent = dumps(chart_percent).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('results?filter_type=injections'+
-                               '&result__outcome='+this.series.name+
-                               '&target='+this.category);
+        window.location.assign('results?outcome='+this.series.name+
+                               '&injection__target='+this.category);
     }
     """)
     if group_categories:
-        chart_percent = chart_percent.replace('&result__outcome=',
-                                              '&result__outcome_category=')
+        chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart_percent)
     if len(outcomes) == 1:
         chart_log = deepcopy(chart)
@@ -400,24 +396,21 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
         chart_log['yAxis']['type'] = 'logarithmic'
         chart_log = dumps(chart_log).replace('\"chart_click\"', """
         function(event) {
-            window.location.assign('results?filter_type=injections'+
-                                   '&result__outcome='+this.series.name+
-                                   '&target='+this.category);
+            window.location.assign('results?outcome='+this.series.name+
+                                   '&injection__target='+this.category);
         }
         """)
         if group_categories:
-            chart_log = chart_log.replace('&result__outcome=',
-                                          '&result__outcome_category=')
+            chart_log = chart_log.replace('?outcome=', '?outcome_category=')
         chart_array.append(chart_log)
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('results?filter_type=injections'+
-                               '&result__outcome='+this.series.name+
-                               '&target='+this.category);
+        window.location.assign('results?outcome='+this.series.name+
+                               '&injection__target='+this.category);
     }
     """)
     if group_categories:
-        chart = chart.replace('&result__outcome=', '&result__outcome_category=')
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
     print('targets_charts:', round(time()-start, 2), 'seconds')
 
@@ -493,8 +486,7 @@ def propagation_chart(campaign_data, result_objects, injection_objects,
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('results?filter_type=injections'+
-                               '&target='+this.category);
+        window.location.assign('results?injection__target='+this.category);
     }
     """)
     chart_array.append(chart)
@@ -562,8 +554,7 @@ def diff_targets_chart(campaign_data, result_objects, injection_objects,
     chart['series'].append({'data': [x*100 for x in data]})
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('results?filter_type=injections'+
-                               '&target='+this.category);
+        window.location.assign('results?injection__target='+this.category);
     }
     """)
     chart_array.append(chart)
@@ -694,19 +685,17 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
         var register = reg[0];
         var index = reg[1];
         if (index) {
-            window.location.assign('results?filter_type=injections'+
-                                   '&result__outcome='+this.series.name+
-                                   '&register='+register+
-                                   '&register_index='+index);
+            window.location.assign('results?outcome='+this.series.name+
+                                   '&injection__register='+register+
+                                   '&injection__register_index='+index);
         } else {
-            window.location.assign('results?filter_type=injections'+
-                                   '&result__outcome='+this.series.name+
-                                   '&register='+register);
+            window.location.assign('results?outcome='+this.series.name+
+                                   '&injection__register='+register);
         }
     }
     """)
     if group_categories:
-        chart = chart.replace('&result__outcome=', '&result__outcome_category=')
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
     print('tlbs_chart:' if tlb else 'registers_chart:',
           round(time()-start, 2), 'seconds')
@@ -781,13 +770,12 @@ def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
         thread.join()
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('results?filter_type=injections'+
-                               '&result__outcome='+this.series.name+
-                               '&field='+this.category);
+        window.location.assign('results?outcome='+this.series.name+
+                               '&injection__field='+this.category);
     }
     """)
     if group_categories:
-        chart = chart.replace('&result__outcome=', '&result__outcome_category=')
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
     print('tlb_fields_chart:', round(time()-start, 2), 'seconds')
 
@@ -861,13 +849,12 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
         thread.join()
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('results?filter_type=injections'+
-                               '&result__outcome='+this.series.name+
-                               '&bit='+this.category);
+        window.location.assign('results?outcome='+this.series.name+
+                               '&injection__bit='+this.category);
     }
     """)
     if group_categories:
-        chart = chart.replace('&result__outcome=', '&result__outcome_category=')
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
     print('register_bits_chart:', round(time()-start, 2), 'seconds')
 
@@ -976,23 +963,23 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
     if campaign_data.simics:
         chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
-            window.location.assign('results?filter_type=injections'+
-                                   '&result__outcome='+this.series.name+
-                                   '&checkpoint_number='+this.category);
+            window.location.assign('results?outcome='+this.series.name+
+                                   '&injection__checkpoint_number='+
+                                   this.category);
         }
         """)
     else:
         # chart = dumps(chart).replace('\"chart_click\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
-        #     window.location.assign('results?filter_type=injections'+
-        #                            '&result__outcome='+this.series.name+
-        #                            '&time_rounded='+time.toFixed(2));
+        #     window.location.assign('results?outcome='+this.series.name+
+        #                            '&injection__time_rounded='+
+        #                            time.toFixed(2));
         # }
         # """)
         chart = dumps(chart)
     if group_categories:
-        chart = chart.replace('&result__outcome=', '&result__outcome_category=')
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
     print('times_charts', round(time()-start, 2), 'seconds')
 
@@ -1082,16 +1069,16 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
     if campaign_data.simics:
         chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
-            window.location.assign('results?filter_type=injections'+
-                                   '&checkpoint_number='+this.category);
+            window.location.assign('results?injection__checkpoint_number='+
+                                   this.category);
         }
         """)
     else:
         # chart = dumps(chart).replace('\"chart_click\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
-        #     window.location.assign('results?filter_type=injections'+
-        #                            '&time_rounded='+time.toFixed(2));
+        #     window.location.assign('results?injection__time_rounded='+
+        #                            time.toFixed(2));
         # }
         # """)
         chart = dumps(chart)
@@ -1174,12 +1161,11 @@ def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
     chart_array.append(dumps(chart_percent))
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
-        window.location.assign('results?filter_type=results'+
-                               '&outcome='+this.series.name+
+        window.location.assign('results?outcome='+this.series.name+
                                '&num_injections='+this.category);
     }
     """)
     if group_categories:
-        chart = chart.replace('&outcome=', '&outcome_category=')
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
     print('counts_chart:', round(time()-start, 2), 'seconds')
