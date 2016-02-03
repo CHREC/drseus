@@ -109,7 +109,7 @@ class simics(object):
                         serial_ports[0] = line.split(':')[1].strip()
                 found_settings += 1
             elif 'Host TCP port' in line:
-                ssh_ports.append(int(line.split('->')[0].split(' ')[-2]))
+                ssh_ports.append(int(line.split('->')[0].split()[-2]))
                 found_settings += 1
             if not self.db.campaign['aux'] and found_settings == 2:
                 break

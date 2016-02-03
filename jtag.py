@@ -166,53 +166,56 @@ class jtag(object):
                          'timestamp': None}
             if ':' in target:
                 injection['target_index'] = target.split(':')[1]
+                target_index = int(injection['target_index'])
                 target = target.split(':')[0]
                 injection['target'] = target
+            else:
+                target_index = 0
+            if 'memory_mapped' not in self.targets[target] or \
+                    not self.targets[target]['memory_mapped']:
                 self.select_core(injection['target_index'])
             if 'access' in self.targets[target]['registers'][register]:
                 injection['register_access'] = \
                     self.targets[target]['registers'][register]['access']
-            injection['gold_value'] = self.get_register_value(
-                injection['register'], injection['target'])
+            injection['gold_value'] = \
+                self.get_register_value(register, target, target_index)
             if 'bits' in self.targets[target]['registers'][register]:
-                num_bits_to_inject = (self.targets[target]['registers']
-                                                  [register]['bits'])
+                num_bits_to_inject = \
+                    self.targets[target]['registers'][register]['bits']
             else:
                 num_bits_to_inject = 32
             injection['bit'] = randrange(num_bits_to_inject)
             injection['injected_value'] = hex(
                 int(injection['gold_value'], base=16) ^ (1 << injection['bit']))
             if self.options.debug:
-                print(colored('target: '+injection['target'], 'magenta'))
+                print(colored('target: '+target, 'magenta'))
                 if 'target_index' in injection:
-                    print(colored('target_index: ' +
-                                  str(injection['target_index']), 'magenta'))
-                print(colored('register: '+injection['register'], 'magenta'))
+                    print(colored('target_index: '+str(target_index),
+                                  'magenta'))
+                print(colored('register: '+register, 'magenta'))
                 print(colored('bit: '+str(injection['bit']), 'magenta'))
                 print(colored('gold value: '+injection['gold_value'],
                               'magenta'))
                 print(colored('injected value: ' +
                               injection['injected_value'], 'magenta'))
-            self.set_register_value(injection['register'],
-                                    injection['target'],
-                                    injection['injected_value'])
-            if int(injection['injected_value'], base=16) == int(
-                self.get_register_value(injection['register'],
-                                        injection['target']), base=16):
+            self.set_register_value(
+                register, target, target_index, injection['injected_value'])
+            if int(injection['injected_value'], base=16) == \
+                int(self.get_register_value(register, target, target_index),
+                    base=16):
                 injection['success'] = True
                 with self.db as db:
                     db.insert('injection', injection)
                     db.log_event('Information', 'Debugger', 'Fault injected')
             else:
                 self.set_mode()
-                self.set_register_value(injection['register'],
-                                        injection['target'],
-                                        injection['injected_value'])
+                self.set_register_value(
+                    register, target, target_index, injection['injected_value'])
                 self.set_mode(injection['processor_mode'])
                 injection['success'] = False
-                if int(injection['injected_value'], base=16) == int(
-                    self.get_register_value(injection['register'],
-                                            injection['target']), base=16):
+                if int(injection['injected_value'], base=16) == \
+                    int(self.get_register_value(register, target, target_index),
+                        base=16):
                     with self.db as db:
                             db.insert('injection', injection)
                             db.log_event('Warning', 'Debugger',
@@ -224,7 +227,7 @@ class jtag(object):
         return 0, False
 
     def command(self, command, expected_output, error_message,
-                log_event, echo):
+                log_event, line_ending, echo):
         if log_event:
             with self.db as db:
                 event = db.log_event('Information', 'Debugger', 'Command',
@@ -242,7 +245,7 @@ class jtag(object):
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
-            self.telnet.write(bytes(command+'\n', encoding='utf-8'))
+            self.telnet.write(bytes(command+line_ending, encoding='utf-8'))
             if echo:
                 index, match, buff = self.telnet.expect(
                     [bytes(command, encoding='utf-8')], timeout=self.timeout)
@@ -309,7 +312,6 @@ class bdi(jtag):
         super().__init__(database, options)
         if options.jtag:
             self.connect_telnet()
-            # self.command('', error_message='Debugger not ready')
 
     def __str__(self):
         string = ('BDI3000 at '+self.options.debugger_ip_address +
@@ -334,7 +336,7 @@ class bdi(jtag):
         sleep(1)
         self.connect_telnet()
         sleep(1)
-        self.command(None, log_event=False)
+        self.command(None, error_message='', log_event=False)
         with self.db as db:
             db.log_event_success(event)
 
@@ -353,8 +355,49 @@ class bdi(jtag):
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
-        super().command(self, command, expected_output, error_message,
-                        log_event, echo=False)
+        return super().command(command, expected_output, error_message,
+                               log_event, '\r\n', False)
+
+    def get_register_value(self, register, target, target_index):
+        if 'memory_mapped' in self.targets[target] and \
+                self.targets[target]['memory_mapped']:
+            command = 'md'
+            if 'bits' in self.targets[target]['registers'][register]:
+                bits = self.targets[target]['registers'][register]['bits']
+                if bits == 8:
+                    command += 'b'
+                elif bits == 16:
+                    command += 'h'
+                elif bits == 64:
+                    command += 'd'
+            address = self.targets[target]['base'][target_index] + \
+                self.targets[target]['registers'][register]['offset']
+            buff = self.command(command+' '+hex(address)+' 1', [':'],
+                                'Error getting register value')
+        else:
+            buff = self.command('rd '+register, [':'],
+                                'Error getting register value')
+        return buff.split('\r')[0].split(':')[1].split()[0]
+
+    def set_register_value(self, register, target, target_index, value):
+        if 'memory_mapped' in self.targets[target] and \
+                self.targets[target]['memory_mapped']:
+            command = 'mm'
+            if 'bits' in self.targets[target]['registers'][register]:
+                bits = self.targets[target]['registers'][register]['bits']
+                if bits == 8:
+                    command += 'b'
+                elif bits == 16:
+                    command += 'h'
+                elif bits == 64:
+                    command += 'd'
+            address = self.targets[target]['base'][target_index] + \
+                self.targets[target]['registers'][register]['offset']
+            self.command(command+' '+hex(address)+' '+value+' 1',
+                         error_message='Error getting register value')
+        else:
+            self.command('rm '+register+' '+value,
+                         error_message='Error setting register value')
 
 
 class bdi_arm(bdi):
@@ -391,15 +434,6 @@ class bdi_arm(bdi):
                                            'Current CPSR'],
                      'Error selecting core')
 
-    def get_register_value(self, register, target):
-        buff = self.command('rd '+register, [':'],
-                            error_message='Error getting register value')
-        return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
-
-    def set_register_value(self, register, target, value):
-        self.command('rm '+register+' '+value, error_message='Error setting '
-                                                             'register value')
-
 
 class bdi_p2020(bdi):
     def __init__(self, database, options):
@@ -430,15 +464,6 @@ class bdi_p2020(bdi):
         self.command('select '+str(core), ['Target CPU', 'Core state',
                                            'Debug entry cause'],
                      'Error selecting core')
-
-    def get_register_value(self, register, target):
-        buff = self.command('rd '+register, error_message='Error getting '
-                                                          'register value')
-        return buff.split('\r')[0].split(':')[1].strip().split(' ')[0].strip()
-
-    def set_register_value(self, register, target, value):
-        self.command('rm '+register+' '+value, error_message='Error setting '
-                                                             'register value')
 
 
 class openocd(jtag):
@@ -496,8 +521,8 @@ class openocd(jtag):
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
-        super().command(self, command, expected_output, error_message,
-                        log_event, echo=True)
+        return super().command(command, expected_output, error_message,
+                               log_event, '\n', True)
 
     def reset_dut(self, attempts=10):
         super().reset_dut(
@@ -514,17 +539,17 @@ class openocd(jtag):
                      error_message='Error selecting core')
 
     def get_mode(self):
-        cpsr = int(self.get_register_value('cpsr', 'CPU'), base=16)
+        cpsr = int(self.get_register_value('cpsr', 'CPU', None), base=16)
         return self.modes[str(bin(cpsr))[-5:]]
 
     def set_mode(self, mode='svc'):
         modes = {value: key for key, value in self.modes.items()}
         mask = modes[mode]
-        cpsr = int(self.get_register_value('cpsr', 'CPU'), base=16)
-        self.set_register_value('cpsr', 'CPU',
+        cpsr = int(self.get_register_value('cpsr', 'CPU', None), base=16)
+        self.set_register_value('cpsr', 'CPU', None,
                                 hex(int(str(bin(cpsr))[:-5]+mask, base=2)))
 
-    def get_register_value(self, register, target):
+    def get_register_value(self, register, target, target_index):
         if target == 'CP':
             buff = self.command(
                 ' '.join([
@@ -538,11 +563,11 @@ class openocd(jtag):
             return hex(int(buff.split('\n')[1].strip()))
         else:
             buff = self.command('reg '+register, [':'],
-                                error_message='Error getting register value')
+                                'Error getting register value')
             return \
-                buff.split('\n')[1].split(':')[1].strip().split(' ')[0].strip()
+                buff.split('\n')[1].split(':')[1].split()[0]
 
-    def set_register_value(self, register, target, value):
+    def set_register_value(self, register, target, target_index, value):
         if target == 'CP':
             self.command(
                 ' '.join([

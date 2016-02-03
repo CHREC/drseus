@@ -1,5 +1,9 @@
 from targets import calculate_target_bits
 
+# TODO: add ETSEC_TBI target to P2020
+
+p2020_ccsrbar = 0xFFE00000
+
 devices = {
     'a9': {
         'CP': {
@@ -1566,6 +1570,898 @@ devices = {
         #         }
         #     }
         # }
+        'ETSEC': {
+            'count': 3,
+            'memory_mapped': True,
+            'base': [
+                p2020_ccsrbar+0x24000,
+                p2020_ccsrbar+0x25000,
+                p2020_ccsrbar+0x26000
+            ],
+            'registers': {
+                'TSEC_ID': {
+                    'access': 'r',
+                    'offset': 0x0
+                },
+                'TSEC_ID2': {
+                    'access': 'r',
+                    'offset': 0x4
+                },
+                'IEVENT': {
+                    'access': 'w1c',
+                    'offset': 0x10
+                },
+                'IMASK': {
+                    'access': 'rw',
+                    'offset': 0x14
+                },
+                'EDIS': {
+                    'access': 'rw',
+                    'offset': 0x18
+                },
+                'ECNTRL': {
+                    'access': 'rw',
+                    'offset': 0x20
+                },
+                'PTV': {
+                    'access': 'rw',
+                    'offset': 0x28
+                },
+                'DMACTRL': {
+                    'access': 'rw',
+                    'offset': 0x2C
+                },
+                'TBIPA': {
+                    'access': 'rw',
+                    'offset': 0x30
+                },
+                'TCTRL': {
+                    'access': 'rw',
+                    'offset': 0x100
+                },
+                'TSTAT': {
+                    'access': 'w1c',
+                    'offset': 0x104
+                },
+                'DFVLAN': {
+                    'access': 'rw',
+                    'offset': 0x108
+                },
+                'TXIC': {
+                    'access': 'rw',
+                    'offset': 0x110
+                },
+                'TQUEUE': {
+                    'access': 'rw',
+                    'offset': 0x114
+                },
+                'TR03WT': {
+                    'access': 'rw',
+                    'offset': 0x140
+                },
+                'TR47WT': {
+                    'access': 'rw',
+                    'offset': 0x144
+                },
+                'TBDBPH': {
+                    'access': 'rw',
+                    'offset': 0x180
+                },
+                'TBPTR0': {
+                    'access': 'rw',
+                    'offset': 0x184
+                },
+                'TBPTR1': {
+                    'access': 'rw',
+                    'offset': 0x18C
+                },
+                'TBPTR2': {
+                    'access': 'rw',
+                    'offset': 0x194
+                },
+                'TBPTR3': {
+                    'access': 'rw',
+                    'offset': 0x19C
+                },
+                'TBPTR4': {
+                    'access': 'rw',
+                    'offset': 0x1A4
+                },
+                'TBPTR5': {
+                    'access': 'rw',
+                    'offset': 0x1AC
+                },
+                'TBPTR6': {
+                    'access': 'rw',
+                    'offset': 0x1B4
+                },
+                'TBPTR7': {
+                    'access': 'rw',
+                    'offset': 0x1BC
+                },
+                'TBASEH': {
+                    'access': 'rw',
+                    'offset': 0x200
+                },
+                'TBASE0': {
+                    'access': 'rw',
+                    'offset': 0x204
+                },
+                'TBASE1': {
+                    'access': 'rw',
+                    'offset': 0x20C
+                },
+                'TBASE2': {
+                    'access': 'rw',
+                    'offset': 0x214
+                },
+                'TBASE3': {
+                    'access': 'rw',
+                    'offset': 0x21C
+                },
+                'TBASE4': {
+                    'access': 'rw',
+                    'offset': 0x224
+                },
+                'TBASE5': {
+                    'access': 'rw',
+                    'offset': 0x22C
+                },
+                'TBASE6': {
+                    'access': 'rw',
+                    'offset': 0x234
+                },
+                'TBASE7': {
+                    'access': 'rw',
+                    'offset': 0x23C
+                },
+                'TMR_TXTS1_ID': {
+                    'access': 'r',
+                    'offset': 0x280
+                },
+                'TMR_TXTS2_ID': {
+                    'access': 'r',
+                    'offset': 0x284
+                },
+                'TMR_TXTS1_H': {
+                    'access': 'r',
+                    'offset': 0x2C0
+                },
+                'TMR_TXTS1_L': {
+                    'access': 'r',
+                    'offset': 0x2C4
+                },
+                'TMR_TXTS2_H': {
+                    'access': 'r',
+                    'offset': 0x2C8
+                },
+                'TMR_TXTS2_L': {
+                    'access': 'r',
+                    'offset': 0x2CC
+                },
+                'RCTRL': {
+                    'access': 'rw',
+                    'offset': 0x300
+                },
+                'RSTAT': {
+                    'access': 'w1c',
+                    'offset': 0x304
+                },
+                'RXIC': {
+                    'access': 'rw',
+                    'offset': 0x310
+                },
+                'RQUEUE': {
+                    'access': 'rw',
+                    'offset': 0x314
+                },
+                'RBIFX': {
+                    'access': 'rw',
+                    'offset': 0x330
+                },
+                'RQFAR': {
+                    'access': 'rw',
+                    'offset': 0x334
+                },
+                'RQFCR': {
+                    'access': 'rw',
+                    'offset': 0x338
+                },
+                'RQFPR': {
+                    'access': 'rw',
+                    'offset': 0x33C
+                },
+                'MRBLR': {
+                    'access': 'rw',
+                    'offset': 0x340
+                },
+                'RBDBPH': {
+                    'access': 'rw',
+                    'offset': 0x380
+                },
+                'RBPTR0': {
+                    'access': 'rw',
+                    'offset': 0x384
+                },
+                'RBPTR1': {
+                    'access': 'rw',
+                    'offset': 0x38C
+                },
+                'RBPTR2': {
+                    'access': 'rw',
+                    'offset': 0x394
+                },
+                'RBPTR3': {
+                    'access': 'rw',
+                    'offset': 0x39C
+                },
+                'RBPTR4': {
+                    'access': 'rw',
+                    'offset': 0x3A4
+                },
+                'RBPTR5': {
+                    'access': 'rw',
+                    'offset': 0x3AC
+                },
+                'RBPTR6': {
+                    'access': 'rw',
+                    'offset': 0x3B4
+                },
+                'RBPTR7': {
+                    'access': 'rw',
+                    'offset': 0x3BC
+                },
+                'RBASEH': {
+                    'access': 'rw',
+                    'offset': 0x400
+                },
+                'RBASE0': {
+                    'access': 'rw',
+                    'offset': 0x404
+                },
+                'RBASE1': {
+                    'access': 'rw',
+                    'offset': 0x40C
+                },
+                'RBASE2': {
+                    'access': 'rw',
+                    'offset': 0x414
+                },
+                'RBASE3': {
+                    'access': 'rw',
+                    'offset': 0x41C
+                },
+                'RBASE4': {
+                    'access': 'rw',
+                    'offset': 0x424
+                },
+                'RBASE5': {
+                    'access': 'rw',
+                    'offset': 0x42C
+                },
+                'RBASE6': {
+                    'access': 'rw',
+                    'offset': 0x434
+                },
+                'RBASE7': {
+                    'access': 'rw',
+                    'offset': 0x43C
+                },
+                'TMR_RXTS_H': {
+                    'access': 'r',
+                    'offset': 0x4C0
+                },
+                'TMR_RXTS_L': {
+                    'access': 'r',
+                    'offset': 0x4C4
+                },
+                'MACCFG1': {
+                    'access': 'rw',
+                    'offset': 0x500
+                },
+                'MACCFG2': {
+                    'access': 'rw',
+                    'offset': 0x504
+                },
+                'IPGIFG': {
+                    'access': 'rw',
+                    'offset': 0x508
+                },
+                'HAFDUP': {
+                    'access': 'rw',
+                    'offset': 0x50C
+                },
+                'MAXFRM': {
+                    'access': 'rw',
+                    'offset': 0x510
+                },
+                'MIIMCFG': {
+                    'access': 'rw',
+                    'offset': 0x520
+                },
+                'MIIMCOM': {
+                    'access': 'rw',
+                    'offset': 0x524
+                },
+                'MIIMADD': {
+                    'access': 'rw',
+                    'offset': 0x528
+                },
+                'MIIMCON': {
+                    'access': 'w',
+                    'offset': 0x52C
+                },
+                'MIIMSTAT': {
+                    'access': 'r',
+                    'offset': 0x530
+                },
+                'MIIMIND': {
+                    'access': 'r',
+                    'offset': 0x534
+                },
+                'IFSTAT': {
+                    'access': 'r',
+                    'offset': 0x53C
+                },
+                'MACSTNADDR1': {
+                    'access': 'rw',
+                    'offset': 0x540
+                },
+                'MACSTNADDR2': {
+                    'access': 'rw',
+                    'offset': 0x544
+                },
+                'MAC01ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x548
+                },
+                'MAC01ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x54C
+                },
+                'MAC02ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x550
+                },
+                'MAC02ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x554
+                },
+                'MAC03ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x558
+                },
+                'MAC03ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x55C
+                },
+                'MAC04ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x560
+                },
+                'MAC04ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x564
+                },
+                'MAC05ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x568
+                },
+                'MAC05ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x56C
+                },
+                'MAC06ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x570
+                },
+                'MAC06ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x574
+                },
+                'MAC07ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x578
+                },
+                'MAC07ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x57C
+                },
+                'MAC08ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x580
+                },
+                'MAC08ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x584
+                },
+                'MAC09ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x588
+                },
+                'MAC09ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x58C
+                },
+                'MAC10ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x590
+                },
+                'MAC10ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x594
+                },
+                'MAC11ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x598
+                },
+                'MAC11ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x59C
+                },
+                'MAC12ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x5A0
+                },
+                'MAC12ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x5A4
+                },
+                'MAC13ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x5A8
+                },
+                'MAC13ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x5AC
+                },
+                'MAC14ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x5B0
+                },
+                'MAC14ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x5B4
+                },
+                'MAC15ADDR1': {
+                    'access': 'rw',
+                    'offset': 0x5B8
+                },
+                'MAC15ADDR2': {
+                    'access': 'rw',
+                    'offset': 0x5BC
+                },
+                'TR64': {
+                    'access': 'rw',
+                    'offset': 0x680
+                },
+                'TR127': {
+                    'access': 'rw',
+                    'offset': 0x684
+                },
+                'TR255': {
+                    'access': 'rw',
+                    'offset': 0x688
+                },
+                'TR511': {
+                    'access': 'rw',
+                    'offset': 0x68C
+                },
+                'TR1K': {
+                    'access': 'rw',
+                    'offset': 0x690
+                },
+                'TRMAX': {
+                    'access': 'rw',
+                    'offset': 0x694
+                },
+                'TRMGV': {
+                    'access': 'rw',
+                    'offset': 0x698
+                },
+                'RBYT': {
+                    'access': 'rw',
+                    'offset': 0x69C
+                },
+                'RPKT': {
+                    'access': 'rw',
+                    'offset': 0x6A0
+                },
+                'RFCS': {
+                    'access': 'rw',
+                    'offset': 0x6A4
+                },
+                'RMCA': {
+                    'access': 'rw',
+                    'offset': 0x6A8
+                },
+                'RBCA': {
+                    'access': 'rw',
+                    'offset': 0x6AC
+                },
+                'RXCF': {
+                    'access': 'rw',
+                    'offset': 0x6B0
+                },
+                'RXPF': {
+                    'access': 'rw',
+                    'offset': 0x6B4
+                },
+                'RXUO': {
+                    'access': 'rw',
+                    'offset': 0x6B8
+                },
+                'RALN': {
+                    'access': 'rw',
+                    'offset': 0x6BC
+                },
+                'RFLR': {
+                    'access': 'rw',
+                    'offset': 0x6C0
+                },
+                'RCDE': {
+                    'access': 'rw',
+                    'offset': 0x6C4
+                },
+                'RCSE': {
+                    'access': 'rw',
+                    'offset': 0x6C8
+                },
+                'RUND': {
+                    'access': 'rw',
+                    'offset': 0x6CC
+                },
+                'ROVR': {
+                    'access': 'rw',
+                    'offset': 0x6D0
+                },
+                'RFRG': {
+                    'access': 'rw',
+                    'offset': 0x6D4
+                },
+                'RJBR': {
+                    'access': 'rw',
+                    'offset': 0x6D8
+                },
+                'RDRP': {
+                    'access': 'rw',
+                    'offset': 0x6DC
+                },
+                'TBYT': {
+                    'access': 'rw',
+                    'offset': 0x6E0
+                },
+                'TPKT': {
+                    'access': 'rw',
+                    'offset': 0x6E4
+                },
+                'TMCA': {
+                    'access': 'rw',
+                    'offset': 0x6E8
+                },
+                'TBCA': {
+                    'access': 'rw',
+                    'offset': 0x6EC
+                },
+                'TXPF': {
+                    'access': 'rw',
+                    'offset': 0x6F0
+                },
+                'TDFR': {
+                    'access': 'rw',
+                    'offset': 0x6F4
+                },
+                'TEDF': {
+                    'access': 'rw',
+                    'offset': 0x6F8
+                },
+                'TSCL': {
+                    'access': 'rw',
+                    'offset': 0x6FC
+                },
+                'TMCL': {
+                    'access': 'rw',
+                    'offset': 0x700
+                },
+                'TLCL': {
+                    'access': 'rw',
+                    'offset': 0x704
+                },
+                'TXCL': {
+                    'access': 'rw',
+                    'offset': 0x708
+                },
+                'TNCL': {
+                    'access': 'rw',
+                    'offset': 0x70C
+                },
+                'TDRP': {
+                    'access': 'rw',
+                    'offset': 0x714
+                },
+                'TJBR': {
+                    'access': 'rw',
+                    'offset': 0x718
+                },
+                'TFCS': {
+                    'access': 'rw',
+                    'offset': 0x71C
+                },
+                'TXCF': {
+                    'access': 'rw',
+                    'offset': 0x720
+                },
+                'TOVR': {
+                    'access': 'rw',
+                    'offset': 0x724
+                },
+                'TUND': {
+                    'access': 'rw',
+                    'offset': 0x728
+                },
+                'TFRG': {
+                    'access': 'rw',
+                    'offset': 0x72C
+                },
+                'CAR1': {
+                    'access': 'w1c',
+                    'offset': 0x730
+                },
+                'CAR2': {
+                    'access': 'rw',
+                    'offset': 0x734
+                },
+                'CAM1': {
+                    'access': 'rw',
+                    'offset': 0x738
+                },
+                'CAM2': {
+                    'access': 'rw',
+                    'offset': 0x73C
+                },
+                'RREJ': {
+                    'access': 'rw',
+                    'offset': 0x740
+                },
+                'IGADDR0': {
+                    'access': 'rw',
+                    'offset': 0x800
+                },
+                'IGADDR1': {
+                    'access': 'rw',
+                    'offset': 0x804
+                },
+                'IGADDR2': {
+                    'access': 'rw',
+                    'offset': 0x808
+                },
+                'IGADDR3': {
+                    'access': 'rw',
+                    'offset': 0x80C
+                },
+                'IGADDR4': {
+                    'access': 'rw',
+                    'offset': 0x810
+                },
+                'IGADDR5': {
+                    'access': 'rw',
+                    'offset': 0x814
+                },
+                'IGADDR6': {
+                    'access': 'rw',
+                    'offset': 0x818
+                },
+                'IGADDR7': {
+                    'access': 'rw',
+                    'offset': 0x81C
+                },
+                'GADDR0': {
+                    'access': 'rw',
+                    'offset': 0x880
+                },
+                'GADDR1': {
+                    'access': 'rw',
+                    'offset': 0x884
+                },
+                'GADDR2': {
+                    'access': 'rw',
+                    'offset': 0x888
+                },
+                'GADDR3': {
+                    'access': 'rw',
+                    'offset': 0x88C
+                },
+                'GADDR4': {
+                    'access': 'rw',
+                    'offset': 0x890
+                },
+                'GADDR5': {
+                    'access': 'rw',
+                    'offset': 0x894
+                },
+                'GADDR6': {
+                    'access': 'rw',
+                    'offset': 0x898
+                },
+                'GADDR7': {
+                    'access': 'rw',
+                    'offset': 0x89C
+                },
+                'ATTR': {
+                    'access': 'rw',
+                    'offset': 0xBF8
+                },
+                'ATTRELI': {
+                    'access': 'rw',
+                    'offset': 0xBFC
+                },
+                'RQPRM0': {
+                    'access': 'rw',
+                    'offset': 0xC00
+                },
+                'RQPRM1': {
+                    'access': 'rw',
+                    'offset': 0xC04
+                },
+                'RQPRM2': {
+                    'access': 'rw',
+                    'offset': 0xC08
+                },
+                'RQPRM3': {
+                    'access': 'rw',
+                    'offset': 0xC0C
+                },
+                'RQPRM4': {
+                    'access': 'rw',
+                    'offset': 0xC10
+                },
+                'RQPRM5': {
+                    'access': 'rw',
+                    'offset': 0xC14
+                },
+                'RQPRM6': {
+                    'access': 'rw',
+                    'offset': 0xC18
+                },
+                'RQPRM7': {
+                    'access': 'rw',
+                    'offset': 0xC1C
+                },
+                'RFBPTR0': {
+                    'access': 'rw',
+                    'offset': 0xC44
+                },
+                'RFBPTR1': {
+                    'access': 'rw',
+                    'offset': 0xC4C
+                },
+                'RFBPTR2': {
+                    'access': 'rw',
+                    'offset': 0xC54
+                },
+                'RFBPTR3': {
+                    'access': 'rw',
+                    'offset': 0xC5C
+                },
+                'RFBPTR4': {
+                    'access': 'rw',
+                    'offset': 0xC64
+                },
+                'RFBPTR5': {
+                    'access': 'rw',
+                    'offset': 0xC6C
+                },
+                'RFBPTR6': {
+                    'access': 'rw',
+                    'offset': 0xC74
+                },
+                'RFBPTR7': {
+                    'access': 'rw',
+                    'offset': 0xC7C
+                }
+            }
+        },
+        'ETSEC_1588': {
+            'count': 1,
+            'memory_mapped': True,
+            'base': [
+                p2020_ccsrbar+0x24000
+            ],
+            'registers': {
+                'TMR_CTRL': {
+                    'access': 'rw',
+                    'offset': 0xE00
+                },
+                'TMR_TEVENT': {
+                    'access': 'w1c',
+                    'offset': 0xE04
+                },
+                'TMR_TEMASK': {
+                    'access': 'rw',
+                    'offset': 0xE08
+                },
+                'TMR_PEVENT': {
+                    'access': 'rw',
+                    'offset': 0xE0C
+                },
+                'TMR_PEMASK': {
+                    'access': 'rw',
+                    'offset': 0xE10
+                },
+                'TMR_STAT': {
+                    'access': 'rw',
+                    'offset': 0xE14
+                },
+                'TMR_CNT_H': {
+                    'access': 'rw',
+                    'offset': 0xE18
+                },
+                'TMR_CNT_L': {
+                    'access': 'rw',
+                    'offset': 0xE1C
+                },
+                'TMR_ADD': {
+                    'access': 'rw',
+                    'offset': 0xE20
+                },
+                'TMR_ACC': {
+                    'access': 'rw',
+                    'offset': 0xE24
+                },
+                'TMR_PRSC': {
+                    'access': 'rw',
+                    'offset': 0xE28
+                },
+                'TMROFF_H': {
+                    'access': 'rw',
+                    'offset': 0xE30
+                },
+                'TMROFF_L': {
+                    'access': 'rw',
+                    'offset': 0xE34
+                },
+                'TMR_ALARM1_H': {
+                    'access': 'rw',
+                    'offset': 0xE40
+                },
+                'TMR_ALARM1_L': {
+                    'access': 'rw',
+                    'offset': 0xE44
+                },
+                'TMR_ALARM2_H': {
+                    'access': 'rw',
+                    'offset': 0xE48
+                },
+                'TMR_ALARM2_L': {
+                    'access': 'rw',
+                    'offset': 0xE4C
+                },
+                'TMR_FIPER1': {
+                    'access': 'rw',
+                    'offset': 0xE80
+                },
+                'TMR_FIPER2': {
+                    'access': 'rw',
+                    'offset': 0xE84
+                },
+                'TMR_ETTS1_H': {
+                    'access': 'rw',
+                    'offset': 0xEA0
+                },
+                'TMR_ETTS1_L': {
+                    'access': 'rw',
+                    'offset': 0xEA4
+                },
+                'TMR_ETTS2_H': {
+                    'access': 'rw',
+                    'offset': 0xEA8
+                },
+                'TMR_ETTS2_L': {
+                    'access': 'rw',
+                    'offset': 0xEAC
+                }
+            }
+        }
     }
 }
 
