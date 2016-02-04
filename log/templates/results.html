@@ -74,10 +74,10 @@
                 </script>
                 <tr>
                     <th style="text-align: center;">
-                        Page Selection
+                        Selection
                     </th>
                     <th style="text-align: center;">
-                        Open Results
+                        Open in Tabs
                     </th>
                     <th style="text-align: center;">
                         Console Output
@@ -97,12 +97,13 @@
                 <tr>
                     <td>
                         <div style="text-align: center;">
-                            <input type="button" onclick="set_checkboxes(true)" value="Select All">
+                            <input type="button" onclick="set_checkboxes(true)" value="All">
+                            <input type="button" onclick="set_checkboxes(false)" value="None">
                         </div>
                     </td>
                     <td>
                         <div style="text-align: center;">
-                            <input type="button" onclick="open_results(true)" value="Open Selected">
+                            <input type="button" onclick="open_results(true)" value="Selected">
                         </div>
                     </td>
                     <td>
@@ -119,7 +120,7 @@
                     {% endif %}
                     <td>
                         <div style="text-align: center;">
-                            <input type="button" value="Edit Outcome Categories" onclick="edit_outcome_category_click()">
+                            <input type="button" value="Edit Categories" onclick="edit_outcome_category_click()">
                         </div>
                     </td>
                     <td>
@@ -131,12 +132,12 @@
                 <tr>
                     <td>
                         <div style="text-align: center;">
-                            <input type="button" onclick="set_checkboxes(false)" value="Deselect All">
+                            <input type="button" onclick="invert_checkboxes()" value="Invert">
                         </div>
                     </td>
                     <td>
                         <div style="text-align: center;">
-                            <input type="button" onclick="open_results(false)" value="Open All (Displayed)">
+                            <input type="button" onclick="open_results(false)" value="All (Displayed)">
                         </div>
                     </td>
                     <td>
@@ -159,13 +160,6 @@
                     <td>
                         <div style="text-align: center;">
                             <input type="button" value="Delete All (Filtered)" onclick="delete_all_click()">
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div style="text-align: center;">
-                            <input type="button" onclick="invert_checkboxes()" value="Invert Selection">
                         </div>
                     </td>
                 </tr>

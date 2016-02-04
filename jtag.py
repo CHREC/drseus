@@ -173,7 +173,7 @@ class jtag(object):
                 target_index = 0
             if 'memory_mapped' not in self.targets[target] or \
                     not self.targets[target]['memory_mapped']:
-                self.select_core(injection['target_index'])
+                self.select_core(target_index)
             if 'access' in self.targets[target]['registers'][register]:
                 injection['register_access'] = \
                     self.targets[target]['registers'][register]['access']
