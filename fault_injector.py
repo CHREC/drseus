@@ -344,6 +344,9 @@ class fault_injector(object):
             else:
                 self.__monitor_execution(latent_faults, persistent_faults)
                 check_latent_faults()
+            self.debugger.dut.flush()
+            if self.db.campaign['aux']:
+                self.debugger.aux.flush()
             if self.db.campaign['simics']:
                 close_simics()
             with self.db as db:
