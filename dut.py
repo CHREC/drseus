@@ -101,6 +101,8 @@ class dut(object):
                     sleep(30)
                 else:
                     raise DrSEUsError('Error opening serial port')
+            else:
+                break
         self.serial.reset_input_buffer()
         with self.db as db:
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
