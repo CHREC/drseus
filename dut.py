@@ -69,12 +69,14 @@ class dut(object):
                   '\n\tSCP Port: '+str(self.scp_port))
         return string
 
-    def open(self):
+    def open(self, attempts=10):
         serial_port = (self.options.dut_serial_port if not self.aux
                        else self.options.aux_serial_port)
         if self.db.result:
             self.db.result[('dut' if not self.aux else 'aux') +
                            '_serial_port'] = serial_port
+            with self.db as db:
+                db.update('result')
         baud_rate = (self.options.dut_baud_rate if not self.aux
                      else self.options.aux_baud_rate)
         self.serial = Serial(port=None, baudrate=baud_rate,
@@ -83,7 +85,22 @@ class dut(object):
             # workaround for pyserial 3
             self.serial._dsrdtr = True
         self.serial.port = serial_port
-        self.serial.open()
+        for attempt in range(attempts):
+            try:
+                self.serial.open()
+            except Exception as error:
+                with self.db as db:
+                    db.log_event('Warning' if attempt < attempts-1 else 'Error',
+                                 'DUT' if not self.aux else 'AUX',
+                                 'Error opening serial port',
+                                 db.log_exception)
+                print(colored(
+                    'Error opening serial port '+serial_port+' (attempt ' +
+                    str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
+                if attempt < attempts-1:
+                    sleep(30)
+                else:
+                    raise DrSEUsError('Error opening serial port')
         self.serial.reset_input_buffer()
         with self.db as db:
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
