@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block body %}
+    <div class="source" align="center">
+        <div class="section">
+            <h2>
+                Injections
+            </h2>
+            <div id="targets_chart"></div>
+            <br>
+            <div id="targets_percent_chart"></div>
+            <br>
+            <div id="targets_log_chart"></div>
+            <br>
+            <div id="registers_chart"></div>
+            <br>
+            <div id="register_bits_chart"></div>
+            <br>
+            {% load django_tables2 %}
+            {% render_table table %}
+        </div>
+    </div>
+{% endblock %}

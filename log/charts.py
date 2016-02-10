@@ -304,7 +304,7 @@ def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
 
 
 def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
-                   group_categories, chart_array):
+                   group_categories, chart_array, success=False):
     start = time()
     targets = list(injection_objects.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -355,14 +355,17 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
 
     def plot_outcome(i):
         when_kwargs = {'then': 1}
-        when_kwargs['result__outcome_category' if group_categories
-                    else 'result__outcome'] = outcomes[i]
+        if success:
+            when_kwargs['success'] = outcomes[i]
+        else:
+            when_kwargs['result__outcome_category' if group_categories
+                        else 'result__outcome'] = outcomes[i]
         data = list(injection_objects.values_list('target').distinct(
             ).order_by('target').annotate(
             count=Sum(Case(When(**when_kwargs), default=0,
                            output_field=IntegerField()))
             ).values_list('count', flat=True))
-        chart['series'][i] = {'data': data, 'name': outcomes[i]}
+        chart['series'][i] = {'data': data, 'name': str(outcomes[i])}
     threads = []
     for i in range(len(outcomes)):
         thread = Thread(target=plot_outcome, args=[i])
@@ -562,21 +565,21 @@ def diff_targets_chart(campaign_data, result_objects, injection_objects,
 
 
 def registers_chart(campaign_data, result_objects, injection_objects, outcomes,
-                    group_categories, chart_array):
+                    group_categories, chart_array, success=False):
     registers_tlbs_charts(False, campaign_data, result_objects,
                           injection_objects, outcomes, group_categories,
-                          chart_array)
+                          success, chart_array)
 
 
 def tlbs_chart(campaign_data, result_objects, injection_objects, outcomes,
-               group_categories, chart_array):
+               group_categories, chart_array, success=False):
     registers_tlbs_charts(True, campaign_data, result_objects,
                           injection_objects, outcomes, group_categories,
-                          chart_array)
+                          success, chart_array)
 
 
 def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
-                          outcomes, group_categories, chart_array):
+                          outcomes, group_categories, success, chart_array):
     start = time()
     if not tlb:
         registers = injection_objects.exclude(target='TLB').annotate(
@@ -649,8 +652,11 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
 
     def plot_outcome(i):
         when_kwargs = {'then': 1}
-        when_kwargs['result__outcome_category' if group_categories
-                    else 'result__outcome'] = outcomes[i]
+        if success:
+            when_kwargs['success'] = outcomes[i]
+        else:
+            when_kwargs['result__outcome_category' if group_categories
+                        else 'result__outcome'] = outcomes[i]
         if not tlb:
             data = injection_objects.exclude(target='TLB').annotate(
                 register_name=Concat('register', Value(' '), 'register_index')
@@ -671,7 +677,8 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
                                default=0, output_field=IntegerField()))
             ).values_list('register_name', 'count')
         data = sorted(data, key=fix_sort_list)
-        chart['series'][i] = {'data': list(zip(*data))[1], 'name': outcomes[i]}
+        chart['series'][i] = {'data': list(zip(*data))[1],
+                              'name': str(outcomes[i])}
     threads = []
     for i in range(len(outcomes)):
         thread = Thread(target=plot_outcome, args=[i])
@@ -781,7 +788,7 @@ def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
 
 
 def register_bits_chart(campaign_data, result_objects, injection_objects,
-                        outcomes, group_categories, chart_array):
+                        outcomes, group_categories, chart_array, success=False):
     start = time()
     bits = list(injection_objects.exclude(target='TLB').values_list(
         'bit', flat=True).distinct().order_by('bit'))
@@ -832,14 +839,17 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
 
     def plot_outcome(i):
         when_kwargs = {'then': 1}
-        when_kwargs['result__outcome_category' if group_categories
-                    else 'result__outcome'] = outcomes[i]
+        if success:
+            when_kwargs['success'] = outcomes[i]
+        else:
+            when_kwargs['result__outcome_category' if group_categories
+                        else 'result__outcome'] = outcomes[i]
         data = list(injection_objects.exclude(target='TLB').values_list(
             'bit').distinct().order_by('bit').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
-        chart['series'][i] = {'data': data, 'name': outcomes[i]}
+        chart['series'][i] = {'data': data, 'name': str(outcomes[i])}
     threads = []
     for i in range(len(outcomes)):
         thread = Thread(target=plot_outcome, args=[i])
@@ -1169,3 +1179,23 @@ def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_array.append(chart)
     print('counts_chart:', round(time()-start, 2), 'seconds')
+
+
+def injections_charts(result_ids, campaign_data):
+    charts = (targets_charts, registers_chart, register_bits_chart)
+    result_objects = result.objects.filter(id__in=result_ids)
+    injection_objects = injection.objects.filter(result__id__in=result_ids)
+    outcomes = list(injection.objects.filter(
+        result_id__in=result_ids).values_list(
+        'success', flat=True).distinct().order_by('success'))
+    chart_array = []
+    threads = []
+    for chart in charts:
+        thread = Thread(target=chart,
+                        args=(campaign_data, result_objects, injection_objects,
+                              outcomes, False, chart_array, True))
+        thread.start()
+        threads.append(thread)
+    for thread in threads:
+        thread.join()
+    return '['+','.join(chart_array)+']'

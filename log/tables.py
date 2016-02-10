@@ -152,6 +152,16 @@ class event_table(Table):
                   'success')
 
 
+class injections_table(Table):
+    class Meta:
+        attrs = {"class": "paleblue"}
+        model = injection
+        order_by = ('target', 'target_index', 'register', 'bit', 'success')
+        fields = ('target', 'target_index', 'register', 'bit',
+                  'register_access', 'processor_mode', 'gold_value',
+                  'injected_value', 'success')
+
+
 class hw_injection_table(Table):
     timestamp = DateTimeColumn(format=datetime_format)
 

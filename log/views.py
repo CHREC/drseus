@@ -6,19 +6,21 @@ from mimetypes import guess_type
 from os.path import exists
 from subprocess import Popen
 
-from .charts import campaigns_chart, results_charts, target_bits_chart
+from .charts import (campaigns_chart, injections_charts, results_charts,
+                     target_bits_chart)
 from .filters import result_filter, simics_register_diff_filter
 from .models import (campaign, event, injection, result, simics_memory_diff,
                      simics_register_diff)
 from .tables import (campaign_table, campaigns_table, event_table,
-                     hw_injection_table, result_table, results_table,
-                     simics_injection_table, simics_memory_diff_table,
-                     simics_register_diff_table)
+                     hw_injection_table, injections_table, result_table,
+                     results_table, simics_injection_table,
+                     simics_memory_diff_table, simics_register_diff_table)
 
 navigation_items = (('Campaign Information', 'info'),
                     ('Charts By Category', 'category_charts'),
                     ('Charts By Outcomes', 'outcome_charts'),
-                    ('Results Table', 'results'))
+                    ('Results Table', 'results'),
+                    ('Injections', 'injections'))
 
 
 def campaigns_page(request):
@@ -89,6 +91,25 @@ def charts_page(request, campaign_id, group_categories=False):
         'campaign_data': campaign_object, 'chart_array': chart_array,
         'filter': filter_, 'navigation_items': navigation_items,
         'page_items': page_items})
+
+
+def injections_page(request, campaign_id):
+    campaign_object = campaign.objects.get(id=campaign_id)
+    filter_ = result_filter(
+        request.GET, campaign=campaign_id,
+        queryset=result.objects.filter(campaign_id=campaign_id))
+    result_ids = filter_.qs.values('id').distinct()
+    if result_ids.count() > 0:
+        chart_array = injections_charts(result_ids, campaign_object)
+    else:
+        chart_array = None
+    injection_objects = injection.objects.filter(result_id__in=result_ids)
+    table = injections_table(injection_objects)
+    RequestConfig(request, paginate={'per_page': 100}).configure(table)
+    return render(request, 'injections.html', {
+        'campaign_data': campaign_object, 'chart_array': chart_array,
+        'filter': filter_, 'navigation_items': navigation_items,
+        'table': table})
 
 
 def results_page(request, campaign_id):
