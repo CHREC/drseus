@@ -465,13 +465,12 @@ class simics(object):
             checkpoints_to_inject.append(checkpoint_num)
         checkpoints_to_inject = sorted(checkpoints_to_inject)
         latent_faults = 0
-        for injection_number in range(1, len(checkpoints_to_inject)+1):
-            checkpoint_number = checkpoints_to_inject[injection_number-1]
+        for injection_number, checkpoint_number in \
+                enumerate(checkpoints_to_inject, start=1):
             injected_checkpoint = self.__inject_checkpoint(injection_number,
                                                            checkpoint_number)
             self.__launch_simics(injected_checkpoint)
-            injections_remaining = (injection_number <
-                                    len(checkpoints_to_inject))
+            injections_remaining = injection_number < len(checkpoints_to_inject)
             if injections_remaining:
                 next_checkpoint = checkpoints_to_inject[injection_number]
             else:

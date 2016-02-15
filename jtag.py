@@ -142,9 +142,7 @@ class jtag(object):
         for i in range(self.options.injections):
             injection_times.append(uniform(0, self.db.campaign['exec_time']))
         injection_times = sorted(injection_times)
-        injection = 0
-        for injection_time in injection_times:
-            injection += 1
+        for injection, injection_time in enumerate(injection_times, start=1):
             if self.options.debug:
                 print(colored('injection time: '+str(injection_time),
                               'magenta'))

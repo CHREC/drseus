@@ -26,8 +26,8 @@ class database(object):
 
         def dict_factory(cursor, row):
             dictionary = {}
-            for idx, col in enumerate(cursor.description):
-                dictionary[col[0]] = row[idx]
+            for id_, column in enumerate(cursor.description):
+                dictionary[column[0]] = row[id_]
             return dictionary
 
     # def __enter__(self):
