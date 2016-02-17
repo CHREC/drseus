@@ -227,9 +227,9 @@ class fault_injector(object):
             self.db.result['outcome_category'] = 'Execution error'
             self.db.result['outcome'] = error.type
         if self.db.campaign['output_file'] and \
-                self.db.result['outcome'] == 'Incomplete':
+                self.db.result['outcome'] == 'In progress':
             check_output()
-        if self.db.result['outcome'] == 'Incomplete':
+        if self.db.result['outcome'] == 'In progress':
             self.db.result['outcome_category'] = 'No error'
             if persistent_faults:
                 self.db.result['outcome'] = 'Persistent faults'
