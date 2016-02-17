@@ -46,7 +46,7 @@ class power_switch(object):
         response = urlopen(Request(
             'http://'+self.ip_address+'/index.htm',
             headers={'Authorization': b'Basic '+b64encode(
-                bytes(self.username + ':' + self.password, encoding='utf-8'))}))
+                bytes(self.username+':'+self.password, encoding='utf-8'))}))
         parser = table_parser()
         parser.feed(response.read().decode())
         for table in parser.tables:
@@ -79,7 +79,7 @@ class power_switch(object):
         urlopen(Request(
             'http://'+self.ip_address+'/outlet?'+str(outlet)+'='+state,
             headers={'Authorization': b'Basic '+b64encode(
-                bytes(self.username + ':' + self.password, encoding='utf-8'))}))
+                bytes(self.username+':'+self.password, encoding='utf-8'))}))
 
     def toggle_outlet(self, outlet):
         for outlet_ in self.get_status():

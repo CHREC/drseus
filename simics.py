@@ -790,7 +790,7 @@ class simics(object):
                                 if count > 1:
                                     config_object += '['+str(target_index)+']'
                                 if target == 'GPR':
-                                    target_key = config_object + ':gprs'
+                                    target_key = config_object+':gprs'
                                 else:
                                     target_key = config_object
                                 registers[target_key] = {}
