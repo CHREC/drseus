@@ -95,7 +95,7 @@ class database(object):
                self.result['outcome'])
         if self.result['data_diff'] is not None and \
                 self.result['data_diff'] < 1.0:
-            out += ' {0:.2f}%'.format(max(self.result['data_diff']*100,
+            out += ' {0:.2f}%'.format(min(self.result['data_diff']*100,
                                           99.990))
         print(colored(out, 'blue'))
         self.update('result')
