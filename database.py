@@ -37,6 +37,13 @@ class database(object):
         self.cursor = self.connection.cursor()
         return self
 
+    def __exit__(self, type_, value, traceback):
+        self.connection.commit()
+        self.connection.close()
+        self.lock.release()
+        if type_ is not None or value is not None or traceback is not None:
+            return False  # reraise exception
+
     def insert(self, table, dictionary=None):
         if dictionary is None:
             if table == 'campaign':
@@ -78,7 +85,7 @@ class database(object):
                             'dut_output': '',
                             'num_injections': None,
                             'outcome_category': 'Incomplete',
-                            'outcome': 'Incomplete',
+                            'outcome': 'In progress',
                             'timestamp': None})
         self.insert('result')
 
@@ -96,11 +103,13 @@ class database(object):
             self.__create_result()
 
     def log_event(self, level, source, event_type, description=None,
-                  campaign=False, success=None):
+                  success=None, campaign=False):
         if description == self.log_trace:
             description = ''.join(format_stack()[:-2])
+            success = False
         elif description == self.log_exception:
             description = ''.join(format_exc())
+            success = False
         event = {'description': description,
                  'event_type': event_type,
                  'level': level,
@@ -180,10 +189,3 @@ class database(object):
                             [self.campaign['id']])
         self.cursor.execute('DELETE FROM log_campaign WHERE id=?',
                             [self.campaign['id']])
-
-    def __exit__(self, type_, value, traceback):
-        self.connection.commit()
-        self.connection.close()
-        self.lock.release()
-        if type_ is not None or value is not None or traceback is not None:
-            return False  # reraise exception

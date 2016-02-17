@@ -66,18 +66,21 @@ class jtag(object):
                              timeout=self.timeout)
         with self.db as db:
             db.log_event('Information', 'Debugger', 'Connected to telnet',
-                         self.options.debugger_ip_address+':'+str(self.port))
+                         self.options.debugger_ip_address+':'+str(self.port),
+                         success=True)
 
     def close(self):
         if self.telnet:
             self.telnet.close()
             with self.db as db:
-                db.log_event('Information', 'Debugger', 'Closed telnet')
+                db.log_event('Information', 'Debugger', 'Closed telnet',
+                             success=True)
         self.dut.close()
         if self.db.campaign['aux']:
             self.aux.close()
 
     def reset_dut(self, expected_output, attempts):
+        self.dut.flush()
         if self.telnet:
             for attempt in range(attempts):
                 try:
@@ -97,23 +100,33 @@ class jtag(object):
                         raise DrSEUsError(error.type)
                 else:
                     with self.db as db:
-                        db.log_event('Information', 'Debugger', 'Reset DUT')
+                        db.log_event('Information', 'Debugger', 'Reset DUT',
+                                     success=True)
                     break
         else:
             self.dut.serial.write('\x03')
 
     def halt_dut(self, halt_command, expected_output):
+        with self.db as db:
+            event = db.log_event('Information', 'Debugger', 'Halt DUT',
+                                 success=False)
         self.command(halt_command, expected_output, 'Error halting DUT', False)
         with self.db as db:
-            db.log_event('Information', 'Debugger', 'Halt DUT')
+            db.log_event_success(event)
 
     def continue_dut(self, continue_command):
+        with self.db as db:
+            event = db.log_event('Information', 'Debugger', 'Continue DUT',
+                                 success=False)
         self.command(continue_command, error_message='Error continuing DUT',
                      log_event=False)
         with self.db as db:
-            db.log_event('Information', 'Debugger', 'Continue DUT')
+            db.log_event_success(event)
 
     def time_application(self):
+        with self.db as db:
+            event = db.log_event('Information', 'Debugger', 'Timed application',
+                                 success=False, campaign=True)
         start = time()
         for i in range(self.options.iterations):
             if self.db.campaign['aux']:
@@ -134,8 +147,7 @@ class jtag(object):
         self.db.campaign['exec_time'] = \
             (end - start) / self.options.iterations
         with self.db as db:
-            db.log_event('Information', 'Debugger', 'Timed application',
-                         campaign=True)
+            db.log_event_success(event)
 
     def inject_faults(self):
         injection_times = []
@@ -159,6 +171,7 @@ class jtag(object):
                          'processor_mode': mode,
                          'register': register,
                          'result_id': self.db.result['id'],
+                         'success': False,
                          'target': target,
                          'time': injection_time,
                          'timestamp': None}
@@ -182,9 +195,31 @@ class jtag(object):
                     self.targets[target]['registers'][register]['bits']
             else:
                 num_bits_to_inject = 32
-            injection['bit'] = randrange(num_bits_to_inject)
+            bit_to_inject = randrange(num_bits_to_inject)
+            if 'adjust_bit' in \
+                    self.targets[target]['registers'][register]:
+                bit_to_inject = (self.targets[target]['registers']
+                                             [register]['adjust_bit']
+                                             [bit_to_inject])
+            if 'fields' in self.targets[target]['registers'][register]:
+                for field_name, field_bounds in \
+                    (self.targets[target]['registers']
+                                 [register]['fields'].items()):
+                    if bit_to_inject in range(field_bounds[0],
+                                              field_bounds[1]+1):
+                        injection['field'] = field_name
+                        break
+                else:
+                    with self.db as db:
+                        db.log_event('Warning', 'Debugger',
+                                     'Error finding register field name',
+                                     'target: '+target+', register: '+register +
+                                     ', bit: '+str(bit_to_inject))
+            injection['bit'] = bit_to_inject
             injection['injected_value'] = hex(
                 int(injection['gold_value'], base=16) ^ (1 << injection['bit']))
+            with self.db as db:
+                db.insert('injection', injection)
             if self.options.debug:
                 print(colored('target: '+target, 'magenta'))
                 if 'target_index' in injection:
@@ -203,25 +238,27 @@ class jtag(object):
                     base=16):
                 injection['success'] = True
                 with self.db as db:
-                    db.insert('injection', injection)
-                    db.log_event('Information', 'Debugger', 'Fault injected')
+                    db.update('injection', injection)
+                    db.log_event('Information', 'Debugger', 'Fault injected',
+                                 success=True)
             else:
                 self.set_mode()
                 self.set_register_value(
                     register, target, target_index, injection['injected_value'])
                 self.set_mode(injection['processor_mode'])
-                injection['success'] = False
                 if int(injection['injected_value'], base=16) == \
                     int(self.get_register_value(register, target, target_index),
                         base=16):
+                    injection['success'] = True
                     with self.db as db:
-                            db.insert('injection', injection)
-                            db.log_event('Warning', 'Debugger',
-                                         'Fault injected as supervisor')
+                        db.update('injection', injection)
+                        db.log_event('Information', 'Debugger',
+                                     'Fault injected as supervisor',
+                                     success=True)
                 else:
                     with self.db as db:
-                        db.insert('injection', injection)
-                        db.log_event('Warning', 'Debugger', 'Injection failed')
+                        db.log_event('Error', 'Debugger', 'Injection failed',
+                                     success=False)
         return 0, False
 
     def command(self, command, expected_output, error_message,
@@ -350,6 +387,9 @@ class bdi(jtag):
 
     def set_mode(self, mode='supervisor'):
         pass
+        # with self.db as db:
+        #     db.log_event('Information', 'Debugger', 'Set processor mode', mode,
+        #                  success=True)
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
@@ -500,7 +540,8 @@ class openocd(jtag):
                                          else None))
         if options.command != 'openocd':
             with database as db:
-                db.log_event('Information', 'Debugger', 'Launched openocd')
+                db.log_event('Information', 'Debugger', 'Launched openocd',
+                             success=True)
             super().__init__(database, options)
             if options.jtag:
                 sleep(1)
@@ -515,7 +556,8 @@ class openocd(jtag):
         super().close()
         self.openocd.wait()
         with self.db as db:
-                db.log_event('Information', 'Debugger', 'Closed openocd')
+            db.log_event('Information', 'Debugger', 'Closed openocd',
+                         success=True)
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
@@ -546,6 +588,9 @@ class openocd(jtag):
         cpsr = int(self.get_register_value('cpsr', 'CPU', None), base=16)
         self.set_register_value('cpsr', 'CPU', None,
                                 hex(int(str(bin(cpsr))[:-5]+mask, base=2)))
+        with self.db as db:
+            db.log_event('Information', 'Debugger', 'Set processor mode', mode,
+                         success=True)
 
     def get_register_value(self, register, target, target_index):
         if target == 'CP':

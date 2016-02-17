@@ -22,6 +22,7 @@ class dut(object):
         ('drseus_sighandler: SIGSYS', 'Signal SIGSYS'),
         ('drseus_sighandler: SIGEMT', 'Signal SIGEMT'),
         ('command not found', 'Invalid command'),
+        ('Unknown command', 'Invalid command'),
         ('No such file or directory', 'Missing file'),
         ('panic', 'Kernel error'),
         ('Oops', 'Kernel error'),
@@ -104,21 +105,24 @@ class dut(object):
             else:
                 break
         self.serial.reset_input_buffer()
+        self.serial.reset_output_buffer()
         with self.db as db:
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                         'Connected to serial port', serial_port)
+                         'Connected to serial port', serial_port, success=True)
 
     def close(self):
+        self.flush()
         self.serial.close()
         with self.db as db:
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                         'Closed serial port')
+                         'Closed serial port', success=True)
 
     def flush(self):
+        self.serial.reset_output_buffer()
         try:
             in_bytes = self.serial.in_waiting
         except:
-            pass
+            self.serial.reset_input_buffer()
         else:
             if in_bytes:
                 buff = self.serial.read(in_bytes).decode('utf-8', 'replace')
@@ -128,10 +132,9 @@ class dut(object):
                 else:
                     self.db.campaign['dut_output' if not self.aux
                                      else 'aux_output'] += buff
-                with self.db as db:
-                    db.log_event('Information',
-                                 'DUT' if not self.aux else 'AUX',
-                                 'Flushed serial buffer')
+        with self.db as db:
+            db.log_event('Information', 'DUT' if not self.aux else 'AUX',
+                         'Flushed serial buffers', success=True)
 
     def send_files(self, files, attempts=10):
         if self.options.debug:
@@ -156,7 +159,7 @@ class dut(object):
                 else:
                     raise DrSEUsError(DrSEUsError.ssh_error)
             else:
-                dut_scp = SCPClient(ssh.get_transport())
+                dut_scp = SCPClient(ssh.get_transport(), socket_timeout=30)
                 try:
                     dut_scp.put(files)
                 except Exception as error:
@@ -183,7 +186,8 @@ class dut(object):
                     with self.db as db:
                         db.log_event('Information',
                                      'DUT' if not self.aux else 'AUX',
-                                     'Sent files', ', '.join(files))
+                                     'Sent files', ', '.join(files),
+                                     success=True)
                     break
 
     def get_file(self, file_, local_path='', attempts=10):
@@ -210,7 +214,7 @@ class dut(object):
                 else:
                     raise DrSEUsError(DrSEUsError.ssh_error)
             else:
-                dut_scp = SCPClient(ssh.get_transport())
+                dut_scp = SCPClient(ssh.get_transport(), socket_timeout=30)
                 try:
                     dut_scp.get(file_, local_path=local_path)
                 except Exception as error:
@@ -237,7 +241,7 @@ class dut(object):
                     with self.db as db:
                         db.log_event('Information',
                                      'DUT' if not self.aux else 'AUX',
-                                     'Received file', file_)
+                                     'Received file', file_, success=True)
                     break
 
     def write(self, string):
@@ -260,6 +264,8 @@ class dut(object):
                 with self.db as db:
                     db.log_event('Error', 'DUT' if not self.aux else 'AUX',
                                  'Read error', db.log_exception)
+                self.close()
+                self.open()
             else:
                 if not char:
                     hanging = True
@@ -348,7 +354,7 @@ class dut(object):
         if boot:
             with self.db as db:
                 db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                             'Booted')
+                             'Booted', success=True)
         return buff
 
     def command(self, command=None):
@@ -366,6 +372,7 @@ class dut(object):
         return buff
 
     def do_login(self, change_prompt=False):
+        self.serial.timeout = 60
         self.read_until(boot=True)
         if change_prompt:
             self.write('export PS1=\"DrSEUs# \"\n')
@@ -400,6 +407,3 @@ class dut(object):
                         raise DrSEUsError('Error finding device ip address')
                 if self.ip_address is not None:
                     break
-        with self.db as db:
-            db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                         'Logged in')

@@ -5,7 +5,6 @@ from argparse import ArgumentParser
 import utilities
 
 # TODO: use regular expressions in telnet expect in jtag
-# TODO: update dut.write/aux.write to dut.command/aux.command in fault_injector
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
 # TODO: use formatting strings

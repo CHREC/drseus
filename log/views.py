@@ -25,7 +25,7 @@ navigation_items = (('Campaign Information', 'info'),
 
 def campaigns_page(request):
     campaign_objects = campaign.objects.all()
-    if len(campaign_objects) == 1:
+    if campaign_objects.count() == 1:
         return redirect('/campaign/'+str(campaign_objects[0].id)+'/results')
     table = campaigns_table(campaign_objects)
     chart_array = campaigns_chart(result.objects.all())
@@ -113,6 +113,8 @@ def injections_page(request, campaign_id):
 
 
 def results_page(request, campaign_id):
+    if result.objects.filter(campaign_id=campaign_id).count() == 0:
+        return redirect('/campaign/'+str(campaign_id)+'/info')
     campaign_object = campaign.objects.get(id=campaign_id)
     output_file = ('campaign-data/'+campaign_id+'/gold_' +
                    campaign_object.output_file)
@@ -124,19 +126,17 @@ def results_page(request, campaign_id):
         request.GET, campaign=campaign_id,
         queryset=result.objects.filter(campaign_id=campaign_id))
     result_ids = filter_.qs.values('id').distinct()
-    if len(result_ids) == 0:
-        return redirect('/campaign/'+str(campaign_id)+'/info')
     result_objects = result.objects.filter(id__in=result_ids)
     if request.method == 'GET':
         if (('view_output' in request.GET or
                 'view_output_image' in request.GET) and
                 'select_box' in request.GET):
-            result_ids = []
+            result_ids = sorted(map(int, dict(request.GET)['select_box']),
+                                reverse=True)
             page_items = []
-            for result_id in dict(request.GET)['select_box']:
-                result_ids.append(int(result_id))
-                page_items.append(('Result ID '+result_id, result_id))
-            results = result.objects.filter(id__in=result_ids)
+            for result_id in result_ids:
+                page_items.append(('Result ID '+str(result_id), result_id))
+            results = result.objects.filter(id__in=result_ids).order_by('-id')
             image = 'view_output_image' in request.GET
             return render(request, 'output.html', {'campaign': campaign_id,
                                                    'image': image,

@@ -189,7 +189,10 @@ def inject_campaign(options):
 
     def perform_injections(iteration_counter):
         drseus = fault_injector(campaign, options)
-        drseus.inject_campaign(iteration_counter)
+        try:
+            drseus.inject_campaign(iteration_counter)
+        except KeyboardInterrupt:
+            drseus.close(interrupted=True)
 
 # def inject_campaign(options):
     processes = []

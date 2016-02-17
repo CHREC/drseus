@@ -1,5 +1,5 @@
-from django_tables2 import Column, DateTimeColumn, Table, TemplateColumn
-
+from django_tables2 import (CheckBoxColumn, Column, DateTimeColumn, Table,
+                            TemplateColumn)
 from .models import (campaign, event, injection, result, simics_memory_diff,
                      simics_register_diff)
 
@@ -10,7 +10,6 @@ class campaigns_table(Table):
     id_ = TemplateColumn(
         '<a href="/campaign/{{ value }}/results">{{ value }}</a>',
         accessor='id')
-    num_cycles = Column()
     results = Column(empty_values=(), orderable=False)
     timestamp = DateTimeColumn(format=datetime_format)
 
@@ -31,8 +30,6 @@ class campaigns_table(Table):
 
 
 class campaign_table(campaigns_table):
-    cycles_between = Column()
-    num_checkpoints = Column()
     results = Column(empty_values=(), orderable=False)
     timestamp = DateTimeColumn(format=datetime_format)
 
@@ -57,9 +54,9 @@ class results_table(Table):
     id_ = TemplateColumn(  # LinkColumn()
         '<a href="./result/{{ value }}">{{ value }}</a>', accessor='id')
     registers = Column(empty_values=(), orderable=False)
-    select = TemplateColumn(
-        '<input type="checkbox" name="select_box" value="{{ record.id }}">',
-        verbose_name='', orderable=False)
+    select_box = CheckBoxColumn(
+        accessor='id',
+        attrs={'th__input': {'onclick': 'update_selection(this)'}})
     injection_success = Column(empty_values=(), orderable=False)
     timestamp = DateTimeColumn(format=datetime_format)
     targets = Column(empty_values=(), orderable=False)
@@ -112,44 +109,50 @@ class results_table(Table):
     class Meta:
         attrs = {"class": "paleblue"}
         model = result
-        fields = ('select', 'id_', 'dut_serial_port', 'timestamp',
+        fields = ('select_box', 'id_', 'dut_serial_port', 'timestamp',
                   'outcome_category', 'outcome', 'data_diff', 'detected_errors',
                   'events', 'num_injections', 'targets', 'registers',
                   'injection_success')
         order_by = '-id_'
 
 
-class result_table(results_table):
+class result_table(Table):
     delete = TemplateColumn(
-        '<input type="submit" name="delete" value="Delete" onclick="return '
-        'confirm("Are you sure you want to delete this result?")" />')
+        '<input type="button" value="Delete" onclick="delete_click()">',
+        orderable=False)
     edit = TemplateColumn(
-        '<input type="submit" name="save" value="Save" onclick="return confirm('
-        '"Are you sure you want to edit this result?")"/>')
+        '<input type="button" value="Save" onclick="save_click()">',
+        orderable=False)
     outcome = TemplateColumn(
-        '<input name="outcome" type="text" value="{{ value }}" />')
+        '<input id="edit_outcome" type="text" value="{{ value }}" />')
     outcome_category = TemplateColumn(
-        '<input name="outcome_category" type="text" value="{{ value }}" />')
+        '<input id="edit_outcome_category" type="text" value="{{ value }}" />'
+    )
     timestamp = DateTimeColumn(format=datetime_format)
 
     class Meta:
         attrs = {"class": "paleblue"}
         model = result
-        exclude = ('id_', 'select', 'targets')
         fields = ('id', 'dut_serial_port', 'timestamp', 'outcome_category',
-                  'outcome', 'num_injections', 'data_diff', 'detected_errors')
+                  'outcome', 'num_injections', 'data_diff', 'detected_errors',
+                  'edit', 'delete')
 
 
 class event_table(Table):
     description = TemplateColumn(
-        '{% if value %}<code class="console">{{ value }}</code>{% endif %}')
+        '{% if value %}<code class="console">{{ value }}</code>{% endif %}',
+        attrs={'td': {'style': 'word-wrap: break-word;max-width: 120ex;'}})
+    success = TemplateColumn(
+        '{% if value == None %}-'
+        '{% elif value %}<span class="true">\u2714</span>'
+        '{% else %}<span class="false">\u2718</span>{% endif %}')
     timestamp = DateTimeColumn(format=datetime_format)
 
     class Meta:
         attrs = {"class": "paleblue"}
         model = event
-        fields = ('timestamp', 'level', 'source', 'event_type', 'description',
-                  'success')
+        fields = ('timestamp', 'level', 'source', 'event_type', 'success',
+                  'description')
 
 
 class injections_table(Table):

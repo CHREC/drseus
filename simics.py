@@ -37,7 +37,6 @@ class simics(object):
             for target in options.selected_targets:
                 if target not in self.targets:
                     raise Exception('invalid injection target: '+target)
-
         if options.command == 'new':
             self.__launch_simics()
         elif options.command == 'supervise':
@@ -77,7 +76,7 @@ class simics(object):
             else:
                 with self.db as db:
                     db.log_event('Information', 'Simics', 'Launched Simics',
-                                 checkpoint)
+                                 checkpoint, success=True)
                 break
         if checkpoint is None:
             self.__command('$drseus=TRUE')
@@ -240,14 +239,15 @@ class simics(object):
             else:
                 self.simics.wait()
                 with self.db as db:
-                    db.log_event('Information', 'Simics', 'Closed Simics')
+                    db.log_event('Information', 'Simics', 'Closed Simics',
+                                 success=True)
             self.simics = None
 
     def halt_dut(self):
         self.simics.send_signal(SIGINT)
         self.__command()
         with self.db as db:
-            db.log_event('Information', 'Simics', 'Halt DUT')
+            db.log_event('Information', 'Simics', 'Halt DUT', success=True)
         return True
 
     def continue_dut(self):
@@ -259,7 +259,7 @@ class simics(object):
         if self.options.debug:
             print(colored('run', 'yellow'))
         with self.db as db:
-            db.log_event('Information', 'Simics', 'Continue DUT')
+            db.log_event('Information', 'Simics', 'Continue DUT', success=True)
 
     def __command(self, command=None):
 
@@ -348,6 +348,10 @@ class simics(object):
     def time_application(self):
 
         def create_checkpoints():
+            with self.db as db:
+                event = db.log_event('Information', 'Simics',
+                                     'Created gold checkpoints', success=False,
+                                     campaign=True)
             makedirs('simics-workspace/gold-checkpoints/' +
                      str(self.db.campaign['id']))
             self.db.campaign['cycles_between'] = \
@@ -380,8 +384,7 @@ class simics(object):
                     break
             self.db.campaign['num_checkpoints'] = checkpoint
             with self.db as db:
-                db.log_event('Information', 'Simics',
-                             'Created gold checkpoints', campaign=True)
+                db.log_event_success(event)
             self.continue_dut()
             if self.db.campaign['aux']:
                 aux_process.join()
@@ -390,6 +393,9 @@ class simics(object):
             read_thread.join()
 
     # def time_application(self):
+        with self.db as db:
+            event = db.log_event('Information', 'Simics', 'Timed application',
+                                 success=False, campaign=True)
         self.halt_dut()
         time_data = self.__command('print-time').split('\n')[-2].split()
         start_cycles = int(time_data[2])
@@ -424,8 +430,7 @@ class simics(object):
         self.db.campaign['sim_time'] = \
             (end_sim_time - start_sim_time) / self.options.iterations
         with self.db as db:
-            db.log_event('Information', 'Simics', 'Timed application',
-                         campaign=True)
+            db.log_event_success(event)
         create_checkpoints()
 
     def inject_faults(self):
@@ -639,15 +644,17 @@ class simics(object):
                                 field_to_inject = field_name
                                 break
                         else:
-                            raise DrSEUsError('Error finding register field '
-                                              'name for bit ' +
-                                              str(bit_to_inject) +
-                                              ' in register '+register)
+                            with self.db as db:
+                                db.log_event('Warning', 'Simics',
+                                             'Error finding register field '
+                                             'name',
+                                             'target: '+target +
+                                             ', register: '+register +
+                                             ', bit: '+str(bit_to_inject))
                         injection['field'] = field_to_inject
                     else:
                         injection['field'] = None
                 injection['bit'] = bit_to_inject
-
                 if register_index is not None:
                     injection['register_index'] = ''
                     for index in register_index:
@@ -719,25 +726,23 @@ class simics(object):
                          'injection_number': injection_number,
                          'checkpoint_number': checkpoint_number,
                          'register': register,
+                         'success': False,
                          'target': target,
                          'timestamp': None}
+            with self.db as db:
+                db.insert('injection', injection)
             try:
                 # perform fault injection
                 injection.update(inject_register(
                     injected_checkpoint, register, target))
             except:
-                injection['success'] = False
-                with self.db as db:
-                    db.insert('injection', injection)
-                    db.log_event('Error', 'Simics', 'Error injecting fault',
-                                 db.log_exception)
                 raise DrSEUsError('Error injecting fault')
             else:
                 injection['success'] = True
-            # log injection data
-            with self.db as db:
-                db.insert('injection', injection)
-                db.log_event('Information', 'Simics', 'Fault injected')
+                with self.db as db:
+                    db.update('injection', injection)
+                    db.log_event('Information', 'Simics', 'Fault injected',
+                                 success=True)
             if self.options.debug:
                 print(colored('result id: '+str(self.db.result['id']),
                               'magenta'))

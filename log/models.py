@@ -64,7 +64,7 @@ class injection(Model):
     register_access = TextField(null=True)
     register_index = TextField(null=True)
     result = ForeignKey(result)
-    success = NullBooleanField()
+    success = BooleanField()
     target = TextField(null=True)
     target_index = TextField(null=True)
     time = FloatField(null=True)

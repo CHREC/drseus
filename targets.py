@@ -42,9 +42,9 @@ def calculate_target_bits(devices):
                         adjust_bit.extend(range(field_range[0],
                                                 field_range[1]+1))
                     if len(adjust_bit) != bits:
-                        raise Exception('simics_targets.py: ' +
-                                        'bits mismatch for register: ' +
-                                        register+' in target: '+target)
+                        raise Exception('Bits mismatch for register: ' +
+                                        register+' in target: '+target +
+                                        ' in device: '+device)
                     else:
                         (devices[device][target]['registers'][register]
                                 ['adjust_bit']) = sorted(adjust_bit)
@@ -73,8 +73,7 @@ def choose_target(selected_targets, targets):
             target_to_inject = target[0]
             break
     else:
-        raise Exception('simics_checkpoints.py:choose_target(): '
-                        'Error choosing injection target')
+        raise Exception('Error choosing injection target')
     if 'count' in targets[target_to_inject]:
         target_index = randrange(targets[target_to_inject]['count'])
         target_to_inject += ':'+str(target_index)
@@ -105,6 +104,5 @@ def choose_register(target, targets):
             register_to_inject = register[0]
             break
     else:
-        raise Exception('simics_checkpoints.py:choose_register(): '
-                        'Error choosing register for target: '+target)
+        raise Exception('Error choosing register for target: '+target)
     return register_to_inject

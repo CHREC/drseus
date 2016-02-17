@@ -49,12 +49,15 @@ class fault_injector(object):
                        str(self.db.campaign['sim_time'])+' seconds')
         return string
 
-    def close(self):
-        self.debugger.dut.flush()
-        if self.db.campaign['aux']:
-            self.debugger.aux.flush()
+    def close(self, interrupted=False):
         self.debugger.close()
-        if self.db.result:
+        if interrupted:
+            with self.db as db:
+                db.log_event('Information', 'User', 'Interrupt',
+                             db.log_exception)
+                db.result['outcome'] = 'Interrupted'
+                db.log_result(False)
+        elif self.db.result:
             with self.db as db:
                 result_items = db.get_count('event')
                 result_items += db.get_count('injection')
@@ -68,7 +71,7 @@ class fault_injector(object):
                     'outcome_category': 'DrSEUs',
                     'outcome': 'Closed DrSEUs'})
                 with self.db as db:
-                    db.log_result(True)
+                    db.log_result(False)
             else:
                 with self.db as db:
                     db.delete_result()
@@ -99,7 +102,6 @@ class fault_injector(object):
             aux_process.start()
         if not self.db.campaign['simics']:
             self.debugger.reset_dut()
-            self.debugger.dut.serial.timeout = 30
             self.debugger.dut.do_login()
         send_dut_files()
         if self.db.campaign['aux']:
@@ -249,7 +251,6 @@ class fault_injector(object):
                     db.log_result()
                 return False
             try:
-                self.debugger.dut.serial.timeout = 30
                 self.debugger.dut.do_login()
             except DrSEUsError as error:
                 self.db.result.update({
@@ -268,6 +269,9 @@ class fault_injector(object):
                     db.log_result()
                 return False
             if self.db.campaign['aux']:
+                with self.db as db:
+                    db.log_event('Information', 'AUX', 'Command',
+                                 self.db.campaign['aux_command'])
                 self.debugger.aux.write(
                     './'+self.db.campaign['aux_command']+'\n')
             return True
@@ -302,6 +306,12 @@ class fault_injector(object):
                 if self.db.result['outcome'] == 'Latent faults' or \
                     (not self.db.campaign['simics'] and
                         self.db.result['outcome'] == 'Masked faults'):
+                    with self.db as db:
+                        if self.db.campaign['aux']:
+                            db.log_event('Information', 'AUX', 'Command',
+                                         self.db.campaign['aux_command'])
+                        db.log_event('Information', 'DUT', 'Command',
+                                     self.db.campaign['command'])
                     if self.db.campaign['aux']:
                         self.debugger.aux.write(
                             './'+self.db.campaign['aux_command']+'\n')
@@ -331,6 +341,9 @@ class fault_injector(object):
             if not self.db.campaign['simics']:
                 if not prepare_dut():
                     continue
+            with self.db as db:
+                db.log_event('Information', 'DUT', 'Command',
+                             self.db.campaign['command'])
             try:
                 latent_faults, persistent_faults = self.debugger.inject_faults()
                 self.debugger.continue_dut()

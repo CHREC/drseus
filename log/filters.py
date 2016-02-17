@@ -20,6 +20,12 @@ class result_filter(FilterSet):
         campaign = kwargs['campaign']
         del kwargs['campaign']
         super().__init__(*args, **kwargs)
+        dut_serial_port_choices = self.result_choices(
+            campaign, 'dut_serial_port')
+        self.filters['dut_serial_port'].extra.update(
+            choices=dut_serial_port_choices)
+        self.filters['dut_serial_port'].widget.attrs['size'] = min(
+            len(dut_serial_port_choices), 10)
         event_type_choices = self.event_choices(campaign, 'event_type')
         self.filters['event__event_type'].extra.update(
             choices=event_type_choices)
@@ -116,7 +122,7 @@ class result_filter(FilterSet):
         return sorted(choices, key=fix_sort_list)
 
     aux_output = CharFilter(
-        label='AUX output',
+        label='AUX console output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
@@ -127,7 +133,6 @@ class result_filter(FilterSet):
         name='data_diff', label='Data diff (<)', lookup_type='lt',
         help_text='')
     debugger_output = CharFilter(
-        label='Debugger output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
@@ -138,10 +143,13 @@ class result_filter(FilterSet):
         name='detected_errors', label='Detected errors (<)', lookup_type='lt',
         help_text='')
     dut_output = CharFilter(
-        label='DUT output',
+        label='DUT console output',
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
         help_text='')
+    dut_serial_port = MultipleChoiceFilter(
+        label='DUT serial port',
+        widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     event__description = CharFilter(
         lookup_type='icontains',
         widget=Textarea(attrs={'cols': 16, 'rows': 3, 'type': 'search'}),
@@ -181,16 +189,14 @@ class result_filter(FilterSet):
         label='Number of injections',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     outcome = MultipleChoiceFilter(
-        label='Outcome',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
     outcome_category = MultipleChoiceFilter(
-        label='Outcome category',
         widget=SelectMultiple(attrs={'style': 'width:100%;'}), help_text='')
 
     class Meta:
         model = result
         exclude = ('aux_serial_port', 'campaign', 'data_diff',
-                   'detected_errors', 'dut_serial_port', 'timestamp')
+                   'detected_errors', 'timestamp')
 
 
 class simics_register_diff_filter(FilterSet):

@@ -17,7 +17,6 @@ class supervisor(Cmd):
         self.drseus = fault_injector(campaign, options)
         if not campaign['simics']:
             self.drseus.debugger.reset_dut()
-            self.drseus.debugger.dut.serial.timeout = 30
             self.drseus.debugger.dut.do_login()
             self.drseus.send_dut_files()
         self.prompt = 'DrSEUs> '

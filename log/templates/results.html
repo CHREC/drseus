@@ -1,5 +1,67 @@
 {% extends "base.html" %}
 
+{% block header %}
+    <script type="text/javascript">
+        function update_selection(select) {
+            var checkboxes = document.getElementsByName('select_box');
+            for(var i=0, n=checkboxes.length; i<n; i++) {
+                checkboxes[i].checked = select.checked;
+            }
+        }
+        function open_results(only_selected) {
+            var checkboxes = document.getElementsByName('select_box');
+            for(var i=0, n=checkboxes.length; i<n; i++) {
+                if (checkboxes[i].checked || !only_selected) {
+                    window.open('./result/'+checkboxes[i].value, '_blank');
+                }
+            }
+        }
+        function edit_outcome_click() {
+            var outcome = prompt('Enter the new outcome for all currently filtered results: ');
+            if (outcome) {
+                $.post('', {'new_outcome': outcome, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
+                setTimeout(function () {
+                    window.location.assign(window.location.href.replace(/outcome=[^&]*&/g, 'outcome='+outcome+'&'));
+                }, 500);
+            }
+        }
+        function edit_outcome_category_click() {
+            var outcome_category = prompt('Enter the new outcome category for all currently filtered results: ');
+            if (outcome_category) {
+                $.post('', {'new_outcome_category': outcome_category, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
+                setTimeout(function () {
+                    window.location.assign(window.location.href.replace(/outcome_category=[^&]*&/g, 'outcome_category='+outcome_category+'&'));
+                }, 500);
+            }
+        }
+        function delete_selected_click() {
+            var conf = confirm('Are you sure you want to delete the selected results?');
+            if (conf) {
+                var results = [];
+                var checkboxes = document.getElementsByName('select_box');
+                for(var i=0, n=checkboxes.length; i<n; i++) {
+                    if (checkboxes[i].checked) {
+                        results.push(checkboxes[i].value);
+                    }
+                }
+                $.post('', {'delete': true, 'results': results, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
+                setTimeout(function () {
+                    window.location.reload();
+                }, 500);
+            }
+        }
+        function delete_all_click() {
+            var conf = confirm('Are you sure you want to delete the currently filtered results?');
+            if (conf) {
+                $.post('', {'delete_all': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
+                setTimeout(function () {
+                    window.location.assign('results');
+                }, 500);
+            }
+        }
+    </script>
+{% endblock %}
+
 {% block body %}
     <div class="source" align="center">
         <div class="section">
@@ -7,75 +69,7 @@
                 Results
             </h2>
             <table style="width: 100%">
-                <script type="text/javascript">
-                    function set_checkboxes(checked) {
-                        var checkboxes = document.getElementsByName('select_box');
-                        for(var i=0, n=checkboxes.length; i<n; i++) {
-                            checkboxes[i].checked = checked;
-                        }
-                    }
-                    function invert_checkboxes() {
-                        var checkboxes = document.getElementsByName('select_box');
-                        for(var i=0, n=checkboxes.length; i<n; i++) {
-                            checkboxes[i].checked = !checkboxes[i].checked;
-                        }
-                    }
-                    function open_results(only_selected) {
-                        var checkboxes = document.getElementsByName('select_box');
-                        for(var i=0, n=checkboxes.length; i<n; i++) {
-                            if (checkboxes[i].checked || !only_selected) {
-                                window.open('./result/'+checkboxes[i].value, '_blank');
-                            }
-                        }
-                    }
-                    function edit_outcome_click() {
-                        var outcome = prompt('Enter the new outcome for all currently filtered results: ');
-                        if (outcome) {
-                            $.post('', {'new_outcome': outcome, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                            setTimeout(function () {
-                                window.location.assign(window.location.href.replace(/outcome=[^&]*&/g, 'outcome='+outcome+'&'));
-                            }, 500);
-                        }
-                    }
-                    function edit_outcome_category_click() {
-                        var outcome_category = prompt('Enter the new outcome category for all currently filtered results: ');
-                        if (outcome_category) {
-                            $.post('', {'new_outcome_category': outcome_category, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                            setTimeout(function () {
-                                window.location.assign(window.location.href.replace(/outcome_category=[^&]*&/g, 'outcome_category='+outcome_category+'&'));
-                            }, 500);
-                        }
-                    }
-                    function delete_selected_click() {
-                        var conf = confirm('Are you sure you want to delete the selected results?');
-                        if (conf) {
-                            var results = [];
-                            var checkboxes = document.getElementsByName('select_box');
-                            for(var i=0, n=checkboxes.length; i<n; i++) {
-                                if (checkboxes[i].checked) {
-                                    results.push(checkboxes[i].value);
-                                }
-                            }
-                            $.post('', {'delete': true, 'results': results, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                            setTimeout(function () {
-                                window.location.reload();
-                            }, 500);
-                        }
-                    }
-                    function delete_all_click() {
-                        var conf = confirm('Are you sure you want to delete the currently filtered results?');
-                        if (conf) {
-                            $.post('', {'delete_all': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
-                            setTimeout(function () {
-                                window.location.assign('results');
-                            }, 500);
-                        }
-                    }
-                </script>
                 <tr>
-                    <th style="text-align: center;">
-                        Selection
-                    </th>
                     <th style="text-align: center;">
                         Open in Tabs
                     </th>
@@ -95,12 +89,6 @@
                     </th>
                 </tr>
                 <tr>
-                    <td>
-                        <div style="text-align: center;">
-                            <input type="button" onclick="set_checkboxes(true)" value="All">
-                            <input type="button" onclick="set_checkboxes(false)" value="None">
-                        </div>
-                    </td>
                     <td>
                         <div style="text-align: center;">
                             <input type="button" onclick="open_results(true)" value="Selected">
@@ -130,11 +118,6 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>
-                        <div style="text-align: center;">
-                            <input type="button" onclick="invert_checkboxes()" value="Invert">
-                        </div>
-                    </td>
                     <td>
                         <div style="text-align: center;">
                             <input type="button" onclick="open_results(false)" value="All (Displayed)">
