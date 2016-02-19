@@ -192,9 +192,20 @@ def inject_campaign(options):
         try:
             drseus.inject_campaign(iteration_counter)
         except KeyboardInterrupt:
-            drseus.close(interrupted=True)
+            with drseus.db as db:
+                db.log_event('Information', 'User', 'Interrupted',
+                             db.log_exception)
+            drseus.debugger.close()
+            drseus.db.result['outcome'] = 'Interrupted'
+            with drseus.db as db:
+                db.log_result(False)
         except:
-            drseus.close(exception=True)
+            with drseus.db as db:
+                db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
+            drseus.debugger.close()
+            drseus.db.result['outcome'] = 'Exception'
+            with drseus.db as db:
+                db.log_result(False)
 
 # def inject_campaign(options):
     processes = []

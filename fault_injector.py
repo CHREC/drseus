@@ -49,21 +49,9 @@ class fault_injector(object):
                        str(self.db.campaign['sim_time'])+' seconds')
         return string
 
-    def close(self, interrupted=False, exception=False):
+    def close(self):
         self.debugger.close()
-        if interrupted:
-            with self.db as db:
-                db.log_event('Information', 'User', 'Interrupt',
-                             db.log_exception)
-                db.result['outcome'] = 'Interrupted'
-                db.log_result(False)
-        elif exception:
-            with self.db as db:
-                db.log_event('Error', 'DrSEUs', 'Exception',
-                             db.log_exception)
-                db.result['outcome'] = 'Exception'
-                db.log_result(False)
-        elif self.db.result:
+        if self.db.result:
             with self.db as db:
                 result_items = db.get_count('event')
                 result_items += db.get_count('injection')
