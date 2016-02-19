@@ -193,6 +193,8 @@ def inject_campaign(options):
             drseus.inject_campaign(iteration_counter)
         except KeyboardInterrupt:
             drseus.close(interrupted=True)
+        except:
+            drseus.close(exception=True)
 
 # def inject_campaign(options):
     processes = []
