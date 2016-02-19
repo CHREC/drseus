@@ -1,20 +1,76 @@
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
 from io import StringIO
+from json import dump
 from multiprocessing import Process, Value
 from os import environ, getcwd, listdir, mkdir, remove
 from os.path import exists
 from paramiko import RSAKey
+from pyudev import Context
 from shutil import copy, copytree, rmtree
 from subprocess import check_call
 from sys import stdout
 from terminaltables import AsciiTable
+from time import sleep
 
 from database import database
 from fault_injector import fault_injector
-from jtag import find_ftdi_serials, find_uart_serials, openocd
+from jtag import openocd
+from power_switch import power_switch
 from simics_config import simics_config
 from supervisor import supervisor
+
+
+def discover_devices():
+    devices = []
+    with power_switch() as ps:
+        status = ps.get_status()
+        ps.set_outlet('all', 'off')
+        sleep(4)
+        ftdi_serials_pre = find_ftdi_serials()
+        uart_serials_pre = find_uart_serials().values()
+        for outlet in ps.outlets:
+            ps.set_outlet(outlet, 'on')
+            sleep(4)
+            ftdi_serials = [serial for serial in find_ftdi_serials()
+                            if serial not in ftdi_serials_pre]
+            uart_serials = [serial for serial in find_uart_serials().values()
+                            if serial not in uart_serials_pre]
+            ps.set_outlet(outlet, 'off')
+            if len(ftdi_serials) > 1 or len(uart_serials) > 1:
+                print('too many devices detected, skipping outlet', outlet)
+                continue
+            if not len(ftdi_serials) or not len(uart_serials):
+                print('no devices detected on outlet', outlet)
+                continue
+            print('found zedboard on outlet', outlet)
+            devices.append({'outlet': outlet,
+                            'ftdi': ftdi_serials[0],
+                            'uart': uart_serials[0]})
+        for outlet in status:
+            ps.set_outlet(outlet['outlet'], outlet['status'])
+    if exists('devices.json'):
+        remove('devices.json')
+    with open('devices.json', 'w') as device_file:
+        dump(devices, device_file, indent=4)
+
+
+def find_ftdi_serials():
+    debuggers = Context().list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6014')
+    serials = []
+    for debugger in debuggers:
+        if 'DEVLINKS' not in debugger:
+            serials.append(debugger['ID_SERIAL_SHORT'])
+    return serials
+
+
+def find_uart_serials():
+    uarts = Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
+    serials = {}
+    for uart in uarts:
+        if 'DEVLINKS' in uart:
+            serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
+    return serials
 
 
 def print_zedboard_info(none=None):

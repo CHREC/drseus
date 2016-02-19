@@ -1,4 +1,3 @@
-from pyudev import Context
 from telnetlib import Telnet
 from termcolor import colored
 from threading import Thread
@@ -11,30 +10,6 @@ from dut import dut
 from error import DrSEUsError
 from jtag_targets import devices
 from targets import choose_register, choose_target
-
-# zedboards[uart_serial] = ftdi_serial
-zedboards = {'844301CF3718': '210248585809',
-             '8410A3D8431C': '210248657631',
-             '036801551E13': '210248691084',
-             '036801961420': '210248691092'}
-
-
-def find_ftdi_serials():
-    debuggers = Context().list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6014')
-    serials = []
-    for debugger in debuggers:
-        if 'DEVLINKS' not in debugger:
-            serials.append(debugger['ID_SERIAL_SHORT'])
-    return serials
-
-
-def find_uart_serials():
-    uarts = Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
-    serials = {}
-    for uart in uarts:
-        if 'DEVLINKS' in uart:
-            serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
-    return serials
 
 
 class jtag(object):

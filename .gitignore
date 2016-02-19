@@ -2,5 +2,6 @@
 campaign-data/
 fiapps/
 simics-workspace/
+devices.json
 lextab.py
 parsetab.py
