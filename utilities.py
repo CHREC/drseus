@@ -8,7 +8,7 @@ from os.path import exists
 from paramiko import RSAKey
 from shutil import copy, copytree, rmtree
 from subprocess import check_call
-from sys import stdout
+from sys import argv, stdout
 from terminaltables import AsciiTable
 
 from database import database
@@ -313,6 +313,14 @@ def view_logs(options):
     environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
     django_command(['drseus', 'runserver', ('0.0.0.0:' if options.external
                                             else '')+str(options.port)])
+
+
+def run_django_command(options):
+    environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
+    command = [argv[0]+' '+options.command]
+    for item in options.django_command:
+        command.append(item)
+    django_command(command)
 
 
 def __update_checkpoint_dependencies(campaign_id):

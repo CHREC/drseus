@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, REMAINDER
 
 import utilities
 
@@ -463,6 +463,18 @@ serials = subparsers.add_parser(
     help='print serial numbers for currently connect devices',
     description='print serial numbers for currently connect devices')
 serials.set_defaults(func=utilities.list_serials)
+
+django = subparsers.add_parser(
+    'django',
+    aliases=['dj'],
+    help='run a django command',
+    description='run a django command')
+django.add_argument(
+    dest='django_command',
+    nargs=REMAINDER,
+    metavar='COMMAND',
+    help='command to run with django')
+django.set_defaults(func=utilities.run_django_command)
 
 options = parser.parse_args()
 if options.command is None:
