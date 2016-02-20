@@ -6,12 +6,10 @@ from multiprocessing import Process, Value
 from os import environ, getcwd, listdir, mkdir, remove
 from os.path import exists
 from paramiko import RSAKey
-from pyudev import Context
 from shutil import copy, copytree, rmtree
 from subprocess import check_call
 from sys import stdout
 from terminaltables import AsciiTable
-from time import sleep
 
 from database import database
 from fault_injector import fault_injector
@@ -21,24 +19,29 @@ from simics_config import simics_config
 from supervisor import supervisor
 
 
-def discover_devices():
+def detect_power_switch_devices(options):
+    if exists('devices.json'):
+        if input('continue and overwrite devices.json? [Y/n]') \
+                not in ('N', 'n'):
+            remove('devices.json')
+        else:
+            return
     devices = []
-    with power_switch() as ps:
+    with power_switch(options) as ps:
         status = ps.get_status()
         ps.set_outlet('all', 'off')
-        sleep(4)
-        ftdi_serials_pre = find_ftdi_serials()
-        uart_serials_pre = find_uart_serials().values()
+        ftdi_serials_pre = openocd.find_ftdi_serials()
+        uart_serials_pre = openocd.find_uart_serials().values()
         for outlet in ps.outlets:
             ps.set_outlet(outlet, 'on')
-            sleep(4)
-            ftdi_serials = [serial for serial in find_ftdi_serials()
+            ftdi_serials = [serial for serial in openocd.find_ftdi_serials()
                             if serial not in ftdi_serials_pre]
-            uart_serials = [serial for serial in find_uart_serials().values()
+            uart_serials = [serial for serial
+                            in openocd.find_uart_serials().values()
                             if serial not in uart_serials_pre]
             ps.set_outlet(outlet, 'off')
             if len(ftdi_serials) > 1 or len(uart_serials) > 1:
-                print('too many devices detected, skipping outlet', outlet)
+                print('too many devices detected on outlet', outlet)
                 continue
             if not len(ftdi_serials) or not len(uart_serials):
                 print('no devices detected on outlet', outlet)
@@ -49,40 +52,36 @@ def discover_devices():
                             'uart': uart_serials[0]})
         for outlet in status:
             ps.set_outlet(outlet['outlet'], outlet['status'])
-    if exists('devices.json'):
-        remove('devices.json')
     with open('devices.json', 'w') as device_file:
         dump(devices, device_file, indent=4)
+    print('saved device information to devices.json')
 
 
-def find_ftdi_serials():
-    debuggers = Context().list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6014')
-    serials = []
-    for debugger in debuggers:
-        if 'DEVLINKS' not in debugger:
-            serials.append(debugger['ID_SERIAL_SHORT'])
-    return serials
-
-
-def find_uart_serials():
-    uarts = Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
-    serials = {}
-    for uart in uarts:
-        if 'DEVLINKS' in uart:
-            serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
-    return serials
-
-
-def print_zedboard_info(none=None):
-    ftdis = find_ftdi_serials()
-    uarts = find_uart_serials()
-    print('Attached ZedBoard Information')
+def list_serials(none=None):
+    ftdis = openocd.find_ftdi_serials()
+    uarts = openocd.find_uart_serials()
     print('FTDI JTAG device serial numbers: ')
     for serial in ftdis:
         print('\t'+serial)
     print('Cypress UART device serial numbers:')
     for uart, serial in uarts.items():
         print('\t'+uart+': '+serial)
+
+
+def set_outlet(options):
+    try:
+        options.outlet = int(options.outlet)
+    except ValueError:
+        with power_switch(options) as ps:
+            ps.set_device(options.outlet, options.state)
+    else:
+        with power_switch(options) as ps:
+            ps.set_outlet(options.outlet, options.state)
+
+
+def list_outlets(options):
+    with power_switch(options) as ps:
+        ps.print_status()
 
 
 def list_campaigns(none=None):
@@ -219,7 +218,7 @@ def create_campaign(options):
         'description': options.description,
         'dut_output': '',
         'kill_dut': options.kill_dut,
-        'output_file': options.file,
+        'output_file': options.output_file,
         'rsakey': rsakey,
         'simics': options.simics,
         'timestamp': None,
@@ -243,8 +242,8 @@ def create_campaign(options):
 def inject_campaign(options):
     campaign = get_campaign(options.campaign_id)
 
-    def perform_injections(iteration_counter):
-        drseus = fault_injector(campaign, options)
+    def perform_injections(iteration_counter, switch):
+        drseus = fault_injector(campaign, options, switch)
         try:
             drseus.inject_campaign(iteration_counter)
         except KeyboardInterrupt:
@@ -264,31 +263,36 @@ def inject_campaign(options):
                 db.log_result(False)
 
 # def inject_campaign(options):
-    processes = []
     if options.iterations is not None:
         iteration_counter = Value('L', options.iterations)
     else:
         iteration_counter = None
+    if not campaign['simics'] and campaign['architecture'] == 'a9' \
+            and options.power:
+        switch = power_switch(options)
+    else:
+        switch = None
     if options.processes > 1 and (campaign['simics'] or
                                   campaign['architecture'] == 'a9'):
         if not campaign['simics'] and \
                 campaign['architecture'] == 'a9':
-            zedboards = list(find_uart_serials().keys())
+            uarts = list(openocd.find_uart_serials().keys())
+        processes = []
         for i in range(options.processes):
             if not campaign['simics'] and \
                     campaign['architecture'] == 'a9':
-                if i < len(zedboards):
-                    options.dut_serial_port = zedboards[i]
+                if i < len(uarts):
+                    options.dut_serial_port = uarts[i]
                 else:
                     break
             process = Process(target=perform_injections,
-                              args=[iteration_counter])
+                              args=[iteration_counter, switch])
             processes.append(process)
             process.start()
         for process in processes:
             process.join()
     else:
-        perform_injections(iteration_counter)
+        perform_injections(iteration_counter, switch)
 
 
 def regenerate(options):

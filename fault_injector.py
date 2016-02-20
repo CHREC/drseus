@@ -11,7 +11,7 @@ from simics import simics
 
 
 class fault_injector(object):
-    def __init__(self, campaign, options):
+    def __init__(self, campaign, options, power_switch=None):
         self.options = options
         self.db = database(campaign, options.command != 'new')
         if campaign['simics']:
@@ -20,7 +20,7 @@ class fault_injector(object):
             if campaign['architecture'] == 'p2020':
                 self.debugger = bdi_p2020(self.db, options)
             elif campaign['architecture'] == 'a9':
-                self.debugger = openocd(self.db, options)
+                self.debugger = openocd(self.db, options, power_switch)
         if campaign['aux'] and not campaign['simics']:
             self.debugger.aux.serial.write('\x03')
             self.debugger.aux.do_login()

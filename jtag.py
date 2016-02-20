@@ -1,10 +1,13 @@
+from json import load
+from os.path import exists
+from pyudev import Context
+from random import randrange, uniform
+from socket import AF_INET, SOCK_STREAM, socket
+from subprocess import DEVNULL, Popen
 from telnetlib import Telnet
 from termcolor import colored
 from threading import Thread
 from time import sleep, time
-from random import randrange, uniform
-from socket import AF_INET, SOCK_STREAM, socket
-from subprocess import DEVNULL, Popen
 
 from dut import dut
 from error import DrSEUsError
@@ -19,14 +22,11 @@ class jtag(object):
         self.timeout = 30
         self.prompts = [bytes(prompt, encoding='utf-8')
                         for prompt in self.prompts]
-        if options.command == 'inject' and options.selected_targets is not None:
-            for target in options.selected_targets:
+        if self.options.command == 'inject' and \
+                self.options.selected_targets is not None:
+            for target in self.options.selected_targets:
                 if target not in self.targets:
                     raise Exception('invalid injection target: '+target)
-        self.dut = dut(database, options)
-        if database.campaign['aux']:
-            self.aux = dut(database, options,
-                           aux=True)
 
     def __str__(self):
         string = 'JTAG Debugger at '+self.options.debugger_ip_address
@@ -44,6 +44,13 @@ class jtag(object):
                          self.options.debugger_ip_address+':'+str(self.port),
                          success=True)
 
+    def open(self):
+        self.dut = dut(self.db, self.options)
+        if self.db.campaign['aux']:
+            self.aux = dut(self.db, self.options, aux=True)
+        if self.options.jtag:
+            self.connect_telnet()
+
     def close(self):
         if self.telnet:
             self.telnet.close()
@@ -57,6 +64,7 @@ class jtag(object):
     def reset_dut(self, expected_output, attempts):
         self.dut.flush()
         if self.telnet:
+            self.dut.reset_ip()
             for attempt in range(attempts):
                 try:
                     self.command('reset', expected_output,
@@ -320,8 +328,7 @@ class bdi(jtag):
     def __init__(self, database, options):
         self.port = 23
         super().__init__(database, options)
-        if options.jtag:
-            self.connect_telnet()
+        self.open()
 
     def __str__(self):
         string = ('BDI3000 at '+self.options.debugger_ip_address +
@@ -363,8 +370,8 @@ class bdi(jtag):
     def set_mode(self, mode='supervisor'):
         pass
         # with self.db as db:
-        #     db.log_event('Information', 'Debugger', 'Set processor mode', mode,
-        #                  success=True)
+        #     db.log_event('Information', 'Debugger', 'Set processor mode',
+        #                   mode, success=True)
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
@@ -491,7 +498,24 @@ class openocd(jtag):
              '11011': 'und',
              '11111': 'sys'}
 
-    def __init__(self, database, options):
+    def find_ftdi_serials(self=None):
+        debuggers = Context().list_devices(ID_VENDOR_ID='0403',
+                                           ID_MODEL_ID='6014')
+        serials = []
+        for debugger in debuggers:
+            if 'DEVLINKS' not in debugger:
+                serials.append(debugger['ID_SERIAL_SHORT'])
+        return serials
+
+    def find_uart_serials(self=None):
+        uarts = Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
+        serials = {}
+        for uart in uarts:
+            if 'DEVLINKS' in uart:
+                serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
+        return serials
+
+    def __init__(self, database, options, power_switch=None):
 
         def find_open_port():
             sock = socket(AF_INET, SOCK_STREAM)
@@ -500,39 +524,57 @@ class openocd(jtag):
             sock.close()
             return port
 
-    # def __init__(self, database, options):
+    # def __init__(self, database, options, power_switch=None):
+        self.power_switch = power_switch
+        if not exists('devices.json'):
+            raise Exception('could not find device information file '
+                            'devices.json, try running DrSEUs command '
+                            '"power detect"')
+        with open('devices.json', 'r') as device_file:
+            device_info = load(device_file)
+        for device in device_info:
+            if device['uart'] == \
+                    self.find_uart_serials()[options.dut_serial_port]:
+                self.device_info = device
+                break
+        else:
+            raise Exception('could not find entry in devices.json for device '
+                            'at '+options.dut_serial_port)
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = devices['a9']
         self.port = find_open_port()
-        if options.jtag:
-            serial = zedboards[find_uart_serials()[options.dut_serial_port]]
-            self.openocd = Popen(['openocd', '-c',
-                                  'gdb_port 0; tcl_port 0; telnet_port ' +
-                                  str(self.port)+'; interface ftdi; ftdi_serial'
-                                  ' '+serial+';', '-f', 'openocd_zedboard.cfg'],
-                                 stderr=(DEVNULL if options.command != 'openocd'
-                                         else None))
-        if options.command != 'openocd':
-            with database as db:
-                db.log_event('Information', 'Debugger', 'Launched openocd',
-                             success=True)
-            super().__init__(database, options)
-            if options.jtag:
-                sleep(1)
-                self.connect_telnet()
+        super().__init__(database, options)
+        self.open()
 
     def __str__(self):
         string = 'OpenOCD at localhost port '+str(self.port)
         return string
 
+    def open(self):
+        if self.options.jtag:
+            self.openocd = Popen(['openocd', '-c',
+                                  'gdb_port 0; tcl_port 0; telnet_port ' +
+                                  str(self.port)+'; interface ftdi; ftdi_serial'
+                                  ' '+self.device_info['ftdi']+';',
+                                  '-f', 'openocd_zedboard.cfg'],
+                                 stderr=(DEVNULL
+                                         if self.options.command != 'openocd'
+                                         else None))
+            if self.options.command != 'openocd':
+                with self.db as db:
+                    db.log_event('Information', 'Debugger', 'Launched openocd',
+                                 success=True)
+                sleep(1)
+        super().open()
+
     def close(self):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
-        super().close()
         self.openocd.wait()
         with self.db as db:
             db.log_event('Information', 'Debugger', 'Closed openocd',
                          success=True)
+        super().close()
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
@@ -540,8 +582,38 @@ class openocd(jtag):
                                log_event, '\n', True)
 
     def reset_dut(self, attempts=10):
-        super().reset_dut(
-            ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], attempts)
+        if self.power_switch:
+            try:
+                super().reset_dut(
+                    ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], 1)
+            except DrSEUsError:
+                self.power_cycle_dut()
+                super().reset_dut(
+                    ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'],
+                    max(attempts-1, 1))
+        else:
+            super().reset_dut(
+                ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], attempts)
+
+    def power_cycle_dut(self):
+        with self.db as db:
+            event = db.log_event('Information', 'Debugger',
+                                 'Power cycled DUT', success=False)
+        self.close()
+        with self.power_switch as ps:
+            ps.set_outlet(self.device_info['outlet'], 'off')
+            ps.set_outlet(self.device_info['outlet'], 'on')
+        for serial_port, uart_serial in self.find_uart_serials().items():
+            if uart_serial == self.device_info['uart']:
+                self.options.dut_serial_port = serial_port
+                self.db.result['dut_serial_port'] = serial_port
+                break
+        else:
+            raise Exception('Error finding uart device after power cycle')
+        self.open()
+        print(colored('Power cycled device: '+self.dut.serial.port, 'red'))
+        with self.db as db:
+            db.log_event_success(event)
 
     def halt_dut(self):
         super().halt_dut('halt', ['target state: halted']*2)

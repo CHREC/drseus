@@ -7,13 +7,13 @@ from urllib.request import Request, urlopen
 
 
 class power_switch(object):
-    def __init__(self, ip_address='10.42.0.60', username='admin',
-                 password='chrec'):
-        self.ip_address = ip_address
-        self.username = username
-        self.password = password
+    def __init__(self, options):
+        self.ip_address = options.power_switch_ip_address
+        self.username = options.power_switch_username
+        self.password = options.power_switch_password
         self.outlets = range(1, 9)
         self.lock = Lock()
+        self.events = 0
 
     def __enter__(self):
         self.lock.acquire()
@@ -84,6 +84,8 @@ class power_switch(object):
         print(table.table)
 
     def set_outlet(self, outlet, state):
+        if self.events >= 10:
+            raise Exception('power events exceeded!')
         if outlet == 'all':
             outlet = 'a'
         elif outlet not in self.outlets:
@@ -91,20 +93,12 @@ class power_switch(object):
         state = state.upper()
         if state not in ('OFF', 'ON'):
             raise Exception('invalid state: '+state)
+        self.events += 1
         urlopen(Request(
             'http://'+self.ip_address+'/outlet?'+str(outlet)+'='+state,
             headers={'Authorization': b'Basic '+b64encode(
                 bytes(self.username+':'+self.password, encoding='utf-8'))}))
-        sleep(1)
-
-    def toggle_outlet(self, outlet):
-        for outlet_ in self.get_status():
-            if outlet_['outlet'] == outlet:
-                if outlet_['status'].upper() == 'ON':
-                    self.set_outlet(outlet, 'OFF')
-                elif outlet_['status'].upper() == 'OFF':
-                    self.set_outlet(outlet, 'ON')
-                break
+        sleep(5)
 
     def set_device(self, device, state):
         if '*' in device:
@@ -117,12 +111,3 @@ class power_switch(object):
                 if outlet['device'].lower() == device.lower():
                     self.set_outlet(outlet['outlet'], state)
                     break
-
-    def toggle_device(self, device):
-        for outlet in self.get_status():
-            if outlet['device'].lower() == device.lower():
-                if outlet['status'].upper() == 'ON':
-                    self.set_outlet(outlet['outlet'], 'OFF')
-                elif outlet['status'].upper() == 'OFF':
-                    self.set_outlet(outlet['outlet'], 'ON')
-                break

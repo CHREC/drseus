@@ -54,6 +54,10 @@ class dut(object):
             else options.aux_scp_port
         self.prompt = options.dut_prompt if not aux else options.aux_prompt
         self.prompt += ' '
+        self.username = options.dut_username if not aux \
+            else options.aux_username
+        self.password = options.dut_password if not aux \
+            else options.aux_password
         rsakey_file = StringIO(database.campaign['rsakey'])
         self.rsakey = RSAKey.from_private_key(rsakey_file)
         rsakey_file.close()
@@ -119,6 +123,7 @@ class dut(object):
 
     def flush(self):
         self.serial.reset_output_buffer()
+        buff = None
         try:
             in_bytes = self.serial.in_waiting
         except:
@@ -132,9 +137,19 @@ class dut(object):
                 else:
                     self.db.campaign['dut_output' if not self.aux
                                      else 'aux_output'] += buff
+                if self.options.debug and buff:
+                    print(colored(buff, 'green' if not self.aux else 'cyan'),
+                          end='')
+                    stdout.flush()
         with self.db as db:
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                         'Flushed serial buffers', success=True)
+                         'Flushed serial buffers', buff, success=True)
+
+    def reset_ip(self):
+        if self.options.reset_ip and (
+            (not self.aux and self.options.dut_ip_address is None) or
+                (self.aux and self.options.aux_ip_address is None)):
+            self.ip_address = None
 
     def send_files(self, files, attempts=10):
         if self.options.debug:
@@ -292,9 +307,9 @@ class dut(object):
                 self.write('\n')
                 self.write(self.uboot_command+'\n')
             elif buff[-len('login: '):] == 'login: ':
-                self.write(self.options.username+'\n')
+                self.write(self.username+'\n')
             elif buff[-len('Password: '):] == 'Password: ':
-                self.write(self.options.password+'\n')
+                self.write(self.password+'\n')
             elif buff[-len('can\'t get kernel image'):] == \
                     'can\'t get kernel image':
                 self.write('reset\n')
