@@ -501,31 +501,30 @@ if options.command == 'new':
         options.aux_arguments = ' '.join(options.aux_arguments)
 elif options.command in ('inject', 'supervise', 'delete', 'regenerate'):
     if not options.campaign_id:
-        try:
-            options.campaign_id = \
-                utilities.get_campaign(options.campaign_id)['id']
-        except:
-            pass
-    if options.command in ('inject', 'supervise'):
+        options.campaign_id = \
+            utilities.get_campaign(options.campaign_id)['id']
+    if options.command != 'regenerate':
         options.architecture = \
             utilities.get_campaign(options.campaign_id)['architecture']
-        if options.architecture == 'p2020':
-            if options.dut_serial_port is None:
-                options.dut_serial_port = '/dev/ttyUSB0'
-            if options.dut_prompt is None:
-                options.dut_prompt = 'root@p2020rdb:~#'
-            if options.aux_serial_port is None:
-                options.aux_serial_port = '/dev/ttyUSB1'
-            if options.aux_prompt is None:
-                options.aux_prompt = 'root@p2020rdb:~#'
-        elif options.architecture == 'a9':
-            if options.dut_serial_port is None:
-                options.dut_serial_port = '/dev/ttyACM0'
-            if options.dut_prompt is None:
-                options.dut_prompt = '[root@ZED]#'
-            if options.aux_serial_port is None:
-                options.aux_serial_port = '/dev/ttyACM1'
-            if options.aux_prompt is None:
-                options.aux_prompt = '[root@ZED]#'
+
+if options.command in ('new', 'inject', 'supervise'):
+    if options.architecture == 'p2020':
+        if options.dut_serial_port is None:
+            options.dut_serial_port = '/dev/ttyUSB0'
+        if options.dut_prompt is None:
+            options.dut_prompt = 'root@p2020rdb:~#'
+        if options.aux_serial_port is None:
+            options.aux_serial_port = '/dev/ttyUSB1'
+        if options.aux_prompt is None:
+            options.aux_prompt = 'root@p2020rdb:~#'
+    elif options.architecture == 'a9':
+        if options.dut_serial_port is None:
+            options.dut_serial_port = '/dev/ttyACM0'
+        if options.dut_prompt is None:
+            options.dut_prompt = '[root@ZED]#'
+        if options.aux_serial_port is None:
+            options.aux_serial_port = '/dev/ttyACM1'
+        if options.aux_prompt is None:
+            options.aux_prompt = '[root@ZED]#'
 
 options.func(options)
