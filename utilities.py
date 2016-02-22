@@ -289,8 +289,12 @@ def inject_campaign(options):
                               args=[iteration_counter, switch])
             processes.append(process)
             process.start()
-        for process in processes:
-            process.join()
+        try:
+            for process in processes:
+                process.join()
+        except KeyboardInterrupt:
+            for process in processes:
+                process.join()
     else:
         perform_injections(iteration_counter, switch)
 

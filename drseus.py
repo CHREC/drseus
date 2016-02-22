@@ -4,6 +4,7 @@ from argparse import ArgumentParser, REMAINDER
 
 import utilities
 
+# TODO: move away from sqlite
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages

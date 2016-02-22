@@ -106,6 +106,8 @@ class power_switch(object):
             for outlet in self.get_status():
                 if device in outlet['device'].lower():
                     self.set_outlet(outlet['outlet'], state)
+        elif device == 'all':
+            self.set_outlet('all', state)
         else:
             for outlet in self.get_status():
                 if outlet['device'].lower() == device.lower():
