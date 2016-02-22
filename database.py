@@ -1,6 +1,9 @@
 from datetime import datetime
-from os.path import exists
-from sqlite3 import connect
+from django.core.management import execute_from_command_line as django_command
+from os import environ
+from psycopg2 import connect, OperationalError
+from psycopg2.extras import DictCursor
+from subprocess import PIPE, Popen
 from termcolor import colored
 from threading import Lock
 from traceback import format_exc, format_stack
@@ -10,30 +13,50 @@ class database(object):
     log_exception = '__LOG_EXCEPTION__'
     log_trace = '__LOG_TRACE__'
 
-    def __init__(self, campaign={}, create_result=False,
-                 database_file='campaign-data/db.sqlite3'):
-        if not exists(database_file):
-            raise Exception('could not find database file: '+database_file)
+    def __init__(self, campaign={}, create_result=False, host='localhost',
+                 port=5432, database='drseus'):
         self.campaign = campaign
         self.result = {}
-        self.file = database_file
+        self.host = host
+        self.port = port
+        self.database = database
         self.lock = Lock()
         if create_result:
             with self as db:
                 db.__create_result()
 
     def __enter__(self):
-
-        def dict_factory(cursor, row):
-            dictionary = {}
-            for id_, column in enumerate(cursor.description):
-                dictionary[column[0]] = row[id_]
-            return dictionary
-
-    # def __enter__(self):
         self.lock.acquire()
-        self.connection = connect(self.file, timeout=30)
-        self.connection.row_factory = dict_factory
+        try:
+            self.connection = connect(host=self.host, port=self.port,
+                                      database=self.database, user='drseus',
+                                      password='drseus',
+                                      cursor_factory=DictCursor)
+        except OperationalError:
+            print('adding drseus user and database to postgresql, '
+                  'root privileges required')
+            psql = Popen(['sudo', '-u', 'postgres', 'psql'], bufsize=0,
+                         universal_newlines=True, stdin=PIPE)
+            for command in ("CREATE DATABASE "+self.database+";",
+                            "CREATE USER drseus WITH PASSWORD 'drseus';",
+                            "ALTER ROLE drseus SET client_encoding TO 'utf8';",
+                            ("ALTER ROLE drseus "
+                                "SET default_transaction_isolation "
+                                "TO 'read committed';"),
+                            "ALTER ROLE drseus SET timezone TO 'UTC';",
+                            ("GRANT ALL PRIVILEGES ON DATABASE "+self.database +
+                                " TO drseus;")):
+                print('psql>', command)
+                psql.stdin.write(command+'\n')
+            psql.stdin.close()
+            psql.wait()
+            environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
+            django_command(['drseus', 'makemigrations', 'log'])
+            django_command(['drseus', 'migrate'])
+            self.connection = connect(host=self.host, port=self.port,
+                                      database=self.database, user='drseus',
+                                      password='drseus',
+                                      cursor_factory=DictCursor)
         self.cursor = self.connection.cursor()
         return self
 
@@ -43,6 +66,33 @@ class database(object):
         self.lock.release()
         if type_ is not None or value is not None or traceback is not None:
             return False  # reraise exception
+
+    def init_django(self):
+        try:
+            connection = connect(host='localhost', database='drseus',
+                                 user='drseus', password='drseus')
+        except OperationalError:
+            print('adding drseus user and database to postgresql, '
+                  'root privileges required')
+            psql = Popen(['sudo', '-u', 'postgres', 'psql'], bufsize=0,
+                         universal_newlines=True, stdin=PIPE)
+            for command in (
+                    "CREATE DATABASE drseus;",
+                    "CREATE USER drseus WITH PASSWORD 'drseus';",
+                    "ALTER ROLE drseus SET client_encoding TO 'utf8';",
+                    "ALTER ROLE drseus SET default_transaction_isolation "
+                    "TO 'read committed';",
+                    "ALTER ROLE drseus SET timezone TO 'UTC';",
+                    "GRANT ALL PRIVILEGES ON DATABASE drseus TO drseus;"):
+                print('psql>', command)
+                psql.stdin.write(command+'\n')
+            psql.stdin.close()
+            psql.wait()
+        else:
+            connection.close()
+        environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
+        django_command(['drseus', 'makemigrations', 'log'])
+        django_command(['drseus', 'migrate'])
 
     def insert(self, table, dictionary=None):
         if dictionary is None:
@@ -55,12 +105,12 @@ class database(object):
         if 'id' in dictionary:
             del dictionary['id']
         self.cursor.execute(
-            'INSERT INTO log_{} ({}) VALUES ({})'.format(
+            'INSERT INTO log_{} ({}) VALUES ({}) RETURNING id'.format(
                 table,
-                ','.join(dictionary.keys()),
-                ','.join('?'*len(dictionary))),
+                ', '.join(dictionary.keys()),
+                ', '.join(['%s']*len(dictionary))),
             list(dictionary.values()))
-        dictionary['id'] = self.cursor.lastrowid
+        dictionary['id'] = self.cursor.fetchone()[0]
 
     def update(self, table, dictionary=None):
         if table == 'campaign':
@@ -70,9 +120,9 @@ class database(object):
         if 'timestamp' in dictionary:
             dictionary['timestamp'] = datetime.now()
         self.cursor.execute(
-            'UPDATE log_{} SET {}=? WHERE id={}'.format(
+            'UPDATE log_{} SET {}=%s WHERE id={}'.format(
                 table,
-                '=?,'.join(dictionary.keys()),
+                '=%s, '.join(dictionary.keys()),
                 str(dictionary['id'])),
             list(dictionary.values()))
 
@@ -136,56 +186,70 @@ class database(object):
             self.cursor.execute('SELECT * FROM log_campaign ORDER BY id')
             return self.cursor.fetchall()
         else:
-            self.cursor.execute('SELECT * FROM log_campaign WHERE id=?',
+            self.cursor.execute('SELECT * FROM log_campaign WHERE id=%s',
                                 [self.campaign['id']])
             return self.cursor.fetchone()
 
     def get_result(self):
-        self.cursor.execute('SELECT * FROM log_result WHERE campaign_id=?',
+        self.cursor.execute('SELECT * FROM log_result WHERE campaign_id=%s',
                             [self.campaign['id']])
         return self.cursor.fetchall()
 
     def get_item(self, item):
-        self.cursor.execute('SELECT * FROM log_'+item+' WHERE result_id=? ',
+        self.cursor.execute('SELECT * FROM log_'+item+' WHERE result_id=%s ',
                             [self.result['id']])
         return self.cursor.fetchall()
 
     def get_count(self, item, item_from='result'):
         self.cursor.execute('SELECT COUNT(*) FROM log_'+item+' WHERE ' +
-                            item_from+'_id=?', [getattr(self, item_from)['id']])
-        return self.cursor.fetchone()['COUNT(*)']
+                            item_from+'_id=%s',
+                            [getattr(self, item_from)['id']])
+        return self.cursor.fetchone()[0]
 
     def delete_result(self):
         self.cursor.execute('DELETE FROM log_simics_memory_diff '
-                            'WHERE result_id=?', [self.result['id']])
+                            'WHERE result_id=%s', [self.result['id']])
         self.cursor.execute('DELETE FROM log_simics_register_diff '
-                            'WHERE result_id=?', [self.result['id']])
-        self.cursor.execute('DELETE FROM log_injection WHERE result_id=?',
+                            'WHERE result_id=%s', [self.result['id']])
+        self.cursor.execute('DELETE FROM log_injection WHERE result_id=%s',
                             [self.result['id']])
-        self.cursor.execute('DELETE FROM log_event WHERE result_id=?',
+        self.cursor.execute('DELETE FROM log_event WHERE result_id=%s',
                             [self.result['id']])
-        self.cursor.execute('DELETE FROM log_result WHERE id=?',
+        self.cursor.execute('DELETE FROM log_result WHERE id=%s',
                             [self.result['id']])
 
     def delete_results(self):
         self.cursor.execute('DELETE FROM log_simics_memory_diff WHERE '
                             'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id=?)', [self.campaign['id']])
+                            'WHERE campaign_id=%s)', [self.campaign['id']])
         self.cursor.execute('DELETE FROM log_simics_register_diff WHERE '
                             'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id=?)', [self.campaign['id']])
+                            'WHERE campaign_id=%s)', [self.campaign['id']])
         self.cursor.execute('DELETE FROM log_injection WHERE '
                             'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id=?)', [self.campaign['id']])
+                            'WHERE campaign_id=%s)', [self.campaign['id']])
         self.cursor.execute('DELETE FROM log_event WHERE '
                             'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id=?)', [self.campaign['id']])
-        self.cursor.execute('DELETE FROM log_result WHERE campaign_id=?',
+                            'WHERE campaign_id=%s)', [self.campaign['id']])
+        self.cursor.execute('DELETE FROM log_result WHERE campaign_id=%s',
                             [self.campaign['id']])
 
     def delete_campaign(self):
         self.delete_results()
-        self.cursor.execute('DELETE FROM log_event WHERE campaign_id=?',
+        self.cursor.execute('DELETE FROM log_event WHERE campaign_id=%s',
                             [self.campaign['id']])
-        self.cursor.execute('DELETE FROM log_campaign WHERE id=?',
+        self.cursor.execute('DELETE FROM log_campaign WHERE id=%s',
                             [self.campaign['id']])
+
+    def delete_database(self):
+        print('deleting drseus user and database to postgresql, '
+              'root privileges required')
+        psql = Popen(['sudo', '-u', 'postgres', 'psql'], bufsize=0,
+                     universal_newlines=True, stdin=PIPE)
+        for command in (
+                "DROP DATABASE "+self.database+";",
+                "DROP USER drseus;"):
+            print('psql>', command)
+            psql.stdin.write(command+'\n')
+        psql.stdin.close()
+        psql.wait()

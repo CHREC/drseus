@@ -1,6 +1,6 @@
-from django.db.models import (BooleanField, DateTimeField, FloatField,
-                              ForeignKey, IntegerField, Model, NullBooleanField,
-                              TextField)
+from django.db.models import (BooleanField, BigIntegerField, DateTimeField,
+                              FloatField, ForeignKey, IntegerField, Model,
+                              NullBooleanField, TextField)
 
 
 class campaign(Model):
@@ -9,14 +9,14 @@ class campaign(Model):
     aux_command = TextField(null=True)
     aux_output = TextField(null=True)
     command = TextField()
-    cycles_between = IntegerField(null=True)
+    cycles_between = BigIntegerField(null=True)
     debugger_output = TextField(null=True)
     description = TextField(null=True)
     dut_output = TextField(null=True)
     exec_time = FloatField(null=True)
     kill_dut = BooleanField()
     num_checkpoints = IntegerField(null=True)
-    num_cycles = IntegerField(null=True)
+    num_cycles = BigIntegerField(null=True)
     output_file = TextField()
     rsakey = TextField()
     sim_time = FloatField(null=True)

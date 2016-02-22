@@ -1,4 +1,4 @@
-from os.path import abspath, dirname, join
+from os.path import abspath, dirname
 
 BASE_DIR = dirname(dirname(abspath(__file__)))
 SECRET_KEY = 'y8o)jsiw&89zg5jqg1h9$iweu9$(mf78)l*=vsmfkqc-4hab1#'
@@ -28,7 +28,11 @@ TEMPLATES = [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': join(BASE_DIR, 'campaign-data/db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'drseus',
+        'USER': 'drseus',
+        'PASSWORD': 'drseus',
+        'HOST': 'localhost',
+        'PORT': '',
     }
 }

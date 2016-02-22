@@ -13,7 +13,6 @@ class power_switch(object):
         self.password = options.power_switch_password
         self.outlets = range(1, 9)
         self.lock = Lock()
-        self.events = 0
 
     def __enter__(self):
         self.lock.acquire()
@@ -83,9 +82,7 @@ class power_switch(object):
                                      outlet['status']])
         print(table.table)
 
-    def set_outlet(self, outlet, state):
-        if self.events >= 10:
-            raise Exception('power events exceeded!')
+    def set_outlet(self, outlet, state, delay=5):
         if outlet == 'all':
             outlet = 'a'
         elif outlet not in self.outlets:
@@ -93,23 +90,24 @@ class power_switch(object):
         state = state.upper()
         if state not in ('OFF', 'ON'):
             raise Exception('invalid state: '+state)
-        self.events += 1
+        if delay < 1:
+            delay = 1
         urlopen(Request(
             'http://'+self.ip_address+'/outlet?'+str(outlet)+'='+state,
             headers={'Authorization': b'Basic '+b64encode(
                 bytes(self.username+':'+self.password, encoding='utf-8'))}))
-        sleep(5)
+        sleep(delay)
 
-    def set_device(self, device, state):
+    def set_device(self, device, state, delay=5):
         if '*' in device:
             device = device.replace('*', '').lower()
             for outlet in self.get_status():
                 if device in outlet['device'].lower():
-                    self.set_outlet(outlet['outlet'], state)
+                    self.set_outlet(outlet['outlet'], state, delay)
         elif device == 'all':
-            self.set_outlet('all', state)
+            self.set_outlet('all', state, delay)
         else:
             for outlet in self.get_status():
                 if outlet['device'].lower() == device.lower():
-                    self.set_outlet(outlet['outlet'], state)
+                    self.set_outlet(outlet['outlet'], state, delay)
                     break

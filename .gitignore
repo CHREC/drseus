@@ -1,5 +1,6 @@
 *.pyc
 campaign-data/
+log/migrations/
 fiapps/
 simics-workspace/
 devices.json

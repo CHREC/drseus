@@ -4,7 +4,7 @@ from argparse import ArgumentParser, REMAINDER
 
 import utilities
 
-# TODO: move away from sqlite
+# TODO: use postgresql arrays
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
@@ -388,7 +388,7 @@ power_set.add_argument(
     help='state to set outlet to (on/off)')
 power_set.set_defaults(func=utilities.set_outlet)
 power_list = power_subparsers.add_parser(
-    'list', aliases=['l'],
+    'list', aliases=['l', 'ls'],
     help='list outlet statuses',
     description='list outlet statuses')
 power_list.set_defaults(func=utilities.list_outlets)

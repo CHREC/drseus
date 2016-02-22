@@ -3,7 +3,7 @@ from django.core.management import execute_from_command_line as django_command
 from io import StringIO
 from json import dump
 from multiprocessing import Process, Value
-from os import environ, getcwd, listdir, mkdir, remove
+from os import environ, getcwd, listdir, makedirs, remove
 from os.path import exists
 from paramiko import RSAKey
 from shutil import copy, copytree, rmtree
@@ -73,10 +73,10 @@ def set_outlet(options):
         options.outlet = int(options.outlet)
     except ValueError:
         with power_switch(options) as ps:
-            ps.set_device(options.outlet, options.state)
+            ps.set_device(options.outlet, options.state, 1)
     else:
         with power_switch(options) as ps:
-            ps.set_outlet(options.outlet, options.state)
+            ps.set_outlet(options.outlet, options.state, 1)
 
 
 def list_outlets(options):
@@ -145,18 +145,16 @@ def delete(options):
         if exists('campaign-data/'+str(campaign_id)+'/results'):
             rmtree('campaign-data/'+str(campaign_id)+'/results')
             print('deleted results')
-        if exists('campaign-data/db.sqlite3'):
-            with database(campaign={'id': campaign_id}) as db:
-                db.delete_results()
-            print('flushed database')
+        with database(campaign={'id': campaign_id}) as db:
+            db.delete_results()
+        print('flushed database')
         if exists('simics-workspace/injected-checkpoints/'+str(campaign_id)):
             rmtree('simics-workspace/injected-checkpoints/'+str(campaign_id))
             print('deleted injected checkpoints')
 
     def delete_campaign(campaign_id):
-        if exists('campaign-data/db.sqlite3'):
-            with database(campaign={'id': campaign_id}) as db:
-                db.delete_campaign()
+        with database(campaign={'id': campaign_id}) as db:
+            db.delete_campaign()
             print('deleted campaign '+str(campaign_id)+' from database')
         if exists('campaign-data/'+str(campaign_id)):
             rmtree('campaign-data/'+str(campaign_id))
@@ -183,6 +181,8 @@ def delete(options):
         if exists('campaign-data'):
             rmtree('campaign-data')
             print('deleted campaign data')
+        database().delete_database()
+        print('deleted database')
 
 
 def create_campaign(options):
@@ -195,11 +195,6 @@ def create_campaign(options):
             raise Exception('cannot find directory '+options.directory)
     if options.simics and not exists('simics-workspace'):
         check_call('./setup_simics_workspace.sh')
-    if not exists('campaign-data/db.sqlite3'):
-        if not exists(('campaign-data')):
-            mkdir('campaign-data')
-        environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
-        django_command(['drseus', 'migrate', '--run-syncdb'])
     rsakey_file = StringIO()
     RSAKey.generate(1024).write_private_key(rsakey_file)
     rsakey = rsakey_file.getvalue()
@@ -232,7 +227,7 @@ def create_campaign(options):
         raise Exception('directory already exists: '
                         'campaign-data/'+str(campaign['id']))
     else:
-        mkdir(campaign_directory)
+        makedirs(campaign_directory)
     options.debug = True
     drseus = fault_injector(campaign, options)
     drseus.setup_campaign()
