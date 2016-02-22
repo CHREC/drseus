@@ -131,8 +131,7 @@ class result_table(Table):
     outcome = TemplateColumn(
         '<input id="edit_outcome" type="text" value="{{ value }}" />')
     outcome_category = TemplateColumn(
-        '<input id="edit_outcome_category" type="text" value="{{ value }}" />'
-    )
+        '<input id="edit_outcome_category" type="text" value="{{ value }}" />')
     timestamp = DateTimeColumn(format=datetime_format)
 
     def render_data_diff(self, record):
@@ -163,7 +162,6 @@ class event_table(Table):
         fields = ('timestamp', 'level', 'source', 'event_type', 'success_',
                   'description')
         model = event
-        orderable = False
         template = 'django_tables2/bootstrap.html'
 
 
@@ -190,7 +188,6 @@ class hw_injection_table(Table):
                   'register_index', 'bit', 'field', 'gold_value',
                   'injected_value', 'success_')
         model = injection
-        orderable = False
         template = 'django_tables2/bootstrap.html'
 
 
@@ -204,7 +201,6 @@ class simics_injection_table(Table):
                   'register', 'register_index', 'bit', 'field', 'gold_value',
                   'injected_value', 'success_')
         model = injection
-        orderable = False
         template = 'django_tables2/bootstrap.html'
 
 
