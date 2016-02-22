@@ -478,28 +478,37 @@ django.add_argument(
 django.set_defaults(func=utilities.run_django_command)
 
 options = parser.parse_args()
+
 if options.command is None:
-    parser.print_help()
-else:
-    if options.command == 'n':
-        options.command = 'new'
-    elif options.command == 'i':
-        options.command = 'inject'
-    elif options.command == 's':
-        options.command = 'supervise'
-    elif options.command == 'o':
-        options.command = 'openocd'
-    if options.command != 'new':
-        if not options.campaign_id:
-            try:
-                options.campaign_id = \
-                    utilities.get_campaign(options.campaign_id)['id']
-            except:
-                pass
-        if options.campaign_id:
-            options.architecture = \
-                utilities.get_campaign(options.campaign_id)['architecture']
-    if options.command == 'new' or options.campaign_id:
+    parser.error('no command specified, run with -h for help')
+if options.command == 'n':
+    options.command = 'new'
+elif options.command == 'i':
+    options.command = 'inject'
+elif options.command == 's':
+    options.command = 'supervise'
+elif options.command == 'o':
+    options.command = 'openocd'
+elif options.command == 'd':
+    options.command = 'delete'
+elif options.command == 'r':
+    options.command = 'regenerate'
+
+if options.command == 'new':
+    if options.arguments:
+        options.arguments = ' '.join(options.arguments)
+    if options.aux_arguments:
+        options.aux_arguments = ' '.join(options.aux_arguments)
+elif options.command in ('inject', 'supervise', 'delete', 'regenerate'):
+    if not options.campaign_id:
+        try:
+            options.campaign_id = \
+                utilities.get_campaign(options.campaign_id)['id']
+        except:
+            pass
+    if options.command in ('inject', 'supervise'):
+        options.architecture = \
+            utilities.get_campaign(options.campaign_id)['architecture']
         if options.architecture == 'p2020':
             if options.dut_serial_port is None:
                 options.dut_serial_port = '/dev/ttyUSB0'
@@ -518,9 +527,5 @@ else:
                 options.aux_serial_port = '/dev/ttyACM1'
             if options.aux_prompt is None:
                 options.aux_prompt = '[root@ZED]#'
-    if options.command == 'new':
-        if options.arguments:
-            options.arguments = ' '.join(options.arguments)
-        if options.aux_arguments:
-            options.aux_arguments = ' '.join(options.aux_arguments)
-    options.func(options)
+
+options.func(options)
