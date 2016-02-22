@@ -367,7 +367,7 @@ power_subparsers = power.add_subparsers(
     title='web power switch commands',
     description='Run "%(prog)s COMMAND -h" to get additional help for '
                 'each command',
-    metavar='COMMAND', dest='command')
+    metavar='COMMAND', dest='power_command')
 detect_devices = power_subparsers.add_parser(
     'detect', aliases=['d', 'D'],
     help='detect devices attached to web power switch',
@@ -500,12 +500,13 @@ if options.command == 'new':
     if options.aux_arguments:
         options.aux_arguments = ' '.join(options.aux_arguments)
 elif options.command in ('inject', 'supervise', 'delete', 'regenerate'):
-    if not options.campaign_id:
-        options.campaign_id = \
-            utilities.get_campaign(options.campaign_id)['id']
-    if options.command != 'regenerate':
-        options.architecture = \
-            utilities.get_campaign(options.campaign_id)['architecture']
+    if not (options.command == 'delete' and options.delete in ('a', 'all')):
+        if not options.campaign_id:
+            options.campaign_id = \
+                utilities.get_campaign(options.campaign_id)['id']
+        if options.command != 'regenerate':
+            options.architecture = \
+                utilities.get_campaign(options.campaign_id)['architecture']
 
 if options.command in ('new', 'inject', 'supervise'):
     if options.architecture == 'p2020':

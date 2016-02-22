@@ -29,17 +29,17 @@ def detect_power_switch_devices(options):
     devices = []
     with power_switch(options) as ps:
         status = ps.get_status()
-        ps.set_outlet('all', 'off')
+        ps.set_outlet('all', 'off', 1)
         ftdi_serials_pre = openocd.find_ftdi_serials()
         uart_serials_pre = openocd.find_uart_serials().values()
         for outlet in ps.outlets:
-            ps.set_outlet(outlet, 'on')
+            ps.set_outlet(outlet, 'on', 5)
             ftdi_serials = [serial for serial in openocd.find_ftdi_serials()
                             if serial not in ftdi_serials_pre]
             uart_serials = [serial for serial
                             in openocd.find_uart_serials().values()
                             if serial not in uart_serials_pre]
-            ps.set_outlet(outlet, 'off')
+            ps.set_outlet(outlet, 'off', 1)
             if len(ftdi_serials) > 1 or len(uart_serials) > 1:
                 print('too many devices detected on outlet', outlet)
                 continue
@@ -51,7 +51,7 @@ def detect_power_switch_devices(options):
                             'ftdi': ftdi_serials[0],
                             'uart': uart_serials[0]})
         for outlet in status:
-            ps.set_outlet(outlet['outlet'], outlet['status'])
+            ps.set_outlet(outlet['outlet'], outlet['status'], 1)
     with open('devices.json', 'w') as device_file:
         dump(devices, device_file, indent=4)
     print('saved device information to devices.json')
