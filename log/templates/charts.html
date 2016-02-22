@@ -1,53 +1,66 @@
 {% extends "base.html" %}
 
 {% block body %}
-    <div class="source" align="center">
+    <section class="content-header">
+        <h1>{% if categories %}Category{% else %}Outcome{% endif %} Charts</h1>
+        <ol class="breadcrumb">
+            <li><a href="/">Campaigns</a></li>
+            <li><a href="info">Campaign {{ campaign_data.id }}</a></li>
+            <li><a href="results">Results</a></li>
+            <li class="active"><a href="">{% if categories %}Category{% else %}Outcome{% endif %} Charts</a></li>
+        </ol>
+    </section>
+
+    <section class="content">
         <a name="overview_chart"></a>
-        <div class="section">
+        <div id="overview_chart"></div>
+        <br>
+        <a name="targets_charts"></a>
+        <div id="targets_chart"></div>
+        <br>
+        <div id="targets_percent_chart"></div>
+        <br>
+        <div id="targets_log_chart"></div>
+        <br>
+        {% if campaign_data.simics %}
+            <a name="propagation_chart"></a>
+            <div id="propagation_chart"></div>
             <br>
-            <div id="overview_chart"></div>
+        {% endif %}
+        <a name="diff_targets_chart"></a>
+        <div id="diff_targets_chart"></div>
+        <br>
+        <a name="registers_chart"></a>
+        <div id="registers_chart"></div>
+        <br>
+        <a name="register_bits_chart"></a>
+        <div id="register_bits_chart"></div>
+        <br>
+        {% if campaign_data.simics %}
+            <a name="tlbs_chart"></a>
+            <div id="tlbs_chart"></div>
             <br>
-            <a name="targets_charts"></a>
-            <div id="targets_chart"></div>
+            <a name="tlb_fields_chart"></a>
+            <div id="tlb_fields_chart"></div>
             <br>
-            <div id="targets_percent_chart"></div>
-            <br>
-            <div id="targets_log_chart"></div>
-            <br>
-            {% if campaign_data.simics %}
-                <a name="propagation_chart"></a>
-                <div id="propagation_chart"></div>
-                <br>
-            {% endif %}
-            <a name="diff_targets_chart"></a>
-            <div id="diff_targets_chart"></div>
-            <br>
-            <a name="registers_chart"></a>
-            <div id="registers_chart"></div>
-            <br>
-            <a name="register_bits_chart"></a>
-            <div id="register_bits_chart"></div>
-            <br>
-            {% if campaign_data.simics %}
-                <a name="tlbs_chart"></a>
-                <div id="tlbs_chart"></div>
-                <br>
-                <a name="tlb_fields_chart"></a>
-                <div id="tlb_fields_chart"></div>
-                <br>
-            {% endif %}
-            <a name="times_charts"></a>
-            <div id="times_chart"></div>
-            <br>
-            <div id="times_smoothed_chart"></div>
-            <br>
-            <a name="diff_times"></a>
-            <div id="diff_times_chart"></div>
-            <br>
-            <a name="counts_charts"></a>
-            <div id="counts_chart"></div>
-            <br>
-            <div id="counts_percent_chart"></div>
-        </div>
-    </div>
+        {% endif %}
+        <a name="times_charts"></a>
+        <div id="times_chart"></div>
+        <br>
+        <div id="times_smoothed_chart"></div>
+        <br>
+        <a name="diff_times"></a>
+        <div id="diff_times_chart"></div>
+        <br>
+        <a name="counts_charts"></a>
+        <div id="counts_chart"></div>
+        <br>
+        <div id="counts_percent_chart"></div>
+    </section>
+{% endblock %}
+
+{% block script %}
+    <script>
+        $('#{% if categories %}category{% else %}outcome{% endif %}_charts-link').addClass('active')
+    </script>
 {% endblock %}

@@ -6,7 +6,13 @@
  * Version:  1.3.8
  */
 /*global Highcharts, window, document, Blob */
-(function (Highcharts) {
+(function (factory) {
+    if (typeof module === 'object' && module.exports) {
+        module.exports = factory;
+    } else {
+        factory(Highcharts);
+    }
+})(function (Highcharts) {
 
     'use strict';
 
@@ -275,7 +281,7 @@
                 '</head><body>' +
                 this.getTable(true) +
                 '</body></html>',
-            base64 = function (s) {
+            base64 = function (s) { 
                 return window.btoa(unescape(encodeURIComponent(s))); // #50
             };
         getContent(
@@ -301,4 +307,4 @@
         });
     }
 
-}(Highcharts));
+});

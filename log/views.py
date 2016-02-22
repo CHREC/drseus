@@ -16,11 +16,11 @@ from .tables import (campaign_table, campaigns_table, event_table,
                      results_table, simics_injection_table,
                      simics_memory_diff_table, simics_register_diff_table)
 
-navigation_items = (('Campaign Information', 'info'),
-                    ('Charts By Category', 'category_charts'),
-                    ('Charts By Outcomes', 'outcome_charts'),
-                    ('Results Table', 'results'),
-                    ('Injections', 'injections'))
+navigation_items = (('Campaign Information', 'info', 'info'),
+                    ('Category Charts', 'category_charts', 'bar-chart'),
+                    ('Outcome Charts', 'outcome_charts', 'bar-chart'),
+                    ('Results', 'results', 'table'),
+                    ('Injections', 'injections', 'crosshairs'))
 
 
 def campaigns_page(request):
@@ -37,7 +37,7 @@ def campaigns_page(request):
 def campaign_page(request, campaign_id):
     campaign_object = campaign.objects.get(id=campaign_id)
     chart_array = target_bits_chart(campaign_object)
-    page_items = [('Campaign Data', 'campaign_data'),
+    page_items = [('Campaign Data', 'campaign_data'), ('Events', 'events'),
                   ('Injection Targets', 'target_bits_chart')]
     output_file = ('campaign-data/'+str(campaign_id) +
                    '/gold_'+campaign_object.output_file)
@@ -89,8 +89,8 @@ def charts_page(request, campaign_id, group_categories=False):
         chart_array = None
     return render(request, 'charts.html', {
         'campaign_data': campaign_object, 'chart_array': chart_array,
-        'filter': filter_, 'navigation_items': navigation_items,
-        'page_items': page_items})
+        'filter': filter_, 'categories': group_categories,
+        'navigation_items': navigation_items, 'page_items': page_items})
 
 
 def injections_page(request, campaign_id):
@@ -105,7 +105,7 @@ def injections_page(request, campaign_id):
         chart_array = None
     injection_objects = injection.objects.filter(result_id__in=result_ids)
     table = injections_table(injection_objects)
-    RequestConfig(request, paginate={'per_page': 100}).configure(table)
+    RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return render(request, 'injections.html', {
         'campaign_data': campaign_object, 'chart_array': chart_array,
         'filter': filter_, 'navigation_items': navigation_items,
@@ -138,23 +138,19 @@ def results_page(request, campaign_id):
                 page_items.append(('Result ID '+str(result_id), result_id))
             results = result.objects.filter(id__in=result_ids).order_by('-id')
             image = 'view_output_image' in request.GET
-            return render(request, 'output.html', {'campaign': campaign_id,
-                                                   'image': image,
-                                                   'navigation_items':
-                                                       navigation_items,
-                                                   'page_items': page_items,
-                                                   'results': results})
+            return render(request, 'output.html', {
+                'campaign_data': campaign_object, 'image': image,
+                'navigation_items': navigation_items, 'page_items': page_items,
+                'results': results})
         elif ('view_output_all' in request.GET or
               'view_output_image_all' in request.GET):
             page_items = [('Result ID '+str(result_id), result_id) for result_id
                           in result_objects.values_list('id', flat=True)]
             image = 'view_output_image_all' in request.GET
-            return render(request, 'output.html', {'campaign': campaign_id,
-                                                   'image': image,
-                                                   'navigation_items':
-                                                       navigation_items,
-                                                   'page_items': page_items,
-                                                   'results': result_objects})
+            return render(request, 'output.html', {
+                'campaign_data': campaign_object, 'image': image,
+                'navigation_items': navigation_items, 'page_items': page_items,
+                'results': result_objects})
     elif request.method == 'POST':
         if 'new_outcome_category' in request.POST:
             result_objects.values('outcome_category').update(
@@ -180,18 +176,19 @@ def results_page(request, campaign_id):
             result.objects.filter(id__in=result_ids).delete()
             return redirect('/campaign/'+str(campaign_id)+'/results')
     table = results_table(result_objects)
-    RequestConfig(request, paginate={'per_page': 100}).configure(table)
+    RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return render(request, 'results.html', {
         'campaign_data': campaign_object, 'filter': filter_,
         'navigation_items': navigation_items, 'output_image': output_image,
-        'table': table})
+        'page_items_block': True, 'table': table})
 
 
 def result_page(request, campaign_id, result_id):
     campaign_object = campaign.objects.get(id=campaign_id)
-    navigation_items_ = [(item[0], '../'+item[1])
+    navigation_items_ = [(item[0], '../'+item[1], item[2])
                          for item in navigation_items]
-    page_items = [('Result', 'result'), ('Injections', 'injections')]
+    page_items = [('Result', 'result'), ('Injections', 'injections'),
+                  ('Events', 'events')]
     output_file = ('campaign-data/'+campaign_id+'/results/'+result_id +
                    '/'+campaign_object.output_file)
     if exists(output_file) and what(output_file) is not None:

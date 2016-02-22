@@ -1,39 +1,73 @@
 {% extends "base.html" %}
 
 {% block body %}
-    <div class="source">
+    <section class="content-header">
+        <h1>Outputs</h1>
+        <ol class="breadcrumb">
+            <li><a href="/">Campaigns</a></li>
+            <li><a href="info">Campaign {{ campaign_data.id }}</a></li>
+            <li><a href="results">Results</a></li>
+            <li class="active"><a href="">Outputs</a></li>
+        </ol>
+    </section>
+
+    <section class="content">
         {% for result in results %}
-            <h2 align="center">
-                <a href="./result/{{ result.id }}" name="{{ result.id }}">
-                    Result ID {{ result.id }}
-                </a>
-                 | {{ result.timestamp|date:"m/d/Y H:i:s.u" }} | {{ result.outcome_category }} -
-                 {% if result.outcome_category == "Data error" %}
-                    {{ result.outcome }}, data diff: {{ result.data_diff }}
-                 {% else %}
-                    {{ result.outcome }}
-                 {% endif %}
-            </h2>
-            {% if image %}
-                <div align="center">
-                    <img src="./output/{{ result.id }}">
+            {% if not forloop.counter|divisibleby:"2" %}
+                <div class="row">
+            {% endif %}
+
+            <div class="col-lg-6">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">
+                            <a href="./result/{{ result.id }}" name="{{ result.id }}"> Result ID {{ result.id }} </a>
+                            - {{ result.timestamp|date:"M j, Y h:i:s A" }}
+                            <br>
+                            {{ result.outcome_category }} -
+                            {% if result.outcome_category == "Data error" %}
+                               {{ result.outcome }}, data diff: {{ result.data_diff }}
+                            {% else %}
+                               {{ result.outcome }}
+                            {% endif %}
+                        </h3>
+                        <div class="box-tools pull-right">
+                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="box-body">
+                        {% if image %}
+                            <div align="center">
+                                <img src="./output/{{ result.id }}">
+                            </div>
+                        {% else %}
+                            {% if campaign.aux %}
+                                <h3 align="center">
+                                    <a name="dut_output"></a>
+                                    DUT Output
+                                </h3>
+                            {% endif %}
+                            <code class="console">{{ result.dut_output }}</code>
+                            {% if campaign.aux %}
+                                <h3 align="center">
+                                    <a name="aux_output"></a>
+                                    AUX Output
+                                </h3>
+                                <code class="console">{{ result.aux_output }}</code>
+                            {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
-            {% else %}
-                {% if campaign.aux %}
-                    <h3 align="center">
-                        <a name="dut_output"></a>
-                        DUT Output
-                    </h3>
-                {% endif %}
-                <code class="console">{{ result.dut_output }}</code>
-                {% if campaign.aux %}
-                    <h3 align="center">
-                        <a name="aux_output"></a>
-                        AUX Output
-                    </h3>
-                    <code class="console">{{ result.aux_output }}</code>
-                {% endif %}
+            </div>
+
+            {% if forloop.counter|divisibleby:"2" %}
+                </div>
             {% endif %}
         {% endfor %}
-    </div>
+
+        {% if not results|length|divisibleby:"2" %}
+            </div>
+        {% endif %}
+    </section>
 {% endblock %}

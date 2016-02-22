@@ -46,20 +46,6 @@ colors_extra = ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
                 '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1']*5
 
 
-export_options = {
-    'chart': {
-        'backgroundColor': '#FFFFFF',
-        'borderWidth': 0,
-        'plotBackgroundColor': '#FFFFFF',
-        'plotShadow': False,
-        'plotBorderWidth': 0
-    },
-    'title': {
-        'text': None
-    }
-}
-
-
 def campaigns_chart(queryset):
     campaigns = list(queryset.values_list('campaign_id', flat=True).distinct(
         ).order_by('campaign_id'))
@@ -79,8 +65,10 @@ def campaigns_chart(queryset):
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': 'campaigns',
             'sourceWidth': 960,
             'sourceHeight': 540,
@@ -98,7 +86,7 @@ def campaigns_chart(queryset):
         },
         'series': [None]*len(outcomes),
         'title': {
-            'text': 'DrSEUs Campaigns'
+            'text': None
         },
         'xAxis': {
             'categories': campaigns,
@@ -156,8 +144,10 @@ def target_bits_chart(campaign_data):
             'renderTo': 'target_bits_chart',
             'type': 'column'
         },
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': campaign_data.architecture+' targets',
             'sourceWidth': 480,
             'sourceHeight': 360,
@@ -167,7 +157,7 @@ def target_bits_chart(campaign_data):
             'enabled': False
         },
         'title': {
-            'text': campaign_data.architecture.upper()+' Targets'
+            'text': None
         },
         'xAxis': {
             'categories': target_list,
@@ -240,8 +230,10 @@ def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': str(campaign_data.id)+' overview',
             'sourceWidth': 480,
             'sourceHeight': 360,
@@ -319,8 +311,10 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': str(campaign_data.id)+' targets',
             'sourceWidth': 480,
             'sourceHeight': 360,
@@ -434,8 +428,10 @@ def propagation_chart(campaign_data, result_objects, injection_objects,
             'zoomType': 'y'
         },
         'colors': ('#77bfc7', '#a74ac7'),
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': str(campaign_data.id)+' target diffs',
             'sourceWidth': 480,
             'sourceHeight': 360,
@@ -510,8 +506,10 @@ def diff_targets_chart(campaign_data, result_objects, injection_objects,
             'zoomType': 'xy'
         },
         'colors': ('#008080', ),
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': str(campaign_data.id)+' data errors by target',
             'sourceWidth': 480,
             'sourceHeight': 360,
@@ -608,8 +606,10 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': (str(campaign_data.id)+' ' +
                          ('registers' if not tlb else 'tlb entries')),
             'sourceWidth': 480,
@@ -724,8 +724,10 @@ def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': str(campaign_data.id)+' tlb fields',
             'sourceWidth': 512,
             'sourceHeight': 384,
@@ -803,8 +805,10 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': str(campaign_data.id)+' register bits',
             'sourceWidth': 960,
             'sourceHeight': 540,
@@ -892,8 +896,10 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': str(campaign_data.id)+' injections over time',
             'sourceWidth': 960,
             'sourceHeight': 540,
@@ -1015,8 +1021,10 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
             'zoomType': 'xy'
         },
         'colors': ('#008080', ),
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': str(campaign_data.id)+' data errors over time',
             'sourceWidth': 960,
             'sourceHeight': 540,
@@ -1112,8 +1120,10 @@ def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
         'exporting': {
-            'chartOptions': export_options,
             'filename': str(campaign_data.id)+' injection quantity',
             'sourceWidth': 480,
             'sourceHeight': 360,

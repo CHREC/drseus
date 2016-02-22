@@ -1,56 +1,154 @@
 {% extends "base.html" %}
+{% load django_tables2 %}
 
 {% block body %}
-    <div class="source">
-        <div class="section">
-            <h2 align="center">
-                <a name="campaign_data"></a>
-                Campaign Data
-            </h2>
-            <div align="center">
-                {% load django_tables2 %}
-                {% render_table table %}
+    <section class="content-header">
+        <h1>Campaign {{ campaign_data.id }}</h1>
+        <ol class="breadcrumb">
+            <li><a href="/">Campaigns</a></li>
+            <li class="active"><a href="">Campaign {{ campaign_data.id }}</a></li>
+        </ol>
+    </section>
+
+    <section class="content">
+        <div class="row">
+            <a name="campaign_data"></a>
+            <div class="col-lg-12">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">Campaign Data</h3>
+                        <div class="box-tools pull-right">
+                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="box-body">
+                        {% render_table table %}
+                    </div>
+                </div>
             </div>
-            <h2 align="center">
-                <a name="injections"></a>
-                Events
-            </h2>
-            <div align="center">
-                {% render_table event_table %}
+        </div>
+
+        <div class="row">
+            <a name="events"></a>
+            <div class="col-lg-12">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">Events</h3>
+                        <div class="box-tools pull-right">
+                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="box-body">
+                        {% render_table event_table %}
+                    </div>
+                </div>
             </div>
-            <div align="center">
-                <h2>
-                    <a name="target_bits_chart"></a>
-                    Injection Targets
-                </h2>
-                <div id="target_bits_chart"></div>
+        </div>
+
+        <div class="row">
+            <a name="target_bits_chart"></a>
+            <div class="col-lg-12">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">Injection Targets</h3>
+                        <div class="box-tools pull-right">
+                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="box-body">
+                        <div id="target_bits_chart"></div>
+                    </div>
+                </div>
             </div>
-            {% if output_image %}
-                <div align="center">
-                    <h2>
-                        <a name="output_image"></a>
-                        Output Image
-                    </h2>
-                    <img src="./output/0">
+        </div>
+
+        {% if output_image %}
+            <div class="row">
+                <a name="output_image"></a>
+                <div class="col-lg-12">
+                    <div class="box">
+                        <div class="box-header">
+                            <h3 class="box-title">Output Image</h3>
+                            <div class="box-tools pull-right">
+                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                        </div>
+                        </div>
+                        <div class="box-body">
+                            <img src="./output/0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        <div class="row">
+            <a name="dut_output"></a>
+            {% if campaign_data.aux %}
+                <div class="col-lg-5">
+            {% else %}
+                <div class="col-lg-6">
+            {% endif %}
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">DUT Output</h3>
+                        <div class="box-tools pull-right">
+                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="box-body">
+                        <code class="console">{{ campaign_data.dut_output }}</code>
+                    </div>
+                </div>
+            </div>
+
+            {% if campaign_data.aux %}
+                <a name="aux_output"></a>
+                <div class="col-lg-5">
+                    <div class="box">
+                        <div class="box-header">
+                            <h3 class="box-title">AUX Output</h3>
+                            <div class="box-tools pull-right">
+                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                        </div>
+                        </div>
+                        <div class="box-body">
+                            <code class="console">{{ campaign_data.aux_output }}</code>
+                        </div>
+                    </div>
                 </div>
             {% endif %}
-            <h2 align="center">
-                <a name="dut_output"></a>
-                DUT Output
-            </h2>
-            <code class="console">{{ campaign_data.dut_output }}</code>
+
+            <a name="debugger_output"></a>
             {% if campaign_data.aux %}
-                <h2 align="center">
-                    <a name="aux_output"></a>
-                    AUX Output
-                </h2>
-                <code class="console">{{ campaign_data.aux_output }}</code>
+                <div class="col-lg-2">
+            {% else %}
+                <div class="col-lg-6">
             {% endif %}
-            <h2 align="center">
-                <a name="debugger_output"></a>
-                Debugger Output
-            </h2>
-            <code class="console">{{ campaign_data.debugger_output }}</code>
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">Debugger Output</h3>
+                        <div class="box-tools pull-right">
+                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="box-body">
+                        <code class="console">{{ campaign_data.debugger_output }}</code>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+    </section>
+{% endblock %}
+
+{% block script %}
+    <script>
+        $('#info-link').addClass('active')
+    </script>
 {% endblock %}

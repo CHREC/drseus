@@ -1,0 +1,26 @@
+div.filter-field {
+    margin: 0 auto;
+    width: 90%;
+}
+.table-container th.asc:after {
+    content: '\0000a0\0025b2';
+    float: right;
+}
+.table-container th.desc:after {
+    content: '\0000a0\0025bc';
+    float: right;
+}
+code.console {
+    background-color: initial;
+    color: initial;
+    display: block;
+    height: 500px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+td code.console {
+    height: initial;
+    max-height: 500px;
+    max-width: 80ex;
+}
