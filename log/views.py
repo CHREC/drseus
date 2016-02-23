@@ -83,14 +83,17 @@ def charts_page(request, campaign_id, group_categories=False):
         queryset=result.objects.filter(campaign_id=campaign_id))
     result_ids = filter_.qs.values('id').distinct()
     if result_ids.count() > 0:
-        chart_array = results_charts(result_ids, campaign_object,
-                                     group_categories)
+        chart_array, chart_list = results_charts(result_ids, campaign_object,
+                                                 group_categories)
+        chart_list = sorted(chart_list, key=lambda x: x[2])
     else:
         chart_array = None
+        chart_list = None
     return render(request, 'charts.html', {
         'campaign_data': campaign_object, 'chart_array': chart_array,
-        'filter': filter_, 'categories': group_categories,
-        'navigation_items': navigation_items, 'page_items': page_items})
+        'chart_list': chart_list, 'filter': filter_,
+        'categories': group_categories, 'navigation_items': navigation_items,
+        'page_items': page_items})
 
 
 def injections_page(request, campaign_id):
@@ -100,16 +103,18 @@ def injections_page(request, campaign_id):
         queryset=result.objects.filter(campaign_id=campaign_id))
     result_ids = filter_.qs.values('id').distinct()
     if result_ids.count() > 0:
-        chart_array = injections_charts(result_ids, campaign_object)
+        chart_array, chart_list = injections_charts(result_ids, campaign_object)
+        chart_list = sorted(chart_list, key=lambda x: x[2])
     else:
         chart_array = None
+        chart_list = None
     injection_objects = injection.objects.filter(result_id__in=result_ids)
     table = injections_table(injection_objects)
     RequestConfig(request, paginate={'per_page': 50}).configure(table)
     return render(request, 'injections.html', {
         'campaign_data': campaign_object, 'chart_array': chart_array,
-        'filter': filter_, 'navigation_items': navigation_items,
-        'table': table})
+        'chart_list': chart_list, 'filter': filter_,
+        'navigation_items': navigation_items, 'table': table})
 
 
 def results_page(request, campaign_id):

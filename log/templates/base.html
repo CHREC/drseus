@@ -43,7 +43,7 @@
                                 {% if filter %}
                                     <!-- Control Sidebar Toggle Button -->
                                     <li>
-                                        <a href="#" data-toggle="control-sidebar"><i class="fa fa-filter"></i></a>
+                                        <a href="#" data-toggle="control-sidebar"><i class="fa fa-filter"></i> Filter</a>
                                     </li>
                                 {% endif %}
                             </ul>
@@ -115,13 +115,18 @@
             </div>
         </form>
 
+        <script src="{% get_static_prefix %}js/jquery-2.2.0.min.js"></script>
         <script>
             var consoles = document.getElementsByClassName("console");
             for(var i=0, n=consoles.length; i<n; i++) {
                 consoles[i].scrollTop = consoles[i].scrollHeight;
             }
+            function fix_charts() {
+                setTimeout(function () {
+                    $('.chart-container').each(function() { $(this).highcharts().reflow(); });
+                }, 500);
+            }
         </script>
-        <script src="{% get_static_prefix %}js/jquery-2.2.0.min.js"></script>
         {% block script %}{% endblock %}
         <script src="{% get_static_prefix %}js/jquery.slimscroll.min.js"></script>
         <script src="{% get_static_prefix %}js/bootstrap.min.js"></script>

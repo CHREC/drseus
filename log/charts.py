@@ -91,7 +91,7 @@ def campaigns_chart(queryset):
         'xAxis': {
             'categories': campaigns,
             'title': {
-                'text': 'Campaign IDs'
+                'text': 'Campaign ID'
             }
         },
         'yAxis': {
@@ -111,13 +111,14 @@ def campaigns_chart(queryset):
                                default=0, output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'][i] = {'data': data, 'name': outcomes[i]}
-    threads = []
+    # threads = []
     for i in range(len(outcomes)):
-        thread = Thread(target=plot_outcome, args=[i])
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
+        plot_outcome(i)
+    #     thread = Thread(target=plot_outcome, args=[i])
+    #     thread.start()
+    #     threads.append(thread)
+    # for thread in threads:
+    #     thread.join()
     chart = dumps(chart)
     chart = chart.replace('\"chart_click\"', """
     function(event) {
@@ -204,21 +205,23 @@ def results_charts(result_ids, campaign_data, group_categories):
     if 'No error' in outcomes:
         outcomes.remove('No error')
         outcomes[:0] = ('No error', )
-    chart_array = []
+    chart_data = []
+    chart_list = []
     threads = []
     for chart in charts:
         thread = Thread(target=chart,
                         args=(campaign_data, result_objects, injection_objects,
-                              outcomes, group_categories, chart_array))
+                              outcomes, group_categories, chart_data,
+                              chart_list))
         thread.start()
         threads.append(thread)
     for thread in threads:
         thread.join()
-    return '['+','.join(chart_array)+']'
+    return '['+','.join(chart_data)+']', chart_list
 
 
 def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
-                   group_categories, chart_array):
+                   group_categories, chart_data, chart_list):
     start = time()
     if len(outcomes) <= 1:
         return
@@ -258,7 +261,7 @@ def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
             }
         ],
         'title': {
-            'text': 'Overview'
+            'text': None
         }
     }
 
@@ -268,13 +271,14 @@ def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
                       else 'outcome'] = outcomes[i]
         chart['series'][0]['data'][i] = (
             outcomes[i], result_objects.filter(**filter_kwargs).count())
-    threads = []
+    # threads = []
     for i in range(len(outcomes)):
-        thread = Thread(target=plot_outcome, args=[i])
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
+        plot_outcome(i)
+    #     thread = Thread(target=plot_outcome, args=[i])
+    #     thread.start()
+    #     threads.append(thread)
+    # for thread in threads:
+    #     thread.join()
     outcome_list = dumps(outcomes)
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
@@ -291,12 +295,13 @@ def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
         Highcharts.numberFormat(this.percentage, 1)+'%';
     }
     """.replace('outcome_list', outcome_list))
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('overview_chart', 'Overview', 0))
     print('overview_chart:', round(time()-start, 2), 'seconds')
 
 
 def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
-                   group_categories, chart_array, success=False):
+                   group_categories, chart_data, chart_list, success=False):
     start = time()
     targets = list(injection_objects.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -332,7 +337,7 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
         },
         'series': [None]*len(outcomes),
         'title': {
-            'text': 'Targets'
+            'text': None
         },
         'xAxis': {
             'categories': targets,
@@ -360,13 +365,14 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
                            output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'][i] = {'data': data, 'name': str(outcomes[i])}
-    threads = []
+    # threads = []
     for i in range(len(outcomes)):
-        thread = Thread(target=plot_outcome, args=[i])
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
+        plot_outcome(i)
+    #     thread = Thread(target=plot_outcome, args=[i])
+    #     thread.start()
+    #     threads.append(thread)
+    # for thread in threads:
+    #     thread.join()
     chart_percent = deepcopy(chart)
     chart_percent['chart']['renderTo'] = 'targets_percent_chart'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
@@ -386,7 +392,9 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
     """)
     if group_categories:
         chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
-    chart_array.append(chart_percent)
+    chart_data.append(chart_percent)
+    chart_list.append(('targets_percent_chart', 'Targets (Percentage Scale)',
+                       2))
     if len(outcomes) == 1:
         chart_log = deepcopy(chart)
         chart_log['chart']['renderTo'] = 'targets_log_chart'
@@ -399,7 +407,8 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
         """)
         if group_categories:
             chart_log = chart_log.replace('?outcome=', '?outcome_category=')
-        chart_array.append(chart_log)
+        chart_data.append(chart_log)
+        chart_list.append(('targets_log_chart', 'Targets (Log Scale)', 3))
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -408,12 +417,13 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
     """)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('targets_chart', 'Targets', 1))
     print('targets_charts:', round(time()-start, 2), 'seconds')
 
 
 def propagation_chart(campaign_data, result_objects, injection_objects,
-                      outcomes, group_categories, chart_array):
+                      outcomes, group_categories, chart_data, chart_list):
     start = time()
     if not campaign_data.simics:
         return
@@ -448,7 +458,7 @@ def propagation_chart(campaign_data, result_objects, injection_objects,
         },
         'series': [],
         'title': {
-            'text': 'Fault Propagation'
+            'text': None
         },
         'xAxis': {
             'categories': targets,
@@ -474,13 +484,14 @@ def propagation_chart(campaign_data, result_objects, injection_objects,
             mem_count=Count('result__simics_memory_diff'))['mem_count']
         reg_diff_list[i] = reg_diff_count/count
         mem_diff_list[i] = mem_diff_count/count
-    threads = []
+    # threads = []
     for i in range(len(targets)):
-        thread = Thread(target=plot_target, args=[i])
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
+        plot_target(i)
+    #     thread = Thread(target=plot_target, args=[i])
+    #     thread.start()
+    #     threads.append(thread)
+    # for thread in threads:
+    #     thread.join()
     chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
     chart = dumps(chart).replace('\"chart_click\"', """
@@ -488,12 +499,13 @@ def propagation_chart(campaign_data, result_objects, injection_objects,
         window.location.assign('results?injection__target='+this.category);
     }
     """)
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('propagation_chart', 'Fault Propagation', 4))
     print('propagation_chart:', round(time()-start, 2), 'seconds')
 
 
 def diff_targets_chart(campaign_data, result_objects, injection_objects,
-                       outcomes, group_categories, chart_array):
+                       outcomes, group_categories, chart_data, chart_list):
     start = time()
     targets = list(injection_objects.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -529,7 +541,7 @@ def diff_targets_chart(campaign_data, result_objects, injection_objects,
         },
         'series': [],
         'title': {
-            'text': 'Data Diff By Target'
+            'text': None
         },
         'xAxis': {
             'categories': targets,
@@ -558,26 +570,28 @@ def diff_targets_chart(campaign_data, result_objects, injection_objects,
         window.location.assign('results?injection__target='+this.category);
     }
     """)
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('diff_targets_chart', 'Data Diff By Target', 5))
     print('diff_targets_chart:', round(time()-start, 2), 'seconds')
 
 
 def registers_chart(campaign_data, result_objects, injection_objects, outcomes,
-                    group_categories, chart_array, success=False):
+                    group_categories, chart_data, chart_list, success=False):
     registers_tlbs_charts(False, campaign_data, result_objects,
                           injection_objects, outcomes, group_categories,
-                          success, chart_array)
+                          success, chart_data)
 
 
 def tlbs_chart(campaign_data, result_objects, injection_objects, outcomes,
-               group_categories, chart_array, success=False):
+               group_categories, chart_data, chart_list, success=False):
     registers_tlbs_charts(True, campaign_data, result_objects,
                           injection_objects, outcomes, group_categories,
-                          success, chart_array)
+                          success, chart_data)
 
 
 def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
-                          outcomes, group_categories, success, chart_array):
+                          outcomes, group_categories, success, chart_data,
+                          chart_list):
     start = time()
     if not tlb:
         registers = injection_objects.exclude(target='TLB').annotate(
@@ -617,7 +631,7 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
             'scale': 2
         },
         'title': {
-            'text': 'Registers' if not tlb else 'TLB Entries'
+            'text': None
         },
         'plotOptions': {
             'series': {
@@ -679,13 +693,14 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
         data = sorted(data, key=fix_sort_list)
         chart['series'][i] = {'data': list(zip(*data))[1],
                               'name': str(outcomes[i])}
-    threads = []
+    # threads = []
     for i in range(len(outcomes)):
-        thread = Thread(target=plot_outcome, args=[i])
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
+        plot_outcome(i)
+    #     thread = Thread(target=plot_outcome, args=[i])
+    #     thread.start()
+    #     threads.append(thread)
+    # for thread in threads:
+    #     thread.join()
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         var reg = this.category.split(':');
@@ -703,13 +718,16 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
     """)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('registers_chart' if not tlb else 'tlbs_chart',
+                       'Registers' if not tlb else 'TLB Entries',
+                       6 if not tlb else 7))
     print('tlbs_chart:' if tlb else 'registers_chart:',
           round(time()-start, 2), 'seconds')
 
 
 def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
-                     group_categories, chart_array):
+                     group_categories, chart_data, chart_list):
     start = time()
     fields = list(injection_objects.filter(target='TLB').values_list(
         'field', flat=True).distinct().order_by('field'))
@@ -745,7 +763,7 @@ def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
         },
         'series': [None]*len(outcomes),
         'title': {
-            'text': 'TLB Fields'
+            'text': None
         },
         'xAxis': {
             'categories': fields,
@@ -770,13 +788,14 @@ def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'][i] = {'data': data, 'name': outcomes[i]}
-    threads = []
+    # threads = []
     for i in range(len(outcomes)):
-        thread = Thread(target=plot_outcome, args=[i])
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
+        plot_outcome(i)
+    #     thread = Thread(target=plot_outcome, args=[i])
+    #     thread.start()
+    #     threads.append(thread)
+    # for thread in threads:
+    #     thread.join()
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -785,12 +804,14 @@ def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
     """)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('tlb_fields_chart', 'TLB Fields', 8))
     print('tlb_fields_chart:', round(time()-start, 2), 'seconds')
 
 
 def register_bits_chart(campaign_data, result_objects, injection_objects,
-                        outcomes, group_categories, chart_array, success=False):
+                        outcomes, group_categories, chart_data, chart_list,
+                        success=False):
     start = time()
     bits = list(injection_objects.exclude(target='TLB').values_list(
         'bit', flat=True).distinct().order_by('bit'))
@@ -826,7 +847,7 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
         },
         'series': [None]*len(outcomes),
         'title': {
-            'text': 'Register Bits'
+            'text': None
         },
         'xAxis': {
             'categories': bits,
@@ -854,13 +875,14 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'][i] = {'data': data, 'name': str(outcomes[i])}
-    threads = []
+    # threads = []
     for i in range(len(outcomes)):
-        thread = Thread(target=plot_outcome, args=[i])
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
+        plot_outcome(i)
+    #     thread = Thread(target=plot_outcome, args=[i])
+    #     thread.start()
+    #     threads.append(thread)
+    # for thread in threads:
+    #     thread.join()
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -869,12 +891,13 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
     """)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('register_bits_chart', 'Register Bits', 9))
     print('register_bits_chart:', round(time()-start, 2), 'seconds')
 
 
 def times_charts(campaign_data, result_objects, injection_objects, outcomes,
-                 group_categories, chart_array):
+                 group_categories, chart_data, chart_list):
     start = time()
     if campaign_data.simics:
         times = list(injection_objects.values_list(
@@ -917,7 +940,7 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
         },
         'series': [None]*len(outcomes),
         'title': {
-            'text': 'Injections Over Time'
+            'text': None
         },
         'xAxis': {
             'categories': times,
@@ -935,8 +958,6 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
     chart_smoothed = deepcopy(chart)
     chart_smoothed['chart']['type'] = 'area'
     chart_smoothed['chart']['renderTo'] = 'times_smoothed_chart'
-    chart_smoothed['title']['text'] += (' (Moving Average Window Size = ' +
-                                        str(window_size)+')')
 
     def plot_outcome(i):
         if campaign_data.simics:
@@ -968,14 +989,18 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcomes[i],
             'stacking': True}
-    threads = []
+    # threads = []
     for i in range(len(outcomes)):
-        thread = Thread(target=plot_outcome, args=[i])
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
-    chart_array.append(dumps(chart_smoothed))
+        plot_outcome(i)
+    #     thread = Thread(target=plot_outcome, args=[i])
+    #     thread.start()
+    #     threads.append(thread)
+    # for thread in threads:
+    #     thread.join()
+    chart_data.append(dumps(chart_smoothed))
+    chart_list.append(('times_smoothed_chart',
+                       'Injections Over Time (Moving Average Window Size = ' +
+                       str(window_size)+')', 11))
     if campaign_data.simics:
         chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
@@ -996,12 +1021,13 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
         chart = dumps(chart)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('times_chart', 'Injections Over Time', 10))
     print('times_charts', round(time()-start, 2), 'seconds')
 
 
 def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
-                     group_categories, chart_array):
+                     group_categories, chart_data, chart_list):
     start = time()
     if campaign_data.simics:
         times = list(injection_objects.values_list(
@@ -1044,7 +1070,7 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
         },
         'series': [],
         'title': {
-            'text': 'Data Diff Over Time'
+            'text': None
         },
         'xAxis': {
             'categories': times,
@@ -1100,12 +1126,13 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
         # }
         # """)
         chart = dumps(chart)
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('diff_times_chart', 'Data Diff Over Time', 12))
     print('diff_times_chart:', round(time()-start, 2), 'seconds')
 
 
 def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
-                 group_categories, chart_array):
+                 group_categories, chart_data, chart_list):
     start = time()
     injection_counts = list(result_objects.exclude(
         num_injections=0).values_list(
@@ -1141,7 +1168,7 @@ def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
         },
         'series': [None]*len(outcomes),
         'title': {
-            'text': 'Injection Quantity'
+            'text': None
         },
         'xAxis': {
             'categories': injection_counts,
@@ -1166,19 +1193,22 @@ def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'][i] = {'data': data, 'name': outcomes[i]}
-    threads = []
+    # threads = []
     for i in range(len(outcomes)):
-        thread = Thread(target=plot_outcome, args=[i])
-        thread.start()
-        threads.append(thread)
-    for thread in threads:
-        thread.join()
+        plot_outcome(i)
+    #     thread = Thread(target=plot_outcome, args=[i])
+    #     thread.start()
+    #     threads.append(thread)
+    # for thread in threads:
+    #     thread.join()
     chart_percent = deepcopy(chart)
     chart_percent['chart']['renderTo'] = 'counts_percent_chart'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
     chart_percent['yAxis']['labels'] = {'format': '{value}%'}
     chart_percent['yAxis']['title']['text'] = 'Percent of Results'
-    chart_array.append(dumps(chart_percent))
+    chart_data.append(dumps(chart_percent))
+    chart_list.append(('counts_percent_chart',
+                       'Injection Quantity (Percentage Scale)', 14))
     chart = dumps(chart).replace('\"chart_click\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -1187,7 +1217,8 @@ def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
     """)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_array.append(chart)
+    chart_data.append(chart)
+    chart_list.append(('counts_chart', 'Injection Quantity', 13))
     print('counts_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -1198,14 +1229,15 @@ def injections_charts(result_ids, campaign_data):
     outcomes = list(injection.objects.filter(
         result_id__in=result_ids).values_list(
         'success', flat=True).distinct().order_by('success'))
-    chart_array = []
+    chart_data = []
+    chart_list = []
     threads = []
     for chart in charts:
         thread = Thread(target=chart,
                         args=(campaign_data, result_objects, injection_objects,
-                              outcomes, False, chart_array, True))
+                              outcomes, False, chart_data, chart_list, True))
         thread.start()
         threads.append(thread)
     for thread in threads:
         thread.join()
-    return '['+','.join(chart_array)+']'
+    return '['+','.join(chart_data)+']', chart_list

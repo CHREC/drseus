@@ -14,71 +14,24 @@
 
     <section class="content">
         <div class="row">
-            <div class="col-lg-12">
-                <div class="box">
-                    <div class="box-header">
-                        <h3 class="box-title">Targets</h3>
-                        <div class="box-tools pull-right">
-                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+            {% for chart, name in chart_list %}
+                <a name="{{ chart }}"></a>
+                <div class="col-lg-6">
+                    <div class="box">
+                        <div class="box-header">
+                            <h3 class="box-title">{{ name }}</h3>
+                            <div class="box-tools pull-right">
+                                <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                                <button class="btn btn-box-tool expand"><i class="fa fa-expand"></i></button>
+                                <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="box-body">
+                            <div id="{{ chart }}" class="chart-container"></div>
                         </div>
                     </div>
-                    <div class="box-body">
-                        <div id="targets_chart"></div>
-                    </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="box">
-                    <div class="box-header">
-                        <h3 class="box-title">Targets (Percentage)</h3>
-                        <div class="box-tools pull-right">
-                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
-                        </div>
-                    </div>
-                    <div class="box-body">
-                        <div id="targets_percent_chart"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="box">
-                    <div class="box-header">
-                        <h3 class="box-title">Registers</h3>
-                        <div class="box-tools pull-right">
-                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
-                        </div>
-                    </div>
-                    <div class="box-body">
-                        <div id="registers_chart"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="box">
-                    <div class="box-header">
-                        <h3 class="box-title">Register Bits</h3>
-                        <div class="box-tools pull-right">
-                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
-                        </div>
-                    </div>
-                    <div class="box-body">
-                        <div id="register_bits_chart"></div>
-                    </div>
-                </div>
-            </div>
+            {% endfor %}
         </div>
 
         <div class="row">
@@ -103,5 +56,18 @@
 {% block script %}
     <script>
         $('#injections-link').addClass('active')
+        $('.sidebar-toggle').on('click', fix_charts);
+        $('.expand').on('click', function () {
+            var box = $(this).parents('.box').parent();
+            if (box.hasClass('col-lg-6')) {
+                box.removeClass('col-lg-6')
+                box.addClass('col-lg-12');
+            } else if (box.hasClass('col-lg-12')) {
+                box.removeClass('col-lg-12');
+                box.addClass('col-lg-6');
+            }
+            $(this).parents('.box').children('.box-body').children('.chart-container').highcharts().reflow();
+            return false;
+        });
     </script>
 {% endblock %}
