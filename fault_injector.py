@@ -314,7 +314,7 @@ class fault_injector(object):
                     outcome_category = self.db.result['outcome_category']
                     outcome = self.db.result['outcome']
                     self.__monitor_execution()
-                    if self.db.result['outcome'] != 'Masked faults':
+                    if self.db.result['outcome_category'] != 'No error':
                         self.db.result['outcome_category'] = \
                             'Post execution error'
                     else:
@@ -351,11 +351,12 @@ class fault_injector(object):
             else:
                 self.__monitor_execution(latent_faults, persistent_faults)
                 check_latent_faults()
-            self.debugger.dut.flush()
-            if self.db.campaign['aux']:
-                self.debugger.aux.flush()
             if self.db.campaign['simics']:
                 close_simics()
+            else:
+                self.debugger.dut.flush()
+                if self.db.campaign['aux']:
+                    self.debugger.aux.flush()
             with self.db as db:
                 db.log_result()
         self.close()

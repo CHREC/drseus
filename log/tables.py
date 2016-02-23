@@ -213,7 +213,8 @@ class simics_injection_table(Table):
 class simics_register_diff_table(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        exclude = ('id', 'result')
+        fields = ('checkpoint_number', 'config_object', 'register',
+                  'gold_value', 'monitored_value')
         model = simics_register_diff
         template = 'django_tables2/bootstrap.html'
 
@@ -221,6 +222,6 @@ class simics_register_diff_table(Table):
 class simics_memory_diff_table(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        exclude = ('id', 'result')
+        fields = ('checkpoint_number', 'image_index', 'block')
         model = simics_memory_diff
         template = 'django_tables2/bootstrap.html'

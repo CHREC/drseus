@@ -7,6 +7,7 @@ from hashlib import pbkdf2_hmac
 
 import utilities
 
+# TODO: add execution time to result
 # TODO: use postgresql arrays
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add unique id to campaign and add capability to merge campaign results
