@@ -85,7 +85,8 @@ def charts_page(request, campaign_id, group_categories=False):
     if result_ids.count() > 0:
         chart_array, chart_list = results_charts(result_ids, campaign_object,
                                                  group_categories)
-        chart_list = sorted(chart_list, key=lambda x: x[2])
+        chart_list = [chart[:-1]
+                      for chart in sorted(chart_list, key=lambda x: x[2])]
     else:
         chart_array = None
         chart_list = None
@@ -104,7 +105,8 @@ def injections_page(request, campaign_id):
     result_ids = filter_.qs.values('id').distinct()
     if result_ids.count() > 0:
         chart_array, chart_list = injections_charts(result_ids, campaign_object)
-        chart_list = sorted(chart_list, key=lambda x: x[2])
+        chart_list = [chart[:-1]
+                      for chart in sorted(chart_list, key=lambda x: x[2])]
     else:
         chart_array = None
         chart_list = None

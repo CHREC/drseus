@@ -579,19 +579,19 @@ def registers_chart(campaign_data, result_objects, injection_objects, outcomes,
                     group_categories, chart_data, chart_list, success=False):
     registers_tlbs_charts(False, campaign_data, result_objects,
                           injection_objects, outcomes, group_categories,
-                          success, chart_data)
+                          chart_data, chart_list, success)
 
 
 def tlbs_chart(campaign_data, result_objects, injection_objects, outcomes,
                group_categories, chart_data, chart_list, success=False):
     registers_tlbs_charts(True, campaign_data, result_objects,
                           injection_objects, outcomes, group_categories,
-                          success, chart_data)
+                          chart_data, chart_list, success)
 
 
 def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
-                          outcomes, group_categories, success, chart_data,
-                          chart_list):
+                          outcomes, group_categories, chart_data,
+                          chart_list, success):
     start = time()
     if not tlb:
         registers = injection_objects.exclude(target='TLB').annotate(
