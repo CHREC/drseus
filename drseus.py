@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser, REMAINDER
+from binascii import hexlify
+from getpass import getpass
+from hashlib import pbkdf2_hmac
 
 import utilities
 
@@ -75,11 +78,13 @@ dut_settings.add_argument(
          '[a9 default=[root@ZED]#] (overridden by Simics)')
 dut_settings.add_argument(
     '--user',
+    metavar='USERNAME',
     dest='dut_username',
     default='root',
     help='device username [default=root]')
 dut_settings.add_argument(
     '--pass',
+    metavar='PASSWORD',
     dest='dut_password',
     default='chrec',
     help='device password [default=chrec]')
@@ -130,11 +135,13 @@ aux_settings.add_argument(
          '[a9 default=[root@ZED]#] (overridden by Simics)')
 aux_settings.add_argument(
     '--aux_user',
+    metavar='USERNAME',
     dest='aux_username',
     default='root',
     help='device username [default=root]')
 aux_settings.add_argument(
     '--aux_pass',
+    metavar='PASSWORD',
     dest='aux_password',
     default='chrec',
     help='device password [default=chrec]')
@@ -153,7 +160,7 @@ aux_settings.add_argument(
 
 debugger_settings = parser.add_argument_group('debugger settings')
 debugger_settings.add_argument(
-    '--debugger_ip',
+    '--jtag_ip',
     metavar='ADDRESS',
     dest='debugger_ip_address',
     default='10.42.0.50',
@@ -165,6 +172,34 @@ debugger_settings.add_argument(
     dest='jtag',
     help='do not connect to jtag debugger (ignored by Simics)')
 
+database_settings = parser.add_argument_group('PostgreSQL settings')
+database_settings.add_argument(
+    '--db_host',
+    metavar='ADDRESS',
+    default='127.0.0.1',
+    help='server IP address [default=127.0.0.1]')
+database_settings.add_argument(
+    '--db_port',
+    type=int,
+    metavar='PORT',
+    default=5432,
+    help='server port [default=5432]')
+database_settings.add_argument(
+    '--db_name',
+    metavar='NAME',
+    default='drseus',
+    help='database name [default=drseus]')
+database_settings.add_argument(
+    '--db_pass',
+    metavar='PASSWORD',
+    dest='db_password',
+    default='drseus',
+    help='database password [default=drseus]')
+database_settings.add_argument(
+    '--db_ask',
+    action='store_true',
+    help='Prompt for database password')
+
 power_settings = parser.add_argument_group('web power switch settings')
 power_settings.add_argument(
     '--power_ip',
@@ -174,13 +209,13 @@ power_settings.add_argument(
     help='IP address for web power switch [default=10.42.0.60]')
 power_settings.add_argument(
     '--power_user',
-    metavar='USERNAME',
+    metavar='USER',
     dest='power_switch_username',
     default='admin',
     help='username for web power switch [default=admin]')
 power_settings.add_argument(
     '--power_pass',
-    metavar='PASSWORD',
+    metavar='PASS',
     dest='power_switch_password',
     default='chrec',
     help='password for web power switch [default=chrec]')
@@ -189,24 +224,6 @@ power_settings.add_argument(
     action='store_false',
     dest='power',
     help='do not use web power switch to power cycle devices')
-
-database_settings = parser.add_argument_group('PostgreSQL settings')
-database_settings.add_argument(
-    '--db_host',
-    metavar='ADDRESS',
-    default='127.0.0.1',
-    help='PostgreSQL server IP address [default=127.0.0.1]')
-database_settings.add_argument(
-    '--db_port',
-    type=int,
-    metavar='PORT',
-    default=5432,
-    help='PostgreSQL server port [default=5432]')
-database_settings.add_argument(
-    '--db_name',
-    metavar='NAME',
-    default='drseus',
-    help='PostgreSQL database name [default=drseus]')
 
 subparsers = parser.add_subparsers(
     title='commands',
@@ -511,6 +528,11 @@ elif options.command == 'd':
     options.command = 'delete'
 elif options.command == 'r':
     options.command = 'regenerate'
+
+if options.db_ask:
+    options.db_password = getpass(prompt='Database password:')
+options.db_password = hexlify(pbkdf2_hmac(
+    'sha256', options.db_password.encode(), b'drseus', 100000)).decode()
 
 if options.command == 'new':
     if options.arguments:

@@ -122,28 +122,34 @@ class dut(object):
                          'Closed serial port', success=True)
 
     def flush(self):
-        self.serial.reset_output_buffer()
-        buff = None
         try:
-            in_bytes = self.serial.in_waiting
+            self.serial.reset_output_buffer()
+            buff = None
+            try:
+                in_bytes = self.serial.in_waiting
+            except:
+                self.serial.reset_input_buffer()
+            else:
+                if in_bytes:
+                    buff = self.serial.read(in_bytes).decode('utf-8', 'replace')
+                    if self.db.result:
+                        self.db.result['dut_output' if not self.aux
+                                       else 'aux_output'] += buff
+                    else:
+                        self.db.campaign['dut_output' if not self.aux
+                                         else 'aux_output'] += buff
+                    if self.options.debug and buff:
+                        print(colored(buff,
+                                      'green' if not self.aux else 'cyan'),
+                              end='')
+                        stdout.flush()
+            with self.db as db:
+                db.log_event('Information', 'DUT' if not self.aux else 'AUX',
+                             'Flushed serial buffers', buff, success=True)
         except:
-            self.serial.reset_input_buffer()
-        else:
-            if in_bytes:
-                buff = self.serial.read(in_bytes).decode('utf-8', 'replace')
-                if self.db.result:
-                    self.db.result['dut_output' if not self.aux
-                                   else 'aux_output'] += buff
-                else:
-                    self.db.campaign['dut_output' if not self.aux
-                                     else 'aux_output'] += buff
-                if self.options.debug and buff:
-                    print(colored(buff, 'green' if not self.aux else 'cyan'),
-                          end='')
-                    stdout.flush()
-        with self.db as db:
-            db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                         'Flushed serial buffers', buff, success=True)
+            with self.db as db:
+                db.log_event('Error', 'DUT' if not self.aux else 'AUX',
+                             'Error flushing serial buffers', db.log_exception)
 
     def reset_ip(self):
         if self.options.reset_ip and (

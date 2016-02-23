@@ -1,12 +1,14 @@
-from datetime import datetime
+# from datetime import datetime
+from django.conf import settings as django_settings
 from django.core.management import execute_from_command_line as django_command
 from io import StringIO
 from json import dump
 from multiprocessing import Process, Value
-from os import environ, getcwd, listdir, makedirs, remove
+from os import getcwd, listdir, makedirs, remove
 from os.path import exists
 from paramiko import RSAKey
-from shutil import copy, copytree, rmtree
+# from shutil import copy, copytree, rmtree
+from shutil import rmtree
 from subprocess import check_call
 from sys import argv, stdout
 from terminaltables import AsciiTable
@@ -87,9 +89,6 @@ def list_outlets(options):
 def list_campaigns(options):
     options.campaign_id = '*'
     db = database(options)
-    if not db.exists():
-        print('could not find database')
-        return
     table = AsciiTable([['ID', 'Results', 'Command', 'Arch', 'Simics']],
                        'DrSEUs Campaigns')
     with db:
@@ -111,7 +110,7 @@ def list_campaigns(options):
 
 
 def get_campaign(options):
-    with database(options)as db:
+    with database(options) as db:
         campaign = db.get_campaign()
     if campaign is None:
         raise Exception('could not find campaign ID '+str(options.campaign_id))
@@ -177,9 +176,6 @@ def create_campaign(options):
             raise Exception('cannot find directory '+options.directory)
     if options.simics and not exists('simics-workspace'):
         check_call('./setup_simics_workspace.sh')
-    db = database(options)
-    if not db.exists():
-        db.init()
     rsakey_file = StringIO()
     RSAKey.generate(1024).write_private_key(rsakey_file)
     rsakey = rsakey_file.getvalue()
@@ -205,7 +201,7 @@ def create_campaign(options):
         'use_aux_output': options.aux and options.use_aux_output}
     if options.aux_application is None:
         options.aux_application = options.application
-    with db:
+    with database(options, log_settings=log_settings(options)) as db:
         db.insert('campaign', campaign)
     campaign_directory = 'campaign-data/'+str(campaign['id'])
     if exists(campaign_directory):
@@ -293,14 +289,52 @@ def regenerate(options):
            '/'+str(options.result_id))
 
 
+def log_settings(options):
+    return {
+        'BASE_DIR': getcwd(),
+        'DATABASES': {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                'NAME': options.db_name,
+                'USER': 'drseus',
+                'PASSWORD': options.db_password,
+                'HOST': options.db_host,
+                'PORT': options.db_port,
+            }
+        },
+        'DEBUG': True,
+        'INSTALLED_APPS': (
+            'django.contrib.staticfiles',
+            'django_tables2',
+            'django_filters',
+            'log'
+        ),
+        'ROOT_URLCONF': 'log.urls',
+        # 'SECRET_KEY': 'y8o)jsiw&89zg5jqg1h9$iweu9$(mf78)l*=vsmfkqc-4hab1#',
+        'STATIC_URL': '/static/',
+        'TEMPLATES': [
+            {
+                'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                'DIRS': ['templates/'],
+                'APP_DIRS': True,
+                'OPTIONS': {
+                    'context_processors': [
+                        'django.template.context_processors.request',
+                    ],
+                },
+            },
+        ]
+    }
+
+
 def view_logs(options):
-    environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
+    django_settings.configure(**log_settings(options))
     django_command(['drseus', 'runserver', ('0.0.0.0:' if options.external
                                             else '')+str(options.port)])
 
 
 def run_django_command(options):
-    environ.setdefault("DJANGO_SETTINGS_MODULE", "log.settings")
+    django_settings.configure(**log_settings(options))
     command = [argv[0]+' '+options.command]
     for item in options.django_command:
         command.append(item)

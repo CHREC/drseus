@@ -1,6 +1,6 @@
 from datetime import datetime
+from django.conf import settings as django_settings
 from django.core.management import execute_from_command_line as django_command
-from os import environ
 from psycopg2 import connect, OperationalError
 from psycopg2.extras import DictCursor
 from subprocess import PIPE, Popen
@@ -13,7 +13,8 @@ class database(object):
     log_exception = '__LOG_EXCEPTION__'
     log_trace = '__LOG_TRACE__'
 
-    def __init__(self, options, campaign={}, create_result=False):
+    def __init__(self, options, campaign={}, create_result=False,
+                 log_settings=None):
         if not campaign:
             campaign = {'id': options.campaign_id}
         self.campaign = campaign
@@ -21,16 +22,41 @@ class database(object):
         self.host = options.db_host
         self.port = options.db_port
         self.database = options.db_name
+        self.password = options.db_password
         self.lock = Lock()
         if create_result:
             with self as db:
                 db.__create_result()
+        if not self.exists():
+            if log_settings is not None:
+                print('adding drseus user and database to postgresql, '
+                      'root privileges (sudo) required')
+                psql = Popen(['sudo', '-u', 'postgres', 'psql'], bufsize=0,
+                             universal_newlines=True, stdin=PIPE)
+                for command in (
+                    "CREATE DATABASE "+self.database+";",
+                    "CREATE USER drseus WITH PASSWORD '"+self.password+"';",
+                    "ALTER ROLE drseus SET client_encoding TO 'utf8';",
+                    ("ALTER ROLE drseus SET default_transaction_isolation "
+                        "TO 'read committed';"),
+                    "ALTER ROLE drseus SET timezone TO 'UTC';",
+                    ("GRANT ALL PRIVILEGES ON DATABASE "+self.database +
+                        " TO drseus;")):
+                    print('psql>', command)
+                    psql.stdin.write(command+'\n')
+                psql.stdin.close()
+                psql.wait()
+                django_settings.configure(**log_settings)
+                django_command(['drseus', 'makemigrations', 'log'])
+                django_command(['drseus', 'migrate'])
+            else:
+                raise Exception('could not connect to database')
 
     def __enter__(self):
         self.lock.acquire()
         self.connection = connect(host=self.host, port=self.port,
                                   database=self.database, user='drseus',
-                                  password='drseus',
+                                  password=self.password,
                                   cursor_factory=DictCursor)
         self.cursor = self.connection.cursor()
         return self
@@ -44,37 +70,13 @@ class database(object):
 
     def exists(self):
         try:
-            connection = connect(host=self.host, port=self.port,
-                                 database=self.database, user='drseus',
-                                 password='drseus',
-                                 cursor_factory=DictCursor)
+            self.__enter__()
         except OperationalError:
+            self.lock.release()
             return False
         else:
-            connection.close()
+            self.__exit__(None, None, None)
             return True
-
-    def init(self):
-        print('adding drseus user and database to postgresql, '
-              'root privileges (sudo) required')
-        psql = Popen(['sudo', '-u', 'postgres', 'psql'], bufsize=0,
-                     universal_newlines=True, stdin=PIPE)
-        for command in ("CREATE DATABASE "+self.database+";",
-                        "CREATE USER drseus WITH PASSWORD 'drseus';",
-                        "ALTER ROLE drseus SET client_encoding TO 'utf8';",
-                        ("ALTER ROLE drseus "
-                            "SET default_transaction_isolation "
-                            "TO 'read committed';"),
-                        "ALTER ROLE drseus SET timezone TO 'UTC';",
-                        ("GRANT ALL PRIVILEGES ON DATABASE "+self.database +
-                            " TO drseus;")):
-            print('psql>', command)
-            psql.stdin.write(command+'\n')
-        psql.stdin.close()
-        psql.wait()
-        environ.setdefault('DJANGO_SETTINGS_MODULE', 'log.settings')
-        django_command(['drseus', 'makemigrations', 'log'])
-        django_command(['drseus', 'migrate'])
 
     def insert(self, table, dictionary=None):
         if dictionary is None:
