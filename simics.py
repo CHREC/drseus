@@ -139,7 +139,7 @@ class simics(object):
                                        'console=$consoledev,$baudrate; '
                                        'bootm ef080000 10000000 ef040000; ')
         elif self.board == 'a9x2':
-            self.options.aux_prompt = self.options.dut_prompt = '#'
+            self.options.aux_prompt = self.options.dut_prompt = '\n#'
             if self.options.dut_uboot:
                 self.options.dut_uboot += ';'
             self.options.dut_uboot += ('setenv bootargs console=ttyAMA0 '
