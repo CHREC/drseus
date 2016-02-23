@@ -115,12 +115,14 @@
             </div>
         </form>
 
-        <script src="{% get_static_prefix %}js/jquery-2.2.0.min.js"></script>
         <script>
             var consoles = document.getElementsByClassName("console");
             for(var i=0, n=consoles.length; i<n; i++) {
                 consoles[i].scrollTop = consoles[i].scrollHeight;
             }
+        </script>
+        <script src="{% get_static_prefix %}js/jquery-2.2.0.min.js"></script>
+        <script>
             function fix_charts() {
                 setTimeout(function () {
                     $('.chart-container').each(function() { $(this).highcharts().reflow(); });
@@ -131,6 +133,11 @@
         <script src="{% get_static_prefix %}js/jquery.slimscroll.min.js"></script>
         <script src="{% get_static_prefix %}js/bootstrap.min.js"></script>
         <script src="{% get_static_prefix %}js/AdminLTE.min.js"></script>
+        <script>
+            if ($(window).width() < ($.AdminLTE.options.screenSizes.sm - 1)) {
+                $('body').removeClass('fixed');
+            }
+        </script>
         <script src="{% get_static_prefix %}js/highcharts/highcharts.js" type="text/javascript"></script>
         <script src="{% get_static_prefix %}js/highcharts/exporting.js" type="text/javascript"></script>
         <script src="{% get_static_prefix %}js/highcharts/offline-exporting.js" type="text/javascript"></script>
