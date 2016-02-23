@@ -84,10 +84,15 @@ def list_outlets(options):
         ps.print_status()
 
 
-def list_campaigns(none=None):
+def list_campaigns(options):
+    options.campaign_id = '*'
+    db = database(options)
+    if not db.exists():
+        print('could not find database')
+        return
     table = AsciiTable([['ID', 'Results', 'Command', 'Arch', 'Simics']],
                        'DrSEUs Campaigns')
-    with database(campaign={'id': '*'}) as db:
+    with db:
         campaign_list = db.get_campaign()
         for campaign in campaign_list:
             db.campaign['id'] = campaign['id']
@@ -105,72 +110,48 @@ def list_campaigns(none=None):
     print(table.table)
 
 
-def get_campaign(campaign_id):
-    with database(campaign={'id': campaign_id}) as db:
+def get_campaign(options):
+    with database(options)as db:
         campaign = db.get_campaign()
     if campaign is None:
-        raise Exception('could not find campaign ID '+str(campaign_id))
+        raise Exception('could not find campaign ID '+str(options.campaign_id))
     return campaign
 
 
-def backup_database(none=None):
-    if exists('campaign-data/db.sqlite3'):
-        print('backing up database...', end='')
-        db_backup = ('campaign-data/' +
-                     '-'.join([str(unit).zfill(2)
-                               for unit in datetime.now().timetuple()[:6]]) +
-                     '.db.sqlite3')
-        copy('campaign-data/db.sqlite3', db_backup)
-        print('done')
-
-
-def clean(none=None):
-    if exists('campaign-data/'):
-        deleted_backup = False
-        for item in listdir('campaign-data/'):
-            if '.db.sqlite3' in item:
-                remove('campaign-data/'+item)
-                deleted_backup = True
-        if deleted_backup:
-            print('deleted database backup(s)')
-    if exists('simics-workspace/injected-checkpoints'):
-        rmtree('simics-workspace/injected-checkpoints')
-        print('deleted injected checkpoints')
-
-
 def delete(options):
-
-    def delete_results(campaign_id):
-        backup_database()
-        if exists('campaign-data/'+str(campaign_id)+'/results'):
-            rmtree('campaign-data/'+str(campaign_id)+'/results')
-            print('deleted results')
-        with database(campaign={'id': campaign_id}) as db:
-            db.delete_results()
-        print('flushed database')
-        if exists('simics-workspace/injected-checkpoints/'+str(campaign_id)):
-            rmtree('simics-workspace/injected-checkpoints/'+str(campaign_id))
-            print('deleted injected checkpoints')
-
-    def delete_campaign(campaign_id):
-        with database(campaign={'id': campaign_id}) as db:
-            db.delete_campaign()
-            print('deleted campaign '+str(campaign_id)+' from database')
-        if exists('campaign-data/'+str(campaign_id)):
-            rmtree('campaign-data/'+str(campaign_id))
-            print('deleted campaign data')
-        if exists('simics-workspace/gold-checkpoints/'+str(campaign_id)):
-            rmtree('simics-workspace/gold-checkpoints/'+str(campaign_id))
-            print('deleted gold checkpoints')
-        if exists('simics-workspace/injected-checkpoints/'+str(campaign_id)):
-            rmtree('simics-workspace/injected-checkpoints/'+str(campaign_id))
-            print('deleted injected checkpoints')
-
-# def delete(options):
+    db = database(options)
     if options.delete in ('results', 'r'):
-        delete_results(options.campaign_id)
+        if exists('campaign-data/'+str(options.campaign_id)+'/results'):
+            rmtree('campaign-data/'+str(options.campaign_id)+'/results')
+            print('deleted results')
+        if db.exists():
+            with db:
+                db.delete_results()
+        print('flushed database')
+        if exists('simics-workspace/injected-checkpoints/' +
+                  str(options.campaign_id)):
+            rmtree('simics-workspace/injected-checkpoints/' +
+                   str(options.campaign_id))
+            print('deleted injected checkpoints')
     elif options.delete in ('campaign', 'c'):
-        delete_campaign(options.campaign_id)
+        if db.exists():
+            with db:
+                db.delete_campaign()
+                print('deleted campaign '+str(options.campaign_id) +
+                      ' from database')
+        if exists('campaign-data/'+str(options.campaign_id)):
+            rmtree('campaign-data/'+str(options.campaign_id))
+            print('deleted campaign data')
+        if exists('simics-workspace/gold-checkpoints/' +
+                  str(options.campaign_id)):
+            rmtree('simics-workspace/gold-checkpoints/' +
+                   str(options.campaign_id))
+            print('deleted gold checkpoints')
+        if exists('simics-workspace/injected-checkpoints/' +
+                  str(options.campaign_id)):
+            rmtree('simics-workspace/injected-checkpoints/' +
+                   str(options.campaign_id))
+            print('deleted injected checkpoints')
     elif options.delete in ('all', 'a'):
         if exists('simics-workspace/gold-checkpoints'):
             rmtree('simics-workspace/gold-checkpoints')
@@ -181,8 +162,9 @@ def delete(options):
         if exists('campaign-data'):
             rmtree('campaign-data')
             print('deleted campaign data')
-        database().delete_database()
-        print('deleted database')
+        if db.exists():
+            db.delete_database()
+            print('deleted database')
 
 
 def create_campaign(options):
@@ -195,6 +177,9 @@ def create_campaign(options):
             raise Exception('cannot find directory '+options.directory)
     if options.simics and not exists('simics-workspace'):
         check_call('./setup_simics_workspace.sh')
+    db = database(options)
+    if not db.exists():
+        db.init()
     rsakey_file = StringIO()
     RSAKey.generate(1024).write_private_key(rsakey_file)
     rsakey = rsakey_file.getvalue()
@@ -220,8 +205,8 @@ def create_campaign(options):
         'use_aux_output': options.aux and options.use_aux_output}
     if options.aux_application is None:
         options.aux_application = options.application
-    with database(campaign) as db:
-        db.insert('campaign')
+    with db:
+        db.insert('campaign', campaign)
     campaign_directory = 'campaign-data/'+str(campaign['id'])
     if exists(campaign_directory):
         raise Exception('directory already exists: '
@@ -235,7 +220,7 @@ def create_campaign(options):
 
 
 def inject_campaign(options):
-    campaign = get_campaign(options.campaign_id)
+    campaign = get_campaign(options)
 
     def perform_injections(iteration_counter, switch):
         drseus = fault_injector(campaign, options, switch)
@@ -295,10 +280,10 @@ def inject_campaign(options):
 
 
 def regenerate(options):
-    campaign = get_campaign(options.campaign_id)
+    campaign = get_campaign(options)
     if not campaign['simics']:
         raise Exception('This feature is only available for Simics campaigns')
-    with database() as db:
+    with database(options) as db:
         db.result['id'] = options.result_id
         injections = db.get_item('injection')
     drseus = fault_injector(campaign, options)
@@ -347,45 +332,44 @@ def update_dependencies(none=None):
         print('done')
 
 
-def merge_campaigns(options):
-    backup_database()
-    with database() as db, database(campaign={'id': '*'},
-                                    database_file=options.directory +
-                                    '/campaign-data/db.sqlite3') as db_new:
-        for new_campaign in db_new.get_campaign():
-            print('merging campaign: \"'+options.directory+'/' +
-                  new_campaign['command']+'\"')
-            db_new.campaign['id'] = new_campaign['id']
-            db.insert('campaign', new_campaign)
-            if exists(options.directory+'/campaign-data/' +
-                      str(db_new.campaign['id'])):
-                print('\tcopying campaign data...', end='')
-                copytree(options.directory+'/campaign-data/' +
-                         str(db_new.campaign['id']),
-                         'campaign-data/'+str(new_campaign['id']))
-                print('done')
-            if exists(options.directory+'/simics-workspace/gold-checkpoints/' +
-                      str(db_new.campaign['id'])):
-                print('\tcopying gold checkpoints...', end='')
-                copytree(options.directory+'/simics-workspace/'
-                         'gold-checkpoints/'+str(db_new.campaign['id']),
-                         'simics-workspace/gold-checkpoints/' +
-                         str(new_campaign['id']))
-                print('done')
-                print('\tupdating checkpoint dependency paths...', end='')
-                stdout.flush()
-                __update_checkpoint_dependencies(new_campaign['id'])
-                print('done')
-            print('\tcopying results...', end='')
-            for new_result in db_new.get_result():
-                db_new.result['id'] = new_result['id']
-                db.insert('result', new_result)
-                for table in ['injection', 'simics_register_diff',
-                              'simics_memory_diff']:
-                    for new_item in db_new.get_item(table):
-                        new_item['result_id'] = new_result['id']
-                        db.insert(table, new_item)
-            print('done')
+# def merge_campaigns(options):
+#     with database() as db, database(campaign={'id': '*'},
+#                                     database_file=options.directory +
+#                                     '/campaign-data/db.sqlite3') as db_new:
+#         for new_campaign in db_new.get_campaign():
+#             print('merging campaign: \"'+options.directory+'/' +
+#                   new_campaign['command']+'\"')
+#             db_new.campaign['id'] = new_campaign['id']
+#             db.insert('campaign', new_campaign)
+#             if exists(options.directory+'/campaign-data/' +
+#                       str(db_new.campaign['id'])):
+#                 print('\tcopying campaign data...', end='')
+#                 copytree(options.directory+'/campaign-data/' +
+#                          str(db_new.campaign['id']),
+#                          'campaign-data/'+str(new_campaign['id']))
+#                 print('done')
+#             if exists(options.directory+'/simics-workspace/gold-checkpoints/' +
+#                       str(db_new.campaign['id'])):
+#                 print('\tcopying gold checkpoints...', end='')
+#                 copytree(options.directory+'/simics-workspace/'
+#                          'gold-checkpoints/'+str(db_new.campaign['id']),
+#                          'simics-workspace/gold-checkpoints/' +
+#                          str(new_campaign['id']))
+#                 print('done')
+#                 print('\tupdating checkpoint dependency paths...', end='')
+#                 stdout.flush()
+#                 __update_checkpoint_dependencies(new_campaign['id'])
+#                 print('done')
+#             print('\tcopying results...', end='')
+#             for new_result in db_new.get_result():
+#                 db_new.result['id'] = new_result['id']
+#                 db.insert('result', new_result)
+#                 for table in ['injection', 'simics_register_diff',
+#                               'simics_memory_diff']:
+#                     for new_item in db_new.get_item(table):
+#                         new_item['result_id'] = new_result['id']
+#                         db.insert(table, new_item)
+#             print('done')
 
 
 def launch_openocd(options):

@@ -13,7 +13,7 @@ from simics import simics
 class fault_injector(object):
     def __init__(self, campaign, options, power_switch=None):
         self.options = options
-        self.db = database(campaign, options.command != 'new')
+        self.db = database(options, campaign, options.command != 'new')
         if campaign['simics']:
             self.debugger = simics(self.db, options)
         else:

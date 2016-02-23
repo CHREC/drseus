@@ -190,6 +190,24 @@ power_settings.add_argument(
     dest='power',
     help='do not use web power switch to power cycle devices')
 
+database_settings = parser.add_argument_group('PostgreSQL settings')
+database_settings.add_argument(
+    '--db_host',
+    metavar='ADDRESS',
+    default='127.0.0.1',
+    help='PostgreSQL server IP address [default=127.0.0.1]')
+database_settings.add_argument(
+    '--db_port',
+    type=int,
+    metavar='PORT',
+    default=5432,
+    help='PostgreSQL server port [default=5432]')
+database_settings.add_argument(
+    '--db_name',
+    metavar='NAME',
+    default='drseus',
+    help='PostgreSQL database name [default=drseus]')
+
 subparsers = parser.add_subparsers(
     title='commands',
     description='Run "%(prog)s COMMAND -h" for additional help',
@@ -411,15 +429,15 @@ delete.add_argument(
          'or delete {all, a} campaigns and results')
 delete.set_defaults(func=utilities.delete)
 
-merge = subparsers.add_parser(
-    'merge', aliases=['m'],
-    help='merge campaigns',
-    description='merge campaigns')
-merge.add_argument(
-    'directory',
-    metavar='DIRECTORY',
-    help='merge campaigns from external DIRECTORY into the local directory')
-merge.set_defaults(func=utilities.merge_campaigns)
+# merge = subparsers.add_parser(
+#     'merge', aliases=['m'],
+#     help='merge campaigns',
+#     description='merge campaigns')
+# merge.add_argument(
+#     'directory',
+#     metavar='DIRECTORY',
+#     help='merge campaigns from external DIRECTORY into the local directory')
+# merge.set_defaults(func=utilities.merge_campaigns)
 
 openocd = subparsers.add_parser(
     'openocd', aliases=['o'],
@@ -447,17 +465,17 @@ update = subparsers.add_parser(
                 '(only supported for Simics campaigns)')
 update.set_defaults(func=utilities.update_dependencies)
 
-backup = subparsers.add_parser(
-    'backup', aliases=['b'],
-    help='backup the results database',
-    description='backup the results database')
-backup.set_defaults(func=utilities.backup_database)
+# backup = subparsers.add_parser(
+#     'backup', aliases=['b'],
+#     help='backup the results database',
+#     description='backup the results database')
+# backup.set_defaults(func=utilities.backup_database)
 
-backup = subparsers.add_parser(
-    'clean', aliases=['c'],
-    help='delete database backups and injected checkpoints',
-    description='delete database backups and injected checkpoints')
-backup.set_defaults(func=utilities.clean)
+# clean = subparsers.add_parser(
+#     'clean', aliases=['c'],
+#     help='delete database backups and injected checkpoints',
+#     description='delete database backups and injected checkpoints')
+# clean.set_defaults(func=utilities.clean)
 
 serials = subparsers.add_parser(
     'serials', aliases=['sn'],
@@ -503,10 +521,10 @@ elif options.command in ('inject', 'supervise', 'delete', 'regenerate'):
     if not (options.command == 'delete' and options.delete in ('a', 'all')):
         if not options.campaign_id:
             options.campaign_id = \
-                utilities.get_campaign(options.campaign_id)['id']
+                utilities.get_campaign(options)['id']
         if options.command != 'regenerate':
             options.architecture = \
-                utilities.get_campaign(options.campaign_id)['architecture']
+                utilities.get_campaign(options)['architecture']
 
 if options.command in ('new', 'inject', 'supervise'):
     if options.architecture == 'p2020':
