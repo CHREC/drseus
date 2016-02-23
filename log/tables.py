@@ -162,6 +162,7 @@ class event_table(Table):
         fields = ('timestamp', 'level', 'source', 'event_type', 'success_',
                   'description')
         model = event
+        order_by = 'timestamp'
         template = 'django_tables2/bootstrap.html'
 
 
@@ -182,12 +183,16 @@ class hw_injection_table(Table):
     success_ = BooleanColumn(accessor='success')
     timestamp = DateTimeColumn(format=datetime_format)
 
+    def render_time(self, record):
+        return '{0:.6f}'.format(injection.objects.get(id=record.id).time)
+
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        fields = ('timestamp', 'target', 'target_index', 'register',
+        fields = ('timestamp', 'time', 'target', 'target_index', 'register',
                   'register_index', 'bit', 'field', 'gold_value',
                   'injected_value', 'success_')
         model = injection
+        order_by = 'time'
         template = 'django_tables2/bootstrap.html'
 
 
@@ -201,6 +206,7 @@ class simics_injection_table(Table):
                   'register', 'register_index', 'bit', 'field', 'gold_value',
                   'injected_value', 'success_')
         model = injection
+        order_by = 'checkpoint_number'
         template = 'django_tables2/bootstrap.html'
 
 
