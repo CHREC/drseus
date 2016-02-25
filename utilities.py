@@ -430,7 +430,10 @@ def backup(options):
             else:
                 num_items += 1
                 if archive is not None:
-                    archive.add(directory+'/'+item)
+                    try:
+                        archive.add(directory+'/'+item)
+                    except FileNotFoundError:
+                        pass
                 if progress is not None:
                     progress[0] += 1
                     progress[1].update(progress[0])
