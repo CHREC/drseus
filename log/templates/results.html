@@ -6,7 +6,7 @@
         <h1>Results</h1>
         <ol class="breadcrumb">
             <li><a href="/"> Campaigns </a></li>
-            <li><a href="info"> Campaign {{ campaign_data.id }} </a></li>
+            <li><a href="info"> Campaign {{ campaign.id }} </a></li>
             <li class="active"><a href=""> Results </a></li>
         </ol>
     </section>
@@ -14,7 +14,7 @@
     <section class="content">
         <div class="box">
             <div class="box-body">
-                {% render_table table %}
+                {% render_table result_table %}
             </div>
         </div>
     </section>

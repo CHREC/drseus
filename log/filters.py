@@ -3,7 +3,7 @@ from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             MultipleChoiceFilter, NumberFilter)
 from re import split
 
-from .models import (event, injection, result, simics_register_diff)
+from . import models
 
 
 def fix_sort(string):
@@ -15,10 +15,10 @@ def fix_sort_list(list):
     return fix_sort(list[0])
 
 
-max_select_box_size = 10
+max_select_box_size = 20
 
 
-class result_filter(FilterSet):
+class result(FilterSet):
     def __init__(self, *args, **kwargs):
         campaign = kwargs['campaign']
         del kwargs['campaign']
@@ -100,7 +100,7 @@ class result_filter(FilterSet):
 
     def event_choices(self, campaign, attribute):
         choices = []
-        for item in event.objects.filter(
+        for item in models.event.objects.filter(
             result__campaign_id=campaign).values_list(
                 attribute, flat=True).distinct():
             if item is not None:
@@ -109,7 +109,7 @@ class result_filter(FilterSet):
 
     def injection_choices(self, campaign, attribute):
         choices = []
-        for item in injection.objects.filter(
+        for item in models.injection.objects.filter(
             result__campaign_id=campaign).values_list(
                 attribute, flat=True).distinct():
             if item is not None:
@@ -118,8 +118,9 @@ class result_filter(FilterSet):
 
     def result_choices(self, campaign, attribute):
         choices = []
-        for item in result.objects.filter(campaign_id=campaign).values_list(
-                attribute, flat=True).distinct():
+        for item in models.result.objects.filter(
+                campaign_id=campaign).values_list(
+                    attribute, flat=True).distinct():
             if item is not None:
                 choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
@@ -152,50 +153,58 @@ class result_filter(FilterSet):
         label='DUT serial port',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     event__description = CharFilter(
-        lookup_type='icontains',
+        label='Description', lookup_type='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
         help_text='')
     event__event_type = MultipleChoiceFilter(
-        conjoined=True, label='Event type',
+        conjoined=True, label='Type',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     event__level = MultipleChoiceFilter(
-        conjoined=True,
+        conjoined=True, label='Level',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     event__source = MultipleChoiceFilter(
-        conjoined=True,
+        conjoined=True, label='Source',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     event__success = BooleanFilter(
+        label='Success',
         widget=Select(choices=(('3', 'Unknown'), ('1', 'True'), ('0', 'False')),
                       attrs={'class': 'form-control'}), help_text='')
     injection__bit = MultipleChoiceFilter(
+        label='Bit',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__checkpoint_number = MultipleChoiceFilter(
         label='Checkpoint number',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__field = MultipleChoiceFilter(
+        label='Field',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__processor_mode = MultipleChoiceFilter(
         label='Processor mode',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__register = MultipleChoiceFilter(
+        label='Register',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__register_index = MultipleChoiceFilter(
+        label='Register index',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__success = BooleanFilter(
+        label='Success',
         widget=Select(choices=(('3', 'Unknown'), ('1', 'True'), ('0', 'False')),
                       attrs={'class': 'form-control'}), help_text='')
     injection__target = MultipleChoiceFilter(
+        label='Target',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__target_index = MultipleChoiceFilter(
+        label='Target index',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__time_gt = NumberFilter(
-        name='time', label='Injection time (>)', lookup_type='gt',
+        name='time', label='Time (>)', lookup_type='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     injection__time_lt = NumberFilter(
-        name='time', label='Injection time (<)', lookup_type='lt',
+        name='time', label='Time (<)', lookup_type='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     num_injections = MultipleChoiceFilter(
-        label='Number of injections',
+        label='Quantity',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     outcome = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
@@ -203,12 +212,12 @@ class result_filter(FilterSet):
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
 
     class Meta:
-        model = result
+        model = models.result
         exclude = ('aux_serial_port', 'campaign', 'data_diff',
                    'detected_errors', 'timestamp')
 
 
-class simics_register_diff_filter(FilterSet):
+class simics_register_diff(FilterSet):
     def __init__(self, *args, **kwargs):
         self.campaign = kwargs['campaign']
         del kwargs['campaign']
@@ -239,5 +248,5 @@ class simics_register_diff_filter(FilterSet):
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
 
     class Meta:
-        model = simics_register_diff
+        model = models.simics_register_diff
         fields = ('checkpoint_number', 'register')

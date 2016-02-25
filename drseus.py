@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser, REMAINDER
-from binascii import hexlify
 from getpass import getpass
-from hashlib import pbkdf2_hmac
 
 import utilities
 
+# TODO: backup campaign-data and gold-checkpoints
 # TODO: add execution time to result
 # TODO: use postgresql arrays
 # TODO: use regular expressions in telnet expect in jtag
@@ -176,9 +175,9 @@ debugger_settings.add_argument(
 database_settings = parser.add_argument_group('PostgreSQL settings')
 database_settings.add_argument(
     '--db_host',
-    metavar='ADDRESS',
-    default='127.0.0.1',
-    help='server IP address [default=127.0.0.1]')
+    metavar='HOSTNAME',
+    default='localhost',
+    help='server IP address [default=localhost]')
 database_settings.add_argument(
     '--db_port',
     type=int,
@@ -191,15 +190,35 @@ database_settings.add_argument(
     default='drseus',
     help='database name [default=drseus]')
 database_settings.add_argument(
+    '--db_user',
+    metavar='USERNAME',
+    default='drseus',
+    help='username [default=drseus]')
+database_settings.add_argument(
     '--db_pass',
     metavar='PASSWORD',
     dest='db_password',
     default='drseus',
-    help='database password [default=drseus]')
+    help='password [default=drseus]')
 database_settings.add_argument(
     '--db_ask',
     action='store_true',
-    help='Prompt for database password')
+    help='prompt for password')
+database_settings.add_argument(
+    '--db_su',
+    metavar='USERNAME',
+    dest='db_superuser',
+    default='postgres',
+    help='superuser username')
+database_settings.add_argument(
+    '--db_su_pass',
+    metavar='PASSWORD',
+    dest='db_superuser_password',
+    help='password (omit for identity authentication)')
+database_settings.add_argument(
+    '--db_su_ask',
+    action='store_true',
+    help='prompt for superuser password')
 
 power_settings = parser.add_argument_group('web power switch settings')
 power_settings.add_argument(
@@ -445,6 +464,11 @@ delete.add_argument(
     help='delete {results, r} for the selected campaign, '
          'delete selected {campaign, c} and its results, '
          'or delete {all, a} campaigns and results')
+delete.add_argument(
+    '-U', '--no_del_user',
+    action='store_false',
+    dest='delete_user',
+    help='do not delete database user (drseus) when deleting {all, a}')
 delete.set_defaults(func=utilities.delete)
 
 # merge = subparsers.add_parser(
@@ -483,17 +507,27 @@ update = subparsers.add_parser(
                 '(only supported for Simics campaigns)')
 update.set_defaults(func=utilities.update_dependencies)
 
-# backup = subparsers.add_parser(
-#     'backup', aliases=['b'],
-#     help='backup the results database',
-#     description='backup the results database')
-# backup.set_defaults(func=utilities.backup_database)
+backup = subparsers.add_parser(
+    'backup', aliases=['b'],
+    help='backup campaign-data, gold-checkpoints, and database',
+    description='backup campaign-data, gold-checkpoints, and database')
+backup.set_defaults(func=utilities.backup)
 
-# clean = subparsers.add_parser(
-#     'clean', aliases=['c'],
-#     help='delete database backups and injected checkpoints',
-#     description='delete database backups and injected checkpoints')
-# clean.set_defaults(func=utilities.clean)
+restore = subparsers.add_parser(
+    'restore', aliases=['R'],
+    help='restore campaign-data, gold-checkpoints, and database',
+    description='restore campaign-data, gold-checkpoints, and database')
+restore.add_argument(
+    'backup_file',
+    metavar='BACKUP_FILE',
+    help='backup file to restore')
+restore.set_defaults(func=utilities.restore)
+
+clean = subparsers.add_parser(
+    'clean', aliases=['c'],
+    help='delete database backups and injected checkpoints',
+    description='delete database backups and injected checkpoints')
+clean.set_defaults(func=utilities.clean)
 
 serials = subparsers.add_parser(
     'serials', aliases=['sn'],
@@ -531,9 +565,10 @@ elif options.command == 'r':
     options.command = 'regenerate'
 
 if options.db_ask:
-    options.db_password = getpass(prompt='Database password:')
-options.db_password = hexlify(pbkdf2_hmac(
-    'sha256', options.db_password.encode(), b'drseus', 100000)).decode()
+    options.db_password = getpass(prompt='PostgreSQL password:')
+if options.db_su_ask:
+    options.db_superuser_password = \
+        getpass(prompt='PostgreSQL superuser password:')
 
 if options.command == 'new':
     if options.arguments:

@@ -1,19 +1,20 @@
 from django.conf.urls import url
 
-from .views import (campaigns_page, campaign_page, category_charts_page,
-                    charts_page, injections_page, results_page, result_page,
-                    output)
+from . import views
 
 urlpatterns = [
-    url(r'^$', campaigns_page),
-    url(r'^campaign/(?P<campaign_id>[0-9]+)/info$', campaign_page),
+    url(r'^$', views.campaigns_page),
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/info$', views.campaign_page),
     url(r'^campaign/(?P<campaign_id>[0-9]+)/category_charts$',
-        category_charts_page),
-    url(r'^campaign/(?P<campaign_id>[0-9]+)/outcome_charts$', charts_page),
-    url(r'^campaign/(?P<campaign_id>[0-9]+)/results$', results_page),
-    url(r'^campaign/(?P<campaign_id>[0-9]+)/injections$', injections_page),
+        views.category_charts_page),
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/outcome_charts$',
+        views.charts_page),
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/results$', views.results_page),
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/events$', views.events_page),
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/injections$',
+        views.injections_page),
     url(r'^campaign/(?P<campaign_id>[0-9]+)/result/(?P<result_id>[0-9]+)$',
-        result_page),
+        views.result_page),
     url(r'^campaign/(?P<campaign_id>[0-9]+)/output/(?P<result_id>[0-9]+)$',
-        output)
+        views.output)
 ]

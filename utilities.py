@@ -1,16 +1,19 @@
-# from datetime import datetime
+from datetime import datetime
 from django.conf import settings as django_settings
 from django.core.management import execute_from_command_line as django_command
 from io import StringIO
 from json import dump
 from multiprocessing import Process, Value
-from os import getcwd, listdir, makedirs, remove
-from os.path import exists
+from os import getcwd, listdir, mkdir, remove
+from os.path import exists, isdir
 from paramiko import RSAKey
+from progressbar import ProgressBar
+from progressbar.widgets import Bar, Percentage, SimpleProgress, Timer
 # from shutil import copy, copytree, rmtree
 from shutil import rmtree
 from subprocess import check_call
 from sys import argv, stdout
+from tarfile import open as open_tar
 from terminaltables import AsciiTable
 
 from database import database
@@ -118,26 +121,24 @@ def get_campaign(options):
 
 
 def delete(options):
-    db = database(options)
+    try:
+        db = database(options)
+    except:
+        db = None
     if options.delete in ('results', 'r'):
         if exists('campaign-data/'+str(options.campaign_id)+'/results'):
             rmtree('campaign-data/'+str(options.campaign_id)+'/results')
             print('deleted results')
-        if db.exists():
-            with db:
-                db.delete_results()
-        print('flushed database')
         if exists('simics-workspace/injected-checkpoints/' +
                   str(options.campaign_id)):
             rmtree('simics-workspace/injected-checkpoints/' +
                    str(options.campaign_id))
             print('deleted injected checkpoints')
-    elif options.delete in ('campaign', 'c'):
-        if db.exists():
+        if db:
             with db:
-                db.delete_campaign()
-                print('deleted campaign '+str(options.campaign_id) +
-                      ' from database')
+                db.delete_results()
+            print('flushed database')
+    elif options.delete in ('campaign', 'c'):
         if exists('campaign-data/'+str(options.campaign_id)):
             rmtree('campaign-data/'+str(options.campaign_id))
             print('deleted campaign data')
@@ -151,6 +152,11 @@ def delete(options):
             rmtree('simics-workspace/injected-checkpoints/' +
                    str(options.campaign_id))
             print('deleted injected checkpoints')
+        if db:
+            with db:
+                db.delete_campaign()
+                print('deleted campaign '+str(options.campaign_id) +
+                      ' from database')
     elif options.delete in ('all', 'a'):
         if exists('simics-workspace/gold-checkpoints'):
             rmtree('simics-workspace/gold-checkpoints')
@@ -161,8 +167,8 @@ def delete(options):
         if exists('campaign-data'):
             rmtree('campaign-data')
             print('deleted campaign data')
-        if db.exists():
-            db.delete_database()
+        if db:
+            db.delete_database(options.delete_user)
             print('deleted database')
 
 
@@ -207,8 +213,6 @@ def create_campaign(options):
     if exists(campaign_directory):
         raise Exception('directory already exists: '
                         'campaign-data/'+str(campaign['id']))
-    else:
-        makedirs(campaign_directory)
     options.debug = True
     drseus = fault_injector(campaign, options)
     drseus.setup_campaign()
@@ -294,9 +298,9 @@ def log_settings(options):
         'BASE_DIR': getcwd(),
         'DATABASES': {
             'default': {
-                'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                'ENGINE': 'django.db.backends.postgresql',
                 'NAME': options.db_name,
-                'USER': 'drseus',
+                'USER': options.db_user,
                 'PASSWORD': options.db_password,
                 'HOST': options.db_host,
                 'PORT': options.db_port,
@@ -305,17 +309,15 @@ def log_settings(options):
         'DEBUG': True,
         'INSTALLED_APPS': (
             'django.contrib.staticfiles',
-            'django_tables2',
             'django_filters',
+            'django_tables2',
             'log'
         ),
         'ROOT_URLCONF': 'log.urls',
-        # 'SECRET_KEY': 'y8o)jsiw&89zg5jqg1h9$iweu9$(mf78)l*=vsmfkqc-4hab1#',
         'STATIC_URL': '/static/',
         'TEMPLATES': [
             {
                 'BACKEND': 'django.template.backends.django.DjangoTemplates',
-                'DIRS': ['templates/'],
                 'APP_DIRS': True,
                 'OPTIONS': {
                     'context_processors': [
@@ -382,7 +384,8 @@ def update_dependencies(none=None):
 #                          str(db_new.campaign['id']),
 #                          'campaign-data/'+str(new_campaign['id']))
 #                 print('done')
-#             if exists(options.directory+'/simics-workspace/gold-checkpoints/' +
+#             if exists(options.directory +
+#                       '/simics-workspace/gold-checkpoints/' +
 #                       str(db_new.campaign['id'])):
 #                 print('\tcopying gold checkpoints...', end='')
 #                 copytree(options.directory+'/simics-workspace/'
@@ -414,3 +417,79 @@ def launch_openocd(options):
 
 def launch_supervisor(options):
     supervisor(get_campaign(options.campaign_id), options).cmdloop()
+
+
+def backup(options):
+
+    def traverse_directory(directory, archive=None, progress=None):
+        num_items = 0
+        for item in listdir(directory):
+            if isdir(directory+'/'+item):
+                num_items += traverse_directory(directory+'/'+item, archive,
+                                                progress)
+            else:
+                num_items += 1
+                if archive is not None:
+                    archive.add(directory+'/'+item)
+                if progress is not None:
+                    progress[0] += 1
+                    progress[1].update(progress[0])
+        return num_items
+
+# def backup_database(options):
+    if not exists('backups'):
+        mkdir('backups')
+    sql_backup = 'campaign-data/'+options.db_name+'.sql'
+    database(options).backup_database(sql_backup)
+    backup_name = ('backups/' +
+                   '-'.join([str(unit).zfill(2)
+                             for unit in datetime.now().timetuple()[:3]]) +
+                   '_' +
+                   '-'.join([str(unit).zfill(2)
+                             for unit in datetime.now().timetuple()[3:6]]))
+    num_items = 0
+    directories = ('campaign-data', 'simics-workspace/gold-checkpoints')
+    for directory in directories:
+        num_items += traverse_directory(directory)
+    with open_tar(backup_name+'.tar.gz', 'w:gz') \
+        as backup, ProgressBar(max_value=num_items, widgets=[
+            Percentage(), ' (',
+            SimpleProgress(format='%(value)d/%(max_value)d'), ') ', Bar(), ' ',
+            Timer()]) as progress_bar:
+        progress = [0, progress_bar]
+        for directory in directories:
+            traverse_directory(directory, backup, progress)
+    remove(sql_backup)
+
+
+def restore(options):
+    if exists('campaign-data') or exists('simics-workspace/gold-checkpoints'):
+        if input('existing data will be deleted before restore '
+                 'operation, continue? [Y/n]: ') in ('n', 'N'):
+            return
+        if exists('campaign-data'):
+            rmtree('campaign-data')
+        if exists('simics-workspace/gold-checkpoints'):
+            rmtree('simics-workspace/gold-checkpoints')
+    print('restoring files...', end='')
+    stdout.flush()
+    with open_tar(options.backup_file, 'r:gz') as backup:
+        backup.extractall()
+    print('done')
+    for item in listdir('campaign-data'):
+        if '.sql' in item:
+            print('restoring database...')
+            database(
+                options, log_settings=log_settings(options)).restore_database(
+                    'campaign-data/'+item)
+            print('database restored')
+        break
+
+
+def clean(none=None):
+    if exists('backups'):
+        rmtree('backups')
+        print('deleted database backup(s)')
+    if exists('simics-workspace/injected-checkpoints'):
+        rmtree('simics-workspace/injected-checkpoints')
+        print('deleted injected checkpoints')

@@ -8,7 +8,7 @@ from threading import Thread
 from time import time
 
 from .filters import fix_sort, fix_sort_list
-from .models import injection, result
+from . import models
 from jtag_targets import devices as hardware_devices
 from simics_targets import devices as simics_devices
 
@@ -129,16 +129,16 @@ def campaigns_chart(queryset):
     return '['+chart+']'
 
 
-def target_bits_chart(campaign_data):
-    if campaign_data.simics:
-        if campaign_data.architecture == 'p2020':
+def target_bits_chart(campaign):
+    if campaign.simics:
+        if campaign.architecture == 'p2020':
             targets = simics_devices['p2020rdb']
-        elif campaign_data.architecture == 'a9':
+        elif campaign.architecture == 'a9':
             targets = simics_devices['a9x2']
         else:
             return '[]'
     else:
-        targets = hardware_devices[campaign_data.architecture]
+        targets = hardware_devices[campaign.architecture]
     target_list = sorted(targets.keys())
     chart = {
         'chart': {
@@ -149,7 +149,7 @@ def target_bits_chart(campaign_data):
             'enabled': False
         },
         'exporting': {
-            'filename': campaign_data.architecture+' targets',
+            'filename': campaign.architecture+' targets',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -179,20 +179,21 @@ def target_bits_chart(campaign_data):
     return '['+dumps(chart)+']'
 
 
-def results_charts(result_ids, campaign_data, group_categories):
+def results_charts(result_ids, campaign, group_categories):
     charts = (overview_chart, targets_charts, propagation_chart,
               diff_targets_chart, registers_chart, tlbs_chart, tlb_fields_chart,
               register_bits_chart, times_charts, diff_times_chart, counts_chart)
-    result_objects = result.objects.filter(id__in=result_ids)
-    injection_objects = injection.objects.filter(result__id__in=result_ids)
+    results = models.result.objects.filter(id__in=result_ids)
+    injections = models.injection.objects.filter(result__id__in=result_ids)
     if group_categories:
-        outcomes = list(result.objects.filter(id__in=result_ids).values_list(
-            'outcome_category', flat=True).distinct(
-            ).order_by('outcome_category'))
+        outcomes = list(models.result.objects.filter(
+            id__in=result_ids).values_list(
+                'outcome_category', flat=True).distinct(
+                    ).order_by('outcome_category'))
     else:
-        outcomes = list(result.objects.filter(id__in=result_ids).values_list(
-            'outcome', flat=True).distinct(
-            ).order_by('outcome'))
+        outcomes = list(models.result.objects.filter(
+            id__in=result_ids).values_list('outcome', flat=True).distinct(
+                ).order_by('outcome'))
     if 'Latent faults' in outcomes:
         outcomes.remove('Latent faults')
         outcomes[:0] = ('Latent faults', )
@@ -210,9 +211,8 @@ def results_charts(result_ids, campaign_data, group_categories):
     threads = []
     for chart in charts:
         thread = Thread(target=chart,
-                        args=(campaign_data, result_objects, injection_objects,
-                              outcomes, group_categories, chart_data,
-                              chart_list))
+                        args=(campaign, results, injections, outcomes,
+                              group_categories, chart_data, chart_list))
         thread.start()
         threads.append(thread)
     for thread in threads:
@@ -220,7 +220,7 @@ def results_charts(result_ids, campaign_data, group_categories):
     return '['+','.join(chart_data)+']', chart_list
 
 
-def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
+def overview_chart(campaign, results, injections, outcomes,
                    group_categories, chart_data, chart_list):
     start = time()
     if len(outcomes) <= 1:
@@ -237,7 +237,7 @@ def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign_data.id)+' overview',
+            'filename': str(campaign.id)+' overview',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -270,7 +270,7 @@ def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
         filter_kwargs['outcome_category' if group_categories
                       else 'outcome'] = outcomes[i]
         chart['series'][0]['data'][i] = (
-            outcomes[i], result_objects.filter(**filter_kwargs).count())
+            outcomes[i], results.filter(**filter_kwargs).count())
     # threads = []
     for i in range(len(outcomes)):
         plot_outcome(i)
@@ -300,10 +300,10 @@ def overview_chart(campaign_data, result_objects, injection_objects, outcomes,
     print('overview_chart:', round(time()-start, 2), 'seconds')
 
 
-def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
+def targets_charts(campaign, results, injections, outcomes,
                    group_categories, chart_data, chart_list, success=False):
     start = time()
-    targets = list(injection_objects.values_list('target', flat=True).distinct(
+    targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
         return
@@ -320,7 +320,7 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign_data.id)+' targets',
+            'filename': str(campaign.id)+' targets',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -359,7 +359,7 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
         else:
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcomes[i]
-        data = list(injection_objects.values_list('target').distinct(
+        data = list(injections.values_list('target').distinct(
             ).order_by('target').annotate(
             count=Sum(Case(When(**when_kwargs), default=0,
                            output_field=IntegerField()))
@@ -422,12 +422,12 @@ def targets_charts(campaign_data, result_objects, injection_objects, outcomes,
     print('targets_charts:', round(time()-start, 2), 'seconds')
 
 
-def propagation_chart(campaign_data, result_objects, injection_objects,
+def propagation_chart(campaign, results, injections,
                       outcomes, group_categories, chart_data, chart_list):
     start = time()
-    if not campaign_data.simics:
+    if not campaign.simics:
         return
-    targets = list(injection_objects.values_list('target', flat=True).distinct(
+    targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
         return
@@ -442,7 +442,7 @@ def propagation_chart(campaign_data, result_objects, injection_objects,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign_data.id)+' target diffs',
+            'filename': str(campaign.id)+' target diffs',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -477,10 +477,10 @@ def propagation_chart(campaign_data, result_objects, injection_objects,
     mem_diff_list = [None]*len(targets)
 
     def plot_target(i):
-        count = float(injection_objects.filter(target=targets[i]).count())
-        reg_diff_count = injection_objects.filter(target=targets[i]).aggregate(
+        count = float(injections.filter(target=targets[i]).count())
+        reg_diff_count = injections.filter(target=targets[i]).aggregate(
             reg_count=Count('result__simics_register_diff'))['reg_count']
-        mem_diff_count = injection_objects.filter(target=targets[i]).aggregate(
+        mem_diff_count = injections.filter(target=targets[i]).aggregate(
             mem_count=Count('result__simics_memory_diff'))['mem_count']
         reg_diff_list[i] = reg_diff_count/count
         mem_diff_list[i] = mem_diff_count/count
@@ -504,10 +504,10 @@ def propagation_chart(campaign_data, result_objects, injection_objects,
     print('propagation_chart:', round(time()-start, 2), 'seconds')
 
 
-def diff_targets_chart(campaign_data, result_objects, injection_objects,
+def diff_targets_chart(campaign, results, injections,
                        outcomes, group_categories, chart_data, chart_list):
     start = time()
-    targets = list(injection_objects.values_list('target', flat=True).distinct(
+    targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
         return
@@ -522,7 +522,7 @@ def diff_targets_chart(campaign_data, result_objects, injection_objects,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign_data.id)+' data errors by target',
+            'filename': str(campaign.id)+' data errors by target',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -559,7 +559,7 @@ def diff_targets_chart(campaign_data, result_objects, injection_objects,
             }
         }
     }
-    data = injection_objects.values_list('target').distinct().order_by(
+    data = injections.values_list('target').distinct().order_by(
         'target').annotate(
             avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
                          default='result__data_diff'))
@@ -575,31 +575,31 @@ def diff_targets_chart(campaign_data, result_objects, injection_objects,
     print('diff_targets_chart:', round(time()-start, 2), 'seconds')
 
 
-def registers_chart(campaign_data, result_objects, injection_objects, outcomes,
+def registers_chart(campaign, results, injections, outcomes,
                     group_categories, chart_data, chart_list, success=False):
-    registers_tlbs_charts(False, campaign_data, result_objects,
-                          injection_objects, outcomes, group_categories,
+    registers_tlbs_charts(False, campaign, results,
+                          injections, outcomes, group_categories,
                           chart_data, chart_list, success)
 
 
-def tlbs_chart(campaign_data, result_objects, injection_objects, outcomes,
+def tlbs_chart(campaign, results, injections, outcomes,
                group_categories, chart_data, chart_list, success=False):
-    registers_tlbs_charts(True, campaign_data, result_objects,
-                          injection_objects, outcomes, group_categories,
+    registers_tlbs_charts(True, campaign, results,
+                          injections, outcomes, group_categories,
                           chart_data, chart_list, success)
 
 
-def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
+def registers_tlbs_charts(tlb, campaign, results, injections,
                           outcomes, group_categories, chart_data,
                           chart_list, success):
     start = time()
     if not tlb:
-        registers = injection_objects.exclude(target='TLB').annotate(
+        registers = injections.exclude(target='TLB').annotate(
             register_name=Concat('register', Value(' '), 'register_index')
         ).values_list('register_name', flat=True).distinct(
         ).order_by('register_name')
     else:
-        registers = injection_objects.filter(target='TLB').annotate(
+        registers = injections.filter(target='TLB').annotate(
             tlb_index=Substr('register_index', 1,
                              Length('register_index')-2,
                              output_field=TextField())).annotate(
@@ -609,7 +609,7 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
     if len(registers) < 1:
         return
     registers = sorted(registers, key=fix_sort)
-    if campaign_data.simics and not tlb:
+    if campaign.simics and not tlb:
         registers = [reg.replace('gprs ', 'r') for reg in registers]
     extra_colors = list(colors_extra)
     chart = {
@@ -624,7 +624,7 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
             'enabled': False
         },
         'exporting': {
-            'filename': (str(campaign_data.id)+' ' +
+            'filename': (str(campaign.id)+' ' +
                          ('registers' if not tlb else 'tlb entries')),
             'sourceWidth': 480,
             'sourceHeight': 360,
@@ -672,7 +672,7 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcomes[i]
         if not tlb:
-            data = injection_objects.exclude(target='TLB').annotate(
+            data = injections.exclude(target='TLB').annotate(
                 register_name=Concat('register', Value(' '), 'register_index')
             ).values_list('register_name').distinct().order_by('register_name'
                                                                ).annotate(
@@ -680,7 +680,7 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
                                default=0, output_field=IntegerField()))
             ).values_list('register_name', 'count')
         else:
-            data = injection_objects.filter(target='TLB').annotate(
+            data = injections.filter(target='TLB').annotate(
                 tlb_index=Substr('register_index', 1,
                                  Length('register_index')-2,
                                  output_field=TextField())).annotate(
@@ -726,10 +726,10 @@ def registers_tlbs_charts(tlb, campaign_data, result_objects, injection_objects,
           round(time()-start, 2), 'seconds')
 
 
-def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
+def tlb_fields_chart(campaign, results, injections, outcomes,
                      group_categories, chart_data, chart_list):
     start = time()
-    fields = list(injection_objects.filter(target='TLB').values_list(
+    fields = list(injections.filter(target='TLB').values_list(
         'field', flat=True).distinct().order_by('field'))
     if len(fields) < 1:
         return
@@ -746,7 +746,7 @@ def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign_data.id)+' tlb fields',
+            'filename': str(campaign.id)+' tlb fields',
             'sourceWidth': 512,
             'sourceHeight': 384,
             'scale': 2
@@ -782,7 +782,7 @@ def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
                     else 'result__outcome'] = outcomes[i]
-        data = list(injection_objects.filter(target='TLB').values_list(
+        data = list(injections.filter(target='TLB').values_list(
             'field').distinct().order_by('field').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
@@ -809,11 +809,11 @@ def tlb_fields_chart(campaign_data, result_objects, injection_objects, outcomes,
     print('tlb_fields_chart:', round(time()-start, 2), 'seconds')
 
 
-def register_bits_chart(campaign_data, result_objects, injection_objects,
+def register_bits_chart(campaign, results, injections,
                         outcomes, group_categories, chart_data, chart_list,
                         success=False):
     start = time()
-    bits = list(injection_objects.exclude(target='TLB').values_list(
+    bits = list(injections.exclude(target='TLB').values_list(
         'bit', flat=True).distinct().order_by('bit'))
     if len(bits) < 1:
         return
@@ -830,7 +830,7 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign_data.id)+' register bits',
+            'filename': str(campaign.id)+' register bits',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -869,7 +869,7 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
         else:
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcomes[i]
-        data = list(injection_objects.exclude(target='TLB').values_list(
+        data = list(injections.exclude(target='TLB').values_list(
             'bit').distinct().order_by('bit').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
@@ -896,16 +896,16 @@ def register_bits_chart(campaign_data, result_objects, injection_objects,
     print('register_bits_chart:', round(time()-start, 2), 'seconds')
 
 
-def times_charts(campaign_data, result_objects, injection_objects, outcomes,
+def times_charts(campaign, results, injections, outcomes,
                  group_categories, chart_data, chart_list):
     start = time()
-    if campaign_data.simics:
-        times = list(injection_objects.values_list(
+    if campaign.simics:
+        times = list(injections.values_list(
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
-        xaxis_length = min(injection_objects.count() / 25, 50)
-        times = linspace(0, campaign_data.exec_time, xaxis_length,
+        xaxis_length = min(injections.count() / 25, 50)
+        times = linspace(0, campaign.exec_time, xaxis_length,
                          endpoint=False).tolist()
         times = [round(time, 4) for time in times]
     if len(times) < 1:
@@ -923,7 +923,7 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign_data.id)+' injections over time',
+            'filename': str(campaign.id)+' injections over time',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -945,7 +945,7 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Checkpoint' if campaign_data.simics else 'Seconds'
+                'text': 'Checkpoint' if campaign.simics else 'Seconds'
             }
         },
         'yAxis': {
@@ -960,11 +960,11 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
     chart_smoothed['chart']['renderTo'] = 'times_smoothed_chart'
 
     def plot_outcome(i):
-        if campaign_data.simics:
+        if campaign.simics:
             when_kwargs = {'then': 1}
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcomes[i]
-            data = list(injection_objects.values_list(
+            data = list(injections.values_list(
                 'checkpoint_number').distinct().order_by(
                 'checkpoint_number').annotate(
                     count=Sum(Case(When(**when_kwargs),
@@ -977,11 +977,11 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
             data = []
             for j in range(len(times)):
                 if j+1 < len(times):
-                    data.append(injection_objects.filter(
+                    data.append(injections.filter(
                         time__gte=times[j], time__lt=times[j+1],
                         **filter_kwargs).count())
                 else:
-                    data.append(injection_objects.filter(
+                    data.append(injections.filter(
                         time__gte=times[j], **filter_kwargs).count())
         chart['series'][i] = {'data': data, 'name': outcomes[i]}
         chart_smoothed['series'][i] = {
@@ -1001,7 +1001,7 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
     chart_list.append(('times_smoothed_chart',
                        'Injections Over Time (Moving Average Window Size = ' +
                        str(window_size)+')', 11))
-    if campaign_data.simics:
+    if campaign.simics:
         chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
             window.location.assign('results?outcome='+this.series.name+
@@ -1026,16 +1026,16 @@ def times_charts(campaign_data, result_objects, injection_objects, outcomes,
     print('times_charts', round(time()-start, 2), 'seconds')
 
 
-def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
+def diff_times_chart(campaign, results, injections, outcomes,
                      group_categories, chart_data, chart_list):
     start = time()
-    if campaign_data.simics:
-        times = list(injection_objects.values_list(
+    if campaign.simics:
+        times = list(injections.values_list(
             'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
     else:
-        xaxis_length = min(injection_objects.count() / 25, 100)
-        times = linspace(0, campaign_data.exec_time, xaxis_length,
+        xaxis_length = min(injections.count() / 25, 100)
+        times = linspace(0, campaign.exec_time, xaxis_length,
                          endpoint=False).tolist()
         times = [round(time, 4) for time in times]
     if len(times) < 1:
@@ -1051,7 +1051,7 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign_data.id)+' data errors over time',
+            'filename': str(campaign.id)+' data errors over time',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -1075,7 +1075,7 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Checkpoint' if campaign_data.simics else 'Seconds'
+                'text': 'Checkpoint' if campaign.simics else 'Seconds'
             }
         },
         'yAxis': {
@@ -1088,8 +1088,8 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
             }
         }
     }
-    if campaign_data.simics:
-        data = injection_objects.values_list(
+    if campaign.simics:
+        data = injections.values_list(
             'checkpoint_number').distinct().order_by(
             'checkpoint_number').annotate(
                 avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
@@ -1099,18 +1099,18 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
         data = []
         for i in range(len(times)):
             if i+1 < len(times):
-                data.append(injection_objects.filter(
+                data.append(injections.filter(
                     time__gte=times[i], time__lt=times[i+1]).aggregate(
                     avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
                                  default='result__data_diff')))['avg'])
             else:
-                data.append(injection_objects.filter(
+                data.append(injections.filter(
                     time__gte=times[i]).aggregate(
                     avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
                                  default='result__data_diff')))['avg'])
     chart['series'].append({'data': [x*100 if x is not None else 0
                                      for x in data]})
-    if campaign_data.simics:
+    if campaign.simics:
         chart = dumps(chart).replace('\"chart_click\"', """
         function(event) {
             window.location.assign('results?injection__checkpoint_number='+
@@ -1131,10 +1131,10 @@ def diff_times_chart(campaign_data, result_objects, injection_objects, outcomes,
     print('diff_times_chart:', round(time()-start, 2), 'seconds')
 
 
-def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
+def counts_chart(campaign, results, injections, outcomes,
                  group_categories, chart_data, chart_list):
     start = time()
-    injection_counts = list(result_objects.exclude(
+    injection_counts = list(results.exclude(
         num_injections=0).values_list(
         'num_injections', flat=True).distinct().order_by('num_injections'))
     if len(injection_counts) <= 1:
@@ -1151,7 +1151,7 @@ def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign_data.id)+' injection quantity',
+            'filename': str(campaign.id)+' injection quantity',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -1187,7 +1187,7 @@ def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
         when_kwargs = {'then': 1}
         when_kwargs['outcome_category' if group_categories
                     else 'outcome'] = outcomes[i]
-        data = list(result_objects.exclude(num_injections=0).values_list(
+        data = list(results.exclude(num_injections=0).values_list(
             'num_injections').distinct().order_by('num_injections').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
@@ -1222,11 +1222,12 @@ def counts_chart(campaign_data, result_objects, injection_objects, outcomes,
     print('counts_chart:', round(time()-start, 2), 'seconds')
 
 
-def injections_charts(result_ids, campaign_data):
+def injections_charts(result_ids, campaign):
     charts = (targets_charts, registers_chart, register_bits_chart)
-    result_objects = result.objects.filter(id__in=result_ids)
-    injection_objects = injection.objects.filter(result__id__in=result_ids)
-    outcomes = list(injection.objects.filter(
+    results = models.result.objects.filter(id__in=result_ids)
+    injections = models.injection.objects.filter(
+        result__id__in=result_ids)
+    outcomes = list(models.injection.objects.filter(
         result_id__in=result_ids).values_list(
         'success', flat=True).distinct().order_by('success'))
     chart_data = []
@@ -1234,7 +1235,7 @@ def injections_charts(result_ids, campaign_data):
     threads = []
     for chart in charts:
         thread = Thread(target=chart,
-                        args=(campaign_data, result_objects, injection_objects,
+                        args=(campaign, results, injections,
                               outcomes, False, chart_data, chart_list, True))
         thread.start()
         threads.append(thread)

@@ -3,7 +3,8 @@ from django.conf import settings as django_settings
 from django.core.management import execute_from_command_line as django_command
 from psycopg2 import connect, OperationalError
 from psycopg2.extras import DictCursor
-from subprocess import PIPE, Popen
+from subprocess import DEVNULL, PIPE, Popen
+from sys import stdout as sys_stdout
 from termcolor import colored
 from threading import Lock
 from traceback import format_exc, format_stack
@@ -19,33 +20,26 @@ class database(object):
             campaign = {'id': options.campaign_id}
         self.campaign = campaign
         self.result = {}
-        self.host = options.db_host
-        self.port = options.db_port
-        self.database = options.db_name
-        self.password = options.db_password
+        self.options = options
         self.lock = Lock()
         if create_result:
             with self as db:
                 db.__create_result()
         if not self.exists():
             if log_settings is not None:
-                print('adding drseus user and database to postgresql, '
-                      'root privileges (sudo) required')
-                psql = Popen(['sudo', '-u', 'postgres', 'psql'], bufsize=0,
-                             universal_newlines=True, stdin=PIPE)
-                for command in (
-                    "CREATE DATABASE "+self.database+";",
-                    "CREATE USER drseus WITH PASSWORD '"+self.password+"';",
-                    "ALTER ROLE drseus SET client_encoding TO 'utf8';",
-                    ("ALTER ROLE drseus SET default_transaction_isolation "
-                        "TO 'read committed';"),
-                    "ALTER ROLE drseus SET timezone TO 'UTC';",
-                    ("GRANT ALL PRIVILEGES ON DATABASE "+self.database +
-                        " TO drseus;")):
-                    print('psql>', command)
-                    psql.stdin.write(command+'\n')
-                psql.stdin.close()
-                psql.wait()
+                commands = (
+                    ('CREATE USER '+self.options.db_user +
+                        ' WITH PASSWORD \''+self.options.db_password+'\';'),
+                    ('ALTER ROLE '+self.options.db_user +
+                        ' SET client_encoding TO \'utf8\';'),
+                    ('ALTER ROLE '+self.options.db_user +
+                        ' SET default_transaction_isolation'
+                        ' TO \'read committed\';'),
+                    ('ALTER ROLE '+self.options.db_user +
+                        ' SET timezone TO \'UTC\';'),
+                    ('CREATE DATABASE '+self.options.db_name +
+                        ' WITH OWNER '+self.options.db_user))
+                self.psql(superuser=True, commands=commands)
                 django_settings.configure(**log_settings)
                 django_command(['drseus', 'makemigrations', 'log'])
                 django_command(['drseus', 'migrate'])
@@ -54,9 +48,11 @@ class database(object):
 
     def __enter__(self):
         self.lock.acquire()
-        self.connection = connect(host=self.host, port=self.port,
-                                  database=self.database, user='drseus',
-                                  password=self.password,
+        self.connection = connect(host=self.options.db_host,
+                                  port=self.options.db_port,
+                                  database=self.options.db_name,
+                                  user=self.options.db_user,
+                                  password=self.options.db_password,
                                   cursor_factory=DictCursor)
         self.cursor = self.connection.cursor()
         return self
@@ -67,6 +63,54 @@ class database(object):
         self.lock.release()
         if type_ is not None or value is not None or traceback is not None:
             return False  # reraise exception
+
+    def psql(self, executable='psql', superuser=False, database=False,
+             args=[], commands=[], stdin=None, stdout=None):
+        if commands and stdin is not None:
+            print('cannot simultaneously send commands and redirect stdin, '
+                  'ignoring stdin redirect')
+        popen_command = []
+        if superuser and self.options.db_superuser_password is None:
+            print('running "'+executable+'" with sudo, '
+                  'password may be required')
+            popen_command.extend(['sudo', '-u', self.options.db_superuser])
+        popen_command.append(executable)
+        if self.options.db_host != 'localhost' or \
+                not (superuser and self.options.db_superuser_password is None):
+            popen_command.extend(['-h', self.options.db_host, '-W'])
+            password_prompt = True
+        else:
+            password_prompt = False
+        popen_command.extend(['-p', str(self.options.db_port)])
+        if not superuser:
+            popen_command.extend(['-U', self.options.db_user])
+        if database:
+            popen_command.extend(['-d', self.options.db_name])
+        if args:
+            popen_command.extend(args)
+        kwargs = {}
+        if commands:
+            kwargs.update({'stdin': PIPE, 'universal_newlines': True})
+        elif stdin:
+            kwargs['stdin'] = stdin
+        if stdout:
+            kwargs['stdout'] = stdout
+        process = Popen(popen_command, **kwargs)
+        if commands:
+            for command in commands:
+                print(executable+'>', command)
+                process.stdin.write(command+'\n')
+            process.stdin.close()
+        if password_prompt:
+            print('user', end=' ')
+            if superuser:
+                print(self.options.db_superuser, end=' ')
+            else:
+                print(self.options.db_user, end=' ')
+            sys_stdout.flush()
+        process.wait()
+        if process.returncode:
+            raise Exception(executable+' error')
 
     def exists(self):
         try:
@@ -225,15 +269,21 @@ class database(object):
         self.cursor.execute('DELETE FROM log_campaign WHERE id=%s',
                             [self.campaign['id']])
 
-    def delete_database(self):
-        print('deleting drseus user and database to postgresql, '
-              'root privileges required')
-        psql = Popen(['sudo', '-u', 'postgres', 'psql'], bufsize=0,
-                     universal_newlines=True, stdin=PIPE)
-        for command in (
-                "DROP DATABASE "+self.database+";",
-                "DROP USER drseus;"):
-            print('psql>', command)
-            psql.stdin.write(command+'\n')
-        psql.stdin.close()
-        psql.wait()
+    def delete_database(self, delete_user):
+        commands = ['DROP DATABASE '+self.options.db_name+';']
+        if delete_user:
+            commands.append('DROP USER '+self.options.db_user+';')
+        self.psql(superuser=delete_user or self.options.db_host == 'localhost',
+                  commands=commands)
+
+    def backup_database(self, backup_file):
+        with open(backup_file, 'w') as backup:
+            self.psql(superuser=self.options.db_host == 'localhost',
+                      executable='pg_dump', database=True, args=['-c'],
+                      stdout=backup)
+
+    def restore_database(self, backup_file):
+        with open(backup_file, 'r') as backup:
+            self.psql(superuser=True, database=True,
+                      args=['--single-transaction'], stdin=backup,
+                      stdout=DEVNULL)
