@@ -54,7 +54,8 @@ class campaign(campaigns):
 class results(Table):
     events = Column(empty_values=(), orderable=False)
     id_ = TemplateColumn(  # LinkColumn()
-        '<a href="./result/{{ value }}">{{ value }}</a>', accessor='id')
+        '<a href="/campaign/{{ record.campaign_id }}/result/{{ value }}">'
+        '{{ value }}</a>', accessor='id')
     registers = Column(empty_values=(), orderable=False)
     select_box = CheckBoxColumn(
         accessor='id',
@@ -153,9 +154,14 @@ class events(Table):
     description = TemplateColumn(
         '{% if value %}<code class="console">{{ value }}</code>{% endif %}')
     result_id = TemplateColumn(
-        '{% if value %}<a href="./result/{{ value }}">{{ value }}</a>'
-        '{% else %}<a href="./info">Campaign</a>{% endif %}',
+        '{% if value %}<a href="/campaign/{{ record.result.campaign_id }}/'
+        'result/{{ value }}">{{ value }}</a>'
+        '{% else %}<a href="/campaign/{{ record.campaign_id }}/info">'
+        'Campaign</a>{% endif %}',
         accessor='result_id')
+    select_box = CheckBoxColumn(
+        accessor='result_id',
+        attrs={'th__input': {'onclick': 'update_selection(this)'}})
     success_ = TemplateColumn(
         '{% if value == None %}-'
         '{% elif value %}<span class="true">\u2714</span>'
@@ -165,8 +171,8 @@ class events(Table):
 
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        fields = ('result_id', 'timestamp', 'level', 'source', 'event_type',
-                  'success_', 'description')
+        fields = ('select_box', 'result_id', 'timestamp', 'level', 'source',
+                  'event_type', 'success_', 'description')
         model = models.event
         order_by = ('result_id', 'timestamp')
         template = 'django_tables2/bootstrap.html'

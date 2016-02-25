@@ -12,6 +12,10 @@ from . import filters
 from . import models
 from . import tables
 
+drseus_items = (('Campaigns', '/', 'home'),
+                ('Results', '/results', 'list'),
+                ('Events', '/events', 'exclamation-circle'))
+
 navigation_items = (('Campaign Information', 'info', 'info'),
                     ('Category Charts', 'category_charts', 'bar-chart'),
                     ('Outcome Charts', 'outcome_charts', 'bar-chart'),
@@ -23,12 +27,13 @@ navigation_items = (('Campaign Information', 'info', 'info'),
 def campaigns_page(request):
     campaign = models.campaign.objects.all()
     if campaign.count() == 1:
-        return redirect('/campaign/'+str(campaign[0].id)+'/results')
+        return redirect('/campaign/'+str(campaign[0].id)+'/info')
     campaign_table = tables.campaigns(campaign)
     chart_data = campaigns_chart(models.result.objects.all())
     RequestConfig(request).configure(campaign_table)
-    return render(request, 'campaigns.html', {'chart_data': chart_data,
-                                              'campaign_table': campaign_table})
+    return render(request, 'campaigns.html', {
+        'chart_data': chart_data, 'campaign_table': campaign_table,
+        'drseus_items': drseus_items})
 
 
 def campaign_page(request, campaign_id):
@@ -55,9 +60,9 @@ def campaign_page(request, campaign_id):
     RequestConfig(request, paginate=False).configure(event_table)
     return render(request, 'campaign.html', {
         'campaign': campaign, 'chart_data': chart_data,
-        'event_table': event_table, 'navigation_items': navigation_items,
-        'output_image': output_image, 'page_items': page_items,
-        'campaign_table': campaign_table})
+        'drseus_items': drseus_items, 'event_table': event_table,
+        'navigation_items': navigation_items, 'output_image': output_image,
+        'page_items': page_items, 'campaign_table': campaign_table})
 
 
 def category_charts_page(request, campaign_id):
@@ -78,10 +83,10 @@ def charts_page(request, campaign_id, group_categories=False):
                           ('Injections By TLB Field', 'tlb_fields_chart')])
     page_items.extend([('Injections Over Time', 'times_charts'),
                        ('Results By Injection Count', 'counts_charts')])
-    filter_ = filters.result(
-        request.GET, campaign=campaign_id,
+    result_filter = filters.result(
+        request.GET, campaign_id=campaign_id,
         queryset=models.result.objects.filter(campaign_id=campaign_id))
-    result_ids = filter_.qs.values('id').distinct()
+    result_ids = result_filter.qs.values('id').distinct()
     if result_ids.count() > 0:
         chart_data, chart_list = results_charts(result_ids, campaign,
                                                 group_categories)
@@ -92,31 +97,37 @@ def charts_page(request, campaign_id, group_categories=False):
         chart_list = None
     return render(request, 'charts.html', {
         'campaign': campaign, 'chart_data': chart_data,
-        'chart_list': chart_list, 'filter': filter_,
-        'categories': group_categories, 'navigation_items': navigation_items,
-        'page_items': page_items})
+        'chart_list': chart_list, 'drseus_items': drseus_items,
+        'filter': result_filter, 'categories': group_categories,
+        'navigation_items': navigation_items, 'page_items': page_items})
 
 
-def events_page(request, campaign_id):
-    campaign = models.campaign.objects.get(id=campaign_id)
-    filter_ = filters.result(
-        request.GET, campaign=campaign_id,
-        queryset=models.result.objects.filter(campaign_id=campaign_id))
-    result_ids = filter_.qs.values('id').distinct()
-    events = models.event.objects.filter(result_id__in=result_ids)
-    event_table = tables.events(events)
+def events_page(request, campaign_id=None):
+    if campaign_id:
+        campaign = models.campaign.objects.get(id=campaign_id)
+        navigation_items_ = navigation_items
+        events = models.event.objects.filter(result__campaign_id=campaign_id)
+    else:
+        campaign = None
+        navigation_items_ = None
+        events = models.event.objects.all()
+    event_filter = filters.event(
+        request.GET, campaign_id=campaign_id, queryset=events)
+    event_table = tables.events(event_filter.qs)
     RequestConfig(request, paginate={'per_page': 250}).configure(event_table)
     return render(request, 'events.html', {
-        'campaign': campaign, 'filter': filter_,
-        'navigation_items': navigation_items, 'event_table': event_table})
+        'campaign': campaign, 'drseus_items': drseus_items,
+        'event_table': event_table, 'filter': event_filter,
+        'navigation_items': navigation_items_, 'page_items_block': True})
 
 
 def injections_page(request, campaign_id):
     campaign = models.campaign.objects.get(id=campaign_id)
-    filter_ = filters.result(
-        request.GET, campaign=campaign_id,
-        queryset=models.result.objects.filter(campaign_id=campaign_id))
-    result_ids = filter_.qs.values('id').distinct()
+    injections = models.injection.objects.filter(
+        result__campaign_id=campaign_id)
+    filter_ = filters.injection(request.GET, campaign_id=campaign_id,
+                                queryset=injections)
+    result_ids = filter_.qs.values('result_id').distinct()
     if result_ids.count() > 0:
         chart_data, chart_list = injections_charts(result_ids, campaign)
         chart_list = [chart[:-1]
@@ -124,31 +135,34 @@ def injections_page(request, campaign_id):
     else:
         chart_data = None
         chart_list = None
-    injections = models.injection.objects.filter(
-        result_id__in=result_ids)
-    injection_table = tables.injections(injections)
+    injection_table = tables.injections(filter_.qs)
     RequestConfig(request, paginate={'per_page': 50}).configure(injection_table)
     return render(request, 'injections.html', {
         'campaign': campaign, 'chart_data': chart_data,
-        'chart_list': chart_list, 'filter': filter_,
-        'navigation_items': navigation_items,
+        'chart_list': chart_list, 'drseus_items': drseus_items,
+        'filter': filter_, 'navigation_items': navigation_items,
         'injection_table': injection_table})
 
 
-def results_page(request, campaign_id):
-    if models.result.objects.filter(campaign_id=campaign_id).count() == 0:
-        return redirect('/campaign/'+str(campaign_id)+'/info')
-    campaign = models.campaign.objects.get(id=campaign_id)
-    output_file = ('campaign-data/'+campaign_id+'/gold_' +
-                   campaign.output_file)
-    if exists(output_file) and what(output_file) is not None:
-        output_image = True
+def results_page(request, campaign_id=None):
+    if campaign_id:
+        campaign = models.campaign.objects.get(id=campaign_id)
+        navigation_items_ = navigation_items
+        output_file = ('campaign-data/'+campaign_id+'/gold_' +
+                       campaign.output_file)
+        if exists(output_file) and what(output_file) is not None:
+            output_image = True
+        else:
+            output_image = False
+        results = models.result.objects.filter(campaign_id=campaign_id)
     else:
+        campaign = None
+        navigation_items_ = None
         output_image = False
-    filter_ = filters.result(
-        request.GET, campaign=campaign_id,
-        queryset=models.result.objects.filter(campaign_id=campaign_id))
-    result_ids = filter_.qs.values('id').distinct()
+        results = models.result.objects.all()
+    result_filter = filters.result(
+        request.GET, campaign_id=campaign_id, queryset=results)
+    result_ids = result_filter.qs.values('id').distinct()
     results = models.result.objects.filter(id__in=result_ids)
     if request.method == 'GET':
         if (('view_output' in request.GET or
@@ -200,12 +214,16 @@ def results_page(request, campaign_id):
             models.simics_register_diff.objects.filter(
                 result_id__in=result_ids).delete()
             models.result.objects.filter(id__in=result_ids).delete()
-            return redirect('/campaign/'+str(campaign_id)+'/results')
+            if campaign_id:
+                return redirect('/campaign/'+str(campaign_id)+'/results')
+            else:
+                return redirect('/results')
     result_table = tables.results(results)
     RequestConfig(request, paginate={'per_page': 50}).configure(result_table)
     return render(request, 'results.html', {
-        'campaign': campaign, 'filter': filter_,
-        'navigation_items': navigation_items, 'output_image': output_image,
+        'campaign': campaign, 'drseus_items': drseus_items,
+        'filter': result_filter, 'filter_tabs': True,
+        'navigation_items': navigation_items_, 'output_image': output_image,
         'page_items_block': True, 'result_table': result_table})
 
 
@@ -254,7 +272,7 @@ def result_page(request, campaign_id, result_id):
         register_diffs = models.simics_register_diff.objects.filter(
             result_id=result_id)
         register_filter = filters.simics_register_diff(
-            request.GET, queryset=register_diffs, campaign=campaign_id)
+            request.GET, queryset=register_diffs)
         register_table = tables.simics_register_diff(register_filter.qs)
         RequestConfig(request,
                       paginate={'per_page': 25}).configure(register_table)
@@ -272,12 +290,12 @@ def result_page(request, campaign_id, result_id):
     RequestConfig(request, paginate=False).configure(event_table)
     RequestConfig(request, paginate=False).configure(injection_table)
     return render(request, 'result.html', {
-        'campaign': campaign, 'event_table': event_table,
-        'filter': register_filter, 'injection_table': injection_table,
-        'memory_table': memory_table, 'navigation_items': navigation_items_,
-        'output_image': output_image, 'page_items': page_items,
-        'register_table': register_table, 'result': result,
-        'result_table': result_table})
+        'campaign': campaign, 'drseus_items': drseus_items,
+        'event_table': event_table, 'filter': register_filter,
+        'injection_table': injection_table, 'memory_table': memory_table,
+        'navigation_items': navigation_items_, 'output_image': output_image,
+        'page_items': page_items, 'register_table': register_table,
+        'result': result, 'result_table': result_table})
 
 
 def output(request, campaign_id, result_id):

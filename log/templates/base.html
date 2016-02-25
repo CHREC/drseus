@@ -14,11 +14,7 @@
         <link rel="stylesheet" href="{% get_static_prefix %}css/drseus.css">
     </head>
 
-{% if navigation_items or page_items %}
     <body class="skin-blue fixed">
-{% else %}
-    <body class="skin-blue sidebar-collapse">
-{% endif %}
         <form id="get_form" action="" method="get">
             <div id="wrapper">
 
@@ -32,12 +28,10 @@
                     </a>
                     <!-- Header Navbar: style can be found in header.less -->
                     <nav class="navbar navbar-static-top" role="navigation">
-                        {% if filter or navigation_items or page_items %}
-                            <!-- Sidebar toggle button-->
-                            <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
-                                <span class="sr-only">Toggle navigation</span>
-                            </a>
-                        {% endif %}
+                        <!-- Sidebar toggle button-->
+                        <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
+                            <span class="sr-only">Toggle navigation</span>
+                        </a>
                         <div class="navbar-custom-menu">
                             <ul class="nav navbar-nav">
                                 {% if filter %}
@@ -57,6 +51,15 @@
                     <section class="sidebar">
                         <!-- sidebar menu: : style can be found in sidebar.less -->
                         <ul class="sidebar-menu">
+                            <li class="header">DrSEUs NAVIGATION</li>
+                                {% for name, link, icon in drseus_items %}
+                                    <li id="{{ link }}-link">
+                                        <a href="{{ link }}">
+                                            <i class="fa fa-{{ icon }}"></i>
+                                            <span>{{ name }}</span>
+                                        </a>
+                                    </li>
+                                {% endfor %}
                             {% if navigation_items %}
                                 <li class="header">CAMPAIGN NAVIGATION</li>
                                 {% for name, link, icon in navigation_items %}
@@ -96,41 +99,55 @@
                 {% if filter %}
                     <!-- Control Sidebar -->
                     <aside class="control-sidebar control-sidebar-dark">
-                    <ul class="nav nav-tabs nav-justified control-sidebar-tabs">
-                        <li class="active"><a href="#control-sidebar-result-tab" data-toggle="tab"><i class="fa fa-list"></i></a></li>
-                        <li><a href="#control-sidebar-event-tab" data-toggle="tab"><i class="fa fa-exclamation-circle"></i></a></li>
-                        <li><a href="#control-sidebar-injection-tab" data-toggle="tab"><i class="fa fa-crosshairs"></i></a></li>
-                    </ul>
-                    <div class="tab-content">
-                        <div class="tab-pane active" id="control-sidebar-result-tab">
-                            {% for field in filter.form %}
-                                {% if "event" not in field.id_for_label and "injection" not in field.id_for_label %}
-                                    <h3 class="control-sidebar-heading">{{ field.label_tag }}</h3>
-                                    <ul class="control-sidebar-menu">
-                                        <li><div class="filter-field">{{ field }}</div></li>
-                                    </ul>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        <div class="tab-pane" id="control-sidebar-event-tab">
-                            {% for field in filter.form %}
-                                {% if "event" in field.id_for_label %}
-                                    <h3 class="control-sidebar-heading">{{ field.label_tag }}</h3>
-                                    <ul class="control-sidebar-menu">
-                                        <li><div class="filter-field">{{ field }}</div></li>
-                                    </ul>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        <div class="tab-pane" id="control-sidebar-injection-tab">
-                            {% for field in filter.form %}
-                                {% if "injection" in field.id_for_label %}
-                                    <h3 class="control-sidebar-heading">{{ field.label_tag }}</h3>
-                                    <ul class="control-sidebar-menu">
-                                        <li><div class="filter-field">{{ field }}</div></li>
-                                    </ul>
-                                {% endif %}
-                            {% endfor %}
+                        {% if filter_tabs %}
+                            <ul class="nav nav-tabs nav-justified control-sidebar-tabs">
+                                <li class="active"><a href="#control-sidebar-result-tab" data-toggle="tab"><i class="fa fa-list"></i></a></li>
+                                <li><a href="#control-sidebar-event-tab" data-toggle="tab"><i class="fa fa-exclamation-circle"></i></a></li>
+                                <li><a href="#control-sidebar-injection-tab" data-toggle="tab"><i class="fa fa-crosshairs"></i></a></li>
+                            </ul>
+                        {% endif %}
+                        <div class="tab-content">
+                            {% if filter_tabs %}
+                                <div class="tab-pane active" id="control-sidebar-result-tab">
+                                    {% for field in filter.form %}
+                                        {% if "event" not in field.id_for_label and "injection" not in field.id_for_label %}
+                                            <h3 class="control-sidebar-heading">{{ field.label_tag }}</h3>
+                                            <ul class="control-sidebar-menu">
+                                                <li><div class="filter-field">{{ field }}</div></li>
+                                            </ul>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="tab-pane" id="control-sidebar-event-tab">
+                                    {% for field in filter.form %}
+                                        {% if "event" in field.id_for_label %}
+                                            <h3 class="control-sidebar-heading">{{ field.label_tag }}</h3>
+                                            <ul class="control-sidebar-menu">
+                                                <li><div class="filter-field">{{ field }}</div></li>
+                                            </ul>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="tab-pane" id="control-sidebar-injection-tab">
+                                    {% for field in filter.form %}
+                                        {% if "injection" in field.id_for_label %}
+                                            <h3 class="control-sidebar-heading">{{ field.label_tag }}</h3>
+                                            <ul class="control-sidebar-menu">
+                                                <li><div class="filter-field">{{ field }}</div></li>
+                                            </ul>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="tab-pane active" id="control-sidebar-result-tab">
+                                    {% for field in filter.form %}
+                                        <h3 class="control-sidebar-heading">{{ field.label_tag }}</h3>
+                                        <ul class="control-sidebar-menu">
+                                            <li><div class="filter-field">{{ field }}</div></li>
+                                        </ul>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
                     </aside>
                     <div class="control-sidebar-bg"></div>
@@ -175,6 +192,7 @@
                         chart = new Highcharts.Chart(chartoptions);
                     });
                 });
+                fix_charts();
             </script>
         {% endif %}
     </body>

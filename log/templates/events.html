@@ -6,7 +6,9 @@
         <h1>Events</h1>
         <ol class="breadcrumb">
             <li><a href="/">Campaigns</a></li>
-            <li><a href="info">Campaign {{ campaign.id }}</a></li>
+            {% if campaign %}
+                <li><a href="info">Campaign {{ campaign.id }}</a></li>
+            {% endif %}
             <li class="active"><a href="">Events</a></li>
         </ol>
     </section>
@@ -31,8 +33,48 @@
     </section>
 {% endblock %}
 
+{% block page_items %}
+    <li class="treeview">
+        <a href="#">
+            <i class="fa fa-plus"></i>
+            <span>Open Tabs</span>
+            <i class="fa fa-angle-left pull-right"></i>
+        </a>
+        <ul class="treeview-menu">
+            <li>
+                <a href="javascript:{}" onclick="open_results(true)">
+                    <i class="fa fa-circle-o"></i>
+                    <span>Open Selected</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:{}" onclick="open_results(false)">
+                    <i class="fa fa-circle-o"></i>
+                    <span>Open All (Displayed)</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+{% endblock %}
+
 {% block script %}
     <script>
         $('#events-link').addClass('active')
+
+        function update_selection(select) {
+            var checkboxes = document.getElementsByName('select_box');
+            for(var i=0, n=checkboxes.length; i<n; i++) {
+                checkboxes[i].checked = select.checked;
+            }
+        }
+
+        function open_results(only_selected) {
+            var checkboxes = document.getElementsByName('select_box');
+            for(var i=0, n=checkboxes.length; i<n; i++) {
+                if (checkboxes[i].checked || !only_selected) {
+                    window.open('./result/'+checkboxes[i].value, '_blank');
+                }
+            }
+        }
     </script>
 {% endblock %}

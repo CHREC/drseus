@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     url(r'^$', views.campaigns_page),
+    url(r'^results$', views.results_page),
+    url(r'^events$', views.events_page),
     url(r'^campaign/(?P<campaign_id>[0-9]+)/info$', views.campaign_page),
     url(r'^campaign/(?P<campaign_id>[0-9]+)/category_charts$',
         views.category_charts_page),

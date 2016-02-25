@@ -395,7 +395,7 @@ def targets_charts(campaign, results, injections, outcomes,
     chart_data.append(chart_percent)
     chart_list.append(('targets_percent_chart', 'Targets (Percentage Scale)',
                        2))
-    if len(outcomes) == 1:
+    if len(outcomes) == 1 and not success:
         chart_log = deepcopy(chart)
         chart_log['chart']['renderTo'] = 'targets_log_chart'
         chart_log['yAxis']['type'] = 'logarithmic'

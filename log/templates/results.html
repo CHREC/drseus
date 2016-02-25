@@ -6,7 +6,9 @@
         <h1>Results</h1>
         <ol class="breadcrumb">
             <li><a href="/"> Campaigns </a></li>
-            <li><a href="info"> Campaign {{ campaign.id }} </a></li>
+            {%if campaign %}
+                <li><a href="info"> Campaign {{ campaign.id }} </a></li>
+            {% endif %}
             <li class="active"><a href=""> Results </a></li>
         </ol>
     </section>

@@ -486,7 +486,7 @@ def restore(options):
                 options, log_settings=log_settings(options)).restore_database(
                     'campaign-data/'+item)
             print('database restored')
-        break
+            break
 
 
 def clean(none=None):
