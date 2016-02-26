@@ -14,13 +14,13 @@ from . import tables
 
 navigation_items = (('All Campaigns', '/', 'campaigns', 'flag'),
                     ('All Results', '/results', 'results', 'list'),
-                    ('All Events', '/events', 'events', 'exclamation-circle'),
+                    ('All Events', '/events', 'events', 'calendar'),
                     ('All Injections', '/injections', 'injections',
                      'crosshairs'))
 
 campaign_items = (('Campaign Information', 'info', 'info', 'info'),
                   ('Campaign Results', 'results', 'results', 'list'),
-                  ('Campaign Events', 'events', 'events', 'exclamation-circle'),
+                  ('Campaign Events', 'events', 'events', 'calendar'),
                   ('Campaign Injections', 'injections', 'injections',
                    'crosshairs'),
                   ('Campaign Charts', 'category_charts', 'charts', 'bar-chart'))
