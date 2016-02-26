@@ -1,6 +1,8 @@
 from base64 import b64encode
+from datetime import datetime
 from html.parser import HTMLParser
 from multiprocessing import Lock
+from os.path import exists
 from terminaltables import AsciiTable
 from time import sleep
 from urllib.request import Request, urlopen
@@ -96,6 +98,14 @@ class power_switch(object):
             'http://'+self.ip_address+'/outlet?'+str(outlet)+'='+state,
             headers={'Authorization': b'Basic '+b64encode(
                 bytes(self.username+':'+self.password, encoding='utf-8'))}))
+        if exists('power_switch_log.txt'):
+            log = open('power_switch_log.txt', 'a')
+        else:
+            log = open('power_switch_log.txt', 'w')
+            log.write('Outlet\tState\tTimestamp\n')
+        log.write(str(outlet)+'\t'+state+'\t' +
+                  datetime.now().strftime('%b %d, %Y %I:%M:%S %p')+'\n')
+        log.close()
         sleep(delay)
 
     def set_device(self, device, state, delay=5):

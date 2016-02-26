@@ -490,10 +490,12 @@ def restore(options):
             break
 
 
-def clean(none=None):
+def clean(options):
     if exists('backups'):
         rmtree('backups')
         print('deleted database backup(s)')
     if exists('simics-workspace/injected-checkpoints'):
         rmtree('simics-workspace/injected-checkpoints')
         print('deleted injected checkpoints')
+    if options.power_log and exists('power_switch_log.txt'):
+        remove('power_switch_log.txt')

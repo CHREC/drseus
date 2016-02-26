@@ -527,6 +527,10 @@ clean = subparsers.add_parser(
     'clean', aliases=['c'],
     help='delete database backups and injected checkpoints',
     description='delete database backups and injected checkpoints')
+clean.add_argument(
+    '-p', '--power_log',
+    action='store_true',
+    help='delete power switch log')
 clean.set_defaults(func=utilities.clean)
 
 serials = subparsers.add_parser(
