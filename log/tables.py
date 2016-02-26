@@ -8,7 +8,7 @@ datetime_format = 'M j, Y h:i:s A'
 
 class campaigns(Table):
     id_ = TemplateColumn(
-        '<a href="/campaign/{{ value }}/results">{{ value }}</a>',
+        '<a href="/campaign/{{ value }}/info">{{ value }}</a>',
         accessor='id')
     results = Column(empty_values=(), orderable=False)
     timestamp = DateTimeColumn(format=datetime_format)

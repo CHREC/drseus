@@ -36,8 +36,10 @@
 
 {% block script %}
     <script>
-        $('#{% if categories %}category{% else %}outcome{% endif %}_charts-link').addClass('active')
+        $('#{% if categories %}category{% else %}outcome{% endif %}_charts-campaign-link').addClass('active')
+
         $('.sidebar-toggle').on('click', fix_charts);
+
         $('.expand').on('click', function () {
             var box = $(this).parents('.box').parent();
             if (box.hasClass('col-lg-6')) {

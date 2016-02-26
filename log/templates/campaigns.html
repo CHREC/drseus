@@ -31,10 +31,16 @@
                         </div>
                     </div>
                     <div class="box-body">
-                        <div id="campaigns_chart"></div>
+                        <div id="campaigns_chart" class="chart-container"></div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
+{% endblock %}
+
+{% block script %}
+    <script>
+        $('#campaigns-navigation-link').addClass('active')
+    </script>
 {% endblock %}

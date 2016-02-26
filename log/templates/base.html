@@ -51,9 +51,9 @@
                     <section class="sidebar">
                         <!-- sidebar menu: : style can be found in sidebar.less -->
                         <ul class="sidebar-menu">
-                            <li class="header">DrSEUs NAVIGATION</li>
-                                {% for name, link, icon in drseus_items %}
-                                    <li id="{{ link }}-link">
+                            <li class="header">NAVIGATION</li>
+                                {% for name, link, id, icon in drseus_items %}
+                                    <li id="{{ id }}-navigation-link">
                                         <a href="{{ link }}">
                                             <i class="fa fa-{{ icon }}"></i>
                                             <span>{{ name }}</span>
@@ -61,9 +61,9 @@
                                     </li>
                                 {% endfor %}
                             {% if navigation_items %}
-                                <li class="header">CAMPAIGN NAVIGATION</li>
-                                {% for name, link, icon in navigation_items %}
-                                    <li id="{{ link }}-link">
+                                <li class="header">CAMPAIGN</li>
+                                {% for name, link, id, icon in navigation_items %}
+                                    <li id="{{ id }}-campaign-link">
                                         <a href="{{ link }}">
                                             <i class="fa fa-{{ icon }}"></i>
                                             <span>{{ name }}</span>
@@ -71,18 +71,7 @@
                                     </li>
                                 {% endfor %}
                             {% endif %}
-                            {% if page_items or page_items_block %}
-                                <li class="header">PAGE NAVIGATION</li>
-                                {% block page_items %}{% endblock %}
-                                {% for name, link in page_items %}
-                                    <li>
-                                        <a href="#{{ link }}">
-                                            <i class="fa fa-circle"></i>
-                                            <span>{{ name }}</span>
-                                        </a>
-                                    </li>
-                                {% endfor %}
-                            {% endif %}
+                            {% block sidebar_block %}{% endblock %}
                         </ul>
                     </section>
                     <!-- /.sidebar -->

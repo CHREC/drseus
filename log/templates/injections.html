@@ -54,8 +54,14 @@
 
 {% block script %}
     <script>
-        $('#injections-link').addClass('active')
+        {% if campaign %}
+            $('#injections-campaign-link').addClass('active')
+        {% else %}
+            $('#injections-navigation-link').addClass('active')
+        {% endif %}
+
         $('.sidebar-toggle').on('click', fix_charts);
+
         $('.expand').on('click', function () {
             var box = $(this).parents('.box').parent();
             if (box.hasClass('col-lg-6')) {

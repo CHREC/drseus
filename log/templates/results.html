@@ -22,7 +22,8 @@
     </section>
 {% endblock %}
 
-{% block page_items %}
+{% block sidebar_block %}
+    <li class="header">OPTIONS</li>
     <li class="treeview">
         <a href="#">
             <i class="fa fa-plus"></i>
@@ -138,7 +139,11 @@
 
 {% block script %}
     <script>
-        $('#results-link').addClass('active')
+        {% if campaign %}
+            $('#results-campaign-link').addClass('active')
+        {% else %}
+            $('#results-navigation-link').addClass('active')
+        {% endif %}
 
         function update_selection(select) {
             var checkboxes = document.getElementsByName('select_box');
