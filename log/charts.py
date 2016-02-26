@@ -78,7 +78,7 @@ def campaigns_chart(queryset):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 },
                 'stacking': 'percent'
@@ -120,7 +120,7 @@ def campaigns_chart(queryset):
     # for thread in threads:
     #     thread.join()
     chart = dumps(chart)
-    chart = chart.replace('\"chart_click\"', """
+    chart = chart.replace('\"click_function\"', """
     function(event) {
         window.location.assign('/campaign/'+this.category+
                                '/results?outcome_category='+this.series.name);
@@ -246,7 +246,7 @@ def overview_chart(campaign, results, injections, outcomes,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 }
             }
@@ -280,7 +280,7 @@ def overview_chart(campaign, results, injections, outcomes,
     # for thread in threads:
     #     thread.join()
     outcome_list = dumps(outcomes)
-    chart = dumps(chart).replace('\"chart_click\"', """
+    chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         var outcomes = outcome_list;
         window.location.assign('results?outcome='+outcomes[this.x]);
@@ -329,7 +329,7 @@ def targets_charts(campaign, results, injections, outcomes,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 },
                 'stacking': True
@@ -384,7 +384,7 @@ def targets_charts(campaign, results, injections, outcomes,
             'text': 'Percent of Injections'
         }
     }
-    chart_percent = dumps(chart_percent).replace('\"chart_click\"', """
+    chart_percent = dumps(chart_percent).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&injection__target='+this.category);
@@ -399,7 +399,7 @@ def targets_charts(campaign, results, injections, outcomes,
         chart_log = deepcopy(chart)
         chart_log['chart']['renderTo'] = 'targets_log_chart'
         chart_log['yAxis']['type'] = 'logarithmic'
-        chart_log = dumps(chart_log).replace('\"chart_click\"', """
+        chart_log = dumps(chart_log).replace('\"click_function\"', """
         function(event) {
             window.location.assign('results?outcome='+this.series.name+
                                    '&injection__target='+this.category);
@@ -409,7 +409,7 @@ def targets_charts(campaign, results, injections, outcomes,
             chart_log = chart_log.replace('?outcome=', '?outcome_category=')
         chart_data.append(chart_log)
         chart_list.append(('targets_log_chart', 'Targets (Log Scale)', 3))
-    chart = dumps(chart).replace('\"chart_click\"', """
+    chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&injection__target='+this.category);
@@ -451,7 +451,7 @@ def propagation_chart(campaign, results, injections,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 }
             }
@@ -494,7 +494,7 @@ def propagation_chart(campaign, results, injections,
     #     thread.join()
     chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
-    chart = dumps(chart).replace('\"chart_click\"', """
+    chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?injection__target='+this.category);
     }
@@ -534,7 +534,7 @@ def diff_targets_chart(campaign, results, injections,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 }
             }
@@ -565,7 +565,7 @@ def diff_targets_chart(campaign, results, injections,
                          default='result__data_diff'))
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 for x in data]})
-    chart = dumps(chart).replace('\"chart_click\"', """
+    chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?injection__target='+this.category);
     }
@@ -637,7 +637,7 @@ def registers_tlbs_charts(tlb, campaign, results, injections,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 },
                 'stacking': True
@@ -701,7 +701,7 @@ def registers_tlbs_charts(tlb, campaign, results, injections,
     #     threads.append(thread)
     # for thread in threads:
     #     thread.join()
-    chart = dumps(chart).replace('\"chart_click\"', """
+    chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         var reg = this.category.split(':');
         var register = reg[0];
@@ -755,7 +755,7 @@ def tlb_fields_chart(campaign, results, injections, outcomes,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 },
                 'stacking': True
@@ -796,7 +796,7 @@ def tlb_fields_chart(campaign, results, injections, outcomes,
     #     threads.append(thread)
     # for thread in threads:
     #     thread.join()
-    chart = dumps(chart).replace('\"chart_click\"', """
+    chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&injection__field='+this.category);
@@ -839,7 +839,7 @@ def register_bits_chart(campaign, results, injections,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 },
                 'stacking': True
@@ -883,7 +883,7 @@ def register_bits_chart(campaign, results, injections,
     #     threads.append(thread)
     # for thread in threads:
     #     thread.join()
-    chart = dumps(chart).replace('\"chart_click\"', """
+    chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&injection__bit='+this.category);
@@ -932,7 +932,7 @@ def times_charts(campaign, results, injections, outcomes,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 },
                 'stacking': True
@@ -1002,7 +1002,7 @@ def times_charts(campaign, results, injections, outcomes,
                        'Injections Over Time (Moving Average Window Size = ' +
                        str(window_size)+')', 11))
     if campaign.simics:
-        chart = dumps(chart).replace('\"chart_click\"', """
+        chart = dumps(chart).replace('\"click_function\"', """
         function(event) {
             window.location.assign('results?outcome='+this.series.name+
                                    '&injection__checkpoint_number='+
@@ -1010,7 +1010,7 @@ def times_charts(campaign, results, injections, outcomes,
         }
         """)
     else:
-        # chart = dumps(chart).replace('\"chart_click\"', """
+        # chart = dumps(chart).replace('\"click_function\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
         #     window.location.assign('results?outcome='+this.series.name+
@@ -1063,7 +1063,7 @@ def diff_times_chart(campaign, results, injections, outcomes,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 },
             }
@@ -1111,14 +1111,14 @@ def diff_times_chart(campaign, results, injections, outcomes,
     chart['series'].append({'data': [x*100 if x is not None else 0
                                      for x in data]})
     if campaign.simics:
-        chart = dumps(chart).replace('\"chart_click\"', """
+        chart = dumps(chart).replace('\"click_function\"', """
         function(event) {
             window.location.assign('results?injection__checkpoint_number='+
                                    this.category);
         }
         """)
     else:
-        # chart = dumps(chart).replace('\"chart_click\"', """
+        # chart = dumps(chart).replace('\"click_function\"', """
         # function(event) {
         #     var time = parseFloat(this.category)
         #     window.location.assign('results?injection__time_rounded='+
@@ -1160,7 +1160,7 @@ def counts_chart(campaign, results, injections, outcomes,
             'series': {
                 'point': {
                     'events': {
-                        'click': 'chart_click'
+                        'click': 'click_function'
                     }
                 },
                 'stacking': True
@@ -1209,7 +1209,7 @@ def counts_chart(campaign, results, injections, outcomes,
     chart_data.append(dumps(chart_percent))
     chart_list.append(('counts_percent_chart',
                        'Injection Quantity (Percentage Scale)', 14))
-    chart = dumps(chart).replace('\"chart_click\"', """
+    chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&num_injections='+this.category);

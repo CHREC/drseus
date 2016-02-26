@@ -3,7 +3,7 @@
 
 {% block body %}
     <section class="content-header">
-        <h1>Events</h1>
+        <h1>Events ({{ event_count }})</h1>
         <ol class="breadcrumb">
             <li><a href="/">Campaigns</a></li>
             {% if campaign %}
@@ -37,7 +37,7 @@
     <li class="header">OPTIONS</li>
     <li class="treeview">
         <a href="#">
-            <i class="fa fa-plus"></i>
+            <i class="fa fa-folder-open"></i>
             <span>Open Tabs</span>
             <i class="fa fa-angle-left pull-right"></i>
         </a>

@@ -22,6 +22,10 @@ td .console {
 .output-image {
     text-align: center;
 }
+.output-image img {
+    max-width:100%;
+    max-height:100%;
+}
 .table-container th.asc:after {
     content: '\0000a0\0025b2';
     float: right;

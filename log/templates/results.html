@@ -3,7 +3,7 @@
 
 {% block body %}
     <section class="content-header">
-        <h1>Results</h1>
+        <h1>Results ({{ result_count }})</h1>
         <ol class="breadcrumb">
             <li><a href="/"> Campaigns </a></li>
             {%if campaign %}
@@ -26,7 +26,7 @@
     <li class="header">OPTIONS</li>
     <li class="treeview">
         <a href="#">
-            <i class="fa fa-plus"></i>
+            <i class="fa fa-folder-open"></i>
             <span>Open Tabs</span>
             <i class="fa fa-angle-left pull-right"></i>
         </a>
@@ -100,13 +100,13 @@
         </a>
         <ul class="treeview-menu">
             <li>
-                <a href="javascript:{}" onclick="edit_outcome_category_click()">
+                <a href="javascript:{}" onclick="edit_outcome_category()">
                     <i class="fa fa-circle-o"></i>
                     <span>Edit Categories</span>
                 </a>
             </li>
             <li>
-                <a href="javascript:{}" onclick="edit_outcome_click()">
+                <a href="javascript:{}" onclick="edit_outcome()">
                     <i class="fa fa-circle-o"></i>
                     <span>Edit Outcomes</span>
                 </a>
@@ -116,19 +116,19 @@
 
     <li class="treeview">
         <a href="#">
-            <i class="fa fa-eraser"></i>
+            <i class="fa fa-trash"></i>
             <span>Delete Results</span>
             <i class="fa fa-angle-left pull-right"></i>
         </a>
         <ul class="treeview-menu">
             <li>
-                <a href="javascript:{}" onclick="delete_selected_click()">
+                <a href="javascript:{}" onclick="delete_selected()">
                     <i class="fa fa-circle-o"></i>
                     <span>Delete Selected</span>
                 </a>
             </li>
             <li>
-                <a href="javascript:{}" onclick="delete_all_click()">
+                <a href="javascript:{}" onclick="delete_all()">
                     <i class="fa fa-circle-o"></i>
                     <span>Delete All (Filtered)</span>
                 </a>
@@ -177,7 +177,7 @@
             return false;
         }
 
-        function edit_outcome_click() {
+        function edit_outcome() {
             var outcome = prompt('Enter the new outcome for all currently filtered results: ');
             if (outcome) {
                 $.post('', {'new_outcome': outcome, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
@@ -187,7 +187,7 @@
             }
         }
 
-        function edit_outcome_category_click() {
+        function edit_outcome_category() {
             var outcome_category = prompt('Enter the new outcome category for all currently filtered results: ');
             if (outcome_category) {
                 $.post('', {'new_outcome_category': outcome_category, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
@@ -197,7 +197,7 @@
             }
         }
 
-        function delete_selected_click() {
+        function delete_selected() {
             var conf = confirm('Are you sure you want to delete the selected results?');
             if (conf) {
                 var results = [];
@@ -213,7 +213,7 @@
                 }, 500);
             }
         }
-        function delete_all_click() {
+        function delete_all() {
             var conf = confirm('Are you sure you want to delete the currently filtered results?');
             if (conf) {
                 $.post('', {'delete_all': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});

@@ -12,19 +12,20 @@ from . import filters
 from . import models
 from . import tables
 
-drseus_items = (('Campaigns', '/', 'campaigns', 'home'),
-                ('Results', '/results', 'results', 'list'),
-                ('Events', '/events', 'events', 'exclamation-circle'),
-                ('Injections', '/injections', 'injections', 'crosshairs'))
+navigation_items = (('All Campaigns', '/', 'campaigns', 'flag'),
+                    ('All Results', '/results', 'results', 'list'),
+                    ('All Events', '/events', 'events', 'exclamation-circle'),
+                    ('All Injections', '/injections', 'injections',
+                     'crosshairs'))
 
-navigation_items = (('Information', 'info', 'info', 'info'),
-                    ('Category Charts', 'category_charts', 'category_charts',
-                     'bar-chart'),
-                    ('Outcome Charts', 'outcome_charts', 'outcome_charts',
-                     'bar-chart'),
-                    ('Results', 'results', 'results', 'list'),
-                    ('Events', 'events', 'events', 'exclamation-circle'),
-                    ('Injections', 'injections', 'injections', 'crosshairs'))
+campaign_items = (('Campaign Information', 'info', 'info', 'info'),
+                  ('Campaign Results', 'results', 'results', 'list'),
+                  ('Campaign Events', 'events', 'events', 'exclamation-circle'),
+                  ('Campaign Injections', 'injections', 'injections',
+                   'crosshairs'),
+                  ('Campaign Charts', 'category_charts', 'charts', 'bar-chart'))
+
+table_length = 25
 
 
 def campaigns_page(request):
@@ -36,7 +37,7 @@ def campaigns_page(request):
     RequestConfig(request).configure(campaign_table)
     return render(request, 'campaigns.html', {
         'chart_data': chart_data, 'campaign_table': campaign_table,
-        'drseus_items': drseus_items})
+        'navigation_items': navigation_items})
 
 
 def campaign_page(request, campaign_id):
@@ -53,8 +54,8 @@ def campaign_page(request, campaign_id):
     RequestConfig(request, paginate=False).configure(event_table)
     return render(request, 'campaign.html', {
         'campaign': campaign, 'campaign_table': campaign_table,
-        'chart_data': chart_data, 'drseus_items': drseus_items,
-        'event_table': event_table, 'navigation_items': navigation_items,
+        'chart_data': chart_data, 'navigation_items': navigation_items,
+        'event_table': event_table, 'campaign_items': campaign_items,
         'output_image': output_image})
 
 
@@ -78,28 +79,31 @@ def charts_page(request, campaign_id, group_categories=False):
         chart_list = None
     return render(request, 'charts.html', {
         'campaign': campaign, 'chart_data': chart_data,
-        'chart_list': chart_list, 'drseus_items': drseus_items,
+        'chart_list': chart_list, 'navigation_items': navigation_items,
         'filter': result_filter, 'categories': group_categories,
-        'navigation_items': navigation_items})
+        'campaign_items': campaign_items})
 
 
 def events_page(request, campaign_id=None):
     if campaign_id:
         campaign = models.campaign.objects.get(id=campaign_id)
-        navigation_items_ = navigation_items
+        campaign_items_ = campaign_items
         events = models.event.objects.filter(result__campaign_id=campaign_id)
     else:
         campaign = None
-        navigation_items_ = None
+        campaign_items_ = None
         events = models.event.objects.all()
     event_filter = filters.event(
         request.GET, campaign_id=campaign_id, queryset=events)
-    event_table = tables.events(event_filter.qs)
-    RequestConfig(request, paginate={'per_page': 250}).configure(event_table)
+    events = event_filter.qs
+    event_table = tables.events(events)
+    RequestConfig(
+        request, paginate={'per_page': table_length}).configure(event_table)
     return render(request, 'events.html', {
-        'campaign': campaign, 'drseus_items': drseus_items,
+        'campaign': campaign, 'navigation_items': navigation_items,
+        'event_count': '{:,}'.format(events.count()),
         'event_table': event_table, 'filter': event_filter,
-        'navigation_items': navigation_items_})
+        'campaign_items': campaign_items_})
 
 
 def injections_page(request, campaign_id=None):
@@ -110,9 +114,10 @@ def injections_page(request, campaign_id=None):
     else:
         campaign = None
         injections = models.injection.objects.all()
-    filter_ = filters.injection(request.GET, campaign_id=campaign_id,
-                                queryset=injections)
-    result_ids = filter_.qs.values('result_id').distinct()
+    injection_filter = filters.injection(request.GET, campaign_id=campaign_id,
+                                         queryset=injections)
+    injections = injection_filter.qs
+    result_ids = injections.values('result_id').distinct()
     if result_ids.count() > 0:
         chart_data, chart_list = injections_charts(result_ids, campaign)
         chart_list = [chart[:-1]
@@ -120,19 +125,22 @@ def injections_page(request, campaign_id=None):
     else:
         chart_data = None
         chart_list = None
-    injection_table = tables.injections(filter_.qs)
-    RequestConfig(request, paginate={'per_page': 50}).configure(injection_table)
+    injection_table = tables.injections(injections)
+    RequestConfig(
+        request, paginate={'per_page': table_length}).configure(injection_table)
     return render(request, 'injections.html', {
         'campaign': campaign, 'chart_data': chart_data,
-        'chart_list': chart_list, 'drseus_items': drseus_items,
-        'filter': filter_, 'navigation_items': navigation_items,
+        'chart_list': chart_list, 'navigation_items': navigation_items,
+        'filter': injection_filter,
+        'injection_count': '{:,}'.format(injections.count()),
+        'campaign_items': campaign_items,
         'injection_table': injection_table})
 
 
 def results_page(request, campaign_id=None):
     if campaign_id:
         campaign = models.campaign.objects.get(id=campaign_id)
-        navigation_items_ = navigation_items
+        campaign_items_ = campaign_items
         output_file = ('campaign-data/'+campaign_id+'/gold_' +
                        campaign.output_file)
         if exists(output_file) and what(output_file) is not None:
@@ -142,12 +150,13 @@ def results_page(request, campaign_id=None):
         results = models.result.objects.filter(campaign_id=campaign_id)
     else:
         campaign = None
-        navigation_items_ = None
+        campaign_items_ = None
         output_image = False
         results = models.result.objects.all()
     result_filter = filters.result(
         request.GET, campaign_id=campaign_id, queryset=results)
-    result_ids = result_filter.qs.values('id').distinct()
+    results = result_filter.qs
+    result_ids = results.values('id').distinct()
     results = models.result.objects.filter(id__in=result_ids)
     if request.method == 'GET':
         if (('view_output' in request.GET or
@@ -160,12 +169,14 @@ def results_page(request, campaign_id=None):
             image = 'view_output_image' in request.GET
             return render(request, 'output.html', {
                 'campaign': campaign, 'image': image,
+                'campaign_items': campaign_items,
                 'navigation_items': navigation_items, 'results': results})
         elif ('view_output_all' in request.GET or
               'view_output_image_all' in request.GET):
             image = 'view_output_image_all' in request.GET
             return render(request, 'output.html', {
                 'campaign': campaign, 'image': image,
+                'campaign_items': campaign_items,
                 'navigation_items': navigation_items, 'results': results})
     elif request.method == 'POST':
         if 'new_outcome_category' in request.POST:
@@ -197,18 +208,20 @@ def results_page(request, campaign_id=None):
             else:
                 return redirect('/results')
     result_table = tables.results(results)
-    RequestConfig(request, paginate={'per_page': 50}).configure(result_table)
+    RequestConfig(
+        request, paginate={'per_page': table_length}).configure(result_table)
     return render(request, 'results.html', {
-        'campaign': campaign, 'drseus_items': drseus_items,
+        'campaign': campaign, 'navigation_items': navigation_items,
         'filter': result_filter, 'filter_tabs': True,
-        'navigation_items': navigation_items_, 'output_image': output_image,
+        'campaign_items': campaign_items_, 'output_image': output_image,
+        'result_count': '{:,}'.format(results.count()),
         'result_table': result_table})
 
 
 def result_page(request, campaign_id, result_id):
     campaign = models.campaign.objects.get(id=campaign_id)
-    navigation_items_ = [(item[0], '../'+item[1], item[2], item[3])
-                         for item in navigation_items]
+    campaign_items_ = [(item[0], '../'+item[1], item[2], item[3])
+                       for item in campaign_items]
     output_file = ('campaign-data/'+campaign_id+'/results/'+result_id +
                    '/'+campaign.output_file)
     output_image = exists(output_file) and what(output_file) is not None
@@ -239,13 +252,15 @@ def result_page(request, campaign_id, result_id):
         register_filter = filters.simics_register_diff(
             request.GET, queryset=register_diffs)
         register_table = tables.simics_register_diff(register_filter.qs)
-        RequestConfig(request,
-                      paginate={'per_page': 25}).configure(register_table)
+        RequestConfig(
+            request,
+            paginate={'per_page': table_length}).configure(register_table)
         memory_diffs = models.simics_memory_diff.objects.filter(
             result_id=result_id)
         memory_table = tables.simics_memory_diff(memory_diffs)
-        RequestConfig(request,
-                      paginate={'per_page': 25}).configure(memory_table)
+        RequestConfig(
+            request,
+            paginate={'per_page': table_length}).configure(memory_table)
     else:
         register_filter = None
         memory_table = None
@@ -255,10 +270,10 @@ def result_page(request, campaign_id, result_id):
     RequestConfig(request, paginate=False).configure(event_table)
     RequestConfig(request, paginate=False).configure(injection_table)
     return render(request, 'result.html', {
-        'campaign': campaign, 'drseus_items': drseus_items,
+        'campaign': campaign, 'navigation_items': navigation_items,
         'event_table': event_table, 'filter': register_filter,
         'injection_table': injection_table, 'memory_table': memory_table,
-        'navigation_items': navigation_items_, 'output_image': output_image,
+        'campaign_items': campaign_items_, 'output_image': output_image,
         'register_table': register_table, 'result': result,
         'result_table': result_table})
 

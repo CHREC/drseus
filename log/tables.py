@@ -124,12 +124,6 @@ class results(Table):
 
 
 class result(Table):
-    delete = TemplateColumn(
-        '<input type="button" value="Delete" onclick="delete_click()">',
-        orderable=False)
-    edit = TemplateColumn(
-        '<input type="button" value="Save" onclick="save_click()">',
-        orderable=False)
     outcome = TemplateColumn(
         '<input id="edit_outcome" type="text" value="{{ value }}" />')
     outcome_category = TemplateColumn(
@@ -143,8 +137,7 @@ class result(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('dut_serial_port', 'timestamp', 'outcome_category', 'outcome',
-                  'num_injections', 'data_diff', 'detected_errors', 'edit',
-                  'delete')
+                  'num_injections', 'data_diff', 'detected_errors')
         model = models.result
         orderable = False
         template = 'django_tables2/bootstrap.html'

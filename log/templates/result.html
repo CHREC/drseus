@@ -185,9 +185,25 @@
     </section>
 {% endblock %}
 
+{% block sidebar_block %}
+    <li class="header">OPTIONS</li>
+    <li>
+        <a href="javascript:{}" onclick="save()">
+            <i class="fa fa-save"></i>
+            <span>Save Outcome</span>
+        </a>
+    </li>
+    <li>
+        <a href="javascript:{}" onclick="delete()">
+            <i class="fa fa-trash"></i>
+            <span>Delete Result</span>
+        </a>
+    </li>
+{% endblock %}
+
 {% block script %}
     <script type="text/javascript">
-        function save_click() {
+        function save() {
             var outcome = document.getElementById('edit_outcome').value;
             var outcome_category = document.getElementById('edit_outcome_category').value;
             $.post('', {'save': true, 'outcome': outcome, 'outcome_category': outcome_category, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
@@ -196,7 +212,7 @@
             }, 500);
         }
 
-        function delete_click() {
+        function delete() {
             var conf = confirm('Are you sure you want to delete this result?');
             if (conf) {
                 $.post('', {'delete': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});

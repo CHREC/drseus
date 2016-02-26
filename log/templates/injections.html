@@ -3,7 +3,7 @@
 
 {% block body %}
     <section class="content-header">
-        <h1>Injections</h1>
+        <h1>Injections ({{ injection_count }})</h1>
         <ol class="breadcrumb">
             <li><a href="/">Campaigns</a></li>
             <li><a href="info">Campaign {{ campaign.id }}</a></li>
@@ -59,20 +59,5 @@
         {% else %}
             $('#injections-navigation-link').addClass('active')
         {% endif %}
-
-        $('.sidebar-toggle').on('click', fix_charts);
-
-        $('.expand').on('click', function () {
-            var box = $(this).parents('.box').parent();
-            if (box.hasClass('col-lg-6')) {
-                box.removeClass('col-lg-6')
-                box.addClass('col-lg-12');
-            } else if (box.hasClass('col-lg-12')) {
-                box.removeClass('col-lg-12');
-                box.addClass('col-lg-6');
-            }
-            $(this).parents('.box').children('.box-body').children('.chart-container').highcharts().reflow();
-            return false;
-        });
     </script>
 {% endblock %}

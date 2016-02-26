@@ -330,6 +330,7 @@ def log_settings(options):
 
 
 def view_logs(options):
+    database(options, log_settings=log_settings(options))
     django_settings.configure(**log_settings(options))
     django_command(['drseus', 'runserver', ('0.0.0.0:' if options.external
                                             else '')+str(options.port)])
