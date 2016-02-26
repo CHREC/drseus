@@ -203,7 +203,10 @@ class database(object):
 
     def log_event_success(self, event, success=True):
         event['success'] = success
+        timestamp = event['timestamp']
+        del event['timestamp']
         self.update('event', event)
+        event['timestamp'] = timestamp
 
     def get_campaign(self):
         if not self.campaign['id']:
