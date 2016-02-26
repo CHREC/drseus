@@ -238,7 +238,7 @@ def inject_campaign(options):
             with drseus.db as db:
                 db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
             drseus.debugger.close()
-            drseus.db.result['outcome'] = 'Exception'
+            drseus.db.result['outcome'] = 'Uncaught exception'
             with drseus.db as db:
                 db.log_result(False)
 

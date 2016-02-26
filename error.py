@@ -1,12 +1,4 @@
 class DrSEUsError(Exception):
-    hanging = 'Hanging'
-    missing_output = 'Missing output'
-    scp_error = 'SCP error'
-    ssh_error = 'SSH error'
-    launch_simics = 'Error launching simics'
-
-    def __init__(self, error_type):
-        self.type = error_type
-
-    def __str__(self):
-        return str(self.type)
+    def __init__(self, *args):
+        self.type = args[0]
+        super().__init__(*args)

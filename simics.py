@@ -15,6 +15,7 @@ from error import DrSEUsError
 from simics_config import simics_config
 from simics_targets import devices
 from targets import choose_register, choose_target
+from timeout import timeout
 
 
 class simics(object):
@@ -227,9 +228,8 @@ class simics(object):
             self.dut.close()
             if self.db.campaign['aux']:
                 self.aux.close()
-            self.simics.send_signal(SIGINT)
             try:
-                self.__command()
+                self.halt_dut()
                 self.__command('quit')
             except:
                 self.simics.kill()
@@ -244,11 +244,13 @@ class simics(object):
             self.simics = None
 
     def halt_dut(self):
+        with self.db as db:
+            event = db.log_event('Information', 'Simics', 'Halt DUT',
+                                 success=False)
         self.simics.send_signal(SIGINT)
         self.__command()
         with self.db as db:
-            db.log_event('Information', 'Simics', 'Halt DUT', success=True)
-        return True
+            db.log_event_success(event)
 
     def continue_dut(self):
         self.simics.stdin.write('run\n')
@@ -264,30 +266,18 @@ class simics(object):
     def __command(self, command=None):
 
         def read_until():
-
-            def read_char():
-                self.char = None
-
-                def read_char_worker():
-                    if self.simics:
-                        self.char = \
-                            self.simics.stdout.read(1)
-
-            # def read_char():
-                read_thread = Thread(target=read_char_worker)
-                read_thread.start()
-                read_thread.join(timeout=10)
-                if read_thread.is_alive():
+            buff = ''
+            hanging = False
+            while True:
+                try:
+                    with timeout(10):
+                        char = self.simics.stdout.read(1)
+                except:
+                    char = ''
+                    hanging = True
                     with self.db as db:
                         db.log_event('Warning', 'Simics', 'Read timeout',
-                                     db.log_trace)
-                    raise DrSEUsError('Timeout reading from simics')
-                return self.char
-
-        # def read_until():
-            buff = ''
-            while True:
-                char = read_char()
+                                     db.log_exception)
                 if not char:
                     break
                 if self.db.result:
@@ -312,6 +302,8 @@ class simics(object):
                     with self.db as db:
                         db.log_event('Error', 'Simics', message, buff)
                     raise DrSEUsError(message)
+            if hanging:
+                raise DrSEUsError('Timeout reading from Simics')
             return buff
 
     # def __command(self, command=None):
