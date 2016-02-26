@@ -3,6 +3,7 @@ from paramiko import AutoAddPolicy, RSAKey, SSHClient
 from scp import SCPClient
 from serial import Serial
 from serial.serialutil import SerialException
+from signal import alarm, SIGALRM, signal
 from sys import stdout
 from termcolor import colored
 from time import sleep
@@ -158,112 +159,134 @@ class dut(object):
             self.ip_address = None
 
     def send_files(self, files, attempts=10):
+        def timeout(signum, frame):
+            raise Exception('alarm timeout')
+        previous_handler = signal(SIGALRM, timeout)
         if self.options.debug:
             print(colored('sending file(s)...', 'blue'), end='')
         ssh = SSHClient()
         ssh.set_missing_host_key_policy(AutoAddPolicy())
-        for attempt in range(attempts):
-            try:
-                ssh.connect(self.ip_address, port=self.scp_port,
-                            username='root', pkey=self.rsakey, timeout=30,
-                            allow_agent=False, look_for_keys=False)
-            except Exception as error:
-                with self.db as db:
-                    db.log_event('Warning' if attempt < attempts-1 else 'Error',
-                                 'DUT' if not self.aux else 'AUX', 'SSH error',
-                                 db.log_exception)
-                print(colored(
-                    self.serial.port+': Error sending file(s) (attempt ' +
-                    str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
-                if attempt < attempts-1:
-                    sleep(30)
-                else:
-                    raise DrSEUsError(DrSEUsError.ssh_error)
-            else:
-                dut_scp = SCPClient(ssh.get_transport(), socket_timeout=30)
+        try:
+            for attempt in range(attempts):
+                alarm(300)
                 try:
-                    dut_scp.put(files)
+                    ssh.connect(self.ip_address, port=self.scp_port,
+                                username='root', pkey=self.rsakey, timeout=30,
+                                allow_agent=False, look_for_keys=False)
                 except Exception as error:
                     with self.db as db:
-                        db.log_event('Warning' if attempt < attempts-1
-                                     else 'Error',
-                                     'DUT' if not self.aux else 'AUX',
-                                     'SCP error', db.log_exception)
+                        db.log_event(
+                            'Warning' if attempt < attempts-1 else 'Error',
+                            'DUT' if not self.aux else 'AUX', 'SSH error',
+                            db.log_exception)
                     print(colored(
                         self.serial.port+': Error sending file(s) (attempt ' +
                         str(attempt+1)+'/'+str(attempts)+'): '+str(error),
                         'red'))
-                    dut_scp.close()
-                    ssh.close()
                     if attempt < attempts-1:
                         sleep(30)
                     else:
-                        raise DrSEUsError(DrSEUsError.scp_error)
+                        raise DrSEUsError(DrSEUsError.ssh_error)
                 else:
-                    dut_scp.close()
-                    ssh.close()
-                    if self.options.debug:
-                        print(colored('done', 'blue'))
-                    with self.db as db:
-                        db.log_event('Information',
-                                     'DUT' if not self.aux else 'AUX',
-                                     'Sent files', ', '.join(files),
-                                     success=True)
-                    break
+                    dut_scp = SCPClient(ssh.get_transport(), socket_timeout=30)
+                    try:
+                        dut_scp.put(files)
+                    except Exception as error:
+                        with self.db as db:
+                            db.log_event('Warning' if attempt < attempts-1
+                                         else 'Error',
+                                         'DUT' if not self.aux else 'AUX',
+                                         'SCP error', db.log_exception)
+                        print(colored(
+                            self.serial.port+': Error sending file(s) '
+                            '(attempt '+str(attempt+1)+'/'+str(attempts)+'): ' +
+                            str(error), 'red'))
+                        dut_scp.close()
+                        ssh.close()
+                        if attempt < attempts-1:
+                            sleep(30)
+                        else:
+                            raise DrSEUsError(DrSEUsError.scp_error)
+                    else:
+                        dut_scp.close()
+                        ssh.close()
+                        if self.options.debug:
+                            print(colored('done', 'blue'))
+                        with self.db as db:
+                            db.log_event('Information',
+                                         'DUT' if not self.aux else 'AUX',
+                                         'Sent files', ', '.join(files),
+                                         success=True)
+                        break
+                finally:
+                    alarm(0)
+        finally:
+            signal(SIGALRM, previous_handler)
 
     def get_file(self, file_, local_path='', attempts=10):
+        def timeout(signum, frame):
+            raise Exception('alarm timeout')
+        previous_handler = signal(SIGALRM, timeout)
         if self.options.debug:
             print(colored('getting file...', 'blue'), end='')
             stdout.flush()
         ssh = SSHClient()
         ssh.set_missing_host_key_policy(AutoAddPolicy())
-        for attempt in range(attempts):
-            try:
-                ssh.connect(self.ip_address, port=self.scp_port,
-                            username='root', pkey=self.rsakey, timeout=30,
-                            allow_agent=False, look_for_keys=False)
-            except Exception as error:
-                with self.db as db:
-                    db.log_event('Warning' if attempt < attempts-1 else 'Error',
-                                 'DUT' if not self.aux else 'AUX', 'SSH error',
-                                 db.log_exception)
-                print(colored(
-                    self.serial.port+': Error receiving file (attempt ' +
-                    str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
-                if attempt < attempts-1:
-                    sleep(30)
-                else:
-                    raise DrSEUsError(DrSEUsError.ssh_error)
-            else:
-                dut_scp = SCPClient(ssh.get_transport(), socket_timeout=30)
+        try:
+            for attempt in range(attempts):
+                alarm(300)
                 try:
-                    dut_scp.get(file_, local_path=local_path)
+                    ssh.connect(self.ip_address, port=self.scp_port,
+                                username='root', pkey=self.rsakey, timeout=30,
+                                allow_agent=False, look_for_keys=False)
                 except Exception as error:
                     with self.db as db:
-                        db.log_event('Warning' if attempt < attempts-1
-                                     else 'Error',
-                                     'DUT' if not self.aux else 'AUX',
-                                     'SCP error', db.log_exception)
+                        db.log_event(
+                            'Warning' if attempt < attempts-1 else 'Error',
+                            'DUT' if not self.aux else 'AUX', 'SSH error',
+                            db.log_exception)
                     print(colored(
                         self.serial.port+': Error receiving file (attempt ' +
                         str(attempt+1)+'/'+str(attempts)+'): '+str(error),
                         'red'))
-                    dut_scp.close()
-                    ssh.close()
                     if attempt < attempts-1:
                         sleep(30)
                     else:
-                        raise DrSEUsError(DrSEUsError.scp_error)
+                        raise DrSEUsError(DrSEUsError.ssh_error)
                 else:
-                    dut_scp.close()
-                    ssh.close()
-                    if self.options.debug:
-                        print(colored('done', 'blue'))
-                    with self.db as db:
-                        db.log_event('Information',
-                                     'DUT' if not self.aux else 'AUX',
-                                     'Received file', file_, success=True)
-                    break
+                    dut_scp = SCPClient(ssh.get_transport(), socket_timeout=30)
+                    try:
+                        dut_scp.get(file_, local_path=local_path)
+                    except Exception as error:
+                        with self.db as db:
+                            db.log_event('Warning' if attempt < attempts-1
+                                         else 'Error',
+                                         'DUT' if not self.aux else 'AUX',
+                                         'SCP error', db.log_exception)
+                        print(colored(
+                            self.serial.port+': Error receiving file '
+                            '(attempt '+str(attempt+1)+'/'+str(attempts)+'): ' +
+                            str(error), 'red'))
+                        dut_scp.close()
+                        ssh.close()
+                        if attempt < attempts-1:
+                            sleep(30)
+                        else:
+                            raise DrSEUsError(DrSEUsError.scp_error)
+                    else:
+                        dut_scp.close()
+                        ssh.close()
+                        if self.options.debug:
+                            print(colored('done', 'blue'))
+                        with self.db as db:
+                            db.log_event('Information',
+                                         'DUT' if not self.aux else 'AUX',
+                                         'Received file', file_, success=True)
+                        break
+                finally:
+                    alarm(0)
+        finally:
+            signal(SIGALRM, previous_handler)
 
     def write(self, string):
         self.serial.write(bytes(string, encoding='utf-8'))
