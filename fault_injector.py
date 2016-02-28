@@ -150,7 +150,7 @@ class fault_injector(object):
                 self.db.result['outcome'] = error.type
                 return
             if self.db.campaign['output_file'] not in directory_listing:
-                self.db.result['outcome_category'] = 'Data error'
+                self.db.result['outcome_category'] = 'Execution error'
                 self.db.result['outcome'] = 'Missing output file'
                 return
             result_folder = (

@@ -7,3 +7,4 @@ simics-workspace/
 devices.json
 lextab.py
 parsetab.py
+power_switch_log.txt
