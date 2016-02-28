@@ -6,7 +6,7 @@
         <h1>Result {{ result.id }}</h1>
         <ol class="breadcrumb">
             <li><a href="/">Campaigns</a></li>
-            <li><a href="../info">Campaign {{ campaign.id }}</a></li>
+            <li><a href="../info">Campaign {{ result.campaign_id }}</a></li>
             <li><a href="../results">Results</a></li>
             <li class="active"><a href="">Result {{ result.id }}</a></li>
         </ol>
@@ -80,7 +80,7 @@
                             </div>
                         </div>
                         <div class="box-body">
-                            <div class="output-image"><img src="../output/{{ result.id }}"></div>
+                            <div class="output-image"><img src="/result/{{ result.id }}/output"></div>
                         </div>
                     </div>
                 </div>
@@ -89,7 +89,7 @@
 
         <div class="row">
             <a name="dut_output"></a>
-            {% if campaign.aux %}
+            {% if result.campaign.aux %}
             <div class="col-lg-5">
             {% else %}
             <div class="col-lg-6">
@@ -108,7 +108,7 @@
                 </div>
             </div>
 
-            {% if campaign.aux %}
+            {% if result.campaign.aux %}
                 <a name="aux_output"></a>
                 <div class="col-lg-5">
                     <div class="box">
@@ -127,7 +127,7 @@
             {% endif %}
 
             <a name="debugger_output"></a>
-            {% if campaign.aux %}
+            {% if result.campaign.aux %}
             <div class="col-lg-2">
             {% else %}
             <div class="col-lg-6">
@@ -147,7 +147,7 @@
             </div>
         </div>
 
-        {% if campaign.simics %}
+        {% if result.campaign.simics %}
             <div class="row">
                 <a name="register_diffs"></a>
                 <div class="col-lg-6">

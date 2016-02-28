@@ -19,32 +19,25 @@ max_select_box_size = 20
 
 
 class event(FilterSet):
-    def __init__(self, *args, campaign_id, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        event_type_choices = self.event_choices(campaign_id, 'event_type')
-        self.filters['event_type'].extra.update(
-            choices=event_type_choices)
+        self.queryset = kwargs['queryset']
+        event_type_choices = self.choices(self.queryset, 'event_type')
+        self.filters['event_type'].extra.update(choices=event_type_choices)
         self.filters['event_type'].widget.attrs['size'] = min(
             len(event_type_choices), max_select_box_size)
-        level_choices = self.event_choices(campaign_id, 'level')
+        level_choices = self.choices(self.queryset, 'level')
         self.filters['level'].extra.update(choices=level_choices)
         self.filters['level'].widget.attrs['size'] = min(
             len(level_choices), max_select_box_size)
-        source_choices = self.event_choices(campaign_id, 'source')
+        source_choices = self.choices(self.queryset, 'source')
         self.filters['source'].extra.update(choices=source_choices)
         self.filters['source'].widget.attrs['size'] = min(
             len(source_choices), max_select_box_size)
 
-    def event_choices(self, campaign_id, attribute):
+    def choices(self, events, attribute):
         choices = []
-        if campaign_id:
-            events = models.event.objects.filter(
-                result__campaign_id=campaign_id).values_list(
-                    attribute, flat=True).distinct()
-        else:
-            events = models.event.objects.all().values_list(
-                    attribute, flat=True).distinct()
-        for item in events:
+        for item in events.values_list(attribute, flat=True).distinct():
             if item is not None:
                 choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
@@ -73,59 +66,49 @@ class event(FilterSet):
 
 
 class injection(FilterSet):
-    def __init__(self, *args, campaign_id, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        bit_choices = self.injection_choices(campaign_id, 'bit')
+        self.queryset = kwargs['queryset']
+        bit_choices = self.choices(self.queryset, 'bit')
         self.filters['bit'].extra.update(choices=bit_choices)
         self.filters['bit'].widget.attrs['size'] = min(
             len(bit_choices), max_select_box_size)
-        checkpoint_number_choices = self.injection_choices(
-            campaign_id, 'checkpoint_number')
+        checkpoint_number_choices = self.choices(
+            self.queryset, 'checkpoint_number')
         self.filters['checkpoint_number'].extra.update(
             choices=checkpoint_number_choices)
         self.filters['checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), max_select_box_size)
-        field_choices = self.injection_choices(campaign_id, 'field')
+        field_choices = self.choices(self.queryset, 'field')
         self.filters['field'].extra.update(choices=field_choices)
         self.filters['field'].widget.attrs['size'] = min(
             len(field_choices), max_select_box_size)
-        processor_mode_choices = self.injection_choices(
-            campaign_id, 'processor_mode')
+        processor_mode_choices = self.choices(self.queryset, 'processor_mode')
         self.filters['processor_mode'].extra.update(
             choices=processor_mode_choices)
         self.filters['processor_mode'].widget.attrs['size'] = min(
             len(processor_mode_choices), max_select_box_size)
-        register_choices = self.injection_choices(campaign_id, 'register')
-        self.filters['register'].extra.update(
-            choices=register_choices)
+        register_choices = self.choices(self.queryset, 'register')
+        self.filters['register'].extra.update(choices=register_choices)
         self.filters['register'].widget.attrs['size'] = min(
             len(register_choices), max_select_box_size)
-        register_index_choices = self.injection_choices(
-            campaign_id, 'register_index')
+        register_index_choices = self.choices(self.queryset, 'register_index')
         self.filters['register_index'].extra.update(
             choices=register_index_choices)
         self.filters['register_index'].widget.attrs['size'] = min(
             len(register_index_choices), max_select_box_size)
-        target_choices = self.injection_choices(campaign_id, 'target')
+        target_choices = self.choices(self.queryset, 'target')
         self.filters['target'].extra.update(choices=target_choices)
         self.filters['target'].widget.attrs['size'] = min(
             len(target_choices), max_select_box_size)
-        target_index_choices = self.injection_choices(campaign_id, 'target_index')
-        self.filters['target_index'].extra.update(
-            choices=target_index_choices)
+        target_index_choices = self.choices(self.queryset, 'target_index')
+        self.filters['target_index'].extra.update(choices=target_index_choices)
         self.filters['target_index'].widget.attrs['size'] = min(
             len(target_index_choices), max_select_box_size)
 
-    def injection_choices(self, campaign_id, attribute):
+    def choices(self, injections, attribute):
         choices = []
-        if campaign_id:
-            campaigns = models.injection.objects.filter(
-                result__campaign_id=campaign_id).values_list(
-                    attribute, flat=True).distinct()
-        else:
-            campaigns = models.injection.objects.all().values_list(
-                attribute, flat=True).distinct()
-        for item in campaigns:
+        for item in injections.values_list(attribute, flat=True).distinct():
             if item is not None:
                 choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
@@ -171,98 +154,95 @@ class injection(FilterSet):
 
 
 class result(FilterSet):
-    def __init__(self, *args, campaign_id, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        dut_serial_port_choices = self.result_choices(
-            campaign_id, 'dut_serial_port')
+        self.queryset = kwargs['queryset']
+        events = models.event.objects.filter(
+            result_id__in=self.queryset.values('id'))
+        injections = models.injection.objects.filter(
+            result_id__in=self.queryset.values('id'))
+        campaign_id_choices = self.choices(self.queryset, 'campaign_id')
+        self.filters['campaign_id'].extra.update(choices=campaign_id_choices)
+        self.filters['campaign_id'].widget.attrs['size'] = min(
+            len(campaign_id_choices), max_select_box_size)
+        dut_serial_port_choices = self.choices(self.queryset, 'dut_serial_port')
         self.filters['dut_serial_port'].extra.update(
             choices=dut_serial_port_choices)
         self.filters['dut_serial_port'].widget.attrs['size'] = min(
             len(dut_serial_port_choices), max_select_box_size)
-        event_type_choices = event.event_choices(
-            None, campaign_id, 'event_type')
+        event_type_choices = event.choices(None, events, 'event_type')
         self.filters['event__event_type'].extra.update(
             choices=event_type_choices)
         self.filters['event__event_type'].widget.attrs['size'] = min(
             len(event_type_choices), max_select_box_size)
-        level_choices = event.event_choices(None, campaign_id, 'level')
+        level_choices = event.choices(None, events, 'level')
         self.filters['event__level'].extra.update(choices=level_choices)
         self.filters['event__level'].widget.attrs['size'] = min(
             len(level_choices), max_select_box_size)
-        source_choices = event.event_choices(None, campaign_id, 'source')
+        source_choices = event.choices(None, events, 'source')
         self.filters['event__source'].extra.update(choices=source_choices)
         self.filters['event__source'].widget.attrs['size'] = min(
             len(source_choices), max_select_box_size)
-        bit_choices = injection.injection_choices(None, campaign_id, 'bit')
+        bit_choices = injection.choices(None, injections, 'bit')
         self.filters['injection__bit'].extra.update(choices=bit_choices)
         self.filters['injection__bit'].widget.attrs['size'] = min(
             len(bit_choices), max_select_box_size)
-        checkpoint_number_choices = injection.injection_choices(
-            None, campaign_id, 'checkpoint_number')
+        checkpoint_number_choices = injection.choices(
+            None, injections, 'checkpoint_number')
         self.filters['injection__checkpoint_number'].extra.update(
             choices=checkpoint_number_choices)
         self.filters['injection__checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), max_select_box_size)
-        field_choices = injection.injection_choices(None, campaign_id, 'field')
+        field_choices = injection.choices(None, injections, 'field')
         self.filters['injection__field'].extra.update(choices=field_choices)
         self.filters['injection__field'].widget.attrs['size'] = min(
             len(field_choices), max_select_box_size)
-        processor_mode_choices = injection.injection_choices(
-            None, campaign_id, 'processor_mode')
+        processor_mode_choices = injection.choices(
+            None, injections, 'processor_mode')
         self.filters['injection__processor_mode'].extra.update(
             choices=processor_mode_choices)
         self.filters['injection__processor_mode'].widget.attrs['size'] = min(
             len(processor_mode_choices), max_select_box_size)
-        register_choices = injection.injection_choices(
-            None, campaign_id, 'register')
+        register_choices = injection.choices(None, injections, 'register')
         self.filters['injection__register'].extra.update(
             choices=register_choices)
         self.filters['injection__register'].widget.attrs['size'] = min(
             len(register_choices), max_select_box_size)
-        register_index_choices = injection.injection_choices(
-            None, campaign_id, 'register_index')
+        register_index_choices = injection.choices(
+            None, injections, 'register_index')
         self.filters['injection__register_index'].extra.update(
             choices=register_index_choices)
         self.filters['injection__register_index'].widget.attrs['size'] = min(
             len(register_index_choices), max_select_box_size)
-        target_choices = injection.injection_choices(
-            None, campaign_id, 'target')
+        target_choices = injection.choices(None, injections, 'target')
         self.filters['injection__target'].extra.update(choices=target_choices)
         self.filters['injection__target'].widget.attrs['size'] = min(
             len(target_choices), max_select_box_size)
-        target_index_choices = injection.injection_choices(
-            None, campaign_id, 'target_index')
+        target_index_choices = injection.choices(
+            None, injections, 'target_index')
         self.filters['injection__target_index'].extra.update(
             choices=target_index_choices)
         self.filters['injection__target_index'].widget.attrs['size'] = min(
             len(target_index_choices), max_select_box_size)
-        num_injections_choices = self.result_choices(
-            campaign_id, 'num_injections')
+        num_injections_choices = self.choices(self.queryset, 'num_injections')
         self.filters['num_injections'].extra.update(
             choices=num_injections_choices)
         self.filters['num_injections'].widget.attrs['size'] = min(
             len(num_injections_choices), max_select_box_size)
-        outcome_choices = self.result_choices(campaign_id, 'outcome')
+        outcome_choices = self.choices(self.queryset, 'outcome')
         self.filters['outcome'].extra.update(choices=outcome_choices)
         self.filters['outcome'].widget.attrs['size'] = min(
             len(outcome_choices), max_select_box_size)
-        outcome_category_choices = self.result_choices(
-            campaign_id, 'outcome_category')
+        outcome_category_choices = self.choices(
+            self.queryset, 'outcome_category')
         self.filters['outcome_category'].extra.update(
             choices=outcome_category_choices)
         self.filters['outcome_category'].widget.attrs['size'] = min(
             len(outcome_category_choices), max_select_box_size)
 
-    def result_choices(self, campaign_id, attribute):
+    def choices(self, results, attribute):
         choices = []
-        if campaign_id:
-            results = models.result.objects.filter(
-                campaign_id=campaign_id).values_list(
-                    attribute, flat=True).distinct()
-        else:
-            results = models.result.objects.all().values_list(
-                    attribute, flat=True).distinct()
-        for item in results:
+        for item in results.values_list(attribute, flat=True).distinct():
             if item is not None:
                 choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
@@ -271,6 +251,9 @@ class result(FilterSet):
         label='AUX console output', lookup_type='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
         help_text='')
+    campaign_id = MultipleChoiceFilter(
+        label='Campaign ID',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     data_diff_gt = NumberFilter(
         name='data_diff', label='Data diff (>)', lookup_type='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
@@ -363,20 +346,21 @@ class simics_register_diff(FilterSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queryset = kwargs['queryset']
-        checkpoint_number_choices = self.simics_register_diff_choices(
-            'checkpoint_number')
+        checkpoint_number_choices = self.choices(
+            self.queryset, 'checkpoint_number')
         self.filters['checkpoint_number'].extra.update(
             choices=checkpoint_number_choices)
         self.filters['checkpoint_number'].widget.attrs['size'] = min(
             len(checkpoint_number_choices), max_select_box_size)
-        register_choices = self.simics_register_diff_choices('register')
+        register_choices = self.choices(self.queryset, 'register')
         self.filters['register'].extra.update(choices=register_choices)
         self.filters['register'].widget.attrs['size'] = min(
             len(register_choices), max_select_box_size)
 
-    def simics_register_diff_choices(self, attribute):
+    def choices(self, simics_register_diffs, attribute):
         choices = []
-        for item in self.queryset.values_list(attribute, flat=True).distinct():
+        for item in simics_register_diffs.values_list(
+                attribute, flat=True).distinct():
             choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
 

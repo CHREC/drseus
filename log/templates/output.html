@@ -18,7 +18,7 @@
                     <div class="box">
                         <div class="box-header">
                             <h3 class="box-title">
-                                <a href="./result/{{ result.id }}" name="{{ result.id }}"> Result ID {{ result.id }} </a>
+                                <a href="/result/{{ result.id }}" name="{{ result.id }}"> Result ID {{ result.id }} </a>
                                 - {{ result.timestamp|date:"M j, Y h:i:s A" }}
                                 <br>
                                 {{ result.outcome_category }} -
@@ -37,7 +37,7 @@
                         <div class="box-body">
                             {% if image %}
                                 <div align="center">
-                                    <div class="output-image"><img src="./output/{{ result.id }}"></div>
+                                    <div class="output-image"><img src="/result/{{ result.id }}/output"></div>
                                 </div>
                             {% else %}
                                 {% if campaign.aux %}

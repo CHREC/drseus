@@ -54,8 +54,7 @@ class campaign(campaigns):
 class results(Table):
     events = Column(empty_values=(), orderable=False)
     id_ = TemplateColumn(  # LinkColumn()
-        '<a href="/campaign/{{ record.campaign_id }}/result/{{ value }}">'
-        '{{ value }}</a>', accessor='id')
+        '<a href="/result/{{ value }}">{{ value }}</a>', accessor='id')
     registers = Column(empty_values=(), orderable=False)
     select_box = CheckBoxColumn(
         accessor='id',
@@ -147,8 +146,7 @@ class events(Table):
     description = TemplateColumn(
         '{% if value %}<code class="console">{{ value }}</code>{% endif %}')
     result_id = TemplateColumn(
-        '{% if value %}<a href="/campaign/{{ record.result.campaign_id }}/'
-        'result/{{ value }}">{{ value }}</a>'
+        '{% if value %}<a href="/result/{{ value }}">{{ value }}</a>'
         '{% else %}<a href="/campaign/{{ record.campaign_id }}/info">'
         'Campaign</a>{% endif %}',
         accessor='result_id')
@@ -191,11 +189,16 @@ class event(Table):
 
 
 class injections(Table):
+    result_id = TemplateColumn(
+        '{% if value %}<a href="/result/{{ value }}">{{ value }}</a>'
+        '{% else %}<a href="/campaign/{{ record.campaign_id }}/info">'
+        'Campaign</a>{% endif %}',
+        accessor='result_id')
     success_ = Column(accessor='success')
 
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        fields = ('target', 'target_index', 'register', 'bit',
+        fields = ('result_id', 'target', 'target_index', 'register', 'bit',
                   'register_access', 'processor_mode', 'gold_value',
                   'injected_value', 'success_')
         model = models.injection

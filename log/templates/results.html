@@ -156,7 +156,7 @@
             var checkboxes = document.getElementsByName('select_box');
             for(var i=0, n=checkboxes.length; i<n; i++) {
                 if (checkboxes[i].checked || !only_selected) {
-                    window.open('./result/'+checkboxes[i].value, '_blank');
+                    window.open('/result/'+checkboxes[i].value, '_blank');
                 }
             }
         }

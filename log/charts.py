@@ -1,6 +1,6 @@
 from copy import deepcopy
-from django.db.models import (Avg, Case, Count, IntegerField, Sum, TextField,
-                              Value, When)
+from django.db.models import (Avg, Case, Count, IntegerField, Max, Sum,
+                              TextField, Value, When)
 from django.db.models.functions import Concat, Length, Substr
 from numpy import convolve, linspace, ones
 from json import dumps
@@ -84,7 +84,7 @@ def campaigns_chart(queryset):
                 'stacking': 'percent'
             }
         },
-        'series': [None]*len(outcomes),
+        'series': [],
         'title': {
             'text': None
         },
@@ -103,22 +103,13 @@ def campaigns_chart(queryset):
             }
         }
     }
-
-    def plot_outcome(i):
+    for outcome in outcomes:
         data = list(queryset.values_list('campaign_id').distinct(
             ).order_by('campaign_id').annotate(
-                count=Sum(Case(When(outcome_category=outcomes[i], then=1),
+                count=Sum(Case(When(outcome_category=outcome, then=1),
                                default=0, output_field=IntegerField()))
             ).values_list('count', flat=True))
-        chart['series'][i] = {'data': data, 'name': outcomes[i]}
-    # threads = []
-    for i in range(len(outcomes)):
-        plot_outcome(i)
-    #     thread = Thread(target=plot_outcome, args=[i])
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+        chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart)
     chart = chart.replace('\"click_function\"', """
     function(event) {
@@ -179,21 +170,20 @@ def target_bits_chart(campaign):
     return '['+dumps(chart)+']'
 
 
-def results_charts(result_ids, campaign, group_categories):
+def results_charts(results, group_categories):
     charts = (overview_chart, targets_charts, propagation_chart,
               diff_targets_chart, registers_chart, tlbs_chart, tlb_fields_chart,
-              register_bits_chart, times_charts, diff_times_chart, counts_chart)
-    results = models.result.objects.filter(id__in=result_ids)
-    injections = models.injection.objects.filter(result__id__in=result_ids)
+              register_bits_chart, times_charts, diff_times_chart,
+              checkpoints_charts, diff_checkpoints_chart, counts_chart)
+    injections = models.injection.objects.filter(
+        result__id__in=results.values('id'))
     if group_categories:
-        outcomes = list(models.result.objects.filter(
-            id__in=result_ids).values_list(
-                'outcome_category', flat=True).distinct(
+        outcomes = list(results.values_list(
+            'outcome_category', flat=True).distinct(
                     ).order_by('outcome_category'))
     else:
-        outcomes = list(models.result.objects.filter(
-            id__in=result_ids).values_list('outcome', flat=True).distinct(
-                ).order_by('outcome'))
+        outcomes = list(results.values_list('outcome', flat=True).distinct(
+            ).order_by('outcome'))
     if 'Latent faults' in outcomes:
         outcomes.remove('Latent faults')
         outcomes[:0] = ('Latent faults', )
@@ -211,8 +201,8 @@ def results_charts(result_ids, campaign, group_categories):
     threads = []
     for chart in charts:
         thread = Thread(target=chart,
-                        args=(campaign, results, injections, outcomes,
-                              group_categories, chart_data, chart_list))
+                        args=(results, injections, outcomes, group_categories,
+                              chart_data, chart_list))
         thread.start()
         threads.append(thread)
     for thread in threads:
@@ -220,8 +210,8 @@ def results_charts(result_ids, campaign, group_categories):
     return '['+','.join(chart_data)+']', chart_list
 
 
-def overview_chart(campaign, results, injections, outcomes,
-                   group_categories, chart_data, chart_list):
+def overview_chart(results, injections, outcomes, group_categories, chart_data,
+                   chart_list):
     start = time()
     if len(outcomes) <= 1:
         return
@@ -237,7 +227,7 @@ def overview_chart(campaign, results, injections, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign.id)+' overview',
+            'filename': 'overview_chart',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -253,7 +243,7 @@ def overview_chart(campaign, results, injections, outcomes,
         },
         'series': [
             {
-                'data': [None]*len(outcomes),
+                'data': [],
                 'dataLabels': {
                     'formatter': 'chart_formatter',
                 },
@@ -264,21 +254,12 @@ def overview_chart(campaign, results, injections, outcomes,
             'text': None
         }
     }
-
-    def plot_outcome(i):
+    for outcome in outcomes:
         filter_kwargs = {}
         filter_kwargs['outcome_category' if group_categories
-                      else 'outcome'] = outcomes[i]
-        chart['series'][0]['data'][i] = (
-            outcomes[i], results.filter(**filter_kwargs).count())
-    # threads = []
-    for i in range(len(outcomes)):
-        plot_outcome(i)
-    #     thread = Thread(target=plot_outcome, args=[i])
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+                      else 'outcome'] = outcome
+        chart['series'][0]['data'].append(
+            outcome, results.filter(**filter_kwargs).count())
     outcome_list = dumps(outcomes)
     chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
@@ -300,8 +281,8 @@ def overview_chart(campaign, results, injections, outcomes,
     print('overview_chart:', round(time()-start, 2), 'seconds')
 
 
-def targets_charts(campaign, results, injections, outcomes,
-                   group_categories, chart_data, chart_list, success=False):
+def targets_charts(results, injections, outcomes, group_categories, chart_data,
+                   chart_list, success=False):
     start = time()
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -320,7 +301,7 @@ def targets_charts(campaign, results, injections, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign.id)+' targets',
+            'filename': 'targets_chart',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -335,7 +316,7 @@ def targets_charts(campaign, results, injections, outcomes,
                 'stacking': True
             }
         },
-        'series': [None]*len(outcomes),
+        'series': [],
         'title': {
             'text': None
         },
@@ -351,28 +332,19 @@ def targets_charts(campaign, results, injections, outcomes,
             }
         }
     }
-
-    def plot_outcome(i):
+    for outcome in outcomes:
         when_kwargs = {'then': 1}
         if success:
-            when_kwargs['success'] = outcomes[i]
+            when_kwargs['success'] = outcome
         else:
             when_kwargs['result__outcome_category' if group_categories
-                        else 'result__outcome'] = outcomes[i]
+                        else 'result__outcome'] = outcome
         data = list(injections.values_list('target').distinct(
             ).order_by('target').annotate(
             count=Sum(Case(When(**when_kwargs), default=0,
                            output_field=IntegerField()))
             ).values_list('count', flat=True))
-        chart['series'][i] = {'data': data, 'name': str(outcomes[i])}
-    # threads = []
-    for i in range(len(outcomes)):
-        plot_outcome(i)
-    #     thread = Thread(target=plot_outcome, args=[i])
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+        chart['series'].append({'data': data, 'name': str(outcome)})
     chart_percent = deepcopy(chart)
     chart_percent['chart']['renderTo'] = 'targets_percent_chart'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
@@ -422,11 +394,10 @@ def targets_charts(campaign, results, injections, outcomes,
     print('targets_charts:', round(time()-start, 2), 'seconds')
 
 
-def propagation_chart(campaign, results, injections,
-                      outcomes, group_categories, chart_data, chart_list):
+def propagation_chart(results, injections, outcomes, group_categories,
+                      chart_data, chart_list):
     start = time()
-    if not campaign.simics:
-        return
+    injections = injections.filter(result__campaign__simics=True)
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
@@ -442,7 +413,7 @@ def propagation_chart(campaign, results, injections,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign.id)+' target diffs',
+            'filename': 'propagation_chart',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -473,25 +444,16 @@ def propagation_chart(campaign, results, injections,
             'type': 'logarithmic'
         }
     }
-    reg_diff_list = [None]*len(targets)
-    mem_diff_list = [None]*len(targets)
-
-    def plot_target(i):
-        count = float(injections.filter(target=targets[i]).count())
-        reg_diff_count = injections.filter(target=targets[i]).aggregate(
+    reg_diff_list = []
+    mem_diff_list = []
+    for target in targets:
+        count = float(injections.filter(target=target).count())
+        reg_diff_count = injections.filter(target=target).aggregate(
             reg_count=Count('result__simics_register_diff'))['reg_count']
-        mem_diff_count = injections.filter(target=targets[i]).aggregate(
+        mem_diff_count = injections.filter(target=target).aggregate(
             mem_count=Count('result__simics_memory_diff'))['mem_count']
-        reg_diff_list[i] = reg_diff_count/count
-        mem_diff_list[i] = mem_diff_count/count
-    # threads = []
-    for i in range(len(targets)):
-        plot_target(i)
-    #     thread = Thread(target=plot_target, args=[i])
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+        reg_diff_list.append(reg_diff_count/count)
+        mem_diff_list.append(mem_diff_count/count)
     chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
     chart = dumps(chart).replace('\"click_function\"', """
@@ -504,8 +466,8 @@ def propagation_chart(campaign, results, injections,
     print('propagation_chart:', round(time()-start, 2), 'seconds')
 
 
-def diff_targets_chart(campaign, results, injections,
-                       outcomes, group_categories, chart_data, chart_list):
+def diff_targets_chart(results, injections, outcomes, group_categories,
+                       chart_data, chart_list):
     start = time()
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -522,7 +484,7 @@ def diff_targets_chart(campaign, results, injections,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign.id)+' data errors by target',
+            'filename': 'diff_targets_chart',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -575,23 +537,20 @@ def diff_targets_chart(campaign, results, injections,
     print('diff_targets_chart:', round(time()-start, 2), 'seconds')
 
 
-def registers_chart(campaign, results, injections, outcomes,
+def registers_chart(results, injections, outcomes,
                     group_categories, chart_data, chart_list, success=False):
-    registers_tlbs_charts(False, campaign, results,
-                          injections, outcomes, group_categories,
+    registers_tlbs_charts(False, results, injections, outcomes,
+                          group_categories, chart_data, chart_list, success)
+
+
+def tlbs_chart(results, injections, outcomes, group_categories, chart_data,
+               chart_list, success=False):
+    registers_tlbs_charts(True, results, injections, outcomes, group_categories,
                           chart_data, chart_list, success)
 
 
-def tlbs_chart(campaign, results, injections, outcomes,
-               group_categories, chart_data, chart_list, success=False):
-    registers_tlbs_charts(True, campaign, results,
-                          injections, outcomes, group_categories,
-                          chart_data, chart_list, success)
-
-
-def registers_tlbs_charts(tlb, campaign, results, injections,
-                          outcomes, group_categories, chart_data,
-                          chart_list, success):
+def registers_tlbs_charts(tlb, results, injections, outcomes, group_categories,
+                          chart_data, chart_list, success):
     start = time()
     if not tlb:
         registers = injections.exclude(target='TLB').annotate(
@@ -609,7 +568,7 @@ def registers_tlbs_charts(tlb, campaign, results, injections,
     if len(registers) < 1:
         return
     registers = sorted(registers, key=fix_sort)
-    if campaign.simics and not tlb:
+    if not tlb:
         registers = [reg.replace('gprs ', 'r') for reg in registers]
     extra_colors = list(colors_extra)
     chart = {
@@ -624,8 +583,7 @@ def registers_tlbs_charts(tlb, campaign, results, injections,
             'enabled': False
         },
         'exporting': {
-            'filename': (str(campaign.id)+' ' +
-                         ('registers' if not tlb else 'tlb entries')),
+            'filename': 'registers_chart' if not tlb else 'tlbs_chart',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -643,7 +601,7 @@ def registers_tlbs_charts(tlb, campaign, results, injections,
                 'stacking': True
             }
         },
-        'series': [None]*len(outcomes),
+        'series': [],
         'xAxis': {
             'categories': registers,
             'labels': {
@@ -663,14 +621,13 @@ def registers_tlbs_charts(tlb, campaign, results, injections,
             }
         }
     }
-
-    def plot_outcome(i):
+    for outcome in outcomes:
         when_kwargs = {'then': 1}
         if success:
-            when_kwargs['success'] = outcomes[i]
+            when_kwargs['success'] = outcome
         else:
             when_kwargs['result__outcome_category' if group_categories
-                        else 'result__outcome'] = outcomes[i]
+                        else 'result__outcome'] = outcome
         if not tlb:
             data = injections.exclude(target='TLB').annotate(
                 register_name=Concat('register', Value(' '), 'register_index')
@@ -691,16 +648,8 @@ def registers_tlbs_charts(tlb, campaign, results, injections,
                                default=0, output_field=IntegerField()))
             ).values_list('register_name', 'count')
         data = sorted(data, key=fix_sort_list)
-        chart['series'][i] = {'data': list(zip(*data))[1],
-                              'name': str(outcomes[i])}
-    # threads = []
-    for i in range(len(outcomes)):
-        plot_outcome(i)
-    #     thread = Thread(target=plot_outcome, args=[i])
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+        chart['series'].append({'data': list(zip(*data))[1],
+                                'name': str(outcome)})
     chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         var reg = this.category.split(':');
@@ -726,8 +675,8 @@ def registers_tlbs_charts(tlb, campaign, results, injections,
           round(time()-start, 2), 'seconds')
 
 
-def tlb_fields_chart(campaign, results, injections, outcomes,
-                     group_categories, chart_data, chart_list):
+def tlb_fields_chart(results, injections, outcomes, group_categories,
+                     chart_data, chart_list):
     start = time()
     fields = list(injections.filter(target='TLB').values_list(
         'field', flat=True).distinct().order_by('field'))
@@ -746,7 +695,7 @@ def tlb_fields_chart(campaign, results, injections, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign.id)+' tlb fields',
+            'filename': 'tlb_fields_chart',
             'sourceWidth': 512,
             'sourceHeight': 384,
             'scale': 2
@@ -761,7 +710,7 @@ def tlb_fields_chart(campaign, results, injections, outcomes,
                 'stacking': True
             }
         },
-        'series': [None]*len(outcomes),
+        'series': [],
         'title': {
             'text': None
         },
@@ -777,25 +726,16 @@ def tlb_fields_chart(campaign, results, injections, outcomes,
             }
         }
     }
-
-    def plot_outcome(i):
+    for outcome in outcomes:
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
-                    else 'result__outcome'] = outcomes[i]
+                    else 'result__outcome'] = outcome
         data = list(injections.filter(target='TLB').values_list(
             'field').distinct().order_by('field').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
-        chart['series'][i] = {'data': data, 'name': outcomes[i]}
-    # threads = []
-    for i in range(len(outcomes)):
-        plot_outcome(i)
-    #     thread = Thread(target=plot_outcome, args=[i])
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+        chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -809,9 +749,8 @@ def tlb_fields_chart(campaign, results, injections, outcomes,
     print('tlb_fields_chart:', round(time()-start, 2), 'seconds')
 
 
-def register_bits_chart(campaign, results, injections,
-                        outcomes, group_categories, chart_data, chart_list,
-                        success=False):
+def register_bits_chart(results, injections, outcomes, group_categories,
+                        chart_data, chart_list, success=False):
     start = time()
     bits = list(injections.exclude(target='TLB').values_list(
         'bit', flat=True).distinct().order_by('bit'))
@@ -830,7 +769,7 @@ def register_bits_chart(campaign, results, injections,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign.id)+' register bits',
+            'filename': 'register_bits_chart',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -845,7 +784,7 @@ def register_bits_chart(campaign, results, injections,
                 'stacking': True
             }
         },
-        'series': [None]*len(outcomes),
+        'series': [],
         'title': {
             'text': None
         },
@@ -861,28 +800,19 @@ def register_bits_chart(campaign, results, injections,
             }
         }
     }
-
-    def plot_outcome(i):
+    for outcome in outcomes:
         when_kwargs = {'then': 1}
         if success:
-            when_kwargs['success'] = outcomes[i]
+            when_kwargs['success'] = outcome
         else:
             when_kwargs['result__outcome_category' if group_categories
-                        else 'result__outcome'] = outcomes[i]
+                        else 'result__outcome'] = outcome
         data = list(injections.exclude(target='TLB').values_list(
             'bit').distinct().order_by('bit').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
-        chart['series'][i] = {'data': data, 'name': str(outcomes[i])}
-    # threads = []
-    for i in range(len(outcomes)):
-        plot_outcome(i)
-    #     thread = Thread(target=plot_outcome, args=[i])
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+        chart['series'].append({'data': data, 'name': str(outcome)})
     chart = dumps(chart).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -896,20 +826,16 @@ def register_bits_chart(campaign, results, injections,
     print('register_bits_chart:', round(time()-start, 2), 'seconds')
 
 
-def times_charts(campaign, results, injections, outcomes,
-                 group_categories, chart_data, chart_list):
+def times_charts(results, injections, outcomes, group_categories, chart_data,
+                 chart_list):
     start = time()
-    if campaign.simics:
-        times = list(injections.values_list(
-            'checkpoint_number', flat=True).distinct().order_by(
-            'checkpoint_number'))
-    else:
-        xaxis_length = min(injections.count() / 25, 50)
-        times = linspace(0, campaign.exec_time, xaxis_length,
-                         endpoint=False).tolist()
-        times = [round(time, 4) for time in times]
-    if len(times) < 1:
+    injections = injections.exclude(time__isnull=True)
+    if injections.count() < 1:
         return
+    xaxis_length = min(injections.count() / 25, 50)
+    times = linspace(0, injections.aggregate(Max('time'))['time__max'],
+                     xaxis_length, endpoint=False).tolist()
+    times = [round(time, 4) for time in times]
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
@@ -923,7 +849,7 @@ def times_charts(campaign, results, injections, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign.id)+' injections over time',
+            'filename': 'times_chart',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -938,14 +864,14 @@ def times_charts(campaign, results, injections, outcomes,
                 'stacking': True
             }
         },
-        'series': [None]*len(outcomes),
+        'series': [],
         'title': {
             'text': None
         },
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Checkpoint' if campaign.simics else 'Seconds'
+                'text': 'Seconds'
             }
         },
         'yAxis': {
@@ -958,67 +884,38 @@ def times_charts(campaign, results, injections, outcomes,
     chart_smoothed = deepcopy(chart)
     chart_smoothed['chart']['type'] = 'area'
     chart_smoothed['chart']['renderTo'] = 'times_smoothed_chart'
-
-    def plot_outcome(i):
-        if campaign.simics:
-            when_kwargs = {'then': 1}
-            when_kwargs['result__outcome_category' if group_categories
-                        else 'result__outcome'] = outcomes[i]
-            data = list(injections.values_list(
-                'checkpoint_number').distinct().order_by(
-                'checkpoint_number').annotate(
-                    count=Sum(Case(When(**when_kwargs),
-                                   default=0, output_field=IntegerField()))
-                ).values_list('count', flat=True))
-        else:
-            filter_kwargs = {}
-            filter_kwargs['result__outcome_category' if group_categories
-                          else 'result__outcome'] = outcomes[i]
-            data = []
-            for j in range(len(times)):
-                if j+1 < len(times):
-                    data.append(injections.filter(
-                        time__gte=times[j], time__lt=times[j+1],
-                        **filter_kwargs).count())
-                else:
-                    data.append(injections.filter(
-                        time__gte=times[j], **filter_kwargs).count())
-        chart['series'][i] = {'data': data, 'name': outcomes[i]}
-        chart_smoothed['series'][i] = {
+    for outcome in outcomes:
+        filter_kwargs = {}
+        filter_kwargs['result__outcome_category' if group_categories
+                      else 'result__outcome'] = outcome
+        data = []
+        for j in range(len(times)):
+            if j+1 < len(times):
+                data.append(injections.filter(
+                    time__gte=times[j], time__lt=times[j+1],
+                    **filter_kwargs).count())
+            else:
+                data.append(injections.filter(
+                    time__gte=times[j], **filter_kwargs).count())
+        chart['series'].append({'data': data, 'name': outcome})
+        chart_smoothed['series'].append({
             'data': convolve(
                 data, ones(window_size)/window_size, 'same').tolist(),
-            'name': outcomes[i],
-            'stacking': True}
-    # threads = []
-    for i in range(len(outcomes)):
-        plot_outcome(i)
-    #     thread = Thread(target=plot_outcome, args=[i])
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+            'name': outcome,
+            'stacking': True})
     chart_data.append(dumps(chart_smoothed))
     chart_list.append(('times_smoothed_chart',
                        'Injections Over Time (Moving Average Window Size = ' +
                        str(window_size)+')', 11))
-    if campaign.simics:
-        chart = dumps(chart).replace('\"click_function\"', """
-        function(event) {
-            window.location.assign('results?outcome='+this.series.name+
-                                   '&injection__checkpoint_number='+
-                                   this.category);
-        }
-        """)
-    else:
-        # chart = dumps(chart).replace('\"click_function\"', """
-        # function(event) {
-        #     var time = parseFloat(this.category)
-        #     window.location.assign('results?outcome='+this.series.name+
-        #                            '&injection__time_rounded='+
-        #                            time.toFixed(2));
-        # }
-        # """)
-        chart = dumps(chart)
+    # chart = dumps(chart).replace('\"click_function\"', """
+    # function(event) {
+    #     var time = parseFloat(this.category)
+    #     window.location.assign('results?outcome='+this.series.name+
+    #                            '&injection__time_rounded='+
+    #                            time.toFixed(2));
+    # }
+    # """)
+    chart = dumps(chart)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
@@ -1026,20 +923,108 @@ def times_charts(campaign, results, injections, outcomes,
     print('times_charts', round(time()-start, 2), 'seconds')
 
 
-def diff_times_chart(campaign, results, injections, outcomes,
-                     group_categories, chart_data, chart_list):
+def checkpoints_charts(results, injections, outcomes, group_categories,
+                       chart_data, chart_list):
     start = time()
-    if campaign.simics:
-        times = list(injections.values_list(
-            'checkpoint_number', flat=True).distinct().order_by(
+    injections = injections.exclude(checkpoint_number__isnull=True)
+    print('injections:', injections.count())
+    checkpoints = list(injections.values_list(
+        'checkpoint_number', flat=True).distinct().order_by(
             'checkpoint_number'))
-    else:
-        xaxis_length = min(injections.count() / 25, 100)
-        times = linspace(0, campaign.exec_time, xaxis_length,
-                         endpoint=False).tolist()
-        times = [round(time, 4) for time in times]
-    if len(times) < 1:
+    if len(checkpoints) < 1:
         return
+    extra_colors = list(colors_extra)
+    chart = {
+        'chart': {
+            'renderTo': 'checkpoints_chart',
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': 'checkpoints_chart',
+            'sourceWidth': 960,
+            'sourceHeight': 540,
+            'scale': 2
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'click_function'
+                    }
+                },
+                'stacking': True
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'xAxis': {
+            'categories': checkpoints,
+            'title': {
+                'text': 'Checkpoint'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Total Injections'
+            }
+        }
+    }
+    window_size = 10
+    chart_smoothed = deepcopy(chart)
+    chart_smoothed['chart']['type'] = 'area'
+    chart_smoothed['chart']['renderTo'] = 'checkpoints_smoothed_chart'
+    for outcome in outcomes:
+        when_kwargs = {'then': 1}
+        when_kwargs['result__outcome_category' if group_categories
+                    else 'result__outcome'] = outcome
+        data = list(injections.values_list(
+            'checkpoint_number').distinct().order_by(
+            'checkpoint_number').annotate(
+                count=Sum(Case(When(**when_kwargs),
+                               default=0, output_field=IntegerField()))
+            ).values_list('count', flat=True))
+        chart['series'].append({'data': data, 'name': outcome})
+        chart_smoothed['series'].append({
+            'data': convolve(
+                data, ones(window_size)/window_size, 'same').tolist(),
+            'name': outcome,
+            'stacking': True})
+    chart_data.append(dumps(chart_smoothed))
+    chart_list.append(('checkpoints_smoothed_chart',
+                       'Injections Over Time (Moving Average Window Size = ' +
+                       str(window_size)+')', 11))
+    chart = dumps(chart).replace('\"click_function\"', """
+    function(event) {
+        window.location.assign('results?outcome='+this.series.name+
+                               '&injection__checkpoint_number='+
+                               this.category);
+    }
+    """)
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_data.append(chart)
+    chart_list.append(('checkpoints_chart', 'Injections Over Time', 10))
+    print('checkpoints_charts', round(time()-start, 2), 'seconds')
+
+
+def diff_times_chart(results, injections, outcomes, group_categories,
+                     chart_data, chart_list):
+    start = time()
+    injections = injections.exclude(time__isnull=True)
+    if injections.count() < 1:
+        return
+    xaxis_length = min(injections.count() / 25, 100)
+    times = linspace(0, injections.aggregate(Max('time'))['time__max'],
+                     xaxis_length, endpoint=False).tolist()
+    times = [round(time, 4) for time in times]
     chart = {
         'chart': {
             'renderTo': 'diff_times_chart',
@@ -1051,7 +1036,7 @@ def diff_times_chart(campaign, results, injections, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign.id)+' data errors over time',
+            'filename': 'diff_times_chart',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -1075,7 +1060,7 @@ def diff_times_chart(campaign, results, injections, outcomes,
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Checkpoint' if campaign.simics else 'Seconds'
+                'text': 'Seconds'
             }
         },
         'yAxis': {
@@ -1088,54 +1073,114 @@ def diff_times_chart(campaign, results, injections, outcomes,
             }
         }
     }
-    if campaign.simics:
-        data = injections.values_list(
-            'checkpoint_number').distinct().order_by(
-            'checkpoint_number').annotate(
+    data = []
+    for i in range(len(times)):
+        if i+1 < len(times):
+            data.append(injections.filter(
+                time__gte=times[i], time__lt=times[i+1]).aggregate(
                 avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
-                             default='result__data_diff'))
-            ).values_list('avg', flat=True)
-    else:
-        data = []
-        for i in range(len(times)):
-            if i+1 < len(times):
-                data.append(injections.filter(
-                    time__gte=times[i], time__lt=times[i+1]).aggregate(
-                    avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
-                                 default='result__data_diff')))['avg'])
-            else:
-                data.append(injections.filter(
-                    time__gte=times[i]).aggregate(
-                    avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
-                                 default='result__data_diff')))['avg'])
+                             default='result__data_diff')))['avg'])
+        else:
+            data.append(injections.filter(
+                time__gte=times[i]).aggregate(
+                avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
+                             default='result__data_diff')))['avg'])
     chart['series'].append({'data': [x*100 if x is not None else 0
                                      for x in data]})
-    if campaign.simics:
-        chart = dumps(chart).replace('\"click_function\"', """
-        function(event) {
-            window.location.assign('results?injection__checkpoint_number='+
-                                   this.category);
-        }
-        """)
-    else:
-        # chart = dumps(chart).replace('\"click_function\"', """
-        # function(event) {
-        #     var time = parseFloat(this.category)
-        #     window.location.assign('results?injection__time_rounded='+
-        #                            time.toFixed(2));
-        # }
-        # """)
-        chart = dumps(chart)
+    # chart = dumps(chart).replace('\"click_function\"', """
+    # function(event) {
+    #     var time = parseFloat(this.category)
+    #     window.location.assign('results?injection__time_rounded='+
+    #                            time.toFixed(2));
+    # }
+    # """)
+    chart = dumps(chart)
     chart_data.append(chart)
     chart_list.append(('diff_times_chart', 'Data Diff Over Time', 12))
     print('diff_times_chart:', round(time()-start, 2), 'seconds')
 
 
-def counts_chart(campaign, results, injections, outcomes,
-                 group_categories, chart_data, chart_list):
+def diff_checkpoints_chart(results, injections, outcomes, group_categories,
+                           chart_data, chart_list):
     start = time()
-    injection_counts = list(results.exclude(
-        num_injections=0).values_list(
+    injections = injections.exclude(checkpoint_number__isnull=True)
+    checkpoints = list(injections.values_list(
+        'checkpoint_number', flat=True).distinct().order_by(
+            'checkpoint_number'))
+    if len(checkpoints) < 1:
+        return
+    chart = {
+        'chart': {
+            'renderTo': 'diff_checkpoints_chart',
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'colors': ('#008080', ),
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': 'diff_checkpoints_chart',
+            'sourceWidth': 960,
+            'sourceHeight': 540,
+            'scale': 2
+        },
+        'legend': {
+            'enabled': False
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'click_function'
+                    }
+                },
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'xAxis': {
+            'categories': checkpoints,
+            'title': {
+                'text': 'Checkpoint'
+            }
+        },
+        'yAxis': {
+            'labels': {
+                'format': '{value}%'
+            },
+            'max': 100,
+            'title': {
+                'text': 'Average Data Diff'
+            }
+        }
+    }
+    data = injections.values_list(
+        'checkpoint_number').distinct().order_by(
+        'checkpoint_number').annotate(
+            avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
+                         default='result__data_diff'))
+        ).values_list('avg', flat=True)
+    chart['series'].append({'data': [x*100 if x is not None else 0
+                                     for x in data]})
+    chart = dumps(chart).replace('\"click_function\"', """
+    function(event) {
+        window.location.assign('results?injection__checkpoint_number='+
+                               this.category);
+    }
+    """)
+    chart_data.append(chart)
+    chart_list.append(('diff_checkpoints_chart', 'Data Diff Over Time', 12))
+    print('diff_checkpoints_chart:', round(time()-start, 2), 'seconds')
+
+
+def counts_chart(results, injections, outcomes, group_categories, chart_data,
+                 chart_list):
+    start = time()
+    results = results.exclude(num_injections__isnull=True)
+    injection_counts = list(results.values_list(
         'num_injections', flat=True).distinct().order_by('num_injections'))
     if len(injection_counts) <= 1:
         return
@@ -1151,7 +1196,7 @@ def counts_chart(campaign, results, injections, outcomes,
             'enabled': False
         },
         'exporting': {
-            'filename': str(campaign.id)+' injection quantity',
+            'filename': 'counts_chart',
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -1166,7 +1211,7 @@ def counts_chart(campaign, results, injections, outcomes,
                 'stacking': True
             }
         },
-        'series': [None]*len(outcomes),
+        'series': [],
         'title': {
             'text': None
         },
@@ -1182,25 +1227,16 @@ def counts_chart(campaign, results, injections, outcomes,
             }
         }
     }
-
-    def plot_outcome(i):
+    for outcome in outcomes:
         when_kwargs = {'then': 1}
         when_kwargs['outcome_category' if group_categories
-                    else 'outcome'] = outcomes[i]
+                    else 'outcome'] = outcome
         data = list(results.exclude(num_injections=0).values_list(
             'num_injections').distinct().order_by('num_injections').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
-        chart['series'][i] = {'data': data, 'name': outcomes[i]}
-    # threads = []
-    for i in range(len(outcomes)):
-        plot_outcome(i)
-    #     thread = Thread(target=plot_outcome, args=[i])
-    #     thread.start()
-    #     threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+        chart['series'].append({'data': data, 'name': outcome})
     chart_percent = deepcopy(chart)
     chart_percent['chart']['renderTo'] = 'counts_percent_chart'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
@@ -1222,21 +1258,19 @@ def counts_chart(campaign, results, injections, outcomes,
     print('counts_chart:', round(time()-start, 2), 'seconds')
 
 
-def injections_charts(result_ids, campaign):
+def injections_charts(injections):
     charts = (targets_charts, registers_chart, register_bits_chart)
-    results = models.result.objects.filter(id__in=result_ids)
-    injections = models.injection.objects.filter(
-        result__id__in=result_ids)
-    outcomes = list(models.injection.objects.filter(
-        result_id__in=result_ids).values_list(
+    results = models.result.objects.filter(
+        id__in=injections.values('result_id'))
+    outcomes = list(injections.values_list(
         'success', flat=True).distinct().order_by('success'))
     chart_data = []
     chart_list = []
     threads = []
     for chart in charts:
         thread = Thread(target=chart,
-                        args=(campaign, results, injections,
-                              outcomes, False, chart_data, chart_list, True))
+                        args=(results, injections, outcomes, False, chart_data,
+                              chart_list, True))
         thread.start()
         threads.append(thread)
     for thread in threads:

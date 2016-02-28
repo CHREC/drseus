@@ -208,6 +208,7 @@
                     });
                 });
                 fix_charts();
+                $('.chart-loading-icon').each(function() {this.parentNode.removeChild(this);})
 
                 $('.sidebar-toggle').on('click', fix_charts);
 

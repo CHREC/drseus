@@ -5,7 +5,9 @@
         <h1>Charts ({% if categories %}Grouped by Category{% else %}Grouped by Outcome{% endif %})</h1>
         <ol class="breadcrumb">
             <li><a href="/">Campaigns</a></li>
-            <li><a href="info">Campaign {{ campaign.id }}</a></li>
+            {% if campaign %}
+                <li><a href="info">Campaign {{ campaign.id }}</a></li>
+            {% endif %}
             <li class="active"><a href="">Charts</a></li>
         </ol>
     </section>
@@ -26,6 +28,9 @@
                         </div>
                         <div class="box-body">
                             <div id="{{ chart }}" class="chart-container"></div>
+                        </div>
+                        <div class="overlay chart-loading-icon">
+                            <i class="fa fa-refresh fa-spin"></i>
                         </div>
                     </div>
                 </div>
@@ -55,7 +60,11 @@
 
 {% block script %}
     <script>
-        $('#charts-campaign-link').addClass('active')
+        {% if campaign %}
+            $('#charts-campaign-link').addClass('active')
+        {% else %}
+            $('#charts-navigation-link').addClass('active')
+        {% endif %}
 
         function group_charts(group_categories) {
             if (group_categories) {
