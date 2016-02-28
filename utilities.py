@@ -170,6 +170,9 @@ def delete(options):
         if db:
             db.delete_database(options.delete_user)
             print('deleted database')
+        if exists('log/migrations'):
+            rmtree('log/migrations')
+            print('deleted django migrations')
 
 
 def create_campaign(options):
@@ -194,6 +197,7 @@ def create_campaign(options):
                         ((' '+options.aux_arguments) if options.aux_arguments
                          else '')) if options.aux else None,
         'aux_output': '',
+        'aux_output_file': options.aux and options.aux_output_file,
         'command': options.application+((' '+options.arguments)
                                         if options.arguments else ''),
         'debugger_output': '',
@@ -203,8 +207,7 @@ def create_campaign(options):
         'output_file': options.output_file,
         'rsakey': rsakey,
         'simics': options.simics,
-        'timestamp': None,
-        'use_aux_output': options.aux and options.use_aux_output}
+        'timestamp': None}
     if options.aux_application is None:
         options.aux_application = options.application
     with database(options, log_settings=log_settings(options)) as db:
@@ -216,7 +219,7 @@ def create_campaign(options):
     options.debug = True
     drseus = fault_injector(campaign, options)
     drseus.setup_campaign()
-    print('\nsuccessfully setup campaign')
+    print('campaign created')
 
 
 def inject_campaign(options):
@@ -442,7 +445,7 @@ def backup(options):
                     progress[1].update(progress[0])
         return num_items
 
-# def backup_database(options):
+# def backup(options):
     if not exists('backups'):
         mkdir('backups')
     sql_backup = 'campaign-data/'+options.db_name+'.sql'

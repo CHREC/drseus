@@ -137,9 +137,11 @@ class dut(object):
                     if self.db.result:
                         self.db.result['dut_output' if not self.aux
                                        else 'aux_output'] += buff
+                        self.db.update('result')
                     else:
                         self.db.campaign['dut_output' if not self.aux
                                          else 'aux_output'] += buff
+                        self.db.update('campaign')
                     if self.options.debug and buff:
                         print(colored(buff,
                                       'green' if not self.aux else 'cyan'),
@@ -162,10 +164,9 @@ class dut(object):
     def __attempt_exception(self, attempt, attempts, error, error_type, message,
                             close_items=[]):
         with self.db as db:
-            db.log_event('Warning' if attempt < attempts-1
-                         else 'Error',
-                         'DUT' if not self.aux else 'AUX',
-                         error_type, db.log_exception)
+            db.log_event('Warning' if attempt < attempts-1 else 'Error',
+                         'DUT' if not self.aux else 'AUX', error_type,
+                         db.log_exception)
         print(colored(self.serial.port+': '+message+' (attempt ' +
                       str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
         for item in close_items:
@@ -285,7 +286,7 @@ class dut(object):
     def write(self, string):
         self.serial.write(bytes(string, encoding='utf-8'))
 
-    def read_until(self, string=None, continuous=False, boot=False):
+    def read_until(self, string=None, continuous=False, boot=False, flush=True):
         if string is None:
             string = self.prompt
         buff = ''
@@ -321,7 +322,8 @@ class dut(object):
             if self.options.debug:
                 print(colored(char, 'green' if not self.aux else 'cyan'),
                       end='')
-                stdout.flush()
+                if flush:
+                    stdout.flush()
             buff += char
             if not continuous and buff[-len(string):] == string:
                 break
@@ -329,13 +331,25 @@ class dut(object):
                     self.uboot_command:
                 self.write('\n')
                 self.write(self.uboot_command+'\n')
+                with self.db as db:
+                    db.log_event('Information',
+                                 'DUT' if not self.aux else 'AUX', 'Command',
+                                 self.uboot_command)
             elif buff[-len('login: '):] == 'login: ':
                 self.write(self.username+'\n')
+                with self.db as db:
+                    db.log_event('Information',
+                                 'DUT' if not self.aux else 'AUX', 'Logged in',
+                                 self.username)
             elif buff[-len('Password: '):] == 'Password: ':
                 self.write(self.password+'\n')
             elif buff[-len('can\'t get kernel image'):] == \
                     'can\'t get kernel image':
                 self.write('reset\n')
+                with self.db as db:
+                    db.log_event('Information',
+                                 'DUT' if not self.aux else 'AUX', 'Command',
+                                 'reset')
                 errors += 1
             for message, category in self.error_messages:
                 if buff[-len(message):] == message:
@@ -395,7 +409,7 @@ class dut(object):
                              'Booted', success=True)
         return buff
 
-    def command(self, command=None):
+    def command(self, command=None, flush=True):
         with self.db as db:
             event = db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX', 'Command',
@@ -404,34 +418,36 @@ class dut(object):
             self.write(command+'\n')
         else:
             self.write('\n')
-        buff = self.read_until()
+        buff = self.read_until(flush=flush)
         with self.db as db:
             db.log_event_success(event)
         return buff
 
-    def do_login(self, change_prompt=False):
+    def do_login(self, change_prompt=False, flush=True):
         self.serial.timeout = 60
-        self.read_until(boot=True)
+        self.read_until(boot=True, flush=flush)
         if change_prompt:
             self.write('export PS1=\"DrSEUs# \"\n')
             self.read_until('export PS1=\"DrSEUs# \"')
             self.prompt = 'DrSEUs# '
             self.read_until()
         if self.login_command:
-            self.command(self.login_command)
-        self.command('mkdir ~/.ssh')
-        self.command('touch ~/.ssh/authorized_keys')
+            self.command(self.login_command, flush=flush)
+        self.command('mkdir ~/.ssh', flush=flush)
+        self.command('touch ~/.ssh/authorized_keys', flush=flush)
         self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
-                     '\" > ~/.ssh/authorized_keys')
+                     '\" > ~/.ssh/authorized_keys', flush=flush)
         if self.db.campaign['simics']:
-            self.command('ip addr add '+self.ip_address+'/24 dev eth0')
-            self.command('ip link set eth0 up')
-            self.command('ip addr show')
+            self.command('ip addr add '+self.ip_address+'/24 dev eth0',
+                         flush=flush)
+            self.command('ip link set eth0 up', flush=flush)
+            self.command('ip addr show', flush=flush)
             self.ip_address = '127.0.0.1'
         if self.ip_address is None:
             attempts = 10
             for attempt in range(attempts):
-                for line in self.command('ip addr show').split('\n'):
+                for line in self.command('ip addr show',
+                                         flush=flush).split('\n'):
                     line = line.strip().split()
                     if len(line) > 0 and line[0] == 'inet':
                         addr = line[1].split('/')[0]

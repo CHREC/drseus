@@ -157,13 +157,16 @@ class database(object):
     def __create_result(self):
         self.result.update({'campaign_id': self.campaign['id'],
                             'aux_output': '',
+                            'cycles': None,
                             'data_diff': None,
                             'debugger_output': '',
                             'detected_errors': None,
                             'dut_output': '',
+                            'execution_time': None,
                             'num_injections': None,
                             'outcome_category': 'Incomplete',
                             'outcome': 'In progress',
+                            'simulated_execution_time': None,
                             'timestamp': None})
         self.insert('result')
 
@@ -180,7 +183,7 @@ class database(object):
         if create_result:
             self.__create_result()
 
-    def log_event(self, level, source, event_type, description=None,
+    def log_event(self, level, source, type_, description=None,
                   success=None, campaign=False):
         if description == self.log_trace:
             description = ''.join(format_stack()[:-2])
@@ -189,7 +192,7 @@ class database(object):
             description = ''.join(format_exc())
             success = False
         event = {'description': description,
-                 'event_type': event_type,
+                 'type': type_,
                  'level': level,
                  'source': source,
                  'success': success,
@@ -201,12 +204,14 @@ class database(object):
         self.insert('event', event)
         return event
 
-    def log_event_success(self, event, success=True):
+    def log_event_success(self, event, success=True, update_timestamp=False):
         event['success'] = success
-        timestamp = event['timestamp']
-        del event['timestamp']
+        if not update_timestamp:
+            timestamp = event['timestamp']
+            del event['timestamp']
         self.update('event', event)
-        event['timestamp'] = timestamp
+        if not update_timestamp:
+            event['timestamp'] = timestamp
 
     def get_campaign(self):
         if not self.campaign['id']:

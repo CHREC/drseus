@@ -63,13 +63,13 @@ class jtag(object):
 
     def reset_dut(self, expected_output, attempts):
 
-        def attempt_exception(attempt, attempts, error):
+        def attempt_exception(attempt, attempts, error, event_type):
             with self.db as db:
-                db.log_event('Warning' if attempt < attempts-1
-                             else 'Error', 'Debugger',
-                             'Error resetting DUT', db.log_exception)
-            print(colored(self.serial.port+': Error resetting DUT (attempt ' +
-                          str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
+                db.log_event('Warning' if attempt < attempts-1 else 'Error',
+                             'Debugger', event_type, db.log_exception)
+            print(colored(
+                self.serial.port+': Error resetting DUT (attempt ' +
+                str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
             if attempt < attempts-1:
                 sleep(30)
             else:
@@ -84,16 +84,18 @@ class jtag(object):
                     self.command('reset', expected_output,
                                  'Error resetting DUT', False)
                 except DrSEUsError as error:
-                    attempt_exception(attempt, attempts, error)
+                    attempt_exception(attempt, attempts, error,
+                                      'Error resetting DUT')
                 else:
-                    with self.db as db:
-                        db.log_event('Information', 'Debugger', 'Reset DUT',
-                                     success=True)
                     try:
                         self.dut.do_login()
                     except DrSEUsError as error:
-                        attempt_exception(attempt, attempts, error)
+                        attempt_exception(attempt, attempts, error,
+                                          'Error booting DUT')
                     else:
+                        with self.db as db:
+                            db.log_event('Information', 'Debugger', 'Reset DUT',
+                                         success=True)
                         break
         else:
             self.dut.serial.write('\x03')
@@ -124,11 +126,13 @@ class jtag(object):
             if self.db.campaign['aux']:
                 aux_process = Thread(
                     target=self.aux.command,
-                    args=('./'+self.db.campaign['aux_command'], ))
+                    kwargs={'command': './'+self.db.campaign['aux_command'],
+                            'flush': False})
                 aux_process.start()
             dut_process = Thread(
                 target=self.dut.command,
-                args=('./'+self.db.campaign['command'], ))
+                kwargs={'command': './'+self.db.campaign['command'],
+                        'flush': False})
             dut_process.start()
             if self.db.campaign['aux']:
                 aux_process.join()
@@ -136,31 +140,36 @@ class jtag(object):
                 self.dut.serial.write('\x03')
             dut_process.join()
         end = time()
-        self.db.campaign['exec_time'] = \
+        self.db.campaign['execution_time'] = \
             (end - start) / self.options.iterations
         with self.db as db:
             db.log_event_success(event)
 
     def inject_faults(self):
+        time_halted = 0
         injection_times = []
         for i in range(self.options.injections):
-            injection_times.append(uniform(0, self.db.campaign['exec_time']))
+            injection_times.append(uniform(0,
+                                           self.db.campaign['execution_time']))
         injection_times = sorted(injection_times)
-        for injection, injection_time in enumerate(injection_times, start=1):
+        start_time = time()
+        for injection_number, injection_time in \
+                enumerate(injection_times, start=1):
             if self.options.debug:
                 print(colored('injection time: '+str(injection_time),
                               'magenta'))
-            if injection == 1:
+            if injection_number == 1:
                 self.dut.write('./'+self.db.campaign['command']+'\n')
             else:
                 self.continue_dut()
+                time_halted += time() - start_time
             sleep(injection_time)
             self.halt_dut()
+            start_time = time()
             mode = self.get_mode()
             target = choose_target(self.options.selected_targets, self.targets)
             register = choose_register(target, self.targets)
-            injection = {'injection_number': injection,
-                         'processor_mode': mode,
+            injection = {'processor_mode': mode,
                          'register': register,
                          'result_id': self.db.result['id'],
                          'success': False,
@@ -251,7 +260,7 @@ class jtag(object):
                     with self.db as db:
                         db.log_event('Error', 'Debugger', 'Injection failed',
                                      success=False)
-        return 0, False
+        return 0, False, time_halted
 
     def command(self, command, expected_output, error_message,
                 log_event, line_ending, echo):

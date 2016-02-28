@@ -112,7 +112,7 @@ class supervisor(Cmd):
             self.drseus.debugger.aux.get_file(arg, output, attempts=1)
         else:
             self.drseus.debugger.dut.get_file(arg, output, attempts=1)
-        print('File saved to '+directory)
+        print('File saved to '+output)
 
     def do_supervise(self, arg):
         """Supervise for targeted runtime (in seconds) or iterations"""
@@ -123,7 +123,7 @@ class supervisor(Cmd):
                 print('Invalid value entered')
                 return
             supervise_iterations = max(
-                int(run_time / self.drseus.db.campaign['exec_time']), 1)
+                int(run_time / self.drseus.db.campaign['execution_time']), 1)
         else:
             try:
                 supervise_iterations = int(arg)

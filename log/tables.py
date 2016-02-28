@@ -13,39 +13,58 @@ class campaigns(Table):
     results = Column(empty_values=(), orderable=False)
     timestamp = DateTimeColumn(format=datetime_format)
 
-    def render_num_cycles(self, record):
-        return '{:,}'.format(record.num_cycles)
+    def render_cycles(self, record):
+        return '{:,}'.format(record.cycles)
+
+    def render_execution_time(self, record):
+        return '{0:.4f}'.format(record.execution_time)
 
     def render_results(self, record):
         return '{:,}'.format(
             models.result.objects.filter(campaign=record.id).count())
 
+    def render_simulated_execution_time(self, record):
+        return '{0:.4f}'.format(record.simulated_execution_time)
+
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('id_', 'results', 'command', 'architecture', 'simics',
-                  'exec_time', 'sim_time', 'num_cycles', 'timestamp')
+                  'execution_time', 'simulated_execution_time', 'cycles',
+                  'timestamp')
         model = models.campaign
         order_by = 'id_'
         template = 'django_tables2/bootstrap.html'
 
 
-class campaign(campaigns):
+class campaign(Table):
     results = Column(empty_values=(), orderable=False)
     timestamp = DateTimeColumn(format=datetime_format)
 
-    def render_num_checkpoints(self, record):
-        return '{:,}'.format(record.num_checkpoints)
+    def render_checkpoints(self, record):
+        return '{:,}'.format(record.checkpoints)
+
+    def render_cycles(self, record):
+        return '{:,}'.format(record.cycles)
 
     def render_cycles_between(self, record):
         return '{:,}'.format(record.cycles_between)
 
+    def render_execution_time(self, record):
+        return '{0:.4f}'.format(record.execution_time)
+
+    def render_results(self, record):
+        return '{:,}'.format(
+            models.result.objects.filter(campaign=record.id).count())
+
+    def render_simulated_execution_time(self, record):
+        return '{0:.4f}'.format(record.simulated_execution_time)
+
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        exclude = ('id_',)
         fields = ('id', 'timestamp', 'results', 'command', 'aux_command',
-                  'description', 'architecture', 'simics', 'aux', 'exec_time',
-                  'sim_time', 'num_cycles', 'output_file', 'num_checkpoints',
-                  'cycles_between')
+                  'description', 'architecture', 'simics', 'aux',
+                  'execution_time', 'simulated_execution_time', 'cycles',
+                  'output_file', 'checkpoints', 'cycles_between')
         model = models.campaign
         orderable = False
         template = 'django_tables2/bootstrap.html'
@@ -63,13 +82,32 @@ class results(Table):
     timestamp = DateTimeColumn(format=datetime_format)
     targets = Column(empty_values=(), orderable=False)
 
+    def render_cycles(self, record):
+        return '{:,}'.format(record.cycles)
+
     def render_data_diff(self, record):
         return '{0:.2f}%'.format(
             models.result.objects.get(id=record.id).data_diff*100)
 
+    def render_execution_time(self, record):
+        return '{0:.4f}'.format(record.execution_time)
+
     def render_events(self, record):
         return '{:,}'.format(
             models.event.objects.filter(result_id=record.id).count())
+
+    def render_injection_success(self, record):
+        success = '-'
+        if record is not None:
+            for injection in models.injection.objects.filter(result=record.id):
+                if injection.success is None:
+                    success = '-'
+                elif not injection.success:
+                    success = '\u2714'
+                    break
+                else:
+                    success = '\u2718'
+        return success
 
     def render_registers(self, record):
         if record is not None:
@@ -85,18 +123,8 @@ class results(Table):
         else:
             return '-'
 
-    def render_injection_success(self, record):
-        success = '-'
-        if record is not None:
-            for injection in models.injection.objects.filter(result=record.id):
-                if injection.success is None:
-                    success = '-'
-                elif not injection.success:
-                    success = '\u2714'
-                    break
-                else:
-                    success = '\u2718'
-        return success
+    def render_simulated_execution_time(self, record):
+        return '{0:.4f}'.format(record.simulated_execution_time)
 
     def render_targets(self, record):
         if record is not None:
@@ -115,7 +143,8 @@ class results(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('select_box', 'id_', 'dut_serial_port', 'timestamp',
-                  'outcome_category', 'outcome', 'data_diff', 'events',
+                  'outcome_category', 'outcome', 'execution_time',
+                  'simulated_execution_time', 'cycles', 'data_diff', 'events',
                   'targets', 'registers', 'injection_success')
         model = models.result
         order_by = '-id_'
@@ -129,13 +158,23 @@ class result(Table):
         '<input id="edit_outcome_category" type="text" value="{{ value }}" />')
     timestamp = DateTimeColumn(format=datetime_format)
 
+    def render_cycles(self, record):
+        return '{:,}'.format(record.cycles)
+
     def render_data_diff(self, record):
         return '{0:.2f}%'.format(
             models.result.objects.get(id=record.id).data_diff*100)
 
+    def render_execution_time(self, record):
+        return '{0:.4f}'.format(record.execution_time)
+
+    def render_simulated_execution_time(self, record):
+        return '{0:.4f}'.format(record.simulated_execution_time)
+
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('dut_serial_port', 'timestamp', 'outcome_category', 'outcome',
+                  'execution_time', 'simulated_execution_time', 'cycles',
                   'num_injections', 'data_diff', 'detected_errors')
         model = models.result
         orderable = False
@@ -163,7 +202,7 @@ class events(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('select_box', 'result_id', 'timestamp', 'level', 'source',
-                  'event_type', 'success_', 'description')
+                  'type', 'success_', 'description')
         model = models.event
         order_by = ('result_id', 'timestamp')
         template = 'django_tables2/bootstrap.html'
@@ -181,7 +220,7 @@ class event(Table):
 
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        fields = ('timestamp', 'level', 'source', 'event_type', 'success_',
+        fields = ('timestamp', 'level', 'source', 'type', 'success_',
                   'description')
         model = models.event
         order_by = 'timestamp'
@@ -229,19 +268,19 @@ class simics_injection(Table):
 
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        fields = ('timestamp', 'checkpoint_number', 'target', 'target_index',
+        fields = ('timestamp', 'checkpoint', 'target', 'target_index',
                   'register', 'register_index', 'bit', 'field', 'gold_value',
                   'injected_value', 'success_')
         model = models.injection
-        order_by = 'checkpoint_number'
+        order_by = 'checkpoint'
         template = 'django_tables2/bootstrap.html'
 
 
 class simics_register_diff(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        fields = ('checkpoint_number', 'config_object', 'register',
-                  'gold_value', 'monitored_value')
+        fields = ('checkpoint', 'config_object', 'register', 'gold_value',
+                  'monitored_value')
         model = models.simics_register_diff
         template = 'django_tables2/bootstrap.html'
 
@@ -249,6 +288,6 @@ class simics_register_diff(Table):
 class simics_memory_diff(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        fields = ('checkpoint_number', 'image_index', 'block')
+        fields = ('checkpoint', 'image_index', 'block')
         model = models.simics_memory_diff
         template = 'django_tables2/bootstrap.html'

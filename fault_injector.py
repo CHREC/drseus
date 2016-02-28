@@ -3,6 +3,7 @@ from os import listdir, makedirs
 from shutil import copy, rmtree
 from subprocess import check_call, PIPE, Popen
 from threading import Thread
+from time import time
 
 from database import database
 from error import DrSEUsError
@@ -40,13 +41,14 @@ class fault_injector(object):
             string += \
                 '\n\t\tAUX Command: \"'+self.db.campaign['aux_command']+'\"'
         string += ('\n\t\t'+('Host 'if self.db.campaign['simics'] else '') +
-                   'Execution Time: '+str(self.db.campaign['exec_time']) +
+                   'Execution Time: '+str(self.db.campaign['execution_time']) +
                    ' seconds')
         if self.db.campaign['simics']:
             string += ('\n\t\tExecution Cycles: ' +
-                       '{:,}'.format(self.db.campaign['num_cycles']) +
-                       ' cycles\n\t\tSimulated Time: ' +
-                       str(self.db.campaign['sim_time'])+' seconds')
+                       '{:,}'.format(self.db.campaign['cycles']) +
+                       ' cycles\n\t\tSimulated Execution Time: ' +
+                       str(self.db.campaign['simulated_execution_time']) +
+                       ' seconds')
         return string
 
     def close(self):
@@ -101,7 +103,7 @@ class fault_injector(object):
             aux_process.join()
         self.debugger.time_application()
         if self.db.campaign['output_file']:
-            if self.db.campaign['use_aux_output']:
+            if self.db.campaign['aux_output_file']:
                 self.debugger.aux.get_file(
                     self.db.campaign['output_file'],
                     'campaign-data/'+str(self.db.campaign['id'])+'/gold_' +
@@ -115,9 +117,6 @@ class fault_injector(object):
                     self.db.campaign['output_file'])
                 self.debugger.dut.command('rm ' +
                                           self.db.campaign['output_file'])
-        self.debugger.dut.flush()
-        if self.db.campaign['aux']:
-            self.debugger.aux.flush()
         with self.db as db:
             db.update('campaign')
         self.close()
@@ -136,11 +135,12 @@ class fault_injector(object):
         else:
             self.debugger.dut.send_files(files)
 
-    def __monitor_execution(self, latent_faults=0, persistent_faults=False):
+    def __monitor_execution(self, start_time=None, latent_faults=0,
+                            persistent_faults=False):
 
         def check_output():
             try:
-                if self.db.campaign['use_aux_output']:
+                if self.db.campaign['aux_output_file']:
                     directory_listing = self.debugger.aux.command('ls -l')
                 else:
                     directory_listing = self.debugger.dut.command('ls -l')
@@ -162,7 +162,7 @@ class fault_injector(object):
                 'campaign-data/'+str(self.db.campaign['id']) +
                 '/gold_'+self.db.campaign['output_file'])
             try:
-                if self.db.campaign['use_aux_output']:
+                if self.db.campaign['aux_output_file']:
                     self.debugger.aux.get_file(
                         self.db.campaign['output_file'], output_location)
                 else:
@@ -192,7 +192,7 @@ class fault_injector(object):
                 else:
                     self.db.result['outcome'] = 'Silent data error'
             try:
-                if self.db.campaign['use_aux_output']:
+                if self.db.campaign['aux_output_file']:
                     self.debugger.aux.command('rm ' +
                                               self.db.campaign['output_file'])
                 else:
@@ -203,7 +203,8 @@ class fault_injector(object):
                 self.db.result['outcome'] = error.type
                 return
 
-    # def __monitor_execution(self, latent_faults=0, persistent_faults=False):
+    # def __monitor_execution(self, start_time=None, latent_faults=0,
+    #                         persistent_faults=False):
         if self.db.campaign['aux']:
             try:
                 self.debugger.aux.read_until()
@@ -219,6 +220,21 @@ class fault_injector(object):
         except DrSEUsError as error:
             self.db.result['outcome_category'] = 'Execution error'
             self.db.result['outcome'] = error.type
+        finally:
+            if start_time is not None:
+                execution_time = time() - start_time
+                if self.db.campaign['simics']:
+                    self.debugger.halt_dut()
+                    end_cycles, end_simulated_execution_time = \
+                        self.debugger.get_time()
+                    self.db.result['cycles'] = \
+                        end_cycles - self.db.campaign['start_cycle']
+                    self.db.result['simulated_execution_time'] = (
+                        end_simulated_execution_time -
+                        self.db.campaign['start_simulated_execution_time'])
+                    self.debugger.continue_dut()
+            else:
+                execution_time = None
         if self.db.campaign['output_file'] and \
                 self.db.result['outcome'] == 'In progress':
             check_output()
@@ -230,6 +246,7 @@ class fault_injector(object):
                 self.db.result['outcome'] = 'Latent faults'
             else:
                 self.db.result['outcome'] = 'Masked faults'
+        return execution_time
 
     def inject_campaign(self, iteration_counter):
 
@@ -265,9 +282,10 @@ class fault_injector(object):
                 self.debugger.continue_dut()
                 if self.db.campaign['aux']:
                     aux_process = Thread(
-                        target=self.debugger.aux.read_until)
+                        target=self.debugger.aux.read_until,
+                        kwargs={'flush': False})
                     aux_process.start()
-                self.debugger.dut.read_until()
+                self.debugger.dut.read_until(flush=False)
                 if self.db.campaign['aux']:
                     aux_process.join()
             except DrSEUsError:
@@ -325,11 +343,13 @@ class fault_injector(object):
             if not self.db.campaign['simics']:
                 if not prepare_dut():
                     continue
-            with self.db as db:
-                db.log_event('Information', 'DUT', 'Command',
-                             self.db.campaign['command'])
+                with self.db as db:
+                    db.log_event('Information', 'DUT', 'Command',
+                                 self.db.campaign['command'])
+            start_time = time()
             try:
-                latent_faults, persistent_faults = self.debugger.inject_faults()
+                latent_faults, persistent_faults, time_halted = \
+                    self.debugger.inject_faults()
                 self.debugger.continue_dut()
             except DrSEUsError as error:
                 self.db.result['outcome'] = str(error)
@@ -339,7 +359,9 @@ class fault_injector(object):
                     self.db.result['outcome_category'] = 'Debugger error'
                     continue_dut()
             else:
-                self.__monitor_execution(latent_faults, persistent_faults)
+                execution_time = self.__monitor_execution(
+                    start_time, latent_faults, persistent_faults)
+                self.db.result['execution_time'] = execution_time - time_halted
                 check_latent_faults()
             if self.db.campaign['simics']:
                 close_simics()

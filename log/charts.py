@@ -931,11 +931,10 @@ def times_charts(results, injections, outcomes, group_categories, chart_data,
 def checkpoints_charts(results, injections, outcomes, group_categories,
                        chart_data, chart_list):
     start = time()
-    injections = injections.exclude(checkpoint_number__isnull=True)
+    injections = injections.exclude(checkpoint__isnull=True)
     print('injections:', injections.count())
     checkpoints = list(injections.values_list(
-        'checkpoint_number', flat=True).distinct().order_by(
-            'checkpoint_number'))
+        'checkpoint', flat=True).distinct().order_by('checkpoint'))
     if len(checkpoints) < 1:
         return
     extra_colors = list(colors_extra)
@@ -991,8 +990,7 @@ def checkpoints_charts(results, injections, outcomes, group_categories,
         when_kwargs['result__outcome_category' if group_categories
                     else 'result__outcome'] = outcome
         data = list(injections.values_list(
-            'checkpoint_number').distinct().order_by(
-            'checkpoint_number').annotate(
+            'checkpoint').distinct().order_by('checkpoint').annotate(
                 count=Sum(Case(When(**when_kwargs),
                                default=0, output_field=IntegerField()))
             ).values_list('count', flat=True))
@@ -1009,8 +1007,7 @@ def checkpoints_charts(results, injections, outcomes, group_categories,
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
-                               '&injection__checkpoint_number='+
-                               this.category);
+                               '&injection__checkpoint='+this.category);
     }
     """.replace('\n    ', '\n                        '))
     if group_categories:
@@ -1108,10 +1105,9 @@ def diff_times_chart(results, injections, outcomes, group_categories,
 def diff_checkpoints_chart(results, injections, outcomes, group_categories,
                            chart_data, chart_list):
     start = time()
-    injections = injections.exclude(checkpoint_number__isnull=True)
+    injections = injections.exclude(checkpoint__isnull=True)
     checkpoints = list(injections.values_list(
-        'checkpoint_number', flat=True).distinct().order_by(
-            'checkpoint_number'))
+        'checkpoint', flat=True).distinct().order_by('checkpoint'))
     if len(checkpoints) < 1:
         return
     chart = {
@@ -1163,8 +1159,7 @@ def diff_checkpoints_chart(results, injections, outcomes, group_categories,
         }
     }
     data = injections.values_list(
-        'checkpoint_number').distinct().order_by(
-        'checkpoint_number').annotate(
+        'checkpoint').distinct().order_by('checkpoint').annotate(
             avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
                          default='result__data_diff'))
         ).values_list('avg', flat=True)
@@ -1172,8 +1167,7 @@ def diff_checkpoints_chart(results, injections, outcomes, group_categories,
                                      for x in data]})
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
-        window.location.assign('results?injection__checkpoint_number='+
-                               this.category);
+        window.location.assign('results?injection__checkpoint='+this.category);
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)

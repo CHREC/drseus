@@ -22,10 +22,10 @@ class event(FilterSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queryset = kwargs['queryset']
-        event_type_choices = self.choices(self.queryset, 'event_type')
-        self.filters['event_type'].extra.update(choices=event_type_choices)
-        self.filters['event_type'].widget.attrs['size'] = min(
-            len(event_type_choices), max_select_box_size)
+        type_choices = self.choices(self.queryset, 'type')
+        self.filters['type'].extra.update(choices=type_choices)
+        self.filters['type'].widget.attrs['size'] = min(
+            len(type_choices), max_select_box_size)
         level_choices = self.choices(self.queryset, 'level')
         self.filters['level'].extra.update(choices=level_choices)
         self.filters['level'].widget.attrs['size'] = min(
@@ -46,7 +46,7 @@ class event(FilterSet):
         label='Description', lookup_type='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
         help_text='')
-    event_type = MultipleChoiceFilter(
+    type = MultipleChoiceFilter(
         label='Type',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     level = MultipleChoiceFilter(
@@ -73,12 +73,10 @@ class injection(FilterSet):
         self.filters['bit'].extra.update(choices=bit_choices)
         self.filters['bit'].widget.attrs['size'] = min(
             len(bit_choices), max_select_box_size)
-        checkpoint_number_choices = self.choices(
-            self.queryset, 'checkpoint_number')
-        self.filters['checkpoint_number'].extra.update(
-            choices=checkpoint_number_choices)
-        self.filters['checkpoint_number'].widget.attrs['size'] = min(
-            len(checkpoint_number_choices), max_select_box_size)
+        checkpoint_choices = self.choices(self.queryset, 'checkpoint')
+        self.filters['checkpoint'].extra.update(choices=checkpoint_choices)
+        self.filters['checkpoint'].widget.attrs['size'] = min(
+            len(checkpoint_choices), max_select_box_size)
         field_choices = self.choices(self.queryset, 'field')
         self.filters['field'].extra.update(choices=field_choices)
         self.filters['field'].widget.attrs['size'] = min(
@@ -116,7 +114,7 @@ class injection(FilterSet):
     bit = MultipleChoiceFilter(
         label='Bit',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    checkpoint_number = MultipleChoiceFilter(
+    checkpoint = MultipleChoiceFilter(
         label='Checkpoint number',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     field = MultipleChoiceFilter(
@@ -170,11 +168,10 @@ class result(FilterSet):
             choices=dut_serial_port_choices)
         self.filters['dut_serial_port'].widget.attrs['size'] = min(
             len(dut_serial_port_choices), max_select_box_size)
-        event_type_choices = event.choices(None, events, 'event_type')
-        self.filters['event__event_type'].extra.update(
-            choices=event_type_choices)
-        self.filters['event__event_type'].widget.attrs['size'] = min(
-            len(event_type_choices), max_select_box_size)
+        type_choices = event.choices(None, events, 'type')
+        self.filters['event__type'].extra.update(choices=type_choices)
+        self.filters['event__type'].widget.attrs['size'] = min(
+            len(type_choices), max_select_box_size)
         level_choices = event.choices(None, events, 'level')
         self.filters['event__level'].extra.update(choices=level_choices)
         self.filters['event__level'].widget.attrs['size'] = min(
@@ -187,12 +184,11 @@ class result(FilterSet):
         self.filters['injection__bit'].extra.update(choices=bit_choices)
         self.filters['injection__bit'].widget.attrs['size'] = min(
             len(bit_choices), max_select_box_size)
-        checkpoint_number_choices = injection.choices(
-            None, injections, 'checkpoint_number')
-        self.filters['injection__checkpoint_number'].extra.update(
-            choices=checkpoint_number_choices)
-        self.filters['injection__checkpoint_number'].widget.attrs['size'] = min(
-            len(checkpoint_number_choices), max_select_box_size)
+        checkpoint_choices = injection.choices(None, injections, 'checkpoint')
+        self.filters['injection__checkpoint'].extra.update(
+            choices=checkpoint_choices)
+        self.filters['injection__checkpoint'].widget.attrs['size'] = min(
+            len(checkpoint_choices), max_select_box_size)
         field_choices = injection.choices(None, injections, 'field')
         self.filters['injection__field'].extra.update(choices=field_choices)
         self.filters['injection__field'].widget.attrs['size'] = min(
@@ -281,7 +277,7 @@ class result(FilterSet):
         label='Description', lookup_type='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
         help_text='')
-    event__event_type = MultipleChoiceFilter(
+    event__type = MultipleChoiceFilter(
         conjoined=True, label='Type',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     event__level = MultipleChoiceFilter(
@@ -297,8 +293,8 @@ class result(FilterSet):
     injection__bit = MultipleChoiceFilter(
         label='Bit',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    injection__checkpoint_number = MultipleChoiceFilter(
-        label='Checkpoint number',
+    injection__checkpoint = MultipleChoiceFilter(
+        label='Checkpoint',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__field = MultipleChoiceFilter(
         label='Field',
@@ -346,12 +342,10 @@ class simics_register_diff(FilterSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queryset = kwargs['queryset']
-        checkpoint_number_choices = self.choices(
-            self.queryset, 'checkpoint_number')
-        self.filters['checkpoint_number'].extra.update(
-            choices=checkpoint_number_choices)
-        self.filters['checkpoint_number'].widget.attrs['size'] = min(
-            len(checkpoint_number_choices), max_select_box_size)
+        checkpoint_choices = self.choices(self.queryset, 'checkpoint')
+        self.filters['checkpoint'].extra.update(choices=checkpoint_choices)
+        self.filters['checkpoint'].widget.attrs['size'] = min(
+            len(checkpoint_choices), max_select_box_size)
         register_choices = self.choices(self.queryset, 'register')
         self.filters['register'].extra.update(choices=register_choices)
         self.filters['register'].widget.attrs['size'] = min(
@@ -364,11 +358,11 @@ class simics_register_diff(FilterSet):
             choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
 
-    checkpoint_number = MultipleChoiceFilter(
+    checkpoint = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     register = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
 
     class Meta:
         model = models.simics_register_diff
-        fields = ('checkpoint_number', 'register')
+        fields = ('checkpoint', 'register')

@@ -5,15 +5,11 @@ from getpass import getpass
 
 import utilities
 
-# TODO: backup campaign-data and gold-checkpoints
-# TODO: add execution time to result
-# TODO: use postgresql arrays
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
 # TODO: use formatting strings
 # TODO: add mode to redo injection iteration
-# TODO: add fallback to power cycle when resetting dut
 # TODO: add support for injection of multi-bit upsets
 
 parser = ArgumentParser(
@@ -321,7 +317,7 @@ new_campaign.add_argument(
 new_campaign.add_argument(
     '-O', '--aux_output',
     action='store_true',
-    dest='use_aux_output',
+    dest='aux_output_file',
     help='use output file from auxiliary device')
 new_campaign.add_argument(
     '-k', '--kill_dut',

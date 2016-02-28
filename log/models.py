@@ -8,57 +8,61 @@ class campaign(Model):
     architecture = TextField()
     aux_command = TextField(null=True)
     aux_output = TextField(null=True)
+    checkpoints = IntegerField(null=True)
     command = TextField()
+    cycles = BigIntegerField(null=True)
     cycles_between = BigIntegerField(null=True)
     debugger_output = TextField(null=True)
     description = TextField(null=True)
     dut_output = TextField(null=True)
-    exec_time = FloatField(null=True)
+    execution_time = FloatField(null=True)
     kill_dut = BooleanField()
-    num_checkpoints = IntegerField(null=True)
-    num_cycles = BigIntegerField(null=True)
     output_file = TextField()
     rsakey = TextField()
-    sim_time = FloatField(null=True)
+    simulated_execution_time = FloatField(null=True)
     simics = BooleanField()
+    start_cycle = BigIntegerField(null=True)
+    start_simulated_execution_time = FloatField(null=True)
     timestamp = DateTimeField()
-    use_aux_output = BooleanField()
+    aux_output_file = BooleanField()
 
 
 class result(Model):
     aux_output = TextField(null=True)
     aux_serial_port = TextField(null=True)
     campaign = ForeignKey(campaign)
+    cycles = BigIntegerField(null=True)
     data_diff = FloatField(null=True)
     debugger_output = TextField(null=True)
     detected_errors = IntegerField(null=True)
     dut_output = TextField(null=True)
     dut_serial_port = TextField(null=True)
+    execution_time = FloatField(null=True)
     num_injections = IntegerField(null=True)
     outcome = TextField()
     outcome_category = TextField()
+    simulated_execution_time = FloatField(null=True)
     timestamp = DateTimeField()
 
 
 class event(Model):
     campaign = ForeignKey(campaign, null=True)
     description = TextField(null=True)
-    event_type = TextField()
     level = TextField()
     result = ForeignKey(result, null=True)
     source = TextField()
     success = NullBooleanField()
     timestamp = DateTimeField()
+    type = TextField()
 
 
 class injection(Model):
     bit = IntegerField(null=True)
-    checkpoint_number = IntegerField(null=True)
+    checkpoint = IntegerField(null=True)
     config_object = TextField(null=True)
     field = TextField(null=True)
     gold_value = TextField(null=True)
     injected_value = TextField(null=True)
-    injection_number = IntegerField()
     processor_mode = TextField(null=True)
     register = TextField(null=True)
     register_access = TextField(null=True)
@@ -72,7 +76,7 @@ class injection(Model):
 
 
 class simics_register_diff(Model):
-    checkpoint_number = IntegerField()
+    checkpoint = IntegerField()
     config_object = TextField()
     gold_value = TextField()
     monitored_value = TextField()
@@ -81,7 +85,7 @@ class simics_register_diff(Model):
 
 
 class simics_memory_diff(Model):
-    checkpoint_number = IntegerField()
+    checkpoint = IntegerField()
     block = TextField()
     image_index = IntegerField()
     result = ForeignKey(result)
