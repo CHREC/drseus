@@ -449,7 +449,9 @@ def backup(options):
     if not exists('backups'):
         mkdir('backups')
     sql_backup = 'campaign-data/'+options.db_name+'.sql'
+    print('dumping database...')
     database(options).backup_database(sql_backup)
+    print('database dumped')
     backup_name = ('backups/' +
                    '-'.join([str(unit).zfill(2)
                              for unit in datetime.now().timetuple()[:3]]) +
@@ -458,8 +460,10 @@ def backup(options):
                              for unit in datetime.now().timetuple()[3:6]]))
     num_items = 0
     directories = ('campaign-data', 'simics-workspace/gold-checkpoints')
+    print('discovering files to archive')
     for directory in directories:
         num_items += traverse_directory(directory)
+    print('archiving files...')
     with open_tar(backup_name+'.tar.gz', 'w:gz') \
         as backup, ProgressBar(max_value=num_items, widgets=[
             Percentage(), ' (',
@@ -469,6 +473,7 @@ def backup(options):
         for directory in directories:
             traverse_directory(directory, backup, progress)
     remove(sql_backup)
+    print('backup complete')
 
 
 def restore(options):
