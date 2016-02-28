@@ -221,13 +221,14 @@ def results_page(request, campaign_id=None):
                 result_id__in=result_ids).delete()
             models.result.objects.filter(id__in=result_ids).delete()
         elif 'delete_all' in request.POST:
+            result_ids = results.values('id')
             models.event.objects.filter(result_id__in=result_ids).delete()
             models.injection.objects.filter(result_id__in=result_ids).delete()
             models.simics_memory_diff.objects.filter(
                 result_id__in=result_ids).delete()
             models.simics_register_diff.objects.filter(
                 result_id__in=result_ids).delete()
-            models.result.objects.filter(id__in=result_ids).delete()
+            results.delete()
             if campaign_id:
                 return redirect('/campaign/'+str(campaign_id)+'/results')
             else:

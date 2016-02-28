@@ -231,14 +231,16 @@ def inject_campaign(options):
                 db.log_event('Information', 'User', 'Interrupted',
                              db.log_exception)
             drseus.debugger.close()
-            drseus.db.result['outcome'] = 'Interrupted'
+            drseus.db.result.update({'outcome_category': 'Incomplete',
+                                     'outcome': 'Interrupted'})
             with drseus.db as db:
                 db.log_result(False)
         except:
             with drseus.db as db:
                 db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
             drseus.debugger.close()
-            drseus.db.result['outcome'] = 'Uncaught exception'
+            drseus.db.result.update({'outcome_category': 'Incomplete',
+                                     'outcome': 'Uncaught exception'})
             with drseus.db as db:
                 db.log_result(False)
 
