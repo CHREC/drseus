@@ -15,7 +15,7 @@ from error import DrSEUsError
 from simics_config import simics_config
 from simics_targets import devices
 from targets import choose_register, choose_target
-from timeout import timeout
+from timeout import timeout, TimeoutException
 
 
 class simics(object):
@@ -263,16 +263,16 @@ class simics(object):
         with self.db as db:
             db.log_event('Information', 'Simics', 'Continue DUT', success=True)
 
-    def __command(self, command=None):
+    def __command(self, command=None, time=10):
 
         def read_until():
             buff = ''
             hanging = False
             while True:
                 try:
-                    with timeout(10):
+                    with timeout(time):
                         char = self.simics.stdout.read(1)
-                except:
+                except TimeoutException:
                     char = ''
                     hanging = True
                     with self.db as db:
@@ -361,7 +361,8 @@ class simics(object):
             while True:
                 checkpoint += 1
                 self.__command('run-cycles ' +
-                               str(self.db.campaign['cycles_between']))
+                               str(self.db.campaign['cycles_between']),
+                               time=300)
                 self.db.campaign['dut_output'] += \
                     '\n***drseus_checkpoint: '+str(checkpoint)+'***\n'
                 incremental_checkpoint = ('gold-checkpoints/' +
@@ -491,7 +492,8 @@ class simics(object):
                 for j in range(injections[i]['checkpoint_number'],
                                injections[i+1]['checkpoint_number']):
                     self.__command('run-cycles ' +
-                                   str(self.db.campaign['cycles_between']))
+                                   str(self.db.campaign['cycles_between']),
+                                   time=300)
                 self.__command('write-configuration injected-checkpoints/' +
                                str(self.db.campaign['id'])+'/' +
                                str(self.options.result_id)+'/' +
@@ -935,7 +937,7 @@ class simics(object):
         mem_errors = 0
         for checkpoint_number in range(checkpoint_number+1, last_checkpoint+1):
             self.__command('run-cycles ' +
-                           str(self.db.campaign['cycles_between']))
+                           str(self.db.campaign['cycles_between']), time=300)
             incremental_checkpoint = (
                 'injected-checkpoints/'+str(self.db.campaign['id'])+'/' +
                 str(self.db.result['id'])+'/'+str(checkpoint_number))
