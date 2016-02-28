@@ -1,4 +1,5 @@
 from io import StringIO
+from os.path import exists, isdir
 from paramiko import AutoAddPolicy, RSAKey, SSHClient
 from scp import SCPClient
 from serial import Serial
@@ -218,6 +219,10 @@ class dut(object):
                         break
 
     def get_file(self, file_, local_path='', attempts=10):
+        if isdir(local_path):
+            if local_path[-1] != '/':
+                local_path += '/'
+            local_path += file_
         if self.options.debug:
             print(colored('getting file...', 'blue'), end='')
             stdout.flush()
@@ -252,13 +257,30 @@ class dut(object):
                     else:
                         dut_scp.close()
                         ssh.close()
-                        if self.options.debug:
-                            print(colored('done', 'blue'))
-                        with self.db as db:
-                            db.log_event('Information',
-                                         'DUT' if not self.aux else 'AUX',
-                                         'Received file', file_, success=True)
-                        break
+                        if exists(local_path):
+                            if self.options.debug:
+                                print(colored('done', 'blue'))
+                            with self.db as db:
+                                db.log_event('Information',
+                                             'DUT' if not self.aux else 'AUX',
+                                             'Received file', file_,
+                                             success=True)
+                            break
+                        else:
+                            with self.db as db:
+                                db.log_event('Warning' if attempt < attempts-1
+                                             else 'Error',
+                                             'DUT' if not self.aux else 'AUX',
+                                             'Missing file', local_path)
+                            print(colored(
+                                self.serial.port +
+                                ': Error receiving file (attempt ' +
+                                str(attempt+1)+'/'+str(attempts) +
+                                '): missing file', 'red'))
+                            if attempt < attempts-1:
+                                sleep(30)
+                            else:
+                                raise DrSEUsError('Missing file')
 
     def write(self, string):
         self.serial.write(bytes(string, encoding='utf-8'))

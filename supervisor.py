@@ -105,13 +105,14 @@ class supervisor(Cmd):
 
     def do_get_dut_file(self, arg, aux=False):
         """Retrieve file from DUT device"""
-        directory = ('campaign-data/'+str(self.drseus.db.campaign['id']) +
-                     '/results/'+str(self.drseus.result['id'])+'/')
-        makedirs(directory)
+        output = ('campaign-data/'+str(self.drseus.db.campaign['id']) +
+                  '/results/'+str(self.drseus.result['id'])+'/')
+        makedirs(output)
+        output += '/'+arg
         if aux:
-            self.drseus.debugger.aux.get_file(arg, directory, attempts=1)
+            self.drseus.debugger.aux.get_file(arg, output, attempts=1)
         else:
-            self.drseus.debugger.dut.get_file(arg, directory, attempts=1)
+            self.drseus.debugger.dut.get_file(arg, output, attempts=1)
         print('File saved to '+directory)
 
     def do_supervise(self, arg):

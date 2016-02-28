@@ -110,14 +110,15 @@ def campaigns_chart(queryset):
                                default=0, output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
-    chart = dumps(chart)
+    chart = dumps(chart, indent=4)
     chart = chart.replace('\"click_function\"', """
     function(event) {
         window.location.assign('/campaign/'+this.category+
                                '/results?outcome_category='+this.series.name);
     }
-    """)
-    return '['+chart+']'
+    """.replace('\n    ', '\n                        '))
+    return '['+chart+']'.replace(
+        '\n', '\n                        ')
 
 
 def target_bits_chart(campaign):
@@ -167,7 +168,8 @@ def target_bits_chart(campaign):
     for target in target_list:
         bits.append(targets[target]['total_bits'])
     chart['series'] = [{'data': bits}]
-    return '['+dumps(chart)+']'
+    return ('['+dumps(chart, indent=4)+']').replace(
+        '\n', '\n                        ')
 
 
 def results_charts(results, group_categories):
@@ -207,7 +209,8 @@ def results_charts(results, group_categories):
         threads.append(thread)
     for thread in threads:
         thread.join()
-    return '['+','.join(chart_data)+']', chart_list
+    return ('['+',\n'.join(chart_data)+']').replace(
+        '\n', '\n                        '), chart_list
 
 
 def overview_chart(results, injections, outcomes, group_categories, chart_data,
@@ -258,15 +261,16 @@ def overview_chart(results, injections, outcomes, group_categories, chart_data,
         filter_kwargs = {}
         filter_kwargs['outcome_category' if group_categories
                       else 'outcome'] = outcome
-        chart['series'][0]['data'].append(
-            outcome, results.filter(**filter_kwargs).count())
+        chart['series'][0]['data'].append((
+            outcome, results.filter(**filter_kwargs).count()))
     outcome_list = dumps(outcomes)
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         var outcomes = outcome_list;
         window.location.assign('results?outcome='+outcomes[this.x]);
     }
-    """.replace('outcome_list', outcome_list))
+    """.replace('\n    ', '\n                        ').replace(
+        'outcome_list', outcome_list))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart = chart.replace('\"chart_formatter\"', """
@@ -275,7 +279,8 @@ def overview_chart(results, injections, outcomes, group_categories, chart_data,
         return ''+outcomes[parseInt(this.point.x)]+' '+
         Highcharts.numberFormat(this.percentage, 1)+'%';
     }
-    """.replace('outcome_list', outcome_list))
+    """.replace('\n    ', '\n                    ').replace(
+        'outcome_list', outcome_list))
     chart_data.append(chart)
     chart_list.append(('overview_chart', 'Overview', 0))
     print('overview_chart:', round(time()-start, 2), 'seconds')
@@ -356,12 +361,12 @@ def targets_charts(results, injections, outcomes, group_categories, chart_data,
             'text': 'Percent of Injections'
         }
     }
-    chart_percent = dumps(chart_percent).replace('\"click_function\"', """
+    chart_percent = dumps(chart_percent, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&injection__target='+this.category);
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     if group_categories:
         chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart_percent)
@@ -371,22 +376,22 @@ def targets_charts(results, injections, outcomes, group_categories, chart_data,
         chart_log = deepcopy(chart)
         chart_log['chart']['renderTo'] = 'targets_log_chart'
         chart_log['yAxis']['type'] = 'logarithmic'
-        chart_log = dumps(chart_log).replace('\"click_function\"', """
+        chart_log = dumps(chart_log, indent=4).replace('\"click_function\"', """
         function(event) {
             window.location.assign('results?outcome='+this.series.name+
                                    '&injection__target='+this.category);
         }
-        """)
+        """.replace('\n    ', '\n                        '))
         if group_categories:
             chart_log = chart_log.replace('?outcome=', '?outcome_category=')
         chart_data.append(chart_log)
         chart_list.append(('targets_log_chart', 'Targets (Log Scale)', 3))
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&injection__target='+this.category);
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
@@ -456,11 +461,11 @@ def propagation_chart(results, injections, outcomes, group_categories,
         mem_diff_list.append(mem_diff_count/count)
     chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?injection__target='+this.category);
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
     chart_list.append(('propagation_chart', 'Fault Propagation', 4))
     print('propagation_chart:', round(time()-start, 2), 'seconds')
@@ -527,11 +532,11 @@ def diff_targets_chart(results, injections, outcomes, group_categories,
                          default='result__data_diff'))
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 for x in data]})
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?injection__target='+this.category);
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
     chart_list.append(('diff_targets_chart', 'Data Diff By Target', 5))
     print('diff_targets_chart:', round(time()-start, 2), 'seconds')
@@ -650,7 +655,7 @@ def registers_tlbs_charts(tlb, results, injections, outcomes, group_categories,
         data = sorted(data, key=fix_sort_list)
         chart['series'].append({'data': list(zip(*data))[1],
                                 'name': str(outcome)})
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         var reg = this.category.split(':');
         var register = reg[0];
@@ -664,7 +669,7 @@ def registers_tlbs_charts(tlb, results, injections, outcomes, group_categories,
                                    '&injection__register='+register);
         }
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
@@ -736,12 +741,12 @@ def tlb_fields_chart(results, injections, outcomes, group_categories,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&injection__field='+this.category);
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
@@ -813,12 +818,12 @@ def register_bits_chart(results, injections, outcomes, group_categories,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': str(outcome)})
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&injection__bit='+this.category);
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
@@ -903,19 +908,19 @@ def times_charts(results, injections, outcomes, group_categories, chart_data,
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
-    chart_data.append(dumps(chart_smoothed))
+    chart_data.append(dumps(chart_smoothed, indent=4))
     chart_list.append(('times_smoothed_chart',
                        'Injections Over Time (Moving Average Window Size = ' +
                        str(window_size)+')', 11))
-    # chart = dumps(chart).replace('\"click_function\"', """
+    # chart = dumps(chart, indent=4).replace('\"click_function\"', """
     # function(event) {
     #     var time = parseFloat(this.category)
     #     window.location.assign('results?outcome='+this.series.name+
     #                            '&injection__time_rounded='+
     #                            time.toFixed(2));
     # }
-    # """)
-    chart = dumps(chart)
+    # """.replace('\n    ', '\n                        '))
+    chart = dumps(chart, indent=4)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
@@ -997,17 +1002,17 @@ def checkpoints_charts(results, injections, outcomes, group_categories,
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
-    chart_data.append(dumps(chart_smoothed))
+    chart_data.append(dumps(chart_smoothed, indent=4))
     chart_list.append(('checkpoints_smoothed_chart',
                        'Injections Over Time (Moving Average Window Size = ' +
                        str(window_size)+')', 11))
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&injection__checkpoint_number='+
                                this.category);
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
@@ -1087,14 +1092,14 @@ def diff_times_chart(results, injections, outcomes, group_categories,
                              default='result__data_diff')))['avg'])
     chart['series'].append({'data': [x*100 if x is not None else 0
                                      for x in data]})
-    # chart = dumps(chart).replace('\"click_function\"', """
+    # chart = dumps(chart, indent=4).replace('\"click_function\"', """
     # function(event) {
     #     var time = parseFloat(this.category)
     #     window.location.assign('results?injection__time_rounded='+
     #                            time.toFixed(2));
     # }
-    # """)
-    chart = dumps(chart)
+    # """.replace('\n    ', '\n                        '))
+    chart = dumps(chart, indent=4)
     chart_data.append(chart)
     chart_list.append(('diff_times_chart', 'Data Diff Over Time', 12))
     print('diff_times_chart:', round(time()-start, 2), 'seconds')
@@ -1165,12 +1170,12 @@ def diff_checkpoints_chart(results, injections, outcomes, group_categories,
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 if x is not None else 0
                                      for x in data]})
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?injection__checkpoint_number='+
                                this.category);
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
     chart_list.append(('diff_checkpoints_chart', 'Data Diff Over Time', 12))
     print('diff_checkpoints_chart:', round(time()-start, 2), 'seconds')
@@ -1242,15 +1247,15 @@ def counts_chart(results, injections, outcomes, group_categories, chart_data,
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
     chart_percent['yAxis']['labels'] = {'format': '{value}%'}
     chart_percent['yAxis']['title']['text'] = 'Percent of Results'
-    chart_data.append(dumps(chart_percent))
+    chart_data.append(dumps(chart_percent, indent=4))
     chart_list.append(('counts_percent_chart',
                        'Injection Quantity (Percentage Scale)', 14))
-    chart = dumps(chart).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
                                '&num_injections='+this.category);
     }
-    """)
+    """.replace('\n    ', '\n                        '))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
@@ -1275,4 +1280,5 @@ def injections_charts(injections):
         threads.append(thread)
     for thread in threads:
         thread.join()
-    return '['+','.join(chart_data)+']', chart_list
+    return ('['+',\n'.join(chart_data)+']').replace(
+        '\n', '\n                        '), chart_list
