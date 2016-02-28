@@ -383,7 +383,7 @@ class dut(object):
                 db.update('result')
             else:
                 db.update('campaign')
-        if errors and not boot:
+        if errors:
             for message, category in self.error_messages:
                 if message in buff:
                     raise DrSEUsError(category)
