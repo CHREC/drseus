@@ -183,7 +183,7 @@
                 $.post('', {'new_outcome': outcome, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
                 setTimeout(function () {
                     window.location.assign(window.location.href.replace(/outcome=[^&]*&/g, 'outcome='+outcome+'&'));
-                }, 500);
+                }, 1000);
             }
         }
 
@@ -193,7 +193,7 @@
                 $.post('', {'new_outcome_category': outcome_category, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
                 setTimeout(function () {
                     window.location.assign(window.location.href.replace(/outcome_category=[^&]*&/g, 'outcome_category='+outcome_category+'&'));
-                }, 500);
+                }, 1000);
             }
         }
 
@@ -210,7 +210,7 @@
                 $.post('', {'delete': true, 'results': results, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
                 setTimeout(function () {
                     window.location.reload();
-                }, 500);
+                }, 1000);
             }
         }
         function delete_all() {
@@ -219,7 +219,7 @@
                 $.post('', {'delete_all': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
                 setTimeout(function () {
                     window.location.assign('results');
-                }, 500);
+                }, 1000);
             }
         }
     </script>

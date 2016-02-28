@@ -62,6 +62,20 @@ class jtag(object):
             self.aux.close()
 
     def reset_dut(self, expected_output, attempts):
+
+        def attempt_exception(attempt, attempts, error):
+            with self.db as db:
+                db.log_event('Warning' if attempt < attempts-1
+                             else 'Error', 'Debugger',
+                             'Error resetting DUT', db.log_exception)
+            print(colored(self.serial.port+': Error resetting DUT (attempt ' +
+                          str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
+            if attempt < attempts-1:
+                sleep(30)
+            else:
+                raise DrSEUsError(error.type)
+
+    # def reset_dut(self, expected_output, attempts):
         self.dut.flush()
         if self.telnet:
             self.dut.reset_ip()
@@ -70,22 +84,17 @@ class jtag(object):
                     self.command('reset', expected_output,
                                  'Error resetting DUT', False)
                 except DrSEUsError as error:
-                    with self.db as db:
-                        db.log_event(('Warning' if attempt < attempts-1
-                                      else 'Error'), 'Debugger',
-                                     'Error resetting DUT', db.log_exception)
-                    print(colored(
-                        self.dut.serial.port+': Error resetting DUT (attempt'
-                        ' '+str(attempt+1)+'/'+str(attempts)+')', 'red'))
-                    if attempt < attempts-1:
-                        sleep(30)
-                    else:
-                        raise DrSEUsError(error.type)
+                    attempt_exception(attempt, attempts, error)
                 else:
                     with self.db as db:
                         db.log_event('Information', 'Debugger', 'Reset DUT',
                                      success=True)
-                    break
+                    try:
+                        self.dut.do_login()
+                    except DrSEUsError as error:
+                        attempt_exception(attempt, attempts, error)
+                    else:
+                        break
         else:
             self.dut.serial.write('\x03')
 

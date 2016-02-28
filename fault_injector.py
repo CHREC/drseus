@@ -96,7 +96,6 @@ class fault_injector(object):
             aux_process.start()
         if not self.db.campaign['simics']:
             self.debugger.reset_dut()
-            self.debugger.dut.do_login()
         send_dut_files()
         if self.db.campaign['aux']:
             aux_process.join()
@@ -240,15 +239,6 @@ class fault_injector(object):
             except DrSEUsError as error:
                 self.db.result.update({
                     'outcome_category': 'Debugger error',
-                    'outcome': str(error)})
-                with self.db as db:
-                    db.log_result()
-                return False
-            try:
-                self.debugger.dut.do_login()
-            except DrSEUsError as error:
-                self.db.result.update({
-                    'outcome_category': 'DUT login error',
                     'outcome': str(error)})
                 with self.db as db:
                     db.log_result()

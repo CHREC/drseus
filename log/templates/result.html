@@ -209,7 +209,7 @@
             $.post('', {'save': true, 'outcome': outcome, 'outcome_category': outcome_category, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
             setTimeout(function () {
                 window.location.reload();
-            }, 500);
+            }, 1000);
         }
 
         function delete_result() {
@@ -218,7 +218,7 @@
                 $.post('', {'delete': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
                 setTimeout(function () {
                     window.location.assign('../results');
-                }, 500);
+                }, 1000);
             }
         }
     </script>
