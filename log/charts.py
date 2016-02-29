@@ -405,9 +405,9 @@ def propagation_chart(results, injections, outcomes, group_categories,
     start = time()
     injections = injections.filter(
         Q(result_id__in=models.simics_register_diff.objects.values(
-            'result_id')) |
+            'result_id').distinct()) |
         Q(result_id__in=models.simics_memory_diff.objects.values(
-            'result_id')))
+            'result_id').distinct()))
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
