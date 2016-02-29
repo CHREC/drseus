@@ -575,7 +575,8 @@ if options.command == 'new':
         options.arguments = ' '.join(options.arguments)
     if options.aux_arguments:
         options.aux_arguments = ' '.join(options.aux_arguments)
-elif options.command in ('inject', 'supervise', 'delete', 'regenerate'):
+elif options.command in ('inject', 'supervise', 'delete', 'regenerate',
+                         'openocd'):
     if not (options.command == 'delete' and options.delete in ('a', 'all')):
         if not options.campaign_id:
             options.campaign_id = \
@@ -584,7 +585,7 @@ elif options.command in ('inject', 'supervise', 'delete', 'regenerate'):
             options.architecture = \
                 utilities.get_campaign(options)['architecture']
 
-if options.command in ('new', 'inject', 'supervise'):
+if options.command in ('new', 'inject', 'supervise', 'openocd'):
     if options.architecture == 'p2020':
         if options.dut_serial_port is None:
             options.dut_serial_port = '/dev/ttyUSB0'

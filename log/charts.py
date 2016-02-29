@@ -1,5 +1,5 @@
 from copy import deepcopy
-from django.db.models import (Avg, Case, Count, IntegerField, Max, Sum,
+from django.db.models import (Avg, Case, Count, IntegerField, Max, Q, Sum,
                               TextField, Value, When)
 from django.db.models.functions import Concat, Length, Substr
 from numpy import convolve, linspace, ones
@@ -155,7 +155,7 @@ def target_bits_chart(campaign):
         'xAxis': {
             'categories': target_list,
             'title': {
-                'text': 'Target'
+                'text': 'Injected Target'
             }
         },
         'yAxis': {
@@ -175,7 +175,8 @@ def target_bits_chart(campaign):
 def results_charts(results, group_categories):
     charts = (overview_chart, targets_charts, propagation_chart,
               diff_targets_chart, registers_chart, tlbs_chart, tlb_fields_chart,
-              register_bits_chart, times_charts, diff_times_chart,
+              register_bits_chart, execution_times_charts,
+              simulated_execution_times_charts, times_charts, diff_times_chart,
               checkpoints_charts, diff_checkpoints_chart, counts_chart)
     injections = models.injection.objects.filter(
         result__id__in=results.values('id'))
@@ -201,10 +202,10 @@ def results_charts(results, group_categories):
     chart_data = []
     chart_list = []
     threads = []
-    for chart in charts:
+    for order, chart in enumerate(charts):
         thread = Thread(target=chart,
                         args=(results, injections, outcomes, group_categories,
-                              chart_data, chart_list))
+                              chart_data, chart_list, order))
         thread.start()
         threads.append(thread)
     for thread in threads:
@@ -214,7 +215,7 @@ def results_charts(results, group_categories):
 
 
 def overview_chart(results, injections, outcomes, group_categories, chart_data,
-                   chart_list):
+                   chart_list, order):
     start = time()
     if len(outcomes) <= 1:
         return
@@ -282,12 +283,12 @@ def overview_chart(results, injections, outcomes, group_categories, chart_data,
     """.replace('\n    ', '\n                    ').replace(
         'outcome_list', outcome_list))
     chart_data.append(chart)
-    chart_list.append(('overview_chart', 'Overview', 0))
+    chart_list.append(('overview_chart', 'Overview', order))
     print('overview_chart:', round(time()-start, 2), 'seconds')
 
 
 def targets_charts(results, injections, outcomes, group_categories, chart_data,
-                   chart_list, success=False):
+                   chart_list, order, success=False):
     start = time()
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -328,7 +329,7 @@ def targets_charts(results, injections, outcomes, group_categories, chart_data,
         'xAxis': {
             'categories': targets,
             'title': {
-                'text': 'Target'
+                'text': 'Injected Target'
             }
         },
         'yAxis': {
@@ -395,14 +396,18 @@ def targets_charts(results, injections, outcomes, group_categories, chart_data,
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('targets_chart', 'Targets', 1))
+    chart_list.append(('targets_chart', 'Targets', order))
     print('targets_charts:', round(time()-start, 2), 'seconds')
 
 
 def propagation_chart(results, injections, outcomes, group_categories,
-                      chart_data, chart_list):
+                      chart_data, chart_list, order):
     start = time()
-    injections = injections.filter(result__campaign__simics=True)
+    injections = injections.filter(
+        Q(result_id__in=models.simics_register_diff.objects.values(
+            'result_id')) |
+        Q(result_id__in=models.simics_memory_diff.objects.values(
+            'result_id')))
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
@@ -439,7 +444,7 @@ def propagation_chart(results, injections, outcomes, group_categories,
         'xAxis': {
             'categories': targets,
             'title': {
-                'text': 'Target'
+                'text': 'Injected Target'
             }
         },
         'yAxis': {
@@ -452,7 +457,7 @@ def propagation_chart(results, injections, outcomes, group_categories,
     reg_diff_list = []
     mem_diff_list = []
     for target in targets:
-        count = float(injections.filter(target=target).count())
+        count = injections.filter(target=target).count()
         reg_diff_count = injections.filter(target=target).aggregate(
             reg_count=Count('result__simics_register_diff'))['reg_count']
         mem_diff_count = injections.filter(target=target).aggregate(
@@ -467,12 +472,12 @@ def propagation_chart(results, injections, outcomes, group_categories,
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('propagation_chart', 'Fault Propagation', 4))
+    chart_list.append(('propagation_chart', 'Fault Propagation', order))
     print('propagation_chart:', round(time()-start, 2), 'seconds')
 
 
 def diff_targets_chart(results, injections, outcomes, group_categories,
-                       chart_data, chart_list):
+                       chart_data, chart_list, order):
     start = time()
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -513,7 +518,7 @@ def diff_targets_chart(results, injections, outcomes, group_categories,
         'xAxis': {
             'categories': targets,
             'title': {
-                'text': 'Target'
+                'text': 'Injected Target'
             }
         },
         'yAxis': {
@@ -538,24 +543,26 @@ def diff_targets_chart(results, injections, outcomes, group_categories,
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('diff_targets_chart', 'Data Diff By Target', 5))
+    chart_list.append(('diff_targets_chart', 'Data Diff By Target', order))
     print('diff_targets_chart:', round(time()-start, 2), 'seconds')
 
 
 def registers_chart(results, injections, outcomes,
-                    group_categories, chart_data, chart_list, success=False):
+                    group_categories, chart_data, chart_list, order,
+                    success=False):
     registers_tlbs_charts(False, results, injections, outcomes,
-                          group_categories, chart_data, chart_list, success)
+                          group_categories, chart_data, chart_list, order,
+                          success)
 
 
 def tlbs_chart(results, injections, outcomes, group_categories, chart_data,
-               chart_list, success=False):
+               chart_list, order, success=False):
     registers_tlbs_charts(True, results, injections, outcomes, group_categories,
-                          chart_data, chart_list, success)
+                          chart_data, chart_list, order, success)
 
 
 def registers_tlbs_charts(tlb, results, injections, outcomes, group_categories,
-                          chart_data, chart_list, success):
+                          chart_data, chart_list, order, success):
     start = time()
     if not tlb:
         registers = injections.exclude(target='TLB').annotate(
@@ -617,7 +624,7 @@ def registers_tlbs_charts(tlb, results, injections, outcomes, group_categories,
                 'y': 15
             },
             'title': {
-                'text': 'Register' if not tlb else 'TLB Entry'
+                'text': 'Injected '+('Register' if not tlb else 'TLB Entry')
             }
         },
         'yAxis': {
@@ -674,14 +681,13 @@ def registers_tlbs_charts(tlb, results, injections, outcomes, group_categories,
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
     chart_list.append(('registers_chart' if not tlb else 'tlbs_chart',
-                       'Registers' if not tlb else 'TLB Entries',
-                       6 if not tlb else 7))
+                       'Registers' if not tlb else 'TLB Entries', order))
     print('tlbs_chart:' if tlb else 'registers_chart:',
           round(time()-start, 2), 'seconds')
 
 
 def tlb_fields_chart(results, injections, outcomes, group_categories,
-                     chart_data, chart_list):
+                     chart_data, chart_list, order):
     start = time()
     fields = list(injections.filter(target='TLB').values_list(
         'field', flat=True).distinct().order_by('field'))
@@ -722,7 +728,7 @@ def tlb_fields_chart(results, injections, outcomes, group_categories,
         'xAxis': {
             'categories': fields,
             'title': {
-                'text': 'TLB Field'
+                'text': 'Injected TLB Field'
             }
         },
         'yAxis': {
@@ -750,15 +756,15 @@ def tlb_fields_chart(results, injections, outcomes, group_categories,
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('tlb_fields_chart', 'TLB Fields', 8))
+    chart_list.append(('tlb_fields_chart', 'TLB Fields', order))
     print('tlb_fields_chart:', round(time()-start, 2), 'seconds')
 
 
 def register_bits_chart(results, injections, outcomes, group_categories,
-                        chart_data, chart_list, success=False):
+                        chart_data, chart_list, order, success=False):
     start = time()
     bits = list(injections.exclude(target='TLB').values_list(
-        'bit', flat=True).distinct().order_by('bit'))
+        'bit', flat=True).distinct().order_by('-bit'))
     if len(bits) < 1:
         return
     extra_colors = list(colors_extra)
@@ -796,7 +802,7 @@ def register_bits_chart(results, injections, outcomes, group_categories,
         'xAxis': {
             'categories': bits,
             'title': {
-                'text': 'Bit Index'
+                'text': 'Injected Bit (MSB=63/31)'
             }
         },
         'yAxis': {
@@ -813,7 +819,7 @@ def register_bits_chart(results, injections, outcomes, group_categories,
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcome
         data = list(injections.exclude(target='TLB').values_list(
-            'bit').distinct().order_by('bit').annotate(
+            'bit').distinct().order_by('-bit').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
@@ -827,12 +833,198 @@ def register_bits_chart(results, injections, outcomes, group_categories,
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('register_bits_chart', 'Register Bits', 9))
+    chart_list.append(('register_bits_chart', 'Register Bits', order))
     print('register_bits_chart:', round(time()-start, 2), 'seconds')
 
 
+def execution_times_charts(results, injections, outcomes, group_categories,
+                           chart_data, chart_list, order):
+    start = time()
+    results = results.exclude(campaign__simics=True).exclude(outcome='Hanging')
+    if results.count() < 1:
+        return
+    xaxis_length = 50
+    times = linspace(
+        0, results.aggregate(Max('execution_time'))['execution_time__max'],
+        xaxis_length, endpoint=False).tolist()
+    times = [round(time, 4) for time in times]
+    extra_colors = list(colors_extra)
+    chart = {
+        'chart': {
+            'renderTo': 'execution_times_chart',
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': 'execution_times_chart',
+            'sourceWidth': 960,
+            'sourceHeight': 540,
+            'scale': 2
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'click_function'
+                    }
+                },
+                'stacking': True
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'xAxis': {
+            'categories': times,
+            'title': {
+                'text': 'Execution Time (Seconds)'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Total Results'
+            }
+        }
+    }
+    window_size = 10
+    chart_smoothed = deepcopy(chart)
+    chart_smoothed['chart']['type'] = 'area'
+    chart_smoothed['chart']['renderTo'] = 'execution_times_smoothed_chart'
+    for outcome in outcomes:
+        filter_kwargs = {}
+        filter_kwargs['outcome_category' if group_categories
+                      else 'outcome'] = outcome
+        data = []
+        for j in range(len(times)):
+            if j+1 < len(times):
+                data.append(results.filter(
+                    execution_time__gte=times[j], execution_time__lt=times[j+1],
+                    **filter_kwargs).count())
+            else:
+                data.append(results.filter(
+                    execution_time__gte=times[j], **filter_kwargs).count())
+        chart['series'].append({'data': data, 'name': outcome})
+        chart_smoothed['series'].append({
+            'data': convolve(
+                data, ones(window_size)/window_size, 'same').tolist(),
+            'name': outcome,
+            'stacking': True})
+    chart_data.append(dumps(chart_smoothed, indent=4))
+    chart_list.append(('execution_times_smoothed_chart',
+                       'Execution Times (Moving Average Window Size = ' +
+                       str(window_size)+')', order))
+    chart = dumps(chart, indent=4)
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_data.append(chart)
+    chart_list.append(('execution_times_chart', 'Execution Times', order))
+    print('execution_times_charts', round(time()-start, 2), 'seconds')
+
+
+def simulated_execution_times_charts(results, injections, outcomes,
+                                     group_categories, chart_data, chart_list,
+                                     order):
+    start = time()
+    results = results.exclude(campaign__simics=False).exclude(outcome='Hanging')
+    if results.count() < 1:
+        return
+    xaxis_length = 50
+    times = linspace(
+        0,  results.aggregate(
+            Max('simulated_execution_time'))['simulated_execution_time__max'],
+        xaxis_length, endpoint=False).tolist()
+    times = [round(time, 4) for time in times]
+    extra_colors = list(colors_extra)
+    chart = {
+        'chart': {
+            'renderTo': 'simulated_execution_times_chart',
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': 'simulated_execution_times_chart',
+            'sourceWidth': 960,
+            'sourceHeight': 540,
+            'scale': 2
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'click_function'
+                    }
+                },
+                'stacking': True
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'xAxis': {
+            'categories': times,
+            'title': {
+                'text': 'Simulated Execution Time (Seconds)'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Total Results'
+            }
+        }
+    }
+    window_size = 10
+    chart_smoothed = deepcopy(chart)
+    chart_smoothed['chart']['type'] = 'area'
+    chart_smoothed['chart']['renderTo'] = \
+        'simulated_execution_times_smoothed_chart'
+    for outcome in outcomes:
+        filter_kwargs = {}
+        filter_kwargs['outcome_category' if group_categories
+                      else 'outcome'] = outcome
+        data = []
+        for j in range(len(times)):
+            if j+1 < len(times):
+                data.append(results.filter(
+                    simulated_execution_time__gte=times[j],
+                    simulated_execution_time__lt=times[j+1],
+                    **filter_kwargs).count())
+            else:
+                data.append(results.filter(
+                    simulated_execution_time__gte=times[j],
+                    **filter_kwargs).count())
+        chart['series'].append({'data': data, 'name': outcome})
+        chart_smoothed['series'].append({
+            'data': convolve(
+                data, ones(window_size)/window_size, 'same').tolist(),
+            'name': outcome,
+            'stacking': True})
+    chart_data.append(dumps(chart_smoothed, indent=4))
+    chart_list.append(('simulated_execution_times_smoothed_chart',
+                       'Simulated Execution Times (Moving Average Window Size '
+                       '= '+str(window_size)+')', order))
+    chart = dumps(chart, indent=4)
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_data.append(chart)
+    chart_list.append(('simulated_execution_times_chart',
+                       'Simulated Execution Times', order))
+    print('simulated_execution_times_charts', round(time()-start, 2), 'seconds')
+
+
 def times_charts(results, injections, outcomes, group_categories, chart_data,
-                 chart_list):
+                 chart_list, order):
     start = time()
     injections = injections.exclude(time__isnull=True)
     if injections.count() < 1:
@@ -876,7 +1068,7 @@ def times_charts(results, injections, outcomes, group_categories, chart_data,
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Seconds'
+                'text': 'Injection Time (Seconds)'
             }
         },
         'yAxis': {
@@ -911,28 +1103,19 @@ def times_charts(results, injections, outcomes, group_categories, chart_data,
     chart_data.append(dumps(chart_smoothed, indent=4))
     chart_list.append(('times_smoothed_chart',
                        'Injections Over Time (Moving Average Window Size = ' +
-                       str(window_size)+')', 11))
-    # chart = dumps(chart, indent=4).replace('\"click_function\"', """
-    # function(event) {
-    #     var time = parseFloat(this.category)
-    #     window.location.assign('results?outcome='+this.series.name+
-    #                            '&injection__time_rounded='+
-    #                            time.toFixed(2));
-    # }
-    # """.replace('\n    ', '\n                        '))
+                       str(window_size)+')', order))
     chart = dumps(chart, indent=4)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('times_chart', 'Injections Over Time', 10))
+    chart_list.append(('times_chart', 'Injections Over Time', order))
     print('times_charts', round(time()-start, 2), 'seconds')
 
 
 def checkpoints_charts(results, injections, outcomes, group_categories,
-                       chart_data, chart_list):
+                       chart_data, chart_list, order):
     start = time()
     injections = injections.exclude(checkpoint__isnull=True)
-    print('injections:', injections.count())
     checkpoints = list(injections.values_list(
         'checkpoint', flat=True).distinct().order_by('checkpoint'))
     if len(checkpoints) < 1:
@@ -972,7 +1155,7 @@ def checkpoints_charts(results, injections, outcomes, group_categories,
         'xAxis': {
             'categories': checkpoints,
             'title': {
-                'text': 'Checkpoint'
+                'text': 'Injected Checkpoint'
             }
         },
         'yAxis': {
@@ -1003,7 +1186,7 @@ def checkpoints_charts(results, injections, outcomes, group_categories,
     chart_data.append(dumps(chart_smoothed, indent=4))
     chart_list.append(('checkpoints_smoothed_chart',
                        'Injections Over Time (Moving Average Window Size = ' +
-                       str(window_size)+')', 11))
+                       str(window_size)+')', order))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -1013,12 +1196,12 @@ def checkpoints_charts(results, injections, outcomes, group_categories,
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('checkpoints_chart', 'Injections Over Time', 10))
+    chart_list.append(('checkpoints_chart', 'Injections Over Time', order))
     print('checkpoints_charts', round(time()-start, 2), 'seconds')
 
 
 def diff_times_chart(results, injections, outcomes, group_categories,
-                     chart_data, chart_list):
+                     chart_data, chart_list, order):
     start = time()
     injections = injections.exclude(time__isnull=True)
     if injections.count() < 1:
@@ -1062,7 +1245,7 @@ def diff_times_chart(results, injections, outcomes, group_categories,
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Seconds'
+                'text': 'Injection Time (Seconds)'
             }
         },
         'yAxis': {
@@ -1089,21 +1272,14 @@ def diff_times_chart(results, injections, outcomes, group_categories,
                              default='result__data_diff')))['avg'])
     chart['series'].append({'data': [x*100 if x is not None else 0
                                      for x in data]})
-    # chart = dumps(chart, indent=4).replace('\"click_function\"', """
-    # function(event) {
-    #     var time = parseFloat(this.category)
-    #     window.location.assign('results?injection__time_rounded='+
-    #                            time.toFixed(2));
-    # }
-    # """.replace('\n    ', '\n                        '))
     chart = dumps(chart, indent=4)
     chart_data.append(chart)
-    chart_list.append(('diff_times_chart', 'Data Diff Over Time', 12))
+    chart_list.append(('diff_times_chart', 'Data Diff Over Time', order))
     print('diff_times_chart:', round(time()-start, 2), 'seconds')
 
 
 def diff_checkpoints_chart(results, injections, outcomes, group_categories,
-                           chart_data, chart_list):
+                           chart_data, chart_list, order):
     start = time()
     injections = injections.exclude(checkpoint__isnull=True)
     checkpoints = list(injections.values_list(
@@ -1145,7 +1321,7 @@ def diff_checkpoints_chart(results, injections, outcomes, group_categories,
         'xAxis': {
             'categories': checkpoints,
             'title': {
-                'text': 'Checkpoint'
+                'text': 'Injected Checkpoint'
             }
         },
         'yAxis': {
@@ -1171,12 +1347,12 @@ def diff_checkpoints_chart(results, injections, outcomes, group_categories,
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('diff_checkpoints_chart', 'Data Diff Over Time', 12))
+    chart_list.append(('diff_checkpoints_chart', 'Data Diff Over Time', order))
     print('diff_checkpoints_chart:', round(time()-start, 2), 'seconds')
 
 
 def counts_chart(results, injections, outcomes, group_categories, chart_data,
-                 chart_list):
+                 chart_list, order):
     start = time()
     results = results.exclude(num_injections__isnull=True)
     injection_counts = list(results.values_list(
@@ -1243,7 +1419,7 @@ def counts_chart(results, injections, outcomes, group_categories, chart_data,
     chart_percent['yAxis']['title']['text'] = 'Percent of Results'
     chart_data.append(dumps(chart_percent, indent=4))
     chart_list.append(('counts_percent_chart',
-                       'Injection Quantity (Percentage Scale)', 14))
+                       'Injection Quantity (Percentage Scale)', order))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -1253,7 +1429,7 @@ def counts_chart(results, injections, outcomes, group_categories, chart_data,
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('counts_chart', 'Injection Quantity', 13))
+    chart_list.append(('counts_chart', 'Injection Quantity', order))
     print('counts_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -1266,10 +1442,10 @@ def injections_charts(injections):
     chart_data = []
     chart_list = []
     threads = []
-    for chart in charts:
+    for order, chart in enumerate(charts):
         thread = Thread(target=chart,
                         args=(results, injections, outcomes, False, chart_data,
-                              chart_list, True))
+                              chart_list, order, True))
         thread.start()
         threads.append(thread)
     for thread in threads:

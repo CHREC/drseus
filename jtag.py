@@ -7,7 +7,7 @@ from subprocess import DEVNULL, Popen
 from telnetlib import Telnet
 from termcolor import colored
 from threading import Thread
-from time import sleep, time
+from time import perf_counter, sleep
 
 from dut import dut
 from error import DrSEUsError
@@ -68,7 +68,7 @@ class jtag(object):
                 db.log_event('Warning' if attempt < attempts-1 else 'Error',
                              'Debugger', event_type, db.log_exception)
             print(colored(
-                self.serial.port+': Error resetting DUT (attempt ' +
+                self.dut.serial.port+': Error resetting DUT (attempt ' +
                 str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
             if attempt < attempts-1:
                 sleep(30)
@@ -121,7 +121,7 @@ class jtag(object):
         with self.db as db:
             event = db.log_event('Information', 'Debugger', 'Timed application',
                                  success=False, campaign=True)
-        start = time()
+        start = perf_counter()
         for i in range(self.options.iterations):
             if self.db.campaign['aux']:
                 aux_process = Thread(
@@ -139,9 +139,8 @@ class jtag(object):
             if self.db.campaign['kill_dut']:
                 self.dut.serial.write('\x03')
             dut_process.join()
-        end = time()
         self.db.campaign['execution_time'] = \
-            (end - start) / self.options.iterations
+            (perf_counter() - start) / self.options.iterations
         with self.db as db:
             db.log_event_success(event)
 
@@ -152,7 +151,7 @@ class jtag(object):
             injection_times.append(uniform(0,
                                            self.db.campaign['execution_time']))
         injection_times = sorted(injection_times)
-        start_time = time()
+        start_time = perf_counter()
         for injection_number, injection_time in \
                 enumerate(injection_times, start=1):
             if self.options.debug:
@@ -162,10 +161,10 @@ class jtag(object):
                 self.dut.write('./'+self.db.campaign['command']+'\n')
             else:
                 self.continue_dut()
-                time_halted += time() - start_time
+                time_halted += perf_counter() - start_time
             sleep(injection_time)
             self.halt_dut()
-            start_time = time()
+            start_time = perf_counter()
             mode = self.get_mode()
             target = choose_target(self.options.selected_targets, self.targets)
             register = choose_register(target, self.targets)
@@ -584,7 +583,8 @@ class openocd(jtag):
                     db.log_event('Information', 'Debugger', 'Launched openocd',
                                  success=True)
                 sleep(1)
-        super().open()
+        if self.options.command != 'openocd':
+            super().open()
 
     def close(self):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))

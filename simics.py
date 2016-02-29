@@ -8,7 +8,7 @@ from subprocess import call, check_call, check_output, DEVNULL, PIPE, Popen
 from sys import stdout
 from termcolor import colored
 from threading import Thread
-from time import sleep, time
+from time import perf_counter, sleep
 
 from dut import dut
 from error import DrSEUsError
@@ -406,8 +406,8 @@ class simics(object):
         time_data = self.__command('print-time').split('\n')[-2].split()
         start_cycles = int(time_data[2])
         start_sim_time = float(time_data[3])
-        start_time = time()
         self.continue_dut()
+        start = perf_counter()
         for i in range(self.options.iterations):
             if self.db.campaign['aux']:
                 aux_process = Thread(
@@ -426,14 +426,13 @@ class simics(object):
                 self.dut.serial.write('\x03')
             dut_process.join()
         self.halt_dut()
-        end_time = time()
+        self.db.campaign['execution_time'] = \
+            (perf_counter() - start) / self.options.iterations
         time_data = self.__command('print-time').split('\n')[-2].split()
         end_cycles = int(time_data[2])
         end_sim_time = float(time_data[3])
         self.db.campaign['start_cycle'] = end_cycles
         self.db.campaign['start_simulated_execution_time'] = end_sim_time
-        self.db.campaign['execution_time'] = \
-            (end_time - start_time) / self.options.iterations
         self.db.campaign['cycles'] = \
             int((end_cycles - start_cycles) / self.options.iterations)
         self.db.campaign['simulated_execution_time'] = \
@@ -471,7 +470,7 @@ class simics(object):
                 return True
 
     # def inject_faults(self):
-        start_time = time()
+        start_time = perf_counter()
         checkpoint_nums = list(range(1, self.db.campaign['checkpoints']))
         checkpoints_to_inject = []
         for i in range(self.options.injections):
@@ -498,7 +497,7 @@ class simics(object):
                 latent_faults = errors
             if injections_remaining:
                 self.close()
-        time_halted = time() - start_time - total_execution_time
+        time_halted = perf_counter() - start_time - total_execution_time
         return (latent_faults, (latent_faults and persistent_faults()),
                 time_halted)
 
@@ -949,11 +948,13 @@ class simics(object):
     # def __compare_checkpoints(self, checkpoint, last_checkpoint):
         reg_errors = 0
         mem_errors = 0
+        total_execution_time = 0
         for checkpoint in range(checkpoint+1, last_checkpoint+1):
-            execution_time = time()
+            execution_time = perf_counter()
             self.__command('run-cycles ' +
                            str(self.db.campaign['cycles_between']), time=300)
-            execution_time = time() - execution_time
+            execution_time = perf_counter() - execution_time
+            total_execution_time += execution_time
             incremental_checkpoint = (
                 'injected-checkpoints/'+str(self.db.campaign['id'])+'/' +
                 str(self.db.result['id'])+'/'+str(checkpoint))

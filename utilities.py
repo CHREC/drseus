@@ -126,6 +126,7 @@ def delete(options):
     except:
         db = None
     if options.delete in ('results', 'r'):
+        print('deleting results for campaign', options.campaign_id)
         if exists('campaign-data/'+str(options.campaign_id)+'/results'):
             rmtree('campaign-data/'+str(options.campaign_id)+'/results')
             print('deleted results')
@@ -139,6 +140,7 @@ def delete(options):
                 db.delete_results()
             print('flushed database')
     elif options.delete in ('campaign', 'c'):
+        print('deleting campaign', options.campaign_id)
         if exists('campaign-data/'+str(options.campaign_id)):
             rmtree('campaign-data/'+str(options.campaign_id))
             print('deleted campaign data')
@@ -158,6 +160,7 @@ def delete(options):
                 print('deleted campaign '+str(options.campaign_id) +
                       ' from database')
     elif options.delete in ('all', 'a'):
+        print('deleting all campaigns, files, and database')
         if exists('simics-workspace/gold-checkpoints'):
             rmtree('simics-workspace/gold-checkpoints')
             print('deleted gold checkpoints')
@@ -330,7 +333,8 @@ def log_settings(options):
                     ],
                 },
             },
-        ]
+        ],
+        'TIME_ZONE': 'UTC'
     }
 
 
@@ -417,8 +421,11 @@ def update_dependencies(none=None):
 
 def launch_openocd(options):
     debugger = openocd(None, options)
-    print('Launched '+str(debugger))
-    debugger.openocd.wait()
+    print('Launched '+str(debugger)+'\n')
+    try:
+        debugger.openocd.wait()
+    except KeyboardInterrupt:
+        debugger.openocd.kill()
 
 
 def launch_supervisor(options):

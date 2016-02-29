@@ -3,7 +3,7 @@ from os import listdir, makedirs
 from shutil import copy, rmtree
 from subprocess import check_call, PIPE, Popen
 from threading import Thread
-from time import time
+from time import perf_counter
 
 from database import database
 from error import DrSEUsError
@@ -222,7 +222,7 @@ class fault_injector(object):
             self.db.result['outcome'] = error.type
         finally:
             if start_time is not None:
-                execution_time = time() - start_time
+                execution_time = perf_counter() - start_time
                 if self.db.campaign['simics']:
                     self.debugger.halt_dut()
                     end_cycles, end_simulated_execution_time = \
@@ -346,7 +346,7 @@ class fault_injector(object):
                 with self.db as db:
                     db.log_event('Information', 'DUT', 'Command',
                                  self.db.campaign['command'])
-            start_time = time()
+            start_time = perf_counter()
             try:
                 latent_faults, persistent_faults, time_halted = \
                     self.debugger.inject_faults()

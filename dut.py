@@ -399,7 +399,8 @@ class dut(object):
                 db.update('campaign')
         if errors:
             for message, category in self.error_messages:
-                if message in buff:
+                if not (boot and category in ('Reboot', 'Missing file')) and \
+                        message in buff:
                     raise DrSEUsError(category)
         if hanging:
             raise DrSEUsError('Hanging')
