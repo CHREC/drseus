@@ -1,5 +1,7 @@
+from bisect import bisect_left
+from collections import defaultdict
 from copy import deepcopy
-from django.db.models import (Avg, Case, Count, IntegerField, Max, Q, Sum,
+from django.db.models import (Avg, Case, Count, IntegerField, Max, StdDev, Sum,
                               TextField, Value, When)
 from django.db.models.functions import Concat, Length, Substr
 from numpy import convolve, linspace, ones
@@ -454,12 +456,16 @@ def propagation_chart(results, injections, outcomes, group_categories,
     mem_diff_list = []
     for target in targets:
         count = injections.filter(target=target).count()
-        reg_diff_count = injections.filter(target=target).aggregate(
-            reg_count=Count('result__simics_register_diff'))['reg_count']
-        mem_diff_count = injections.filter(target=target).aggregate(
-            mem_count=Count('result__simics_memory_diff'))['mem_count']
-        reg_diff_list.append(reg_diff_count/count)
-        mem_diff_list.append(mem_diff_count/count)
+        if count > 0:
+            reg_diff_count = injections.filter(target=target).aggregate(
+                reg_count=Count('result__simics_register_diff'))['reg_count']
+            mem_diff_count = injections.filter(target=target).aggregate(
+                mem_count=Count('result__simics_memory_diff'))['mem_count']
+            reg_diff_list.append(reg_diff_count/count)
+            mem_diff_list.append(mem_diff_count/count)
+        else:
+            reg_diff_list.append(None)
+            mem_diff_list.append(None)
     chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
@@ -561,12 +567,14 @@ def registers_tlbs_charts(tlb, results, injections, outcomes, group_categories,
                           chart_data, chart_list, order, success):
     start = time()
     if not tlb:
-        registers = injections.exclude(target='TLB').annotate(
+        injections = injections.exclude(target='TLB')
+        registers = injections.annotate(
             register_name=Concat('register', Value(' '), 'register_index')
         ).values_list('register_name', flat=True).distinct(
         ).order_by('register_name')
     else:
-        registers = injections.filter(target='TLB').annotate(
+        injections = injections.filter(target='TLB')
+        registers = injections.annotate(
             tlb_index=Substr('register_index', 1,
                              Length('register_index')-2,
                              output_field=TextField())).annotate(
@@ -637,7 +645,7 @@ def registers_tlbs_charts(tlb, results, injections, outcomes, group_categories,
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcome
         if not tlb:
-            data = injections.exclude(target='TLB').annotate(
+            data = injections.annotate(
                 register_name=Concat('register', Value(' '), 'register_index')
             ).values_list('register_name').distinct().order_by('register_name'
                                                                ).annotate(
@@ -645,7 +653,7 @@ def registers_tlbs_charts(tlb, results, injections, outcomes, group_categories,
                                default=0, output_field=IntegerField()))
             ).values_list('register_name', 'count')
         else:
-            data = injections.filter(target='TLB').annotate(
+            data = injections.annotate(
                 tlb_index=Substr('register_index', 1,
                                  Length('register_index')-2,
                                  output_field=TextField())).annotate(
@@ -759,8 +767,9 @@ def tlb_fields_chart(results, injections, outcomes, group_categories,
 def register_bits_chart(results, injections, outcomes, group_categories,
                         chart_data, chart_list, order, success=False):
     start = time()
-    bits = list(injections.exclude(target='TLB').values_list(
-        'bit', flat=True).distinct().order_by('-bit'))
+    injections = injections.exclude(target='TLB')
+    bits = list(injections.values_list('bit', flat=True).distinct().order_by(
+        '-bit'))
     if len(bits) < 1:
         return
     extra_colors = list(colors_extra)
@@ -814,8 +823,8 @@ def register_bits_chart(results, injections, outcomes, group_categories,
         else:
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcome
-        data = list(injections.exclude(target='TLB').values_list(
-            'bit').distinct().order_by('-bit').annotate(
+        data = list(injections.values_list('bit').distinct().order_by(
+            '-bit').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
@@ -833,16 +842,46 @@ def register_bits_chart(results, injections, outcomes, group_categories,
     print('register_bits_chart:', round(time()-start, 2), 'seconds')
 
 
+def count_intervals(items, intervals, data_diff=False):
+    if data_diff:
+        count_dict = defaultdict(list)
+    else:
+        count_dict = defaultdict(int)
+    for item in items:
+        if data_diff:
+            index = bisect_left(intervals, item[0], hi=len(intervals)-1)
+            count_dict[intervals[index]].append(
+                item[1] if item[1] is not None else 0)
+        else:
+            index = bisect_left(intervals, item, hi=len(intervals)-1)
+            count_dict[intervals[index]] += 1
+    count_list = []
+    for interval in intervals:
+        if interval in count_dict.keys():
+            if data_diff:
+                count_list.append(
+                    sum(count_dict[interval])/len(count_dict[interval])*100)
+            else:
+                count_list.append(count_dict[interval])
+        else:
+            count_list.append(0)
+    return count_list
+
+
 def execution_times_charts(results, injections, outcomes, group_categories,
                            chart_data, chart_list, order):
     start = time()
-    results = results.exclude(campaign__simics=True).exclude(outcome='Hanging')
+    results = results.exclude(execution_time__isnull=True).filter(
+        simulated_execution_time__isnull=True, returned=True)
     if results.count() < 1:
         return
-    xaxis_length = 50
+    avg = results.aggregate(Avg('execution_time'))['execution_time__avg']
+    std_dev = results.aggregate(
+        StdDev('execution_time'))['execution_time__stddev']
+    std_dev_range = 3
     times = linspace(
-        0, results.aggregate(Max('execution_time'))['execution_time__max'],
-        xaxis_length, endpoint=False).tolist()
+        max(0, avg-(std_dev*std_dev_range)), avg+(std_dev*std_dev_range), 1000,
+        endpoint=False).tolist()
     times = [round(time, 4) for time in times]
     extra_colors = list(colors_extra)
     chart = {
@@ -879,7 +918,9 @@ def execution_times_charts(results, injections, outcomes, group_categories,
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Execution Time (Seconds)'
+                'text': 'Execution Time (Seconds) for '
+                        '(\u03bc-{0}\u03c3, \u03bc+{0}\u03c3)'.format(
+                            std_dev_range)
             }
         },
         'yAxis': {
@@ -888,38 +929,22 @@ def execution_times_charts(results, injections, outcomes, group_categories,
             }
         }
     }
-    window_size = 10
-    chart_smoothed = deepcopy(chart)
-    chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] = 'execution_times_smoothed_chart'
     for outcome in outcomes:
         filter_kwargs = {}
         filter_kwargs['outcome_category' if group_categories
                       else 'outcome'] = outcome
-        data = []
-        for j in range(len(times)):
-            if j+1 < len(times):
-                data.append(results.filter(
-                    execution_time__gte=times[j], execution_time__lt=times[j+1],
-                    **filter_kwargs).count())
-            else:
-                data.append(results.filter(
-                    execution_time__gte=times[j], **filter_kwargs).count())
+        data = count_intervals(
+            results.filter(**filter_kwargs).values_list('execution_time',
+                                                        flat=True),
+            times)
         chart['series'].append({'data': data, 'name': outcome})
-        chart_smoothed['series'].append({
-            'data': convolve(
-                data, ones(window_size)/window_size, 'same').tolist(),
-            'name': outcome,
-            'stacking': True})
-    chart_data.append(dumps(chart_smoothed, indent=4))
-    chart_list.append(('execution_times_smoothed_chart',
-                       'Execution Times (Moving Average Window Size = ' +
-                       str(window_size)+')', order))
     chart = dumps(chart, indent=4)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('execution_times_chart', 'Execution Times', order))
+    chart_list.append(('execution_times_chart', 'Execution Times ('
+                       '\u03bc={0:.2f}, \u03c3={1:.2f})'.format(avg, std_dev),
+                       order))
     print('execution_times_charts', round(time()-start, 2), 'seconds')
 
 
@@ -927,14 +952,18 @@ def simulated_execution_times_charts(results, injections, outcomes,
                                      group_categories, chart_data, chart_list,
                                      order):
     start = time()
-    results = results.exclude(campaign__simics=False).exclude(outcome='Hanging')
+    results = results.exclude(simulated_execution_time__isnull=True).filter(
+        returned=True)
     if results.count() < 1:
         return
-    xaxis_length = 50
+    avg = results.aggregate(
+        Avg('simulated_execution_time'))['simulated_execution_time__avg']
+    std_dev = results.aggregate(
+        StdDev('simulated_execution_time'))['simulated_execution_time__stddev']
+    std_dev_range = 3
     times = linspace(
-        0,  results.aggregate(
-            Max('simulated_execution_time'))['simulated_execution_time__max'],
-        xaxis_length, endpoint=False).tolist()
+        max(0, avg-(std_dev*std_dev_range)), avg+(std_dev*std_dev_range), 1000,
+        endpoint=False).tolist()
     times = [round(time, 4) for time in times]
     extra_colors = list(colors_extra)
     chart = {
@@ -971,7 +1000,9 @@ def simulated_execution_times_charts(results, injections, outcomes,
         'xAxis': {
             'categories': times,
             'title': {
-                'text': 'Simulated Execution Time (Seconds)'
+                'text': 'Simulated Execution Time (Seconds) for '
+                        '(\u03bc-{0}\u03c3, \u03bc+{0}\u03c3)'.format(
+                            std_dev_range)
             }
         },
         'yAxis': {
@@ -980,42 +1011,23 @@ def simulated_execution_times_charts(results, injections, outcomes,
             }
         }
     }
-    window_size = 10
-    chart_smoothed = deepcopy(chart)
-    chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] = \
-        'simulated_execution_times_smoothed_chart'
     for outcome in outcomes:
         filter_kwargs = {}
         filter_kwargs['outcome_category' if group_categories
                       else 'outcome'] = outcome
-        data = []
-        for j in range(len(times)):
-            if j+1 < len(times):
-                data.append(results.filter(
-                    simulated_execution_time__gte=times[j],
-                    simulated_execution_time__lt=times[j+1],
-                    **filter_kwargs).count())
-            else:
-                data.append(results.filter(
-                    simulated_execution_time__gte=times[j],
-                    **filter_kwargs).count())
+        data = count_intervals(
+            results.filter(**filter_kwargs).values_list(
+                'simulated_execution_time', flat=True),
+            times)
         chart['series'].append({'data': data, 'name': outcome})
-        chart_smoothed['series'].append({
-            'data': convolve(
-                data, ones(window_size)/window_size, 'same').tolist(),
-            'name': outcome,
-            'stacking': True})
-    chart_data.append(dumps(chart_smoothed, indent=4))
-    chart_list.append(('simulated_execution_times_smoothed_chart',
-                       'Simulated Execution Times (Moving Average Window Size '
-                       '= '+str(window_size)+')', order))
     chart = dumps(chart, indent=4)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
     chart_list.append(('simulated_execution_times_chart',
-                       'Simulated Execution Times', order))
+                       'Simulated Execution Times ('
+                       '\u03bc={0:.2f}, \u03c3={1:.2f})'.format(avg, std_dev),
+                       order))
     print('simulated_execution_times_charts', round(time()-start, 2), 'seconds')
 
 
@@ -1025,7 +1037,7 @@ def times_charts(results, injections, outcomes, group_categories, chart_data,
     injections = injections.exclude(time__isnull=True)
     if injections.count() < 1:
         return
-    xaxis_length = min(injections.count() / 25, 50)
+    xaxis_length = min(injections.count() / 25, 1000)
     times = linspace(0, injections.aggregate(Max('time'))['time__max'],
                      xaxis_length, endpoint=False).tolist()
     times = [round(time, 4) for time in times]
@@ -1081,15 +1093,9 @@ def times_charts(results, injections, outcomes, group_categories, chart_data,
         filter_kwargs = {}
         filter_kwargs['result__outcome_category' if group_categories
                       else 'result__outcome'] = outcome
-        data = []
-        for j in range(len(times)):
-            if j+1 < len(times):
-                data.append(injections.filter(
-                    time__gte=times[j], time__lt=times[j+1],
-                    **filter_kwargs).count())
-            else:
-                data.append(injections.filter(
-                    time__gte=times[j], **filter_kwargs).count())
+        data = count_intervals(
+            injections.filter(**filter_kwargs).values_list('time', flat=True),
+            times)
         chart['series'].append({'data': data, 'name': outcome})
         chart_smoothed['series'].append({
             'data': convolve(
@@ -1234,7 +1240,7 @@ def diff_times_chart(results, injections, outcomes, group_categories,
                 },
             }
         },
-        'series': [],
+        'series': [{'data': []}],
         'title': {
             'text': None
         },
@@ -1254,20 +1260,9 @@ def diff_times_chart(results, injections, outcomes, group_categories,
             }
         }
     }
-    data = []
-    for i in range(len(times)):
-        if i+1 < len(times):
-            data.append(injections.filter(
-                time__gte=times[i], time__lt=times[i+1]).aggregate(
-                avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
-                             default='result__data_diff')))['avg'])
-        else:
-            data.append(injections.filter(
-                time__gte=times[i]).aggregate(
-                avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
-                             default='result__data_diff')))['avg'])
-    chart['series'].append({'data': [x*100 if x is not None else 0
-                                     for x in data]})
+    chart['series'][0]['data'] = count_intervals(
+        injections.values_list('time', 'result__data_diff'), times,
+        data_diff=True)
     chart = dumps(chart, indent=4)
     chart_data.append(chart)
     chart_list.append(('diff_times_chart', 'Data Diff Over Time', order))
@@ -1350,7 +1345,8 @@ def diff_checkpoints_chart(results, injections, outcomes, group_categories,
 def counts_chart(results, injections, outcomes, group_categories, chart_data,
                  chart_list, order):
     start = time()
-    results = results.exclude(num_injections__isnull=True)
+    results = results.exclude(
+        num_injections__isnull=True).exclude(num_injections=0)
     injection_counts = list(results.values_list(
         'num_injections', flat=True).distinct().order_by('num_injections'))
     if len(injection_counts) <= 1:
@@ -1402,8 +1398,8 @@ def counts_chart(results, injections, outcomes, group_categories, chart_data,
         when_kwargs = {'then': 1}
         when_kwargs['outcome_category' if group_categories
                     else 'outcome'] = outcome
-        data = list(results.exclude(num_injections=0).values_list(
-            'num_injections').distinct().order_by('num_injections').annotate(
+        data = list(results.values_list('num_injections').distinct().order_by(
+            'num_injections').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))

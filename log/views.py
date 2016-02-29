@@ -26,7 +26,7 @@ campaign_items = (('Campaign Information', 'info', 'info', 'info'),
                    'crosshairs'),
                   ('Campaign Charts', 'category_charts', 'charts', 'bar-chart'))
 
-table_length = 25
+table_length = 50
 
 
 def campaigns_page(request):

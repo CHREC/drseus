@@ -31,6 +31,7 @@ class result(Model):
     aux_output = TextField(null=True)
     aux_serial_port = TextField(null=True)
     campaign = ForeignKey(campaign)
+    returned = NullBooleanField()
     cycles = BigIntegerField(null=True)
     data_diff = FloatField(null=True)
     debugger_output = TextField(null=True)

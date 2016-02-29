@@ -155,8 +155,8 @@ class database(object):
             list(dictionary.values()))
 
     def __create_result(self):
-        self.result.update({'campaign_id': self.campaign['id'],
-                            'aux_output': '',
+        self.result.update({'aux_output': '',
+                            'campaign_id': self.campaign['id'],
                             'cycles': None,
                             'data_diff': None,
                             'debugger_output': '',
@@ -166,6 +166,7 @@ class database(object):
                             'num_injections': None,
                             'outcome_category': 'Incomplete',
                             'outcome': 'In progress',
+                            'returned': None,
                             'simulated_execution_time': None,
                             'timestamp': None})
         self.insert('result')

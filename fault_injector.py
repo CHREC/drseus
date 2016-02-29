@@ -141,9 +141,9 @@ class fault_injector(object):
         def check_output():
             try:
                 if self.db.campaign['aux_output_file']:
-                    directory_listing = self.debugger.aux.command('ls -l')
+                    directory_listing = self.debugger.aux.command('ls -l')[0]
                 else:
-                    directory_listing = self.debugger.dut.command('ls -l')
+                    directory_listing = self.debugger.dut.command('ls -l')[0]
             except DrSEUsError as error:
                 self.db.result['outcome_category'] = 'Post execution error'
                 self.db.result['outcome'] = error.type
@@ -216,10 +216,13 @@ class fault_injector(object):
                 if self.db.campaign['kill_dut']:
                     self.debugger.dut.serial.write('\x03')
         try:
-            self.debugger.dut.read_until()
+            returned = self.debugger.dut.read_until()[1]
         except DrSEUsError as error:
             self.db.result['outcome_category'] = 'Execution error'
             self.db.result['outcome'] = error.type
+            self.db.result['returned'] = error.returned
+        else:
+            self.db.result['returned'] = returned
         finally:
             if start_time is not None:
                 execution_time = perf_counter() - start_time

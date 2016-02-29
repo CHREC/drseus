@@ -273,6 +273,12 @@ class result(FilterSet):
     dut_serial_port = MultipleChoiceFilter(
         label='DUT serial port',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    execution_time_gt = NumberFilter(
+        name='execution_time', label='Execution time (>)', lookup_type='gt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
+    execution_time_lt = NumberFilter(
+        name='execution_time', label='Execution time (<)', lookup_type='lt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     event__description = CharFilter(
         label='Description', lookup_type='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -331,11 +337,20 @@ class result(FilterSet):
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     outcome_category = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    simulated_execution_time_gt = NumberFilter(
+        name='simulated_execution_time', label='Simulated exec time (>)',
+        lookup_type='gt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
+    simulated_execution_time_lt = NumberFilter(
+        name='simulated_execution_time', label='Simulated exec time (<)',
+        lookup_type='lt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
 
     class Meta:
         model = models.result
         exclude = ('aux_serial_port', 'campaign', 'data_diff',
-                   'detected_errors', 'timestamp')
+                   'detected_errors', 'execution_time', 'returned',
+                   'simulated_execution_time', 'timestamp')
 
 
 class simics_register_diff(FilterSet):

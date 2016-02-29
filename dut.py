@@ -294,6 +294,7 @@ class dut(object):
         event_buff_logged = ''
         errors = 0
         hanging = False
+        returned = False
         while True:
             try:
                 char = self.serial.read().decode('utf-8', 'replace')
@@ -326,6 +327,7 @@ class dut(object):
                     stdout.flush()
             buff += char
             if not continuous and buff[-len(string):] == string:
+                returned = True
                 break
             elif buff[-len('autoboot: '):] == 'autoboot: ' and \
                     self.uboot_command:
@@ -402,14 +404,14 @@ class dut(object):
                 if not (boot and category in ('Error booting', 'Reboot',
                                               'Missing file')) and \
                         message in buff:
-                    raise DrSEUsError(category)
+                    raise DrSEUsError(category, returned)
         if hanging:
-            raise DrSEUsError('Hanging')
+            raise DrSEUsError('Hanging', returned)
         if boot:
             with self.db as db:
                 db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                              'Booted', success=True)
-        return buff
+        return buff, returned
 
     def command(self, command=None, flush=True):
         with self.db as db:
@@ -420,10 +422,10 @@ class dut(object):
             self.write(command+'\n')
         else:
             self.write('\n')
-        buff = self.read_until(flush=flush)
+        buff, returned = self.read_until(flush=flush)
         with self.db as db:
             db.log_event_success(event)
-        return buff
+        return buff, returned
 
     def do_login(self, change_prompt=False, flush=True):
         self.serial.timeout = 60
@@ -449,7 +451,7 @@ class dut(object):
             attempts = 10
             for attempt in range(attempts):
                 for line in self.command('ip addr show',
-                                         flush=flush).split('\n'):
+                                         flush=flush)[0].split('\n'):
                     line = line.strip().split()
                     if len(line) > 0 and line[0] == 'inet':
                         addr = line[1].split('/')[0]
