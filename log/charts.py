@@ -882,7 +882,7 @@ def execution_times_charts(results, injections, outcomes, group_categories,
     times = linspace(
         max(0, avg-(std_dev*std_dev_range)), avg+(std_dev*std_dev_range), 1000,
         endpoint=False).tolist()
-    times = [round(time, 4) for time in times]
+    times = [round(time, 4) for time in times if time]
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
@@ -964,7 +964,7 @@ def simulated_execution_times_charts(results, injections, outcomes,
     times = linspace(
         max(0, avg-(std_dev*std_dev_range)), avg+(std_dev*std_dev_range), 1000,
         endpoint=False).tolist()
-    times = [round(time, 4) for time in times]
+    times = [round(time, 4) for time in times if time]
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
@@ -1035,12 +1035,12 @@ def times_charts(results, injections, outcomes, group_categories, chart_data,
                  chart_list, order):
     start = time()
     injections = injections.exclude(time__isnull=True)
-    xaxis_length = min(injections.count() / 25, 1000)
+    xaxis_length = min(injections.count() / 10, 1000)
     if xaxis_length <= 1:
         return
     times = linspace(0, injections.aggregate(Max('time'))['time__max'],
                      xaxis_length, endpoint=False).tolist()
-    times = [round(time, 4) for time in times]
+    times = [round(time, 4) for time in times if time]
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
@@ -1206,12 +1206,12 @@ def diff_times_chart(results, injections, outcomes, group_categories,
                      chart_data, chart_list, order):
     start = time()
     injections = injections.exclude(time__isnull=True)
-    xaxis_length = min(injections.count() / 25, 1000)
+    xaxis_length = min(injections.count() / 10, 1000)
     if xaxis_length <= 1:
         return
     times = linspace(0, injections.aggregate(Max('time'))['time__max'],
                      xaxis_length, endpoint=False).tolist()
-    times = [round(time, 4) for time in times]
+    times = [round(time, 4) for time in times if time]
     chart = {
         'chart': {
             'renderTo': 'diff_times_chart',
