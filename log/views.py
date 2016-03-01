@@ -164,7 +164,7 @@ def results_page(request, campaign_id=None):
             result_ids = sorted(map(int, dict(request.GET)['select_box']),
                                 reverse=True)
             results = models.result.objects.filter(
-                    id__in=result_ids).order_by('-id')
+                id__in=result_ids).order_by('-id')
             image = 'view_output_image' in request.GET
             if image:
                 result_ids = []
@@ -178,7 +178,7 @@ def results_page(request, campaign_id=None):
             if results.count():
                 return render(request, 'output.html', {
                     'campaign': campaign, 'image': image,
-                    'campaign_items': campaign_items,
+                    'campaign_items': campaign_items if campaign else None,
                     'navigation_items': navigation_items, 'results': results})
             else:
                 results = result_filter.qs
@@ -197,7 +197,7 @@ def results_page(request, campaign_id=None):
             if results.count():
                 return render(request, 'output.html', {
                     'campaign': campaign, 'image': image,
-                    'campaign_items': campaign_items,
+                    'campaign_items': campaign_items if campaign else None,
                     'navigation_items': navigation_items, 'results': results})
             else:
                 results = result_filter.qs

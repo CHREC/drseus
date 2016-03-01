@@ -340,7 +340,7 @@ class result(FilterSet):
 
     class Meta:
         model = models.result
-        exclude = ('aux_serial_port', 'campaign', 'data_diff',
+        exclude = ('aux_serial_port', 'campaign', 'cycles', 'data_diff',
                    'detected_errors', 'execution_time', 'returned', 'timestamp')
 
 

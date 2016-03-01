@@ -187,6 +187,14 @@
 
 {% block sidebar_block %}
     <li class="header">OPTIONS</li>
+    {% if result.campaign.simics %}
+        <li>
+            <a href="javascript:{}" onclick="launch_simics()">
+                <i class="fa fa-desktop"></i>
+                <span>Launch with Simics</span>
+            </a>
+        </li>
+    {% endif %}
     <li>
         <a href="javascript:{}" onclick="save_result()">
             <i class="fa fa-save"></i>
@@ -203,6 +211,10 @@
 
 {% block script %}
     <script type="text/javascript">
+        function launch_simics() {
+            $.post('', {'launch': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
+        }
+
         function save_result() {
             var outcome = document.getElementById('edit_outcome').value;
             var outcome_category = document.getElementById('edit_outcome_category').value;

@@ -5,7 +5,9 @@
         <h1>Outputs</h1>
         <ol class="breadcrumb">
             <li><a href="/">Campaigns</a></li>
-            <li><a href="info">Campaign {{ campaign_data.id }}</a></li>
+            {% if campaign %}
+                <li><a href="info">Campaign {{ campaign.id }}</a></li>
+            {% endif %}
             <li><a href="results">Results</a></li>
             <li class="active"><a href="">Outputs</a></li>
         </ol>
