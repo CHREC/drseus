@@ -1057,6 +1057,8 @@ def times_charts(results, injections, outcomes, group_categories, chart_data,
                  chart_list, order):
     start = time()
     injections = injections.exclude(time__isnull=True)
+    if injections.count() <= 1:
+        return
     xaxis_length = min(injections.count() / 10, 1000)
     times = linspace(0, injections.aggregate(Max('time'))['time__max'],
                      xaxis_length, endpoint=False).tolist()
@@ -1228,6 +1230,8 @@ def diff_times_chart(results, injections, outcomes, group_categories,
                      chart_data, chart_list, order):
     start = time()
     injections = injections.exclude(time__isnull=True)
+    if injections.count() <= 1:
+        return
     xaxis_length = min(injections.count() / 10, 1000)
     times = linspace(0, injections.aggregate(Max('time'))['time__max'],
                      xaxis_length, endpoint=False).tolist()
