@@ -6,7 +6,7 @@ from serial import Serial
 from serial.serialutil import SerialException
 from sys import stdout
 from termcolor import colored
-from time import sleep
+from time import perf_counter, sleep
 
 from error import DrSEUsError
 from timeout import timeout
@@ -50,6 +50,8 @@ class dut(object):
         self.db = database
         self.options = options
         self.aux = aux
+        self.__start_time = None
+        self.__timer_value = None
         self.ip_address = options.dut_ip_address if not aux \
             else options.aux_ip_address
         self.scp_port = options.dut_scp_port if not aux \
@@ -75,6 +77,21 @@ class dut(object):
                   self.prompt+'\"\n\tIP Address: '+str(self.ip_address) +
                   '\n\tSCP Port: '+str(self.scp_port))
         return string
+
+    def start_timer(self):
+        self.__start_time = perf_counter()
+
+    def stop_timer(self):
+        if self.__start_time is not None:
+            self.__timer_value = perf_counter() - self.__start_time
+            self.__start_time = None
+        else:
+            self.__timer_value = 0
+
+    def get_timer_value(self):
+        value = self.__timer_value
+        self.__timer_value = None
+        return value
 
     def open(self, attempts=10):
         serial_port = (self.options.dut_serial_port if not self.aux
@@ -285,6 +302,7 @@ class dut(object):
 
     def write(self, string):
         self.serial.write(bytes(string, encoding='utf-8'))
+        self.start_timer()
 
     def read_until(self, string=None, continuous=False, boot=False, flush=True):
         if string is None:
@@ -375,6 +393,7 @@ class dut(object):
                         db.update('result')
                     else:
                         db.update('campaign')
+        self.stop_timer()
         if self.serial.timeout != self.options.timeout:
             try:
                 self.serial.timeout = self.options.timeout

@@ -19,6 +19,8 @@ class jtag(object):
     def __init__(self, database, options):
         self.db = database
         self.options = options
+        self.__start_time = None
+        self.__timer_value = None
         self.timeout = 30
         self.prompts = [bytes(prompt, encoding='utf-8')
                         for prompt in self.prompts]
@@ -35,6 +37,21 @@ class jtag(object):
         except AttributeError:
             pass
         return string
+
+    def start_timer(self):
+        self.__start_time = perf_counter()
+
+    def stop_timer(self):
+        if self.__start_time is not None:
+            self.__timer_value = perf_counter() - self.__start_time
+            self.__start_time = None
+        else:
+            self.__timer_value = 0
+
+    def get_timer_value(self):
+        value = self.__timer_value
+        self.__timer_value = None
+        return value
 
     def connect_telnet(self):
         self.telnet = Telnet(self.options.debugger_ip_address, self.port,
@@ -105,6 +122,7 @@ class jtag(object):
             event = db.log_event('Information', 'Debugger', 'Halt DUT',
                                  success=False)
         self.command(halt_command, expected_output, 'Error halting DUT', False)
+        self.start_timer()
         with self.db as db:
             db.log_event_success(event)
 
@@ -114,6 +132,7 @@ class jtag(object):
                                  success=False)
         self.command(continue_command, error_message='Error continuing DUT',
                      log_event=False)
+        self.stop_timer()
         with self.db as db:
             db.log_event_success(event)
 
@@ -121,7 +140,7 @@ class jtag(object):
         with self.db as db:
             event = db.log_event('Information', 'Debugger', 'Timed application',
                                  success=False, campaign=True)
-        start = perf_counter()
+        total_execution_time = 0
         for i in range(self.options.iterations):
             if self.db.campaign['aux']:
                 aux_process = Thread(
@@ -139,8 +158,9 @@ class jtag(object):
             if self.db.campaign['kill_dut']:
                 self.dut.serial.write('\x03')
             dut_process.join()
+            total_execution_time += self.dut.get_timer_value()
         self.db.campaign['execution_time'] = \
-            (perf_counter() - start) / self.options.iterations
+            total_execution_time / self.options.iterations
         with self.db as db:
             db.log_event_success(event)
 
@@ -151,7 +171,6 @@ class jtag(object):
             injection_times.append(uniform(0,
                                            self.db.campaign['execution_time']))
         injection_times = sorted(injection_times)
-        start_time = perf_counter()
         for injection_number, injection_time in \
                 enumerate(injection_times, start=1):
             if self.options.debug:
@@ -161,10 +180,9 @@ class jtag(object):
                 self.dut.write('./'+self.db.campaign['command']+'\n')
             else:
                 self.continue_dut()
-                time_halted += perf_counter() - start_time
+                time_halted += self.get_timer_value()
             sleep(injection_time)
             self.halt_dut()
-            start_time = perf_counter()
             mode = self.get_mode()
             target = choose_target(self.options.selected_targets, self.targets)
             register = choose_register(target, self.targets)

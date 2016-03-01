@@ -31,8 +31,6 @@ table_length = 50
 
 def campaigns_page(request):
     campaign = models.campaign.objects.all()
-    if campaign.count() == 1:
-        return redirect('/campaign/'+str(campaign[0].id)+'/info')
     campaign_table = tables.campaigns(campaign)
     chart_data = campaigns_chart(models.result.objects.all())
     RequestConfig(request).configure(campaign_table)
@@ -85,7 +83,7 @@ def charts_page(request, campaign_id=None, group_categories=False):
     return render(request, 'charts.html', {
         'campaign': campaign, 'campaign_items': campaign_items_,
         'categories': group_categories, 'chart_data': chart_data,
-        'chart_list': chart_list, 'filter': result_filter,
+        'chart_list': chart_list, 'filter': result_filter, 'filter_tabs': True,
         'navigation_items': navigation_items})
 
 

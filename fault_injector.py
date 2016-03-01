@@ -3,7 +3,6 @@ from os import listdir, makedirs
 from shutil import copy, rmtree
 from subprocess import check_call, PIPE, Popen
 from threading import Thread
-from time import perf_counter
 
 from database import database
 from error import DrSEUsError
@@ -135,8 +134,8 @@ class fault_injector(object):
         else:
             self.debugger.dut.send_files(files)
 
-    def __monitor_execution(self, start_time=None, latent_faults=0,
-                            persistent_faults=False):
+    def __monitor_execution(self, latent_faults=0, persistent_faults=False,
+                            log_time=False):
 
         def check_output():
             try:
@@ -218,16 +217,20 @@ class fault_injector(object):
         try:
             returned = self.debugger.dut.read_until()[1]
         except DrSEUsError as error:
+            if self.db.campaign['simics']:
+                self.debugger.halt_dut()
             self.db.result['outcome_category'] = 'Execution error'
             self.db.result['outcome'] = error.type
             self.db.result['returned'] = error.returned
         else:
+            if self.db.campaign['simics']:
+                self.debugger.halt_dut()
             self.db.result['returned'] = returned
         finally:
-            if start_time is not None:
-                execution_time = perf_counter() - start_time
+            if log_time:
+                self.db.result['execution_time'] = \
+                    self.debugger.dut.get_timer_value()
                 if self.db.campaign['simics']:
-                    self.debugger.halt_dut()
                     end_cycles, end_simulated_execution_time = \
                         self.debugger.get_time()
                     self.db.result['cycles'] = \
@@ -235,9 +238,8 @@ class fault_injector(object):
                     self.db.result['simulated_execution_time'] = (
                         end_simulated_execution_time -
                         self.db.campaign['start_simulated_execution_time'])
-                    self.debugger.continue_dut()
-            else:
-                execution_time = None
+            if self.db.campaign['simics']:
+                self.debugger.continue_dut()
         if self.db.campaign['output_file'] and \
                 self.db.result['outcome'] == 'In progress':
             check_output()
@@ -249,7 +251,6 @@ class fault_injector(object):
                 self.db.result['outcome'] = 'Latent faults'
             else:
                 self.db.result['outcome'] = 'Masked faults'
-        return execution_time
 
     def inject_campaign(self, iteration_counter):
 
@@ -349,7 +350,6 @@ class fault_injector(object):
                 with self.db as db:
                     db.log_event('Information', 'DUT', 'Command',
                                  self.db.campaign['command'])
-            start_time = perf_counter()
             try:
                 latent_faults, persistent_faults, time_halted = \
                     self.debugger.inject_faults()
@@ -362,9 +362,9 @@ class fault_injector(object):
                     self.db.result['outcome_category'] = 'Debugger error'
                     continue_dut()
             else:
-                execution_time = self.__monitor_execution(
-                    start_time, latent_faults, persistent_faults)
-                self.db.result['execution_time'] = execution_time - time_halted
+                self.__monitor_execution(
+                    latent_faults, persistent_faults, log_time=True)
+                self.db.result['execution_time'] -= time_halted
                 check_latent_faults()
             if self.db.campaign['simics']:
                 close_simics()

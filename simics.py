@@ -92,6 +92,7 @@ class simics(object):
             if self.db.campaign['aux']:
                 buff += self.__command('connect-real-network-port-in ssh '
                                        'ethernet_switch0 target-ip=10.10.0.104')
+        self.__command('enable-real-time-mode')
         found_settings = 0
         if checkpoint is None:
             serial_ports = []
@@ -407,7 +408,7 @@ class simics(object):
         start_cycles = int(time_data[2])
         start_sim_time = float(time_data[3])
         self.continue_dut()
-        start = perf_counter()
+        total_execution_time = 0
         for i in range(self.options.iterations):
             if self.db.campaign['aux']:
                 aux_process = Thread(
@@ -425,9 +426,10 @@ class simics(object):
             if self.db.campaign['kill_dut']:
                 self.dut.serial.write('\x03')
             dut_process.join()
+            total_execution_time += self.dut.get_timer_value()
         self.halt_dut()
         self.db.campaign['execution_time'] = \
-            (perf_counter() - start) / self.options.iterations
+            total_execution_time / self.options.iterations
         time_data = self.__command('print-time').split('\n')[-2].split()
         end_cycles = int(time_data[2])
         end_sim_time = float(time_data[3])
@@ -497,7 +499,7 @@ class simics(object):
                 latent_faults = errors
             if injections_remaining:
                 self.close()
-        time_halted = perf_counter() - start_time - total_execution_time
+        time_halted = (perf_counter() - start_time) - total_execution_time
         return (latent_faults, (latent_faults and persistent_faults()),
                 time_halted)
 

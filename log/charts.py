@@ -929,6 +929,10 @@ def execution_times_charts(results, injections, outcomes, group_categories,
             }
         }
     }
+    window_size = 10
+    chart_smoothed = deepcopy(chart)
+    chart_smoothed['chart']['type'] = 'area'
+    chart_smoothed['chart']['renderTo'] = 'execution_times_smoothed_chart'
     for outcome in outcomes:
         filter_kwargs = {}
         filter_kwargs['outcome_category' if group_categories
@@ -938,13 +942,19 @@ def execution_times_charts(results, injections, outcomes, group_categories,
                                                         flat=True),
             times)
         chart['series'].append({'data': data, 'name': outcome})
-    chart = dumps(chart, indent=4)
-    if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_data.append(chart)
+        chart_smoothed['series'].append({
+            'data': convolve(
+                data, ones(window_size)/window_size, 'same').tolist(),
+            'name': outcome,
+            'stacking': True})
+    chart_data.append(dumps(chart, indent=4))
     chart_list.append(('execution_times_chart', 'Execution Times ('
                        '\u03bc={0:.2f}, \u03c3={1:.2f})'.format(avg, std_dev),
                        order))
+    chart_data.append(dumps(chart_smoothed, indent=4))
+    chart_list.append(('execution_times_smoothed_chart', 'Execution Times ('
+                       '\u03bc={0:.2f}, \u03c3={1:.2f}, Window={2})'.format(
+                        avg, std_dev, window_size), order))
     print('execution_times_charts', round(time()-start, 2), 'seconds')
 
 
@@ -1011,6 +1021,11 @@ def simulated_execution_times_charts(results, injections, outcomes,
             }
         }
     }
+    window_size = 10
+    chart_smoothed = deepcopy(chart)
+    chart_smoothed['chart']['type'] = 'area'
+    chart_smoothed['chart']['renderTo'] = \
+        'simulated_execution_times_smoothed_chart'
     for outcome in outcomes:
         filter_kwargs = {}
         filter_kwargs['outcome_category' if group_categories
@@ -1020,14 +1035,21 @@ def simulated_execution_times_charts(results, injections, outcomes,
                 'simulated_execution_time', flat=True),
             times)
         chart['series'].append({'data': data, 'name': outcome})
-    chart = dumps(chart, indent=4)
-    if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_data.append(chart)
+        chart_smoothed['series'].append({
+            'data': convolve(
+                data, ones(window_size)/window_size, 'same').tolist(),
+            'name': outcome,
+            'stacking': True})
+    chart_data.append(dumps(chart, indent=4))
     chart_list.append(('simulated_execution_times_chart',
                        'Simulated Execution Times ('
                        '\u03bc={0:.2f}, \u03c3={1:.2f})'.format(avg, std_dev),
                        order))
+    chart_data.append(dumps(chart_smoothed, indent=4))
+    chart_list.append(('simulated_execution_times_smoothed_chart',
+                       'Simulated Execution Times '
+                       '(\u03bc={0:.2f}, \u03c3={1:.2f}, Window={2})'.format(
+                        avg, std_dev, window_size), order))
     print('simulated_execution_times_charts', round(time()-start, 2), 'seconds')
 
 
@@ -1104,8 +1126,8 @@ def times_charts(results, injections, outcomes, group_categories, chart_data,
             'stacking': True})
     chart_data.append(dumps(chart_smoothed, indent=4))
     chart_list.append(('times_smoothed_chart',
-                       'Injections Over Time (Moving Average Window Size = ' +
-                       str(window_size)+')', order))
+                       'Injections Over Time (Window={})'.format(window_size),
+                       order))
     chart = dumps(chart, indent=4)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
@@ -1187,8 +1209,8 @@ def checkpoints_charts(results, injections, outcomes, group_categories,
             'stacking': True})
     chart_data.append(dumps(chart_smoothed, indent=4))
     chart_list.append(('checkpoints_smoothed_chart',
-                       'Injections Over Time (Moving Average Window Size = ' +
-                       str(window_size)+')', order))
+                       'Injections Over Time (Window={})'.format(window_size),
+                       order))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+

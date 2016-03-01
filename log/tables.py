@@ -7,9 +7,20 @@ datetime_format = 'M j, Y h:i:s A'
 
 
 class campaigns(Table):
-    id_ = TemplateColumn(
-        '<a href="/campaign/{{ value }}/info">{{ value }}</a>',
-        accessor='id')
+    # id_ = TemplateColumn(
+    #     '<a href="/campaign/{{ value }}/info">{{ value }}</a>',
+    #     accessor='id')
+    links = TemplateColumn(
+        '<a href="/campaign/{{ record.id }}/info">'
+        '<i class="fa fa-info"></i></a> &nbsp;'
+        '<a href="/campaign/{{ record.id }}/results">'
+        '<i class="fa fa-list"></i></a> &nbsp;'
+        '<a href="/campaign/{{ record.id }}/events">'
+        '<i class="fa fa-calendar"></i></a> &nbsp;'
+        '<a href="/campaign/{{ record.id }}/injections">'
+        '<i class="fa fa-crosshairs"></i></a> &nbsp;'
+        '<a href="/campaign/{{ record.id }}/category_charts">'
+        '<i class="fa fa-bar-chart"></i></a>', orderable=False)
     results = Column(empty_values=(), orderable=False)
     timestamp = DateTimeColumn(format=datetime_format)
 
@@ -28,11 +39,11 @@ class campaigns(Table):
 
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        fields = ('id_', 'results', 'command', 'architecture', 'simics',
+        fields = ('links', 'id', 'results', 'command', 'architecture', 'simics',
                   'execution_time', 'simulated_execution_time', 'cycles',
                   'timestamp')
         model = models.campaign
-        order_by = 'id_'
+        order_by = 'id'
         template = 'django_tables2/bootstrap.html'
 
 
