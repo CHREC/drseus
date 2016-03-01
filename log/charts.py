@@ -456,13 +456,19 @@ def propagation_chart(results, injections, outcomes, group_categories,
     mem_diff_list = []
     for target in targets:
         count = injections.filter(target=target).count()
-        if count > 0:
+        if count:
             reg_diff_count = injections.filter(target=target).aggregate(
                 reg_count=Count('result__simics_register_diff'))['reg_count']
+            if reg_diff_count:
+                reg_diff_list.append(reg_diff_count/count)
+            else:
+                reg_diff_list.append(None)
             mem_diff_count = injections.filter(target=target).aggregate(
                 mem_count=Count('result__simics_memory_diff'))['mem_count']
-            reg_diff_list.append(reg_diff_count/count)
-            mem_diff_list.append(mem_diff_count/count)
+            if mem_diff_count:
+                mem_diff_list.append(mem_diff_count/count)
+            else:
+                mem_diff_list.append(None)
         else:
             reg_diff_list.append(None)
             mem_diff_list.append(None)
