@@ -34,14 +34,10 @@ class campaigns(Table):
         return '{:,}'.format(
             models.result.objects.filter(campaign=record.id).count())
 
-    def render_simulated_execution_time(self, record):
-        return '{0:.4f}'.format(record.simulated_execution_time)
-
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('links', 'id', 'results', 'command', 'architecture', 'simics',
-                  'execution_time', 'simulated_execution_time', 'cycles',
-                  'timestamp')
+                  'execution_time', 'cycles', 'timestamp')
         model = models.campaign
         order_by = 'id'
         template = 'django_tables2/bootstrap.html'
@@ -67,15 +63,12 @@ class campaign(Table):
         return '{:,}'.format(
             models.result.objects.filter(campaign=record.id).count())
 
-    def render_simulated_execution_time(self, record):
-        return '{0:.4f}'.format(record.simulated_execution_time)
-
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('id', 'timestamp', 'results', 'command', 'aux_command',
                   'description', 'architecture', 'simics', 'aux',
-                  'execution_time', 'simulated_execution_time', 'cycles',
-                  'output_file', 'checkpoints', 'cycles_between')
+                  'execution_time', 'cycles', 'output_file', 'checkpoints',
+                  'cycles_between')
         model = models.campaign
         orderable = False
         template = 'django_tables2/bootstrap.html'
@@ -134,9 +127,6 @@ class results(Table):
         else:
             return '-'
 
-    def render_simulated_execution_time(self, record):
-        return '{0:.4f}'.format(record.simulated_execution_time)
-
     def render_targets(self, record):
         if record is not None:
             targets = [injection.target for injection
@@ -154,9 +144,9 @@ class results(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('select_box', 'id_', 'dut_serial_port', 'timestamp',
-                  'outcome_category', 'outcome', 'execution_time',
-                  'simulated_execution_time', 'cycles', 'data_diff', 'events',
-                  'targets', 'registers', 'injection_success')
+                  'outcome_category', 'outcome', 'execution_time', 'cycles',
+                  'data_diff', 'events', 'targets', 'registers',
+                  'injection_success')
         model = models.result
         order_by = '-id_'
         template = 'django_tables2/bootstrap.html'
@@ -179,14 +169,11 @@ class result(Table):
     def render_execution_time(self, record):
         return '{0:.4f}'.format(record.execution_time)
 
-    def render_simulated_execution_time(self, record):
-        return '{0:.4f}'.format(record.simulated_execution_time)
-
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('dut_serial_port', 'timestamp', 'outcome_category', 'outcome',
-                  'execution_time', 'simulated_execution_time', 'cycles',
-                  'num_injections', 'data_diff', 'detected_errors')
+                  'execution_time', 'cycles', 'num_injections', 'data_diff',
+                  'detected_errors')
         model = models.result
         orderable = False
         template = 'django_tables2/bootstrap.html'

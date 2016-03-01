@@ -406,7 +406,7 @@ class simics(object):
         self.halt_dut()
         time_data = self.__command('print-time').split('\n')[-2].split()
         start_cycles = int(time_data[2])
-        start_sim_time = float(time_data[3])
+        start_time = float(time_data[3])
         self.continue_dut()
         for i in range(self.options.iterations):
             if self.db.campaign['aux']:
@@ -428,13 +428,13 @@ class simics(object):
         self.halt_dut()
         time_data = self.__command('print-time').split('\n')[-2].split()
         end_cycles = int(time_data[2])
-        end_sim_time = float(time_data[3])
+        end_time = float(time_data[3])
         self.db.campaign['start_cycle'] = end_cycles
-        self.db.campaign['start_simulated_execution_time'] = end_sim_time
+        self.db.campaign['start_time'] = end_time
         self.db.campaign['cycles'] = \
             int((end_cycles - start_cycles) / self.options.iterations)
-        self.db.campaign['simulated_execution_time'] = \
-            (end_sim_time - start_sim_time) / self.options.iterations
+        self.db.campaign['execution_time'] = \
+            (end_time - start_time) / self.options.iterations
         with self.db as db:
             db.log_event_success(event, update_timestamp=True)
         create_checkpoints()

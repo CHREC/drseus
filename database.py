@@ -167,7 +167,6 @@ class database(object):
                             'outcome_category': 'Incomplete',
                             'outcome': 'In progress',
                             'returned': None,
-                            'simulated_execution_time': None,
                             'timestamp': None})
         self.insert('result')
 

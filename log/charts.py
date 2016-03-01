@@ -177,9 +177,9 @@ def target_bits_chart(campaign):
 def results_charts(results, group_categories):
     charts = (overview_chart, targets_charts, propagation_chart,
               diff_targets_chart, registers_chart, tlbs_chart, tlb_fields_chart,
-              register_bits_chart, execution_times_charts,
-              simulated_execution_times_charts, times_charts, diff_times_chart,
-              checkpoints_charts, diff_checkpoints_chart, counts_chart)
+              register_bits_chart, execution_times_charts, times_charts,
+              diff_times_chart, checkpoints_charts, diff_checkpoints_chart,
+              counts_chart)
     injections = models.injection.objects.filter(
         result__id__in=results.values('id'))
     if group_categories:
@@ -955,101 +955,6 @@ def execution_times_charts(results, injections, outcomes, group_categories,
                        '\u03bc={0:.2f}, \u03c3={1:.2f}, Window={2})'.format(
                         avg, std_dev, window_size), order))
     print('execution_times_charts', round(time()-start, 2), 'seconds')
-
-
-def simulated_execution_times_charts(results, injections, outcomes,
-                                     group_categories, chart_data, chart_list,
-                                     order):
-    start = time()
-    results = results.exclude(simulated_execution_time__isnull=True).filter(
-        returned=True)
-    if results.count() < 1:
-        return
-    avg = results.aggregate(
-        Avg('simulated_execution_time'))['simulated_execution_time__avg']
-    std_dev = results.aggregate(
-        StdDev('simulated_execution_time'))['simulated_execution_time__stddev']
-    std_dev_range = 3
-    times = linspace(
-        max(0, avg-(std_dev*std_dev_range)), avg+(std_dev*std_dev_range), 1000,
-        endpoint=False).tolist()
-    times = [round(time, 4) for time in times if time]
-    extra_colors = list(colors_extra)
-    chart = {
-        'chart': {
-            'renderTo': 'simulated_execution_times_chart',
-            'type': 'column',
-            'zoomType': 'xy'
-        },
-        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
-                   for outcome in outcomes],
-        'credits': {
-            'enabled': False
-        },
-        'exporting': {
-            'filename': 'simulated_execution_times_chart',
-            'sourceWidth': 960,
-            'sourceHeight': 540,
-            'scale': 2
-        },
-        'plotOptions': {
-            'series': {
-                'point': {
-                    'events': {
-                        'click': 'click_function'
-                    }
-                },
-                'stacking': True
-            }
-        },
-        'series': [],
-        'title': {
-            'text': None
-        },
-        'xAxis': {
-            'categories': times,
-            'title': {
-                'text': 'Simulated Execution Time (Seconds) for '
-                        '(\u03bc-{0}\u03c3, \u03bc+{0}\u03c3)'.format(
-                            std_dev_range)
-            }
-        },
-        'yAxis': {
-            'title': {
-                'text': 'Total Results'
-            }
-        }
-    }
-    window_size = 10
-    chart_smoothed = deepcopy(chart)
-    chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] = \
-        'simulated_execution_times_smoothed_chart'
-    for outcome in outcomes:
-        filter_kwargs = {}
-        filter_kwargs['outcome_category' if group_categories
-                      else 'outcome'] = outcome
-        data = count_intervals(
-            results.filter(**filter_kwargs).values_list(
-                'simulated_execution_time', flat=True),
-            times)
-        chart['series'].append({'data': data, 'name': outcome})
-        chart_smoothed['series'].append({
-            'data': convolve(
-                data, ones(window_size)/window_size, 'same').tolist(),
-            'name': outcome,
-            'stacking': True})
-    chart_data.append(dumps(chart, indent=4))
-    chart_list.append(('simulated_execution_times_chart',
-                       'Simulated Execution Times ('
-                       '\u03bc={0:.2f}, \u03c3={1:.2f})'.format(avg, std_dev),
-                       order))
-    chart_data.append(dumps(chart_smoothed, indent=4))
-    chart_list.append(('simulated_execution_times_smoothed_chart',
-                       'Simulated Execution Times '
-                       '(\u03bc={0:.2f}, \u03c3={1:.2f}, Window={2})'.format(
-                        avg, std_dev, window_size), order))
-    print('simulated_execution_times_charts', round(time()-start, 2), 'seconds')
 
 
 def times_charts(results, injections, outcomes, group_categories, chart_data,

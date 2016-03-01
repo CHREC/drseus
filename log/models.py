@@ -19,10 +19,9 @@ class campaign(Model):
     kill_dut = BooleanField()
     output_file = TextField()
     rsakey = TextField()
-    simulated_execution_time = FloatField(null=True)
     simics = BooleanField()
     start_cycle = BigIntegerField(null=True)
-    start_simulated_execution_time = FloatField(null=True)
+    start_time = FloatField(null=True)
     timestamp = DateTimeField()
     aux_output_file = BooleanField()
 
@@ -42,7 +41,6 @@ class result(Model):
     num_injections = IntegerField(null=True)
     outcome = TextField()
     outcome_category = TextField()
-    simulated_execution_time = FloatField(null=True)
     timestamp = DateTimeField()
 
 

@@ -39,15 +39,12 @@ class fault_injector(object):
         if self.db.campaign['aux']:
             string += \
                 '\n\t\tAUX Command: \"'+self.db.campaign['aux_command']+'\"'
-        string += ('\n\t\t'+('Host 'if self.db.campaign['simics'] else '') +
-                   'Execution Time: '+str(self.db.campaign['execution_time']) +
-                   ' seconds')
+        string += ('\n\t\t'+'Execution Time: ' +
+                   str(self.db.campaign['execution_time'])+' seconds')
         if self.db.campaign['simics']:
             string += ('\n\t\tExecution Cycles: ' +
                        '{:,}'.format(self.db.campaign['cycles']) +
-                       ' cycles\n\t\tSimulated Execution Time: ' +
-                       str(self.db.campaign['simulated_execution_time']) +
-                       ' seconds')
+                       ' cycles\n')
         return string
 
     def close(self):
@@ -229,13 +226,11 @@ class fault_injector(object):
         finally:
             if log_time:
                 if self.db.campaign['simics']:
-                    end_cycles, end_simulated_execution_time = \
-                        self.debugger.get_time()
+                    end_cycles, end_time = self.debugger.get_time()
                     self.db.result['cycles'] = \
                         end_cycles - self.db.campaign['start_cycle']
-                    self.db.result['simulated_execution_time'] = (
-                        end_simulated_execution_time -
-                        self.db.campaign['start_simulated_execution_time'])
+                    self.db.result['execution_time'] = (
+                        end_time - self.db.campaign['start_time'])
                 else:
                     self.db.result['execution_time'] = \
                         self.debugger.dut.get_timer_value()
