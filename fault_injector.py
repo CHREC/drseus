@@ -228,8 +228,6 @@ class fault_injector(object):
             self.db.result['returned'] = returned
         finally:
             if log_time:
-                self.db.result['execution_time'] = \
-                    self.debugger.dut.get_timer_value()
                 if self.db.campaign['simics']:
                     end_cycles, end_simulated_execution_time = \
                         self.debugger.get_time()
@@ -238,6 +236,9 @@ class fault_injector(object):
                     self.db.result['simulated_execution_time'] = (
                         end_simulated_execution_time -
                         self.db.campaign['start_simulated_execution_time'])
+                else:
+                    self.db.result['execution_time'] = \
+                        self.debugger.dut.get_timer_value()
             if self.db.campaign['simics']:
                 self.debugger.continue_dut()
         if self.db.campaign['output_file'] and \
@@ -364,7 +365,8 @@ class fault_injector(object):
             else:
                 self.__monitor_execution(
                     latent_faults, persistent_faults, log_time=True)
-                self.db.result['execution_time'] -= time_halted
+                if not self.db.campaign['simics']:
+                    self.db.result['execution_time'] -= time_halted
                 check_latent_faults()
             if self.db.campaign['simics']:
                 close_simics()

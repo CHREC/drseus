@@ -871,8 +871,7 @@ def count_intervals(items, intervals, data_diff=False):
 def execution_times_charts(results, injections, outcomes, group_categories,
                            chart_data, chart_list, order):
     start = time()
-    results = results.exclude(execution_time__isnull=True).filter(
-        simulated_execution_time__isnull=True, returned=True)
+    results = results.exclude(execution_time__isnull=True).filter(returned=True)
     if results.count() < 1:
         return
     avg = results.aggregate(Avg('execution_time'))['execution_time__avg']
