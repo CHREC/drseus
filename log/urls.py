@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-from . import views
+from log import views
 
 urlpatterns = [
     url(r'^$', views.campaigns_page),

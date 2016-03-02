@@ -429,7 +429,7 @@ def launch_openocd(options):
 
 
 def launch_supervisor(options):
-    supervisor(get_campaign(options.campaign_id), options).cmdloop()
+    supervisor(get_campaign(options), options).cmdloop()
 
 
 def backup(options):

@@ -1,0 +1,339 @@
+from copy import deepcopy
+from django.db.models import Avg, Case, Count, IntegerField, Sum, When
+from json import dumps
+from time import time
+
+from log.charts import colors, colors_extra
+
+
+def outcomes(results, injections, outcomes, group_categories, chart_data,
+             chart_list, order, success=False):
+    start = time()
+    targets = list(injections.values_list('target', flat=True).distinct(
+        ).order_by('target'))
+    if len(targets) < 1:
+        return
+    extra_colors = list(colors_extra)
+    chart = {
+        'chart': {
+            'renderTo': 'targets_chart',
+            'type': 'column',
+            'zoomType': 'y'
+        },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': 'targets_chart',
+            'sourceWidth': 480,
+            'sourceHeight': 360,
+            'scale': 2
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'click_function'
+                    }
+                },
+                'stacking': True
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'xAxis': {
+            'categories': targets,
+            'title': {
+                'text': 'Injected Target'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Total Injections'
+            }
+        }
+    }
+    for outcome in outcomes:
+        when_kwargs = {'then': 1}
+        if success:
+            when_kwargs['success'] = outcome
+        else:
+            when_kwargs['result__outcome_category' if group_categories
+                        else 'result__outcome'] = outcome
+        data = list(injections.values_list('target').distinct(
+            ).order_by('target').annotate(
+            count=Sum(Case(When(**when_kwargs), default=0,
+                           output_field=IntegerField()))
+            ).values_list('count', flat=True))
+        chart['series'].append({'data': data, 'name': str(outcome)})
+    chart_percent = deepcopy(chart)
+    chart_percent['chart']['renderTo'] = 'targets_percent_chart'
+    chart_percent['plotOptions']['series']['stacking'] = 'percent'
+    chart_percent['yAxis'] = {
+        'labels': {
+            'format': '{value}%'
+        },
+        'title': {
+            'text': 'Percent of Injections'
+        }
+    }
+    chart_percent = dumps(chart_percent, indent=4).replace('\"click_function\"', """
+    function(event) {
+        window.location.assign('results?outcome='+this.series.name+
+                               '&injection__target='+this.category);
+    }
+    """.replace('\n    ', '\n                        '))
+    if group_categories:
+        chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
+    chart_data.append(chart_percent)
+    chart_list.append(('targets_percent_chart', 'Targets (Percentage Scale)',
+                       2))
+    if len(outcomes) == 1 and not success:
+        chart_log = deepcopy(chart)
+        chart_log['chart']['renderTo'] = 'targets_log_chart'
+        chart_log['yAxis']['type'] = 'logarithmic'
+        chart_log = dumps(chart_log, indent=4).replace('\"click_function\"', """
+        function(event) {
+            window.location.assign('results?outcome='+this.series.name+
+                                   '&injection__target='+this.category);
+        }
+        """.replace('\n    ', '\n                        '))
+        if group_categories:
+            chart_log = chart_log.replace('?outcome=', '?outcome_category=')
+        chart_data.append(chart_log)
+        chart_list.append(('targets_log_chart', 'Targets (Log Scale)', 3))
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    function(event) {
+        window.location.assign('results?outcome='+this.series.name+
+                               '&injection__target='+this.category);
+    }
+    """.replace('\n    ', '\n                        '))
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_data.append(chart)
+    chart_list.append(('targets_chart', 'Targets', order))
+    print('targets_charts:', round(time()-start, 2), 'seconds')
+
+
+def propagation(results, injections, outcomes, group_categories, chart_data,
+                chart_list, order):
+    start = time()
+    injections = injections.exclude(checkpoint__isnull=True)
+    targets = list(injections.values_list('target', flat=True).distinct(
+        ).order_by('target'))
+    if len(targets) < 1:
+        return
+    chart = {
+        'chart': {
+            'renderTo': 'propagation_chart',
+            'type': 'column',
+            'zoomType': 'y'
+        },
+        'colors': ('#77bfc7', '#a74ac7'),
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': 'propagation_chart',
+            'sourceWidth': 480,
+            'sourceHeight': 360,
+            'scale': 2
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'click_function'
+                    }
+                }
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'xAxis': {
+            'categories': targets,
+            'title': {
+                'text': 'Injected Target'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Average Items Affected'
+            },
+            'type': 'logarithmic'
+        }
+    }
+    reg_diff_list = []
+    mem_diff_list = []
+    for target in targets:
+        count = injections.filter(target=target).count()
+        if count:
+            reg_diff_count = injections.filter(target=target).aggregate(
+                reg_count=Count('result__simics_register_diff'))['reg_count']
+            if reg_diff_count:
+                reg_diff_list.append(reg_diff_count/count)
+            else:
+                reg_diff_list.append(None)
+            mem_diff_count = injections.filter(target=target).aggregate(
+                mem_count=Count('result__simics_memory_diff'))['mem_count']
+            if mem_diff_count:
+                mem_diff_list.append(mem_diff_count/count)
+            else:
+                mem_diff_list.append(None)
+        else:
+            reg_diff_list.append(None)
+            mem_diff_list.append(None)
+    chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
+    chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    function(event) {
+        window.location.assign('results?injection__target='+this.category);
+    }
+    """.replace('\n    ', '\n                        '))
+    chart_data.append(chart)
+    chart_list.append(('propagation_chart', 'Fault Propagation', order))
+    print('propagation_chart:', round(time()-start, 2), 'seconds')
+
+
+def data_diff(results, injections, outcomes, group_categories, chart_data,
+              chart_list, order):
+    start = time()
+    targets = list(injections.values_list('target', flat=True).distinct(
+        ).order_by('target'))
+    if len(targets) < 1:
+        return
+    chart = {
+        'chart': {
+            'renderTo': 'diff_targets_chart',
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'colors': ('#008080', ),
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': 'diff_targets_chart',
+            'sourceWidth': 480,
+            'sourceHeight': 360,
+            'scale': 2
+        },
+        'legend': {
+            'enabled': False
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'click_function'
+                    }
+                }
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'xAxis': {
+            'categories': targets,
+            'title': {
+                'text': 'Injected Target'
+            }
+        },
+        'yAxis': {
+            'labels': {
+                'format': '{value}%'
+            },
+            'max': 100,
+            'title': {
+                'text': 'Average Data Match'
+            }
+        }
+    }
+    data = injections.values_list('target').distinct().order_by(
+        'target').annotate(
+            avg=Avg(Case(When(result__data_diff__isnull=True, then=0),
+                         default='result__data_diff'))
+        ).values_list('avg', flat=True)
+    chart['series'].append({'data': [x*100 for x in data]})
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    function(event) {
+        window.location.assign('results?injection__target='+this.category);
+    }
+    """.replace('\n    ', '\n                        '))
+    chart_data.append(chart)
+    chart_list.append(('diff_targets_chart', 'Data Diff By Target', order))
+    print('diff_targets_chart:', round(time()-start, 2), 'seconds')
+
+
+def execution_time(results, injections, outcomes, group_categories, chart_data,
+                   chart_list, order):
+    start = time()
+    injections = injections.exclude(result__execution_time__isnull=True)
+    targets = list(injections.values_list('target', flat=True).distinct(
+        ).order_by('target'))
+    if len(targets) < 1:
+        return
+    chart = {
+        'chart': {
+            'renderTo': 'execution_time_targets_chart',
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'colors': ('#008080', ),
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': 'execution_time_targets_chart',
+            'sourceWidth': 480,
+            'sourceHeight': 360,
+            'scale': 2
+        },
+        'legend': {
+            'enabled': False
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'click_function'
+                    }
+                }
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'xAxis': {
+            'categories': targets,
+            'title': {
+                'text': 'Injected Target'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Average Execution Time'
+            }
+        }
+    }
+    data = list(injections.values_list('target').distinct().order_by(
+        'target').annotate(avg=Avg('result__execution_time')).values_list(
+            'avg', flat=True))
+    chart['series'].append({'data': data})
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    function(event) {
+        window.location.assign('results?injection__target='+this.category);
+    }
+    """.replace('\n    ', '\n                        '))
+    chart_data.append(chart)
+    chart_list.append(('execution_time_targets_chart',
+                       'Average Execution Time By Target', order))
+    print('execution_time_targets_chart:', round(time()-start, 2), 'seconds')

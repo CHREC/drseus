@@ -3,7 +3,7 @@ from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             MultipleChoiceFilter, NumberFilter)
 from re import split
 
-from . import models
+from log import models
 
 
 def fix_sort(string):

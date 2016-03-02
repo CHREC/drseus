@@ -152,6 +152,8 @@ class supervisor(Cmd):
         self.drseus.close()
         return True
 
+    do_EOF = do_exit
+
 
 class aux_supervisor(supervisor):
     def do_update_aux_timeout(self, arg):

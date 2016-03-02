@@ -1,7 +1,7 @@
 from django_tables2 import (BooleanColumn, CheckBoxColumn, Column,
                             DateTimeColumn, Table, TemplateColumn)
 
-from . import models
+from log import models
 
 datetime_format = 'M j, Y h:i:s A'
 
