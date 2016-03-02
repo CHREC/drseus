@@ -244,8 +244,9 @@ def results_page(request, campaign_id=None):
 
 def result_page(request, result_id):
     result = models.result.objects.get(id=result_id)
-    campaign_items_ = [(item[0], '../'+item[1], item[2], item[3])
-                       for item in campaign_items]
+    campaign_items_ = [
+        (item[0], '/campaign/'+str(result.campaign_id)+'/'+item[1], item[2],
+         item[3]) for item in campaign_items]
     output_file = ('campaign-data/'+str(result.campaign_id)+'/results/' +
                    result_id+'/'+result.campaign.output_file)
     output_image = exists(output_file) and what(output_file) is not None
