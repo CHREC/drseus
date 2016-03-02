@@ -251,7 +251,7 @@ def result_page(request, result_id):
     output_image = exists(output_file) and what(output_file) is not None
     result_table = tables.result(models.result.objects.filter(id=result_id))
     event_table = tables.event(models.event.objects.filter(result_id=result_id))
-    if request.method == 'GET' and 'launch' in request.GET:
+    if request.method == 'POST' and 'launch' in request.POST:
         drseus = 'drseus.py'
         if not exists(drseus):
             drseus = 'drseus.sh'
