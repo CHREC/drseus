@@ -142,7 +142,7 @@ def results_charts(results, group_categories):
               times.outcomes, times.data_diff, checkpoints.outcomes,
               checkpoints.data_diff, other.num_injections)
     injections = models.injection.objects.filter(
-        result__id__in=results.values('id'))
+        result_id__in=results.values('id'))
     if group_categories:
         outcomes = list(results.values_list(
             'outcome_category', flat=True).distinct(
@@ -166,9 +166,11 @@ def results_charts(results, group_categories):
     chart_list = []
     threads = []
     for order, chart in enumerate(charts):
-        thread = Thread(target=chart,
-                        args=(results, injections, outcomes, group_categories,
-                              chart_data, chart_list, order))
+        thread = Thread(target=chart, kwargs={
+            'chart_data': chart_data, 'chart_list': chart_list,
+            'group_categories': group_categories, 'injections': injections,
+            'order': order, 'outcomes': outcomes, 'results': results,
+            'success': False})
         thread.start()
         threads.append(thread)
     for thread in threads:
@@ -187,9 +189,10 @@ def injections_charts(injections):
     chart_list = []
     threads = []
     for order, chart in enumerate(charts):
-        thread = Thread(target=chart,
-                        args=(results, injections, outcomes, False, chart_data,
-                              chart_list, order, True))
+        thread = Thread(target=chart, kwargs={
+            'chart_data': chart_data, 'chart_list': chart_list,
+            'group_categories': False, 'injections': injections, 'order': order,
+            'outcomes': outcomes, 'results': results, 'success': True})
         thread.start()
         threads.append(thread)
     for thread in threads:

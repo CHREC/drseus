@@ -6,8 +6,15 @@ from time import time
 from log.charts import colors, colors_extra
 
 
-def outcomes(results, injections, outcomes, group_categories, chart_data,
-             chart_list, order, success=False):
+def outcomes(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    injections = kwargs['injections']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+    success = kwargs['success']
+
     start = time()
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -119,8 +126,12 @@ def outcomes(results, injections, outcomes, group_categories, chart_data,
     print('targets_charts:', round(time()-start, 2), 'seconds')
 
 
-def propagation(results, injections, outcomes, group_categories, chart_data,
-                chart_list, order):
+def propagation(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    injections = kwargs['injections']
+    order = kwargs['order']
+
     start = time()
     injections = injections.exclude(checkpoint__isnull=True)
     targets = list(injections.values_list('target', flat=True).distinct(
@@ -201,8 +212,12 @@ def propagation(results, injections, outcomes, group_categories, chart_data,
     print('propagation_chart:', round(time()-start, 2), 'seconds')
 
 
-def data_diff(results, injections, outcomes, group_categories, chart_data,
-              chart_list, order):
+def data_diff(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    injections = kwargs['injections']
+    order = kwargs['order']
+
     start = time()
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
@@ -272,8 +287,12 @@ def data_diff(results, injections, outcomes, group_categories, chart_data,
     print('diff_targets_chart:', round(time()-start, 2), 'seconds')
 
 
-def execution_time(results, injections, outcomes, group_categories, chart_data,
-                   chart_list, order):
+def execution_time(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    injections = kwargs['injections']
+    order = kwargs['order']
+
     start = time()
     injections = injections.exclude(result__execution_time__isnull=True)
     targets = list(injections.values_list('target', flat=True).distinct(

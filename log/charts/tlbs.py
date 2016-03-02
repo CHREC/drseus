@@ -3,12 +3,19 @@ from django.db.models.functions import Concat, Length, Substr
 from json import dumps
 from time import time
 
+from log import fix_sort, fix_sort_list
 from log.charts import colors, colors_extra
-from log.filters import fix_sort, fix_sort_list
 
 
-def outcomes(results, injections, outcomes, group_categories, chart_data,
-             chart_list, order, success=False):
+def outcomes(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    injections = kwargs['injections']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+    success = kwargs['success']
+
     start = time()
     injections = injections.filter(target='TLB')
     tlb_entries = injections.annotate(
@@ -114,8 +121,14 @@ def outcomes(results, injections, outcomes, group_categories, chart_data,
     print('tlbs_chart:', round(time()-start, 2), 'seconds')
 
 
-def fields(results, injections, outcomes, group_categories, chart_data,
-           chart_list, order):
+def fields(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    injections = kwargs['injections']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+
     start = time()
     fields = list(injections.filter(target='TLB').values_list(
         'field', flat=True).distinct().order_by('field'))

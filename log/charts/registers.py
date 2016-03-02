@@ -3,12 +3,19 @@ from django.db.models.functions import Concat
 from json import dumps
 from time import time
 
+from log import fix_sort, fix_sort_list
 from log.charts import colors, colors_extra
-from log.filters import fix_sort, fix_sort_list
 
 
-def outcomes(results, injections, outcomes,  group_categories, chart_data,
-             chart_list, order, success=False):
+def outcomes(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    injections = kwargs['injections']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+    success = kwargs['success']
+
     start = time()
     injections = injections.exclude(target='TLB')
     registers = injections.annotate(
@@ -109,8 +116,15 @@ def outcomes(results, injections, outcomes,  group_categories, chart_data,
     print('registers_chart:', round(time()-start, 2), 'seconds')
 
 
-def bits(results, injections, outcomes, group_categories, chart_data,
-         chart_list, order, success=False):
+def bits(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    injections = kwargs['injections']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+    success = kwargs['success']
+
     start = time()
     injections = injections.exclude(target='TLB')
     bits = list(injections.values_list('bit', flat=True).distinct().order_by(

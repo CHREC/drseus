@@ -6,8 +6,14 @@ from time import time
 from log.charts import colors, colors_extra
 
 
-def overview(results, injections, outcomes, group_categories, chart_data,
-             chart_list, order):
+def overview(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+    results = kwargs['results']
+
     start = time()
     if len(outcomes) <= 1:
         return
@@ -79,8 +85,14 @@ def overview(results, injections, outcomes, group_categories, chart_data,
     print('overview_chart:', round(time()-start, 2), 'seconds')
 
 
-def num_injections(results, injections, outcomes, group_categories,
-                   chart_data, chart_list, order):
+def num_injections(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+    results = kwargs['results']
+
     start = time()
     results = results.exclude(
         num_injections__isnull=True).exclude(num_injections=0)

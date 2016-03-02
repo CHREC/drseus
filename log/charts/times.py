@@ -7,8 +7,14 @@ from time import time
 from log.charts import colors, colors_extra, count_intervals
 
 
-def outcomes(results, injections, outcomes, group_categories, chart_data,
-             chart_list, order):
+def outcomes(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    injections = kwargs['injections']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+
     start = time()
     injections = injections.exclude(time__isnull=True)
     if injections.count() <= 1:
@@ -92,8 +98,12 @@ def outcomes(results, injections, outcomes, group_categories, chart_data,
     print('times_charts', round(time()-start, 2), 'seconds')
 
 
-def data_diff(results, injections, outcomes, group_categories, chart_data,
-              chart_list, order):
+def data_diff(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    injections = kwargs['injections']
+    order = kwargs['order']
+
     start = time()
     injections = injections.exclude(time__isnull=True)
     if injections.count() <= 1:
@@ -161,8 +171,14 @@ def data_diff(results, injections, outcomes, group_categories, chart_data,
     print('diff_times_chart:', round(time()-start, 2), 'seconds')
 
 
-def execution_times(results, injections, outcomes, group_categories, chart_data,
-                    chart_list, order):
+def execution_times(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+    results = kwargs['results']
+
     start = time()
     results = results.exclude(execution_time__isnull=True).filter(returned=True)
     if results.count() < 1:

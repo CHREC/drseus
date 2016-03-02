@@ -1,18 +1,8 @@
 from django.forms import NumberInput, Select, SelectMultiple, Textarea
 from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             MultipleChoiceFilter, NumberFilter)
-from re import split
 
-from log import models
-
-
-def fix_sort(string):
-    return ''.join([text.zfill(5) if text.isdigit() else text.lower() for
-                    text in split('([0-9]+)', str(string))])
-
-
-def fix_sort_list(list):
-    return fix_sort(list[0])
+from log import fix_sort_list, models
 
 
 max_select_box_size = 20
