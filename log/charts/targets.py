@@ -98,7 +98,7 @@ def outcomes(**kwargs):
         chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart_percent)
     chart_list.append(('targets_percent_chart', 'Targets (Percentage Scale)',
-                       2))
+                       False, order))
     if len(outcomes) == 1 and not success:
         chart_log = deepcopy(chart)
         chart_log['chart']['renderTo'] = 'targets_log_chart'
@@ -112,7 +112,8 @@ def outcomes(**kwargs):
         if group_categories:
             chart_log = chart_log.replace('?outcome=', '?outcome_category=')
         chart_data.append(chart_log)
-        chart_list.append(('targets_log_chart', 'Targets (Log Scale)', 3))
+        chart_list.append(('targets_log_chart', 'Targets (Log Scale)', False,
+                           order))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -122,7 +123,7 @@ def outcomes(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('targets_chart', 'Targets', order))
+    chart_list.append(('targets_chart', 'Targets', False, order))
     print('targets_charts:', round(time()-start, 2), 'seconds')
 
 
@@ -208,7 +209,7 @@ def propagation(**kwargs):
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('propagation_chart', 'Fault Propagation', order))
+    chart_list.append(('propagation_chart', 'Fault Propagation', False, order))
     print('propagation_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -283,7 +284,8 @@ def data_diff(**kwargs):
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('diff_targets_chart', 'Data Diff By Target', order))
+    chart_list.append(('diff_targets_chart', 'Data Diff By Target', False,
+                       order))
     print('diff_targets_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -354,5 +356,5 @@ def execution_time(**kwargs):
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
     chart_list.append(('execution_time_targets_chart',
-                       'Average Execution Time By Target', order))
+                       'Average Execution Time By Target', False, order))
     print('execution_time_targets_chart:', round(time()-start, 2), 'seconds')

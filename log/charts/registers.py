@@ -112,7 +112,7 @@ def outcomes(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('registers_chart', 'Registers', order))
+    chart_list.append(('registers_chart', 'Registers', False, order))
     print('registers_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -197,5 +197,5 @@ def bits(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('register_bits_chart', 'Register Bits', order))
+    chart_list.append(('register_bits_chart', 'Register Bits', False, order))
     print('register_bits_chart:', round(time()-start, 2), 'seconds')

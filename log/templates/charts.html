@@ -14,20 +14,29 @@
 
     <section class="content">
         <div class="row">
-            {% for chart, name in chart_list %}
+            {% for chart, name, raw_data in chart_list %}
                 <a name="{{ chart }}"></a>
                 <div class="col-lg-6 col-md-6">
                     <div class="box">
                         <div class="box-header">
                             <h3 class="box-title">{{ name }}</h3>
                             <div class="box-tools pull-right">
+                                {% if raw_data %}
+                                    <div class="btn-group" id="raw-data" data-toggle="btn-toggle">
+                                        <button type="button" class="btn btn-default btn-xs active" data-toggle="off">Smoothed</button>
+                                        <button type="button" class="btn btn-default btn-xs" data-toggle="on">Raw</button>
+                                    </div>
+                                {% endif %}
                                 <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
                                 <button class="btn btn-box-tool expand"><i class="fa fa-expand"></i></button>
                                 <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
                             </div>
                         </div>
                         <div class="box-body">
-                            <div id="{{ chart }}" class="chart-container"></div>
+                            <div id="{{ chart }}" class="chart-container{% if raw_data %} smooth-chart{% endif %}"></div>
+                            {% if raw_data %}
+                                <div id="{{ chart }}_raw" class="chart-container raw-chart hidden"></div>
+                            {% endif %}
                         </div>
                         <div class="overlay chart-loading-icon">
                             <i class="fa fa-refresh fa-spin"></i>
@@ -65,6 +74,25 @@
         {% else %}
             $('#charts-navigation-link').addClass('active')
         {% endif %}
+
+        $("#raw-data .btn").click(function () {
+            if ($(this).data("toggle") === "on") {
+                $(this).parents('.box').children('.box-body').children('.raw-chart').removeClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.smooth-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.raw-chart').highcharts().reflow();
+            }
+            else {
+               $(this).parents('.box').children('.box-body').children('.smooth-chart').removeClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.raw-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.smooth-chart').highcharts().reflow();
+            }
+
+        });
+
+        $('.expand').on('click', function () {
+                    $(this).parents('.box').children('.box-body').children('.chart-container').highcharts().reflow();
+                    return false;
+                });
 
         function group_charts(group_categories) {
             if (group_categories) {

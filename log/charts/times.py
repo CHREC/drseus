@@ -28,7 +28,7 @@ def outcomes(**kwargs):
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'times_chart',
+            'renderTo': 'times_chart_raw',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -38,7 +38,7 @@ def outcomes(**kwargs):
             'enabled': False
         },
         'exporting': {
-            'filename': 'times_chart',
+            'filename': 'times_chart_raw',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -72,7 +72,7 @@ def outcomes(**kwargs):
     window_size = 10
     chart_smoothed = deepcopy(chart)
     chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] = 'times_smoothed_chart'
+    chart_smoothed['chart']['renderTo'] = 'times_chart'
     for outcome in outcomes:
         filter_kwargs = {}
         filter_kwargs['result__outcome_category' if group_categories
@@ -87,14 +87,11 @@ def outcomes(**kwargs):
             'name': outcome,
             'stacking': True})
     chart_data.append(dumps(chart_smoothed, indent=4))
-    chart_list.append(('times_smoothed_chart',
-                       'Injections Over Time (Window={})'.format(window_size),
-                       order))
     chart = dumps(chart, indent=4)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('times_chart', 'Injections Over Time', order))
+    chart_list.append(('times_chart', 'Injections Over Time', True, order))
     print('times_charts', round(time()-start, 2), 'seconds')
 
 
@@ -167,7 +164,7 @@ def data_diff(**kwargs):
         data_diff=True)
     chart = dumps(chart, indent=4)
     chart_data.append(chart)
-    chart_list.append(('diff_times_chart', 'Data Diff Over Time', order))
+    chart_list.append(('diff_times_chart', 'Data Diff Over Time', False, order))
     print('diff_times_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -194,7 +191,7 @@ def execution_times(**kwargs):
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'execution_times_chart',
+            'renderTo': 'execution_times_chart_raw',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -204,7 +201,7 @@ def execution_times(**kwargs):
             'enabled': False
         },
         'exporting': {
-            'filename': 'execution_times_chart',
+            'filename': 'execution_times_chart_raw',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -240,7 +237,7 @@ def execution_times(**kwargs):
     window_size = 10
     chart_smoothed = deepcopy(chart)
     chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] = 'execution_times_smoothed_chart'
+    chart_smoothed['chart']['renderTo'] = 'execution_times_chart'
     for outcome in outcomes:
         filter_kwargs = {}
         filter_kwargs['outcome_category' if group_categories
@@ -258,9 +255,6 @@ def execution_times(**kwargs):
     chart_data.append(dumps(chart, indent=4))
     chart_list.append(('execution_times_chart', 'Execution Times ('
                        '\u03bc={0:.2f}, \u03c3={1:.2f})'.format(avg, std_dev),
-                       order))
+                       True, order))
     chart_data.append(dumps(chart_smoothed, indent=4))
-    chart_list.append(('execution_times_smoothed_chart', 'Execution Times ('
-                       '\u03bc={0:.2f}, \u03c3={1:.2f}, Window={2})'.format(
-                        avg, std_dev, window_size), order))
     print('execution_times_charts', round(time()-start, 2), 'seconds')

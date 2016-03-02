@@ -117,7 +117,7 @@ def outcomes(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('tlbs_chart', 'TLB Entries', order))
+    chart_list.append(('tlbs_chart', 'TLB Entries', False, order))
     print('tlbs_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -197,5 +197,5 @@ def fields(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('tlb_fields_chart', 'TLB Fields', order))
+    chart_list.append(('tlb_fields_chart', 'TLB Fields', False, order))
     print('tlb_fields_chart:', round(time()-start, 2), 'seconds')

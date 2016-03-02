@@ -24,7 +24,7 @@ def outcomes(**kwargs):
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'checkpoints_chart',
+            'renderTo': 'checkpoints_chart_raw',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -34,7 +34,7 @@ def outcomes(**kwargs):
             'enabled': False
         },
         'exporting': {
-            'filename': 'checkpoints_chart',
+            'filename': 'checkpoints_chart_raw',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -68,7 +68,7 @@ def outcomes(**kwargs):
     window_size = 10
     chart_smoothed = deepcopy(chart)
     chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] = 'checkpoints_smoothed_chart'
+    chart_smoothed['chart']['renderTo'] = 'checkpoints_chart'
     for outcome in outcomes:
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
@@ -85,9 +85,6 @@ def outcomes(**kwargs):
             'name': outcome,
             'stacking': True})
     chart_data.append(dumps(chart_smoothed, indent=4))
-    chart_list.append(('checkpoints_smoothed_chart',
-                       'Injections Over Time (Window={})'.format(window_size),
-                       order))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -97,7 +94,8 @@ def outcomes(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('checkpoints_chart', 'Injections Over Time', order))
+    chart_list.append(('checkpoints_chart', 'Injections Over Time', True,
+                       order))
     print('checkpoints_charts', round(time()-start, 2), 'seconds')
 
 
@@ -174,5 +172,6 @@ def data_diff(**kwargs):
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('diff_checkpoints_chart', 'Data Diff Over Time', order))
+    chart_list.append(('diff_checkpoints_chart', 'Data Diff Over Time', False,
+                       order))
     print('diff_checkpoints_chart:', round(time()-start, 2), 'seconds')

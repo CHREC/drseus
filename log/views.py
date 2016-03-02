@@ -76,7 +76,7 @@ def charts_page(request, campaign_id=None, group_categories=False):
     if results.count() > 0:
         chart_data, chart_list = results_charts(results, group_categories)
         chart_list = [chart[:-1]
-                      for chart in sorted(chart_list, key=lambda x: x[2])]
+                      for chart in sorted(chart_list, key=lambda x: x[3])]
     else:
         chart_data = None
         chart_list = None

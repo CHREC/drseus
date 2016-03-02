@@ -81,7 +81,7 @@ def overview(**kwargs):
     """.replace('\n    ', '\n                    ').replace(
         'outcome_list', outcome_list))
     chart_data.append(chart)
-    chart_list.append(('overview_chart', 'Overview', order))
+    chart_list.append(('overview_chart', 'Overview', False, order))
     print('overview_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -160,7 +160,7 @@ def num_injections(**kwargs):
     chart_percent['yAxis']['title']['text'] = 'Percent of Results'
     chart_data.append(dumps(chart_percent, indent=4))
     chart_list.append(('counts_percent_chart',
-                       'Injection Quantity (Percentage Scale)', order))
+                       'Injection Quantity (Percentage Scale)', False, order))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -170,5 +170,5 @@ def num_injections(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('counts_chart', 'Injection Quantity', order))
+    chart_list.append(('counts_chart', 'Injection Quantity', False, order))
     print('counts_chart:', round(time()-start, 2), 'seconds')
