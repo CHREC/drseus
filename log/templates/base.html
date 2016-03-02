@@ -159,7 +159,10 @@
             }
         </script>
         <script src="{% get_static_prefix %}js/jquery-2.2.0.min.js"></script>
+        <script src="{% get_static_prefix %}js/jquery-ui.min.js"></script>
         <script>
+            $.widget.bridge('uibutton', $.ui.button);
+
             $('.expand').on('click', function () {
                 var box = $(this).parents('.box').parent();
                 if (box.hasClass('col-lg-6')) {
