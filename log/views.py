@@ -155,8 +155,14 @@ def results_page(request, campaign_id=None):
         campaign_items_ = None
         output_image = True
         results = models.result.objects.all()
+    unfiltered_results = results.count()
     result_filter = filters.result(request.GET, queryset=results)
     results = result_filter.qs
+    if unfiltered_results and not results.count():
+        if campaign_id:
+            return redirect('/campaign/'+campaign_id+'/results')
+        else:
+            return redirect('/results')
     if request.method == 'GET':
         if (('view_output' in request.GET or
                 'view_output_image' in request.GET) and
@@ -228,7 +234,7 @@ def results_page(request, campaign_id=None):
                 result_id__in=result_ids).delete()
             results.delete()
             if campaign_id:
-                return redirect('/campaign/'+str(campaign_id)+'/results')
+                return redirect('/campaign/'+campaign_id+'/results')
             else:
                 return redirect('/results')
     result_table = tables.results(results)
