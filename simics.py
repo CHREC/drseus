@@ -404,9 +404,7 @@ class simics(object):
             event = db.log_event('Information', 'Simics', 'Timed application',
                                  success=False, campaign=True)
         self.halt_dut()
-        time_data = self.__command('print-time').split('\n')[-2].split()
-        start_cycles = int(time_data[2])
-        start_time = float(time_data[3])
+        start_cycles, start_time = self.get_time()
         self.continue_dut()
         for i in range(self.options.iterations):
             if self.db.campaign['aux']:
@@ -426,9 +424,7 @@ class simics(object):
                 self.dut.serial.write('\x03')
             dut_process.join()
         self.halt_dut()
-        time_data = self.__command('print-time').split('\n')[-2].split()
-        end_cycles = int(time_data[2])
-        end_time = float(time_data[3])
+        end_cycles, end_time = self.get_time()
         self.db.campaign['start_cycle'] = end_cycles
         self.db.campaign['start_time'] = end_time
         self.db.campaign['cycles'] = \

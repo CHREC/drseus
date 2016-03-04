@@ -212,30 +212,28 @@ class fault_injector(object):
                 if self.db.campaign['kill_dut']:
                     self.debugger.dut.serial.write('\x03')
         try:
-            returned = self.debugger.dut.read_until()[1]
+            self.db.result['returned'] = self.debugger.dut.read_until()[1]
         except DrSEUsError as error:
-            if self.db.campaign['simics']:
-                self.debugger.halt_dut()
             self.db.result['outcome_category'] = 'Execution error'
             self.db.result['outcome'] = error.type
             self.db.result['returned'] = error.returned
-        else:
-            if self.db.campaign['simics']:
-                self.debugger.halt_dut()
-            self.db.result['returned'] = returned
         finally:
             if log_time:
                 if self.db.campaign['simics']:
+                    try:
+                        self.debugger.halt_dut()
+                    except DrSEUsError as error:
+                        self.db.result['outcome_category'] = 'Simics error'
+                        self.db.result['outcome'] = error.type
                     end_cycles, end_time = self.debugger.get_time()
                     self.db.result['cycles'] = \
                         end_cycles - self.db.campaign['start_cycle']
                     self.db.result['execution_time'] = (
                         end_time - self.db.campaign['start_time'])
+                    self.debugger.continue_dut()
                 else:
                     self.db.result['execution_time'] = \
                         self.debugger.dut.get_timer_value()
-            if self.db.campaign['simics']:
-                self.debugger.continue_dut()
         if self.db.campaign['output_file'] and \
                 self.db.result['outcome'] == 'In progress':
             check_output()
