@@ -231,8 +231,9 @@ def execution_times(**kwargs):
             'categories': times,
             'title': {
                 'text': 'Execution Time (Seconds) for '
-                        '(\u03bc-{0}\u03c3, \u03bc+{0}\u03c3)'.format(
-                            std_dev_range)
+                        '(\u03bc-{0}\u03c3, \u03bc+{0}\u03c3), '
+                        '\u03bc={1:.2f} & \u03c3={2:.2f}'.format(
+                            std_dev_range, avg, std_dev)
             }
         },
         'yAxis': {
@@ -264,7 +265,6 @@ def execution_times(**kwargs):
         'id': 'execution_times_chart',
         'order': order,
         'smooth': True,
-        'title': 'Execution Times ('
-                 '\u03bc={0:.2f}, \u03c3={1:.2f})'.format(avg, std_dev)})
+        'title': 'Execution Times'})
     chart_data.append(dumps(chart_smooth, indent=4))
     print('execution_times_charts', round(time()-start, 2), 'seconds')
