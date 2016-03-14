@@ -89,9 +89,9 @@
         });
 
         $('.expand').on('click', function () {
-                    $(this).parents('.box').children('.box-body').children('.chart-container').highcharts().reflow();
-                    return false;
-                });
+            $(this).parents('.box').children('.box-body').children('.chart-container').highcharts().reflow();
+            return false;
+        });
 
         function group_charts(group_categories) {
             if (group_categories) {

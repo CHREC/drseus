@@ -296,7 +296,8 @@ def execution_time(**kwargs):
     order = kwargs['order']
 
     start = time()
-    injections = injections.exclude(result__execution_time__isnull=True)
+    injections = injections.exclude(result__execution_time__isnull=True).filter(
+        result__returned=True)
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
