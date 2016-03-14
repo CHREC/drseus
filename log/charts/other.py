@@ -142,7 +142,7 @@ def num_injections(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Results'
+                'text': 'Results'
             }
         }
     }

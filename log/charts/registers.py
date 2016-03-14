@@ -73,7 +73,7 @@ def outcomes(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
@@ -169,12 +169,13 @@ def bits(**kwargs):
         'xAxis': {
             'categories': bits,
             'title': {
-                'text': 'Injected Bit (MSB=63/31)'
+                'text': 'Injected Bit (MSB=' +
+                        ('31' if max(bits) < 32 else '63')+')'
             }
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }

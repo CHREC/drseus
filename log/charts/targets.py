@@ -60,7 +60,7 @@ def outcomes(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
@@ -291,7 +291,7 @@ def data_diff(**kwargs):
     chart_list.append({
         'id': 'diff_targets_chart',
         'order': order,
-        'title': 'Data Diff By Target'})
+        'title': 'Data Destruction By Target'})
     print('diff_targets_chart:', round(time()-start, 2), 'seconds')
 
 

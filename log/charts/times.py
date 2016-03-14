@@ -65,7 +65,7 @@ def outcomes(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
@@ -159,7 +159,7 @@ def data_diff(**kwargs):
             },
             'max': 100,
             'title': {
-                'text': 'Average Data Diff'
+                'text': 'Average Data Match'
             }
         }
     }
@@ -171,7 +171,7 @@ def data_diff(**kwargs):
     chart_list.append({
         'id': 'diff_times_chart',
         'order': order,
-        'title': 'Data Diff Over Time'})
+        'title': 'Data Destruction Over Time'})
     print('diff_times_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -238,7 +238,7 @@ def execution_times(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Results'
+                'text': 'Results'
             }
         }
     }
