@@ -481,6 +481,10 @@ openocd = subparsers.add_parser(
     'openocd', aliases=['o'],
     help='launch openocd for DUT (only supported for ZedBoards)',
     description='launch openocd for DUT (only supported for ZedBoards)')
+openocd.add_argument(
+    '-g', '--gdb',
+    action='store_true',
+    help='enable GDB port')
 openocd.set_defaults(func=utilities.launch_openocd)
 
 regenerate = subparsers.add_parser(

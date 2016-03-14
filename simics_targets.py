@@ -16,6 +16,15 @@ devices = {
                 },
             },
         },
+        'FPGPR': {
+            'count': 2,
+            'OBJECT': '.coretile.mpcore.core',
+            'registers': {
+                'fpgprs': {
+                    'count': (32, ),
+                }
+            }
+        },
         'GPR': {
             'count': 2,
             'OBJECT': '.coretile.mpcore.core',

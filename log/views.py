@@ -75,8 +75,7 @@ def charts_page(request, campaign_id=None, group_categories=False):
     results = result_filter.qs
     if results.count() > 0:
         chart_data, chart_list = results_charts(results, group_categories)
-        chart_list = [chart[:-1]
-                      for chart in sorted(chart_list, key=lambda x: x[3])]
+        chart_list = sorted(chart_list, key=lambda x: x['order'])
     else:
         chart_data = None
         chart_list = None
@@ -122,8 +121,7 @@ def injections_page(request, campaign_id=None):
     injections = injection_filter.qs
     if injections.count() > 0:
         chart_data, chart_list = injections_charts(injections)
-        chart_list = [chart[:-1]
-                      for chart in sorted(chart_list, key=lambda x: x[2])]
+        chart_list = sorted(chart_list, key=lambda x: x['order'])
     else:
         chart_data = None
         chart_list = None

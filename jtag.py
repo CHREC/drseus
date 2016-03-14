@@ -580,18 +580,26 @@ class openocd(jtag):
         self.targets = devices['a9']
         self.port = find_open_port()
         super().__init__(database, options)
+        if self.options.command == 'openocd' and self.options.gdb:
+            self.gdb_port = find_open_port()
+        else:
+            self.gdb_port = 0
         self.open()
 
     def __str__(self):
         string = 'OpenOCD at localhost port '+str(self.port)
+        if hasattr(self, 'gdb_port') and self.gdb_port:
+            string += ' (GDB port '+str(self.gdb_port)+')'
         return string
 
     def open(self):
         if self.options.jtag:
             self.openocd = Popen(['openocd', '-c',
-                                  'gdb_port 0; tcl_port 0; telnet_port ' +
-                                  str(self.port)+'; interface ftdi; ftdi_serial'
-                                  ' '+self.device_info['ftdi']+';',
+                                  'gdb_port '+str(self.gdb_port)+'; '
+                                  'tcl_port 0; '
+                                  'telnet_port '+str(self.port)+'; '
+                                  'interface ftdi; '
+                                  'ftdi_serial '+self.device_info['ftdi']+';',
                                   '-f', 'openocd_zedboard.cfg'],
                                  stderr=(DEVNULL
                                          if self.options.command != 'openocd'
