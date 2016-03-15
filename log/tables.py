@@ -236,7 +236,7 @@ class injections(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('result_id', 'target', 'target_index', 'register', 'bit',
-                  'register_access', 'processor_mode', 'gold_value',
+                  'field', 'register_access', 'processor_mode', 'gold_value',
                   'injected_value', 'success_')
         model = models.injection
         order_by = ('target', 'target_index', 'register', 'bit', 'success')

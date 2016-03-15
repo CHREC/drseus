@@ -13,6 +13,9 @@ def overview(**kwargs):
     order = kwargs['order']
     outcomes = kwargs['outcomes']
     results = kwargs['results']
+    success = kwargs['success']
+    if success:
+        results = kwargs['injections']
 
     start = time()
     if len(outcomes) < 1:
@@ -58,18 +61,23 @@ def overview(**kwargs):
     }
     for outcome in outcomes:
         filter_kwargs = {}
-        filter_kwargs['outcome_category' if group_categories
-                      else 'outcome'] = outcome
+        if success:
+            filter_kwargs['success'] = outcome
+        else:
+            filter_kwargs['outcome_category' if group_categories
+                          else 'outcome'] = outcome
         chart['series'][0]['data'].append((
-            outcome, results.filter(**filter_kwargs).count()))
+            str(outcome), results.filter(**filter_kwargs).count()))
     outcome_list = dumps(outcomes)
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
-    function(event) {
-        var outcomes = outcome_list;
-        window.location.assign('results?outcome='+outcomes[this.x]);
-    }
-    """.replace('\n    ', '\n                        ').replace(
-        'outcome_list', outcome_list))
+    chart = dumps(chart, indent=4)
+    if not success:
+        chart = chart.replace('\"click_function\"', """
+        function(event) {
+            var outcomes = outcome_list;
+            window.location.assign('results?outcome='+outcomes[this.x]);
+        }
+        """.replace('\n    ', '\n                        ').replace(
+            'outcome_list', outcome_list))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart = chart.replace('\"chart_formatter\"', """
