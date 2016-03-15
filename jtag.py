@@ -200,8 +200,7 @@ class jtag(object):
                 injection['target'] = target
             else:
                 target_index = 0
-            if 'memory_mapped' not in self.targets[target] or \
-                    not self.targets[target]['memory_mapped']:
+            if target in ('CPU', 'GPR', 'TLB'):
                 self.select_core(target_index)
             if 'access' in self.targets[target]['registers'][register]:
                 injection['register_access'] = \
