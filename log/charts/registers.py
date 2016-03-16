@@ -73,7 +73,7 @@ def outcomes(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
@@ -112,7 +112,10 @@ def outcomes(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('registers_chart', 'Registers', False, order))
+    chart_list.append({
+        'id': 'registers_chart',
+        'order': order,
+        'title': 'Registers'})
     print('registers_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -166,12 +169,13 @@ def bits(**kwargs):
         'xAxis': {
             'categories': bits,
             'title': {
-                'text': 'Injected Bit (MSB=63/31)'
+                'text': 'Injected Bit (MSB=' +
+                        ('31' if max(bits) < 32 else '63')+')'
             }
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
@@ -197,5 +201,8 @@ def bits(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('register_bits_chart', 'Register Bits', False, order))
+    chart_list.append({
+        'id': 'register_bits_chart',
+        'order': order,
+        'title': 'Register Bits'})
     print('register_bits_chart:', round(time()-start, 2), 'seconds')

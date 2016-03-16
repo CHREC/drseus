@@ -180,7 +180,8 @@ def results_charts(results, group_categories):
 
 
 def injections_charts(injections):
-    charts = (targets.outcomes, registers.outcomes, registers.bits)
+    charts = (other.overview, targets.outcomes, registers.outcomes,
+              registers.bits)
     results = models.result.objects.filter(
         id__in=injections.values('result_id'))
     outcomes = list(injections.values_list(

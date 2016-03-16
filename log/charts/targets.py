@@ -60,7 +60,7 @@ def outcomes(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
@@ -78,7 +78,7 @@ def outcomes(**kwargs):
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': str(outcome)})
     chart_percent = deepcopy(chart)
-    chart_percent['chart']['renderTo'] = 'targets_percent_chart'
+    chart_percent['chart']['renderTo'] = 'targets_chart_percent'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
     chart_percent['yAxis'] = {
         'labels': {
@@ -97,11 +97,9 @@ def outcomes(**kwargs):
     if group_categories:
         chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart_percent)
-    chart_list.append(('targets_percent_chart', 'Targets (Percentage Scale)',
-                       False, order))
     if len(outcomes) == 1 and not success:
         chart_log = deepcopy(chart)
-        chart_log['chart']['renderTo'] = 'targets_log_chart'
+        chart_log['chart']['renderTo'] = 'targets_chart_log'
         chart_log['yAxis']['type'] = 'logarithmic'
         chart_log = dumps(chart_log, indent=4).replace('\"click_function\"', """
         function(event) {
@@ -112,8 +110,6 @@ def outcomes(**kwargs):
         if group_categories:
             chart_log = chart_log.replace('?outcome=', '?outcome_category=')
         chart_data.append(chart_log)
-        chart_list.append(('targets_log_chart', 'Targets (Log Scale)', False,
-                           order))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -123,7 +119,12 @@ def outcomes(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('targets_chart', 'Targets', False, order))
+    chart_list.append({
+        'id': 'targets_chart',
+        'log': len(outcomes) == 1 and not success,
+        'order': order,
+        'percent': True,
+        'title': 'Targets'})
     print('targets_charts:', round(time()-start, 2), 'seconds')
 
 
@@ -209,7 +210,10 @@ def propagation(**kwargs):
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('propagation_chart', 'Fault Propagation', False, order))
+    chart_list.append({
+        'id': 'propagation_chart',
+        'order': order,
+        'title': 'Fault Propagation'})
     print('propagation_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -284,8 +288,10 @@ def data_diff(**kwargs):
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('diff_targets_chart', 'Data Diff By Target', False,
-                       order))
+    chart_list.append({
+        'id': 'diff_targets_chart',
+        'order': order,
+        'title': 'Data Destruction By Target'})
     print('diff_targets_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -296,7 +302,8 @@ def execution_time(**kwargs):
     order = kwargs['order']
 
     start = time()
-    injections = injections.exclude(result__execution_time__isnull=True)
+    injections = injections.exclude(result__execution_time__isnull=True).filter(
+        result__returned=True)
     targets = list(injections.values_list('target', flat=True).distinct(
         ).order_by('target'))
     if len(targets) < 1:
@@ -355,6 +362,8 @@ def execution_time(**kwargs):
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('execution_time_targets_chart',
-                       'Average Execution Time By Target', False, order))
+    chart_list.append({
+        'id': 'execution_time_targets_chart',
+        'order': order,
+        'title': 'Average Execution Time By Target'})
     print('execution_time_targets_chart:', round(time()-start, 2), 'seconds')

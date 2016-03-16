@@ -14,16 +14,24 @@
 
     <section class="content">
         <div class="row">
-            {% for chart, name, raw_data in chart_list %}
+            {% for chart in chart_list %}
                 <div class="col-lg-6 col-md-6 connectedSortable">
                     <div class="box">
                         <div class="box-header">
-                            <h3 class="box-title">{{ name }}</h3>
+                            <h3 class="box-title">{{ chart.title }}</h3>
                             <div class="box-tools pull-right">
-                                {% if raw_data %}
+                                {% if chart.smooth or chart.percent or chart.log %}
                                     <div class="btn-group" id="raw-data" data-toggle="btn-toggle">
-                                        <button type="button" class="btn btn-default btn-xs active" data-toggle="off">Smoothed</button>
-                                        <button type="button" class="btn btn-default btn-xs" data-toggle="on">Raw</button>
+                                        <button type="button" class="btn btn-default btn-xs active" data-toggle="raw">Raw</button>
+                                        {% if chart.smooth %}
+                                            <button type="button" class="btn btn-default btn-xs" data-toggle="smooth">Smoothed</button>
+                                        {% endif %}
+                                        {% if chart.percent %}
+                                            <button type="button" class="btn btn-default btn-xs" data-toggle="percent">Percent</button>
+                                        {% endif %}
+                                        {% if chart.log %}
+                                            <button type="button" class="btn btn-default btn-xs" data-toggle="log">Log</button>
+                                        {% endif %}
                                     </div>
                                 {% endif %}
                                 <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
@@ -32,9 +40,15 @@
                             </div>
                         </div>
                         <div class="box-body">
-                            <div id="{{ chart }}" class="chart-container{% if raw_data %} smooth-chart{% endif %}"></div>
-                            {% if raw_data %}
-                                <div id="{{ chart }}_raw" class="chart-container raw-chart hidden"></div>
+                            <div id="{{ chart.id }}" class="chart-container{% if chart.smooth or chart.percent or chart.log %} raw-chart{% endif %}"></div>
+                            {% if chart.smooth %}
+                                <div id="{{ chart.id }}_smooth" class="chart-container smooth-chart hidden"></div>
+                            {% endif %}
+                            {% if chart.percent %}
+                                <div id="{{ chart.id }}_percent" class="chart-container percent-chart hidden"></div>
+                            {% endif %}
+                            {% if chart.log %}
+                                <div id="{{ chart.id }}_log" class="chart-container log-chart hidden"></div>
                             {% endif %}
                         </div>
                         <div class="overlay chart-loading-icon">
@@ -75,23 +89,40 @@
         {% endif %}
 
         $("#raw-data .btn").click(function () {
-            if ($(this).data("toggle") === "on") {
+            if ($(this).data("toggle") === "raw") {
                 $(this).parents('.box').children('.box-body').children('.raw-chart').removeClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.smooth-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.percent-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.log-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.raw-chart').highcharts().reflow();
             }
-            else {
+            else if ($(this).data("toggle") === "smooth") {
                $(this).parents('.box').children('.box-body').children('.smooth-chart').removeClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.raw-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.percent-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.log-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.smooth-chart').highcharts().reflow();
             }
-
+            else if ($(this).data("toggle") === "percent") {
+               $(this).parents('.box').children('.box-body').children('.percent-chart').removeClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.raw-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.smooth-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.log-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.percent-chart').highcharts().reflow();
+            }
+            else if ($(this).data("toggle") === "log") {
+               $(this).parents('.box').children('.box-body').children('.log-chart').removeClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.raw-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.smooth-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.percent-chart').addClass('hidden')
+                $(this).parents('.box').children('.box-body').children('.log-chart').highcharts().reflow();
+            }
         });
 
         $('.expand').on('click', function () {
-                    $(this).parents('.box').children('.box-body').children('.chart-container').highcharts().reflow();
-                    return false;
-                });
+            $(this).parents('.box').children('.box-body').children('.chart-container').highcharts().reflow();
+            return false;
+        });
 
         function group_charts(group_categories) {
             if (group_categories) {

@@ -75,7 +75,7 @@ def outcomes(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
@@ -117,7 +117,10 @@ def outcomes(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('tlbs_chart', 'TLB Entries', False, order))
+    chart_list.append({
+        'id': 'tlbs_chart',
+        'order': order,
+        'title': 'TLB Entries'})
     print('tlbs_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -174,7 +177,7 @@ def fields(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
@@ -197,5 +200,9 @@ def fields(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('tlb_fields_chart', 'TLB Fields', False, order))
+    chart_list.append({
+        'id': 'tlb_fields_chart',
+        'order': order,
+        'smooth': True,
+        'title': 'TLB Fields'})
     print('tlb_fields_chart:', round(time()-start, 2), 'seconds')

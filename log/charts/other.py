@@ -13,9 +13,12 @@ def overview(**kwargs):
     order = kwargs['order']
     outcomes = kwargs['outcomes']
     results = kwargs['results']
+    success = kwargs['success']
+    if success:
+        results = kwargs['injections']
 
     start = time()
-    if len(outcomes) <= 1:
+    if len(outcomes) < 1:
         return
     extra_colors = list(colors_extra)
     chart = {
@@ -58,18 +61,23 @@ def overview(**kwargs):
     }
     for outcome in outcomes:
         filter_kwargs = {}
-        filter_kwargs['outcome_category' if group_categories
-                      else 'outcome'] = outcome
+        if success:
+            filter_kwargs['success'] = outcome
+        else:
+            filter_kwargs['outcome_category' if group_categories
+                          else 'outcome'] = outcome
         chart['series'][0]['data'].append((
-            outcome, results.filter(**filter_kwargs).count()))
+            str(outcome), results.filter(**filter_kwargs).count()))
     outcome_list = dumps(outcomes)
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
-    function(event) {
-        var outcomes = outcome_list;
-        window.location.assign('results?outcome='+outcomes[this.x]);
-    }
-    """.replace('\n    ', '\n                        ').replace(
-        'outcome_list', outcome_list))
+    chart = dumps(chart, indent=4)
+    if not success:
+        chart = chart.replace('\"click_function\"', """
+        function(event) {
+            var outcomes = outcome_list;
+            window.location.assign('results?outcome='+outcomes[this.x]);
+        }
+        """.replace('\n    ', '\n                        ').replace(
+            'outcome_list', outcome_list))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart = chart.replace('\"chart_formatter\"', """
@@ -81,7 +89,10 @@ def overview(**kwargs):
     """.replace('\n    ', '\n                    ').replace(
         'outcome_list', outcome_list))
     chart_data.append(chart)
-    chart_list.append(('overview_chart', 'Overview', False, order))
+    chart_list.append({
+        'id': 'overview_chart',
+        'order': order,
+        'title': 'Overview'})
     print('overview_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -139,7 +150,7 @@ def num_injections(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Results'
+                'text': 'Results'
             }
         }
     }
@@ -154,13 +165,11 @@ def num_injections(**kwargs):
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
     chart_percent = deepcopy(chart)
-    chart_percent['chart']['renderTo'] = 'counts_percent_chart'
+    chart_percent['chart']['renderTo'] = 'counts_chart_percent'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
     chart_percent['yAxis']['labels'] = {'format': '{value}%'}
     chart_percent['yAxis']['title']['text'] = 'Percent of Results'
     chart_data.append(dumps(chart_percent, indent=4))
-    chart_list.append(('counts_percent_chart',
-                       'Injection Quantity (Percentage Scale)', False, order))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -170,5 +179,9 @@ def num_injections(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('counts_chart', 'Injection Quantity', False, order))
+    chart_list.append({
+        'id': 'counts_chart',
+        'order': order,
+        'percent': True,
+        'title': 'Injection Quantity'})
     print('counts_chart:', round(time()-start, 2), 'seconds')

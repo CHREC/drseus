@@ -180,8 +180,7 @@ class jtag(object):
                 injection['target'] = target
             else:
                 target_index = 0
-            if 'memory_mapped' not in self.targets[target] or \
-                    not self.targets[target]['memory_mapped']:
+            if target in ('CPU', 'GPR', 'TLB'):
                 self.select_core(target_index)
             if 'access' in self.targets[target]['registers'][register]:
                 injection['register_access'] = \
@@ -560,18 +559,26 @@ class openocd(jtag):
         self.targets = devices['a9']
         self.port = find_open_port()
         super().__init__(database, options)
+        if self.options.command == 'openocd' and self.options.gdb:
+            self.gdb_port = find_open_port()
+        else:
+            self.gdb_port = 0
         self.open()
 
     def __str__(self):
         string = 'OpenOCD at localhost port '+str(self.port)
+        if hasattr(self, 'gdb_port') and self.gdb_port:
+            string += ' (GDB port '+str(self.gdb_port)+')'
         return string
 
     def open(self):
         if self.options.jtag:
             self.openocd = Popen(['openocd', '-c',
-                                  'gdb_port 0; tcl_port 0; telnet_port ' +
-                                  str(self.port)+'; interface ftdi; ftdi_serial'
-                                  ' '+self.device_info['ftdi']+';',
+                                  'gdb_port '+str(self.gdb_port)+'; '
+                                  'tcl_port 0; '
+                                  'telnet_port '+str(self.port)+'; '
+                                  'interface ftdi; '
+                                  'ftdi_serial '+self.device_info['ftdi']+';',
                                   '-f', 'openocd_zedboard.cfg'],
                                  stderr=(DEVNULL
                                          if self.options.command != 'openocd'
@@ -656,7 +663,7 @@ class openocd(jtag):
                          success=True)
 
     def get_register_value(self, register, target, target_index):
-        if target == 'CP':
+        if 'CP' in self.targets[target] and self.targets[target]['CP']:
             buff = self.command(
                 ' '.join([
                     'arm', 'mrc',
@@ -674,7 +681,7 @@ class openocd(jtag):
                 buff.split('\n')[1].split(':')[1].split()[0]
 
     def set_register_value(self, register, target, target_index, value):
-        if target == 'CP':
+        if 'CP' in self.targets[target] and self.targets[target]['CP']:
             self.command(
                 ' '.join([
                     'arm', 'mrc',

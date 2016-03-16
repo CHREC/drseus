@@ -27,6 +27,9 @@ class simics(object):
 
     def __init__(self, database, options):
         self.simics = None
+        self.dut = None
+        self.aux = None
+        self.running = False
         self.db = database
         self.options = options
         if database.campaign['architecture'] == 'p2020':
@@ -77,7 +80,7 @@ class simics(object):
             else:
                 with self.db as db:
                     db.log_event('Information', 'Simics', 'Launched Simics',
-                                 checkpoint, success=True)
+                                 success=True)
                 break
         if checkpoint is None:
             self.__command('$drseus=TRUE')
@@ -228,43 +231,51 @@ class simics(object):
 
     def close(self):
         if self.simics:
-            self.dut.close()
-            if self.db.campaign['aux']:
+            if self.dut:
+                self.dut.close()
+                self.dut = None
+            if self.aux:
                 self.aux.close()
+                self.aux = None
             try:
                 self.halt_dut()
                 self.__command('quit')
-            except:
-                self.simics.kill()
-                with self.db as db:
-                    db.log_event('Warning', 'Simics',
-                                 'Killed unresponsive Simics', db.log_exception)
-            else:
-                self.simics.wait()
-                with self.db as db:
-                    db.log_event('Information', 'Simics', 'Closed Simics',
-                                 success=True)
+            except DrSEUsError as error:
+                if error.type == 'Timeout reading from Simics':
+                    self.simics.kill()
+                    with self.db as db:
+                        db.log_event('Warning', 'Simics',
+                                     'Killed unresponsive Simics',
+                                     db.log_exception)
+                    self.simics = None
+                    return
+            self.simics.wait()
+            with self.db as db:
+                db.log_event('Information', 'Simics', 'Closed Simics',
+                             success=True)
             self.simics = None
 
     def halt_dut(self):
-        with self.db as db:
-            event = db.log_event('Information', 'Simics', 'Halt DUT',
-                                 success=False)
-        self.simics.send_signal(SIGINT)
-        self.__command()
-        with self.db as db:
-            db.log_event_success(event)
+        if self.running:
+            with self.db as db:
+                db.log_event('Information', 'Simics', 'Halt DUT')
+            self.simics.send_signal(SIGINT)
+            self.running = False
+            self.__command()
 
     def continue_dut(self):
-        self.simics.stdin.write('run\n')
-        if self.db.result:
-            self.db.result['debugger_output'] += 'run\n'
-        else:
-            self.db.campaign['debugger_output'] += 'run\n'
-        if self.options.debug:
-            print(colored('run', 'yellow'))
-        with self.db as db:
-            db.log_event('Information', 'Simics', 'Continue DUT', success=True)
+        if not self.running:
+            self.simics.stdin.write('run\n')
+            self.running = True
+            if self.db.result:
+                self.db.result['debugger_output'] += 'run\n'
+            else:
+                self.db.campaign['debugger_output'] += 'run\n'
+            if self.options.debug:
+                print(colored('run', 'yellow'))
+            with self.db as db:
+                db.log_event('Information', 'Simics', 'Continue DUT',
+                             success=True)
 
     def __command(self, command=None, time=10):
 
@@ -382,7 +393,8 @@ class simics(object):
                 incremental_checkpoint = ('gold-checkpoints/' +
                                           str(self.db.campaign['id'])+'/' +
                                           str(checkpoint))
-                self.__command('write-configuration '+incremental_checkpoint)
+                self.__command('write-configuration '+incremental_checkpoint,
+                               time=300)
                 if not read_thread.is_alive() or \
                     (self.db.campaign['aux'] and
                         self.db.campaign['kill_dut'] and
@@ -404,9 +416,7 @@ class simics(object):
             event = db.log_event('Information', 'Simics', 'Timed application',
                                  success=False, campaign=True)
         self.halt_dut()
-        time_data = self.__command('print-time').split('\n')[-2].split()
-        start_cycles = int(time_data[2])
-        start_time = float(time_data[3])
+        start_cycles, start_time = self.get_time()
         self.continue_dut()
         for i in range(self.options.iterations):
             if self.db.campaign['aux']:
@@ -426,9 +436,7 @@ class simics(object):
                 self.dut.serial.write('\x03')
             dut_process.join()
         self.halt_dut()
-        time_data = self.__command('print-time').split('\n')[-2].split()
-        end_cycles = int(time_data[2])
-        end_time = float(time_data[3])
+        end_cycles, end_time = self.get_time()
         self.db.campaign['start_cycle'] = end_cycles
         self.db.campaign['start_time'] = end_time
         self.db.campaign['cycles'] = \
@@ -509,7 +517,8 @@ class simics(object):
                 self.__command('write-configuration injected-checkpoints/' +
                                str(self.db.campaign['id'])+'/' +
                                str(self.options.result_id)+'/' +
-                               str(injections[injection_number]['checkpoint']))
+                               str(injections[injection_number]['checkpoint']),
+                               time=300)
                 self.close()
         return injected_checkpoint
 
@@ -950,7 +959,8 @@ class simics(object):
             monitor = self.options.compare_all or \
                 checkpoint == self.db.campaign['checkpoints']
             if monitor or checkpoint == last_checkpoint:
-                self.__command('write-configuration '+incremental_checkpoint)
+                self.__command('write-configuration '+incremental_checkpoint,
+                               time=300)
             if monitor:
                 monitored_checkpoint = \
                     self.__merge_checkpoint(incremental_checkpoint)

@@ -80,6 +80,11 @@ class injection(FilterSet):
         self.filters['register'].extra.update(choices=register_choices)
         self.filters['register'].widget.attrs['size'] = min(
             len(register_choices), max_select_box_size)
+        register_access_choices = self.choices(self.queryset, 'register_access')
+        self.filters['register_access'].extra.update(
+            choices=register_access_choices)
+        self.filters['register_access'].widget.attrs['size'] = min(
+            len(register_access_choices), max_select_box_size)
         register_index_choices = self.choices(self.queryset, 'register_index')
         self.filters['register_index'].extra.update(
             choices=register_index_choices)
@@ -116,6 +121,9 @@ class injection(FilterSet):
     register = MultipleChoiceFilter(
         label='Register',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    register_access = MultipleChoiceFilter(
+        label='Register access',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     register_index = MultipleChoiceFilter(
         label='Register index',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
@@ -137,7 +145,8 @@ class injection(FilterSet):
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
 
     class Meta:
-        exclude = ('result')
+        exclude = ('config_object', 'gold_value', 'injected_value', 'result',
+                   'timestamp')
         model = models.injection
 
 

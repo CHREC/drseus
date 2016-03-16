@@ -28,7 +28,7 @@ def outcomes(**kwargs):
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'times_chart_raw',
+            'renderTo': 'times_chart',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -38,7 +38,7 @@ def outcomes(**kwargs):
             'enabled': False
         },
         'exporting': {
-            'filename': 'times_chart_raw',
+            'filename': 'times_chart',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -65,14 +65,14 @@ def outcomes(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
     window_size = 10
-    chart_smoothed = deepcopy(chart)
-    chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] = 'times_chart'
+    chart_smooth = deepcopy(chart)
+    chart_smooth['chart']['type'] = 'area'
+    chart_smooth['chart']['renderTo'] = 'times_chart_smooth'
     for outcome in outcomes:
         filter_kwargs = {}
         filter_kwargs['result__outcome_category' if group_categories
@@ -81,17 +81,21 @@ def outcomes(**kwargs):
             injections.filter(**filter_kwargs).values_list('time', flat=True),
             times)
         chart['series'].append({'data': data, 'name': outcome})
-        chart_smoothed['series'].append({
+        chart_smooth['series'].append({
             'data': convolve(
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
-    chart_data.append(dumps(chart_smoothed, indent=4))
+    chart_data.append(dumps(chart_smooth, indent=4))
     chart = dumps(chart, indent=4)
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('times_chart', 'Injections Over Time', True, order))
+    chart_list.append({
+        'id': 'times_chart',
+        'order': order,
+        'smooth': True,
+        'title': 'Injections Over Time'})
     print('times_charts', round(time()-start, 2), 'seconds')
 
 
@@ -155,7 +159,7 @@ def data_diff(**kwargs):
             },
             'max': 100,
             'title': {
-                'text': 'Average Data Diff'
+                'text': 'Average Data Match'
             }
         }
     }
@@ -164,7 +168,10 @@ def data_diff(**kwargs):
         data_diff=True)
     chart = dumps(chart, indent=4)
     chart_data.append(chart)
-    chart_list.append(('diff_times_chart', 'Data Diff Over Time', False, order))
+    chart_list.append({
+        'id': 'diff_times_chart',
+        'order': order,
+        'title': 'Data Destruction Over Time'})
     print('diff_times_chart:', round(time()-start, 2), 'seconds')
 
 
@@ -191,7 +198,7 @@ def execution_times(**kwargs):
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'execution_times_chart_raw',
+            'renderTo': 'execution_times_chart',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -201,7 +208,7 @@ def execution_times(**kwargs):
             'enabled': False
         },
         'exporting': {
-            'filename': 'execution_times_chart_raw',
+            'filename': 'execution_times_chart',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -224,20 +231,21 @@ def execution_times(**kwargs):
             'categories': times,
             'title': {
                 'text': 'Execution Time (Seconds) for '
-                        '(\u03bc-{0}\u03c3, \u03bc+{0}\u03c3)'.format(
-                            std_dev_range)
+                        '(\u03bc-{0}\u03c3, \u03bc+{0}\u03c3), '
+                        '\u03bc={1:.2f} & \u03c3={2:.2f}'.format(
+                            std_dev_range, avg, std_dev)
             }
         },
         'yAxis': {
             'title': {
-                'text': 'Total Results'
+                'text': 'Results'
             }
         }
     }
     window_size = 10
-    chart_smoothed = deepcopy(chart)
-    chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] = 'execution_times_chart'
+    chart_smooth = deepcopy(chart)
+    chart_smooth['chart']['type'] = 'area'
+    chart_smooth['chart']['renderTo'] = 'execution_times_chart_smooth'
     for outcome in outcomes:
         filter_kwargs = {}
         filter_kwargs['outcome_category' if group_categories
@@ -247,14 +255,16 @@ def execution_times(**kwargs):
                                                         flat=True),
             times)
         chart['series'].append({'data': data, 'name': outcome})
-        chart_smoothed['series'].append({
+        chart_smooth['series'].append({
             'data': convolve(
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
     chart_data.append(dumps(chart, indent=4))
-    chart_list.append(('execution_times_chart', 'Execution Times ('
-                       '\u03bc={0:.2f}, \u03c3={1:.2f})'.format(avg, std_dev),
-                       True, order))
-    chart_data.append(dumps(chart_smoothed, indent=4))
+    chart_list.append({
+        'id': 'execution_times_chart',
+        'order': order,
+        'smooth': True,
+        'title': 'Execution Times'})
+    chart_data.append(dumps(chart_smooth, indent=4))
     print('execution_times_charts', round(time()-start, 2), 'seconds')

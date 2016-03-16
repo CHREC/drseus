@@ -24,7 +24,7 @@ def outcomes(**kwargs):
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
-            'renderTo': 'checkpoints_chart_raw',
+            'renderTo': 'checkpoints_chart',
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -34,7 +34,7 @@ def outcomes(**kwargs):
             'enabled': False
         },
         'exporting': {
-            'filename': 'checkpoints_chart_raw',
+            'filename': 'checkpoints_chart',
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -61,14 +61,14 @@ def outcomes(**kwargs):
         },
         'yAxis': {
             'title': {
-                'text': 'Total Injections'
+                'text': 'Injections'
             }
         }
     }
     window_size = 10
-    chart_smoothed = deepcopy(chart)
-    chart_smoothed['chart']['type'] = 'area'
-    chart_smoothed['chart']['renderTo'] = 'checkpoints_chart'
+    chart_smooth = deepcopy(chart)
+    chart_smooth['chart']['type'] = 'area'
+    chart_smooth['chart']['renderTo'] = 'checkpoints_chart_smooth'
     for outcome in outcomes:
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
@@ -79,12 +79,12 @@ def outcomes(**kwargs):
                                default=0, output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
-        chart_smoothed['series'].append({
+        chart_smooth['series'].append({
             'data': convolve(
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
-    chart_data.append(dumps(chart_smoothed, indent=4))
+    chart_data.append(dumps(chart_smooth, indent=4))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
         window.location.assign('results?outcome='+this.series.name+
@@ -94,8 +94,11 @@ def outcomes(**kwargs):
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
-    chart_list.append(('checkpoints_chart', 'Injections Over Time', True,
-                       order))
+    chart_list.append({
+        'id': 'checkpoints_chart',
+        'order': order,
+        'smooth': True,
+        'title': 'Injections Over Time'})
     print('checkpoints_charts', round(time()-start, 2), 'seconds')
 
 
@@ -172,6 +175,8 @@ def data_diff(**kwargs):
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
-    chart_list.append(('diff_checkpoints_chart', 'Data Diff Over Time', False,
-                       order))
+    chart_list.append({
+        'id': 'diff_checkpoints_chart',
+        'order': order,
+        'title': 'Data Diff Over Time'})
     print('diff_checkpoints_chart:', round(time()-start, 2), 'seconds')

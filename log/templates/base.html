@@ -187,8 +187,10 @@
 
             function fix_charts() {
                 setTimeout(function () {
-                    $('.chart-container').each(function() { $(this).highcharts().reflow(); });
-                }, 500);
+                    $('.chart-container').each(function() {
+                        $(this).highcharts().reflow();
+                    });
+                }, 1000);
             }
         </script>
         {% block script %}{% endblock %}
@@ -212,13 +214,17 @@
                 });
                 fix_charts();
                 setTimeout(function () {
-                    $('.chart-loading-icon').each(function() {this.parentNode.removeChild(this);});
+                    $('.chart-loading-icon').each(function() {
+                        this.parentNode.removeChild(this);
+                    });
                 }, 500);
 
                 $('.sidebar-toggle').on('click', fix_charts);
 
                 $('.expand').on('click', function () {
-                    $(this).parents('.box').children('.box-body').children('.chart-container').highcharts().reflow();
+                    $(this).parents('.box').children('.box-body').children('.chart-container').each(function() {
+                        $(this).highcharts().reflow();
+                    });
                     return false;
                 });
             </script>
