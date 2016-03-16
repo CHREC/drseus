@@ -21,8 +21,7 @@ def outcomes(**kwargs):
         return
     xaxis_length = min(injections.count() / 10, 1000)
     times = linspace(0, injections.aggregate(Max('time'))['time__max'],
-                     xaxis_length, endpoint=False).tolist()
-    times = [round(time, 4) for time in times if time]
+                     xaxis_length, endpoint=False).tolist()[1:]
     if len(times) <= 1:
         return
     extra_colors = list(colors_extra)
@@ -45,11 +44,11 @@ def outcomes(**kwargs):
         },
         'plotOptions': {
             'series': {
-                'point': {
-                    'events': {
-                        'click': 'click_function'
-                    }
-                },
+                # 'point': {
+                #     'events': {
+                #         'click': 'click_function'
+                #     }
+                # },
                 'stacking': True
             }
         },
@@ -59,6 +58,9 @@ def outcomes(**kwargs):
         },
         'xAxis': {
             'categories': times,
+            'labels': {
+                'formatter': 'format_function'
+            },
             'title': {
                 'text': 'Injection Time (Seconds)'
             }
@@ -86,11 +88,17 @@ def outcomes(**kwargs):
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
-    chart_data.append(dumps(chart_smooth, indent=4))
-    chart = dumps(chart, indent=4)
-    if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_data.append(chart)
+    chart_data.append(dumps(chart, indent=4).replace('\"format_function\"', """
+    function() {
+        return this.value.toFixed(4);
+    }
+    """.replace('\n    ', '\n                    ')))
+    chart_data.append(dumps(chart_smooth, indent=4).replace(
+        '\"format_function\"', """
+    function() {
+        return this.value.toFixed(4);
+    }
+    """.replace('\n    ', '\n                    ')))
     chart_list.append({
         'id': 'times_chart',
         'order': order,
@@ -111,8 +119,7 @@ def data_diff(**kwargs):
         return
     xaxis_length = min(injections.count() / 10, 1000)
     times = linspace(0, injections.aggregate(Max('time'))['time__max'],
-                     xaxis_length, endpoint=False).tolist()
-    times = [round(time, 4) for time in times if time]
+                     xaxis_length, endpoint=False).tolist()[1:]
     if len(times) <= 1:
         return
     chart = {
@@ -134,21 +141,24 @@ def data_diff(**kwargs):
         'legend': {
             'enabled': False
         },
-        'plotOptions': {
-            'series': {
-                'point': {
-                    'events': {
-                        'click': 'click_function'
-                    }
-                },
-            }
-        },
+        # 'plotOptions': {
+        #     'series': {
+        #         'point': {
+        #             'events': {
+        #                 'click': 'click_function'
+        #             }
+        #         }
+        #     }
+        # },
         'series': [{'data': []}],
         'title': {
             'text': None
         },
         'xAxis': {
             'categories': times,
+            'labels': {
+                'formatter': 'format_function'
+            },
             'title': {
                 'text': 'Injection Time (Seconds)'
             }
@@ -166,8 +176,11 @@ def data_diff(**kwargs):
     chart['series'][0]['data'] = count_intervals(
         injections.values_list('time', 'result__data_diff'), times,
         data_diff=True)
-    chart = dumps(chart, indent=4)
-    chart_data.append(chart)
+    chart_data.append(dumps(chart, indent=4).replace('\"format_function\"', """
+    function() {
+        return this.value.toFixed(4);
+    }
+    """.replace('\n    ', '\n                    ')))
     chart_list.append({
         'id': 'diff_times_chart',
         'order': order,
@@ -194,7 +207,6 @@ def execution_times(**kwargs):
     times = linspace(
         max(0, avg-(std_dev*std_dev_range)), avg+(std_dev*std_dev_range), 1000,
         endpoint=False).tolist()
-    times = [round(time, 4) for time in times if time]
     extra_colors = list(colors_extra)
     chart = {
         'chart': {
@@ -215,11 +227,11 @@ def execution_times(**kwargs):
         },
         'plotOptions': {
             'series': {
-                'point': {
-                    'events': {
-                        'click': 'click_function'
-                    }
-                },
+                # 'point': {
+                #     'events': {
+                #         'click': 'click_function'
+                #     }
+                # },
                 'stacking': True
             }
         },
@@ -229,6 +241,9 @@ def execution_times(**kwargs):
         },
         'xAxis': {
             'categories': times,
+            'labels': {
+                'formatter': 'format_function'
+            },
             'title': {
                 'text': 'Execution Time (Seconds) for '
                         '(\u03bc-{0}\u03c3, \u03bc+{0}\u03c3), '
@@ -260,11 +275,20 @@ def execution_times(**kwargs):
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
-    chart_data.append(dumps(chart, indent=4))
+    chart_data.append(dumps(chart, indent=4).replace('\"format_function\"', """
+    function() {
+        return this.value.toFixed(4);
+    }
+    """.replace('\n    ', '\n                    ')))
+    chart_data.append(dumps(chart_smooth, indent=4).replace(
+        '\"format_function\"', """
+    function() {
+        return this.value.toFixed(4);
+    }
+    """.replace('\n    ', '\n                    ')))
     chart_list.append({
         'id': 'execution_times_chart',
         'order': order,
         'smooth': True,
         'title': 'Execution Times'})
-    chart_data.append(dumps(chart_smooth, indent=4))
     print('execution_times_charts', round(time()-start, 2), 'seconds')

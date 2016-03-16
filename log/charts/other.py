@@ -50,7 +50,7 @@ def overview(**kwargs):
             {
                 'data': [],
                 'dataLabels': {
-                    'formatter': 'chart_formatter',
+                    'formatter': 'format_function',
                 },
                 'name': 'Outcomes'
             }
@@ -80,7 +80,7 @@ def overview(**kwargs):
             'outcome_list', outcome_list))
     if group_categories:
         chart = chart.replace('?outcome=', '?outcome_category=')
-    chart = chart.replace('\"chart_formatter\"', """
+    chart = chart.replace('\"format_function\"', """
     function() {
         var outcomes = outcome_list;
         return ''+outcomes[parseInt(this.point.x)]+' '+

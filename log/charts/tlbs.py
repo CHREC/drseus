@@ -133,7 +133,8 @@ def fields(**kwargs):
     outcomes = kwargs['outcomes']
 
     start = time()
-    fields = list(injections.filter(target='TLB').values_list(
+    injections = injections.filter(target='TLB')
+    fields = list(injections.values_list(
         'field', flat=True).distinct().order_by('field'))
     if len(fields) < 1:
         return
@@ -185,8 +186,8 @@ def fields(**kwargs):
         when_kwargs = {'then': 1}
         when_kwargs['result__outcome_category' if group_categories
                     else 'result__outcome'] = outcome
-        data = list(injections.filter(target='TLB').values_list(
-            'field').distinct().order_by('field').annotate(
+        data = list(injections.values_list('field').distinct().order_by(
+            'field').annotate(
                 count=Sum(Case(When(**when_kwargs), default=0,
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
@@ -203,6 +204,5 @@ def fields(**kwargs):
     chart_list.append({
         'id': 'tlb_fields_chart',
         'order': order,
-        'smooth': True,
         'title': 'TLB Fields'})
     print('tlb_fields_chart:', round(time()-start, 2), 'seconds')

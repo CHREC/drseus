@@ -119,6 +119,94 @@ def outcomes(**kwargs):
     print('registers_chart:', round(time()-start, 2), 'seconds')
 
 
+def fields(**kwargs):
+    chart_data = kwargs['chart_data']
+    chart_list = kwargs['chart_list']
+    group_categories = kwargs['group_categories']
+    injections = kwargs['injections']
+    order = kwargs['order']
+    outcomes = kwargs['outcomes']
+    success = kwargs['success']
+
+    start = time()
+    injections = injections.exclude(target='TLB').exclude(field__isnull=True)
+    fields = list(injections.values_list(
+        'field', flat=True).distinct().order_by('field'))
+    if len(fields) < 1:
+        return
+    extra_colors = list(colors_extra)
+    chart = {
+        'chart': {
+            'renderTo': 'register_fields_chart',
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
+                   for outcome in outcomes],
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': 'register_fields_chart',
+            'sourceWidth': 512,
+            'sourceHeight': 384,
+            'scale': 2
+        },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': 'click_function'
+                    }
+                },
+                'stacking': True
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'xAxis': {
+            'categories': fields,
+            'title': {
+                'text': 'Injected Register Field'
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Injections'
+            }
+        }
+    }
+    for outcome in outcomes:
+        when_kwargs = {'then': 1}
+        if success:
+            when_kwargs['success'] = outcome
+        else:
+            when_kwargs['result__outcome_category' if group_categories
+                        else 'result__outcome'] = outcome
+        data = list(injections.values_list('field').distinct().order_by(
+            'field').annotate(
+                count=Sum(Case(When(**when_kwargs), default=0,
+                               output_field=IntegerField()))
+            ).values_list('count', flat=True))
+        chart['series'].append({'data': data, 'name': outcome})
+    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    function(event) {
+        window.location.assign('results?outcome='+this.series.name+
+                               '&injection__field='+this.category);
+    }
+    """.replace('\n    ', '\n                        '))
+    if group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart_data.append(chart)
+    chart_list.append({
+        'id': 'register_fields_chart',
+        'order': order,
+        'title': 'Register Fields'})
+    print('register_fields_chart:', round(time()-start, 2), 'seconds')
+
+
 def bits(**kwargs):
     chart_data = kwargs['chart_data']
     chart_list = kwargs['chart_list']
