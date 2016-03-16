@@ -51,7 +51,7 @@ class dut(object):
         self.options = options
         self.aux = aux
         self.__start_time = None
-        self.__timer_value = None
+        self.__timer_value = 0
         self.ip_address = options.dut_ip_address if not aux \
             else options.aux_ip_address
         self.scp_port = options.dut_scp_port if not aux \
@@ -83,15 +83,15 @@ class dut(object):
 
     def stop_timer(self):
         if self.__start_time is not None:
-            self.__timer_value = perf_counter() - self.__start_time
+            self.__timer_value += perf_counter() - self.__start_time
             self.__start_time = None
-        else:
-            self.__timer_value = 0
+
+    def reset_timer(self):
+        self.__start_time = None
+        self.__timer_value = 0
 
     def get_timer_value(self):
-        value = self.__timer_value
-        self.__timer_value = None
-        return value
+        return self.__timer_value
 
     def open(self, attempts=10):
         serial_port = (self.options.dut_serial_port if not self.aux

@@ -346,9 +346,9 @@ class fault_injector(object):
                 with self.db as db:
                     db.log_event('Information', 'DUT', 'Command',
                                  self.db.campaign['command'])
+            self.debugger.dut.reset_timer()
             try:
-                latent_faults, persistent_faults, time_halted = \
-                    self.debugger.inject_faults()
+                latent_faults, persistent_faults = self.debugger.inject_faults()
                 self.debugger.continue_dut()
             except DrSEUsError as error:
                 self.db.result['outcome'] = str(error)
@@ -360,8 +360,6 @@ class fault_injector(object):
             else:
                 self.__monitor_execution(
                     latent_faults, persistent_faults, log_time=True)
-                if not self.db.campaign['simics']:
-                    self.db.result['execution_time'] -= time_halted
                 check_latent_faults()
             if self.db.campaign['simics']:
                 close_simics()

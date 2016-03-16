@@ -492,7 +492,7 @@ class simics(object):
                 latent_faults = errors
             if injections_remaining:
                 self.close()
-        return latent_faults, (latent_faults and persistent_faults()), 0
+        return latent_faults, (latent_faults and persistent_faults())
 
     def regenerate_checkpoints(self, injections):
         self.db.result['id'] = self.options.result_id
