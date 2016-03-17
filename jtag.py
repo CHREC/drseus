@@ -180,7 +180,9 @@ class jtag(object):
                 injection['target'] = target
             else:
                 target_index = 0
-            if target in ('CPU', 'GPR', 'TLB'):
+            if target in ('CPU', 'GPR', 'TLB') or \
+                    ('CP' in self.targets[target] and
+                     self.targets[target]['CP']):
                 self.select_core(target_index)
             if 'access' in self.targets[target]['registers'][register]:
                 injection['register_access'] = \

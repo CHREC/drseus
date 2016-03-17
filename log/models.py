@@ -65,6 +65,7 @@ class injection(Model):
     processor_mode = TextField(null=True)
     register = TextField(null=True)
     register_access = TextField(null=True)
+    register_alias = TextField(null=True)
     register_index = TextField(null=True)
     result = ForeignKey(result)
     success = BooleanField()

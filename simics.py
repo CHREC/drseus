@@ -584,6 +584,14 @@ class simics(object):
                         register_index.append(index)
                 else:
                     register_index = None
+                if 'mapping' in self.targets[target]['registers'][register]:
+                    injection['register_alias'] = register
+                    injection['register'] = register = \
+                        (self.targets[target]['registers'][register]
+                                     ['mapping']['register'])
+                    register_index = \
+                        (self.targets[target]['registers'][register]
+                                     ['mapping']['register_index'])
                 # choose bit_to_inject and TLB field_to_inject
                 if ('is_tlb' in self.targets[target]['registers'][register] and
                         self.targets[target]['registers'][register]['is_tlb']):
@@ -645,11 +653,11 @@ class simics(object):
                         bit_to_inject = (self.targets[target]['registers']
                                                      [register]['adjust_bit']
                                                      [bit_to_inject])
-                    if 'actualBits' in \
+                    if 'actual_bits' in \
                             self.targets[target]['registers'][register]:
                         num_bits_to_inject = \
                             (self.targets[target]['registers']
-                                         [register]['actualBits'])
+                                         [register]['actual_bits'])
                     if 'fields' in self.targets[target]['registers'][register]:
                         for field_name, field_bounds in \
                             (self.targets[target]['registers']

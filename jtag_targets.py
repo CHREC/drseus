@@ -19,6 +19,7 @@ p2020_ccsrbar = 0xFFE00000
 devices = {
     'a9': {
         'ID': {
+            'count': 2,
             'CP': True,
             'registers': {
                 # 'MIDR': {
@@ -245,6 +246,7 @@ devices = {
             }
         },
         'VIRTMEM': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'SCTLR': {
@@ -341,6 +343,7 @@ devices = {
             }
         },
         'FAULT': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'DFSR': {
@@ -394,6 +397,7 @@ devices = {
             }
         },
         'OTHER': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'CPACR': {
@@ -464,6 +468,7 @@ devices = {
             }
         },
         'CACHEMAINT': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'ICIALLUIS': {
@@ -565,6 +570,7 @@ devices = {
             }
         },
         'ADDRTRANS': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'PAR': {
@@ -642,6 +648,7 @@ devices = {
             }
         },
         'MISCOPS': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'VCR': {
@@ -694,6 +701,7 @@ devices = {
             }
         },
         'PERFMON': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'PMCR': {
@@ -795,6 +803,7 @@ devices = {
             }
         },
         'SECURITY': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'SCR': {
@@ -865,6 +874,7 @@ devices = {
             }
         },
         'PRELOAD': {
+            'count': 2,
             'CP': True,
             'registers': {
                 # 'PLEIDR': {
@@ -934,6 +944,7 @@ devices = {
             }
         },
         'TLBMAINT': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'TLBIALLIS': {
@@ -1152,6 +1163,7 @@ devices = {
             }
         },
         'IMPL': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'ACTLR': {
@@ -1185,6 +1197,7 @@ devices = {
             }
         },
         'JAZELLE': {
+            'count': 2,
             'CP': True,
             'registers': {
                 # 'JIDR': {
@@ -1268,6 +1281,7 @@ devices = {
             }
         },
         'RESERVED': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'Reserved0': {
@@ -1329,6 +1343,7 @@ devices = {
             }
         },
         'DEPRECATED': {
+            'count': 2,
             'CP': True,
             'registers': {
                 'ISB': {
@@ -1384,7 +1399,7 @@ devices = {
             'count': 2,
             'registers': {
                 'cpsr': {},
-                'lr': {},
+                'lr': {},  # TODO: is this a copy of one from below?
                 'lr_abt': {},
                 'lr_fiq': {},
                 'lr_irq': {},
@@ -1393,7 +1408,7 @@ devices = {
                 'lr_und': {},
                 'lr_usr': {},
                 'pc': {},
-                'sp': {},
+                'sp': {},  # TODO: is this a copy of one from below?
                 'sp_abt': {},
                 'sp_fiq': {},
                 'sp_irq': {},

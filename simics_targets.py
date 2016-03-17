@@ -11,17 +11,156 @@ devices = {
             'OBJECT': '.coretile.mpcore.core',
             'registers': {
                 'cpsr': {},
-                'spsr': {
-                    'count': (7, ),
+                'lr_abt': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (4, 14)
+                    }
                 },
-            },
+                'lr_fiq': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (1, 14)
+                    }
+                },
+                'lr_irq': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (2, 14)
+                    }
+                },
+                'lr_mon': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (0, 14)
+                    }
+                },
+                'lr_svc': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (5, 14)
+                    }
+                },
+                'lr_und': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (3, 14)
+                    }
+                },
+                'lr_usr': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 14)
+                    }
+                },
+                'pc': {
+                    'bits': 31,
+                    'partial': True,
+                    'actual_bits': 32,
+                    'fields': {
+                        'addr': (1, 31)  # Cannot write unaligned pc
+                    },
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 15)
+                    }
+                },
+                'sp_abt': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (4, 13)
+                    }
+                },
+                'sp_fiq': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (1, 13)
+                    }
+                },
+                'sp_irq': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (2, 13)
+                    }
+                },
+                'sp_mon': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (0, 13)
+                    }
+                },
+                'sp_svc': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (5, 13)
+                    }
+                },
+                'sp_und': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (3, 13)
+                    }
+                },
+                'sp_usr': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 13)
+                    }
+                },
+                # 'spsr': {  # mod, fiq, irq, und, abt, svc, usr
+                #     'count': (7, )
+                # },
+                'spsr_abt': {
+                    'mapping': {
+                        'register': 'spsr',
+                        'register_index': (4, )
+                    }
+                },
+                'spsr_fiq': {
+                    'mapping': {
+                        'register': 'spsr',
+                        'register_index': (1, )
+                    }
+                },
+                'spsr_irq': {
+                    'mapping': {
+                        'register': 'spsr',
+                        'register_index': (2, )
+                    }
+                },
+                'spsr_mon': {
+                    'mapping': {
+                        'register': 'spsr',
+                        'register_index': (0, )
+                    }
+                },
+                'spsr_svc': {
+                    'mapping': {
+                        'register': 'spsr',
+                        'register_index': (5, )
+                    }
+                },
+                'spsr_und': {
+                    'mapping': {
+                        'register': 'spsr',
+                        'register_index': (3, )
+                    }
+                },
+                'spsr_usr': {
+                    'mapping': {
+                        'register': 'spsr',
+                        'register_index': (6, )
+                    }
+                }
+            }
         },
         'FPGPR': {
             'count': 2,
             'OBJECT': '.coretile.mpcore.core',
             'registers': {
                 'fpgprs': {
-                    'count': (32, ),
+                    'bits': 64,
+                    'count': (32, )
                 }
             }
         },
@@ -29,11 +168,128 @@ devices = {
             'count': 2,
             'OBJECT': '.coretile.mpcore.core',
             'registers': {
-                'gprs': {
-                    'count': (7, 16),
+                # 'gprs': {  # mod, fiq, irq, und, abt, svc, usr
+                #     'count': (7, 16),
+                # },
+                'r0': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 0)
+                    }
+                },
+                'r1': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 1)
+                    }
+                },
+                'r2': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 2)
+                    }
+                },
+                'r3': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 3)
+                    }
+                },
+                'r4': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 4)
+                    }
+                },
+                'r5': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 5)
+                    }
+                },
+                'r6': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 6)
+                    }
+                },
+                'r7': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 7)
+                    }
+                },
+                'r8': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 8)
+                    }
+                },
+                'r9': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 9)
+                    }
+                },
+                'r10': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 10)
+                    }
+                },
+                'r11': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 11)
+                    }
+                },
+                'r12': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (6, 12)
+                    }
+                },
+                'r8_fiq': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (1, 8)
+                    }
+                },
+                'r9_fiq': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (1, 9)
+                    }
+                },
+                'r10_fiq': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (1, 10)
+                    }
+                },
+                'r11_fiq': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (1, 11)
+                    }
+                },
+                'r12_fiq': {
+                    'mapping': {
+                        'register': 'gprs',
+                        'register_index': (1, 12)
+                    }
                 }
             }
-        }
+        },
+        # 'TLB': {
+        #     'count': 2,
+        #     'OBJECT': '.coretile.mpcore.core',
+        #     'registers': {
+        #         'tlb': {
+        #             'count': (4, 7, 6),
+        #         },
+        #     },
+        # }
     },
     'p2020rdb': {
         'CCSR': {
@@ -485,7 +741,7 @@ devices = {
                     'count': (4, ),
                     'bits': 28,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved3': (31-0, 31-0),
                         'NLWR': (31-1, 31-1),
@@ -521,7 +777,7 @@ devices = {
                     'count': (4, ),
                     'bits': 30,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved3': (31-3, 31-0),
                         'BWC': (31-7, 31-4),
@@ -565,7 +821,7 @@ devices = {
                     'count': (4, ),
                     'bits': 28,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved2': (31-6, 31-0),
                         'SSME': (31-7, 31-7),
@@ -622,7 +878,7 @@ devices = {
                 'LBCR': {
                     'bits': 15,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'LDIS': (31-0, 31-0),
                         'Reserved2': (31-7, 31-1),
@@ -642,7 +898,7 @@ devices = {
                 'LCRR': {
                     'bits': 25,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'PBYP': (31-0, 31-0),
                         'Reserved1': (31-13, 31-1),
@@ -689,7 +945,7 @@ devices = {
                 'regs_DCR': {
                     'bits': 28,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved2': (31-15, 31-0),
                         'PRI': (31-17, 31-16),
@@ -715,7 +971,7 @@ devices = {
                 'regs_PROCTL': {
                     'bits': 22,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         # Field IABG - Not implemented.
                         # Field WECINT - Not implemented.
@@ -743,7 +999,7 @@ devices = {
                 'regs_SYSCTL': {
                     'bits': 12,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved2': (31-3, 31-0),
                         # Not Implemented
@@ -766,7 +1022,7 @@ devices = {
                 'regs_WML': {
                     'bits': 16,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved1': (31-7, 31-0),
                         # Not Implemented
@@ -779,7 +1035,7 @@ devices = {
                 'regs_XFERTYP': {
                     'bits': 30,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved3': (31-1, 31-0),
                         'CMDINX': (31-7, 31-2),
@@ -812,7 +1068,7 @@ devices = {
                     'count': (4, ),
                     'bits': 12,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'CI': (31-0, 31-0),
                         'CP': (31-1, 31-1),
@@ -865,7 +1121,7 @@ devices = {
                 'DMACTRL': {
                     'bits': 30,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved2': (31-15, 31-0),
                         'LE': (31-16, 31-16),
@@ -885,7 +1141,7 @@ devices = {
                 'ECNTRL': {
                     'bits': 28,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved2': (31-16, 31-0),
                         # Not Implemented
@@ -921,7 +1177,7 @@ devices = {
                 'MACCFG1': {
                     'bits': 23,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         # Not Implemented
                         # 'Soft_Reset': (31-0, 31-0),
@@ -947,7 +1203,7 @@ devices = {
                 'MACCFG2': {
                     'bits': 29,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved1': (31-15, 31-0),
                         'Preamble_Length': (31-19, 31-16),
@@ -1012,7 +1268,7 @@ devices = {
                 'RCTRL': {
                     'bits': 30,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         # Field CFA - Not implemented.
                         'L2OFF': (31-6, 31-0),
@@ -1100,7 +1356,7 @@ devices = {
                 'tbi_ANA': {
                     'bits': 9,
                     'partial': True,
-                    'actualBits': 16,
+                    'actual_bits': 16,
                     'fields': {
                         # Not Implemented
                         # 'Next_Page': (15-0, 15-0),
@@ -1127,7 +1383,7 @@ devices = {
                 'tbi_ANNPT': {
                     'bits': 2,
                     'partial': True,
-                    'actualBits': 16,
+                    'actual_bits': 16,
                     'fields': {
                         # Not Implemented
                         # 'Next_Page': (15-0, 15-0),
@@ -1143,7 +1399,7 @@ devices = {
                 'tbi_CR': {
                     'bits': 10,
                     'partial': True,
-                    'actualBits': 16,
+                    'actual_bits': 16,
                     'fields': {
                         # Not Implemented
                         # 'PHY_Reset': (15-0, 15-0),
@@ -1167,7 +1423,7 @@ devices = {
                 'tbi_JD': {
                     'bits': 2,
                     'partial': True,
-                    'actualBits': 16,
+                    'actual_bits': 16,
                     'fields': {
                         # Not Implemented
                         # 'Jitter_Enable': (15-0, 15-0),
@@ -1183,7 +1439,7 @@ devices = {
                 'tbi_TBICON': {
                     'bits': 10,
                     'partial': True,
-                    'actualBits': 16,
+                    'actual_bits': 16,
                     'fields': {
                         # Not Implemented
                         # 'Soft_Reset': (15-0, 15-0),
@@ -1424,7 +1680,7 @@ devices = {
                 'DDR_SDRAM_CFG': {
                     'bits': 31,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'MEM_EN': (31-0, 31-0),
                         'SREN': (31-1, 31-1),
@@ -1453,7 +1709,7 @@ devices = {
                 'DDR_SDRAM_CFG_2': {
                     'bits': 31,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'FRC_SR': (31-0, 31-0),
                         'SR_IE': (31-1, 31-1),
@@ -1520,7 +1776,7 @@ devices = {
                 'PEX_CONFIG': {
                     'bits': 29,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved1': (31-26, 31-0),
                         # Not Implemented
@@ -1578,7 +1834,7 @@ devices = {
                     'count': (5, ),
                     'bits': 27,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'EN': (31-0, 31-0),
                         'Reserved3': (31-2, 31-1),
@@ -1893,7 +2149,7 @@ devices = {
                     'count': (2, ),
                     'bits': 28,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'PW': (31-1, 31-0),
                         'IPW': (31-4, 31-2),
@@ -2000,7 +2256,7 @@ devices = {
                 'regs_USBMODE': {
                     'bits': 30,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved1': (5, 31),
                         # 'SDIS': (4, 4),
@@ -2027,7 +2283,7 @@ devices = {
                     'count': (1, ),
                     'bits': 26,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         # Not Implemented
                         # 'PTS': (30, 31),
@@ -2062,7 +2318,7 @@ devices = {
                 'usb_regs_usbcmd': {
                     'bits': 21,
                     'partial': True,
-                    'actualBits': 32,
+                    'actual_bits': 32,
                     'fields': {
                         'Reserved2': (24, 31),
                         # Not Implemented
