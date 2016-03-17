@@ -17,13 +17,12 @@ def outcomes(**kwargs):
     success = kwargs['success']
 
     start = time()
-    injections = injections.filter(target='TLB')
-    tlb_entries = injections.annotate(
+    injections = injections.filter(target='TLB').annotate(
         tlb_index=Substr('register_index', 1,
                          Length('register_index')-2,
                          output_field=TextField())).annotate(
-        register_name=Concat('register', Value(' '), 'tlb_index')
-    ).values_list('register_name', flat=True).distinct(
+        register_name=Concat('register', Value(' '), 'tlb_index'))
+    tlb_entries = injections.values_list('register_name', flat=True).distinct(
     ).order_by('register_name')
     if len(tlb_entries) < 1:
         return
@@ -86,16 +85,11 @@ def outcomes(**kwargs):
         else:
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcome
-        data = injections.annotate(
-            tlb_index=Substr('register_index', 1,
-                             Length('register_index')-2,
-                             output_field=TextField())).annotate(
-            register_name=Concat('register', Value(' '), 'tlb_index')
-        ).values_list('register_name').distinct().order_by('register_name'
-                                                           ).annotate(
-            count=Sum(Case(When(**when_kwargs),
-                           default=0, output_field=IntegerField()))
-        ).values_list('register_name', 'count')
+        data = injections.values_list('register_name').distinct().order_by(
+            'register_name').annotate(
+                count=Sum(Case(When(**when_kwargs),
+                               default=0, output_field=IntegerField()))
+            ).values_list('register_name', 'count')
         data = sorted(data, key=fix_sort_list)
         chart['series'].append({'data': list(zip(*data))[1],
                                 'name': str(outcome)})

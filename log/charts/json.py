@@ -5,8 +5,7 @@ from threading import Thread
 from log import models
 from log.charts import (checkpoints, colors, colors_extra, other, registers,
                         targets, times, tlbs)
-from jtag_targets import devices as hardware_devices
-from simics_targets import devices as simics_devices
+import targets as devices
 
 
 def campaigns_chart(queryset):
@@ -87,13 +86,18 @@ def campaigns_chart(queryset):
 def target_bits_chart(campaign):
     if campaign.simics:
         if campaign.architecture == 'p2020':
-            injection_targets = simics_devices['p2020rdb']
+            injection_targets = devices.p2020.simics.devices['p2020rdb']
         elif campaign.architecture == 'a9':
-            injection_targets = simics_devices['a9x2']
+            injection_targets = devices.a9.simics.devices['a9x2']
         else:
             return '[]'
     else:
-        injection_targets = hardware_devices[campaign.architecture]
+        if campaign.architecture == 'p2020':
+            injection_targets = devices.p2020.jtag.devices['p2020']
+        elif campaign.architecture == 'a9':
+            injection_targets = devices.a9.jtag.devices['a9']
+        else:
+            return '[]'
     target_list = sorted(injection_targets.keys())
     chart = {
         'chart': {

@@ -344,7 +344,7 @@ class fault_injector(object):
                 with self.db as db:
                     db.log_event('Information', 'DUT', 'Command',
                                  self.db.campaign['command'])
-            self.debugger.dut.reset_timer()
+                self.debugger.dut.reset_timer()
             try:
                 latent_faults, persistent_faults = self.debugger.inject_faults()
                 self.debugger.continue_dut()

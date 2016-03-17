@@ -156,12 +156,14 @@ class database(object):
 
     def __create_result(self):
         self.result.update({'aux_output': '',
+                            'aux_serial_port': None,
                             'campaign_id': self.campaign['id'],
                             'cycles': None,
                             'data_diff': None,
                             'debugger_output': '',
                             'detected_errors': None,
                             'dut_output': '',
+                            'dut_serial_port': None,
                             'execution_time': None,
                             'num_injections': None,
                             'outcome_category': 'Incomplete',
@@ -171,9 +173,12 @@ class database(object):
         self.insert('result')
 
     def log_result(self, create_result=True):
-        out = (self.result['dut_serial_port']+', '+str(self.result['id']) +
-               ': '+self.result['outcome_category']+' - ' +
-               self.result['outcome'])
+        if self.result['dut_serial_port'] is not None:
+            out = self.result['dut_serial_port']+', '
+        else:
+            out = ''
+        out += (str(self.result['id'])+': '+self.result['outcome_category'] +
+                ' - '+self.result['outcome'])
         if self.result['data_diff'] is not None and \
                 self.result['data_diff'] < 1.0:
             out += ' {0:.2f}%'.format(min(self.result['data_diff']*100,

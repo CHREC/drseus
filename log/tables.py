@@ -106,16 +106,18 @@ class results(Table):
             for injection in models.injection.objects.filter(result=record.id):
                 if injection.success is None:
                     success = '-'
+                    break
                 elif not injection.success:
-                    success = '\u2714'
+                    success = '\u2718'
                     break
                 else:
-                    success = '\u2718'
+                    success = '\u2714'
         return success
 
     def render_registers(self, record):
         if record is not None:
-            registers = [injection.register for injection
+            registers = [injection.register_alias if injection.register_alias
+                         else injection.register for injection
                          in models.injection.objects.filter(result=record.id)]
         else:
             registers = []
@@ -267,8 +269,8 @@ class simics_injection(Table):
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
         fields = ('timestamp', 'checkpoint', 'target', 'target_index',
-                  'register', 'register_index', 'bit', 'field', 'gold_value',
-                  'injected_value', 'success_')
+                  'register', 'register_index', 'register_alias', 'bit',
+                  'field', 'gold_value', 'injected_value', 'success_')
         model = models.injection
         order_by = 'checkpoint'
         template = 'django_tables2/bootstrap.html'

@@ -11,7 +11,8 @@ from time import sleep
 
 from dut import dut
 from error import DrSEUsError
-from jtag_targets import devices
+from targets.a9.jtag import devices as a9_devices
+from targets.p2020.jtag import devices as p2020_devices
 from targets import choose_register, choose_target
 
 
@@ -440,7 +441,7 @@ class bdi_arm(bdi):
     # BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
     def __init__(self, database, options):
         self.prompts = ['A9#0>', 'A9#1>']
-        self.targets = devices['a9_bdi']
+        self.targets = a9_devices['a9_bdi']
         super().__init__(database, options)
 
     def reset_dut(self, attempts=5):
@@ -474,7 +475,7 @@ class bdi_arm(bdi):
 class bdi_p2020(bdi):
     def __init__(self, database, options):
         self.prompts = ['P2020>']
-        self.targets = devices['p2020']
+        self.targets = p2020_devices['p2020']
         super().__init__(database, options)
 
     def reset_dut(self, attempts=5):
@@ -558,7 +559,7 @@ class openocd(jtag):
                             'at '+options.dut_serial_port)
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
-        self.targets = devices['a9']
+        self.targets = a9_devices['a9']
         self.port = find_open_port()
         super().__init__(database, options)
         if self.options.command == 'openocd' and self.options.gdb:

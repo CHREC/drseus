@@ -13,7 +13,8 @@ from time import sleep
 from dut import dut
 from error import DrSEUsError
 from simics_config import simics_config
-from simics_targets import devices
+from targets.a9.simics import devices as a9_devices
+from targets.p2020.simics import devices as p2020_devices
 from targets import choose_register, choose_target
 from timeout import timeout, TimeoutException
 
@@ -34,9 +35,10 @@ class simics(object):
         self.options = options
         if database.campaign['architecture'] == 'p2020':
             self.board = 'p2020rdb'
+            self.targets = p2020_devices['p2020rdb']
         elif database.campaign['architecture'] == 'a9':
             self.board = 'a9x2'
-        self.targets = devices[self.board]
+            self.targets = a9_devices['a9x2']
         if options.command == 'inject' and options.selected_targets is not None:
             for target in options.selected_targets:
                 if target not in self.targets:
@@ -584,14 +586,6 @@ class simics(object):
                         register_index.append(index)
                 else:
                     register_index = None
-                if 'mapping' in self.targets[target]['registers'][register]:
-                    injection['register_alias'] = register
-                    injection['register'] = register = \
-                        (self.targets[target]['registers'][register]
-                                     ['mapping']['register'])
-                    register_index = \
-                        (self.targets[target]['registers'][register]
-                                     ['mapping']['register_index'])
                 # choose bit_to_inject and TLB field_to_inject
                 if ('is_tlb' in self.targets[target]['registers'][register] and
                         self.targets[target]['registers'][register]['is_tlb']):
@@ -678,6 +672,14 @@ class simics(object):
                     else:
                         injection['field'] = None
                 injection['bit'] = bit_to_inject
+                if 'alias' in self.targets[target]['registers'][register]:
+                    injection['register_alias'] = register
+                    register_index = \
+                        (self.targets[target]['registers'][register]
+                                     ['alias']['register_index'])
+                    injection['register'] = register = \
+                        (self.targets[target]['registers'][register]
+                                     ['alias']['register'])
                 if register_index is not None:
                     injection['register_index'] = ''
                     for index in register_index:
@@ -828,7 +830,11 @@ class simics(object):
                         log_diffs(db, config_object, register+':'+str(index),
                                   gold_value[index], monitored_value[index])
                 else:
-                    if int(monitored_value, base=0) != int(gold_value, base=0):
+                    if isinstance(monitored_value, str):
+                        monitored_value = int(monitored_value, base=0)
+                    if isinstance(gold_value, str):
+                        gold_value = int(gold_value, base=0)
+                    if monitored_value != gold_value:
                         register_diff = {
                             'result_id': self.db.result['id'],
                             'checkpoint': checkpoint,

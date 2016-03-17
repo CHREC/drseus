@@ -1,4 +1,4 @@
-from django.db.models import Case, IntegerField, Sum, Value, When
+from django.db.models import Case, F, IntegerField, Sum, Value, When
 from django.db.models.functions import Concat
 from json import dumps
 from time import time
@@ -17,10 +17,11 @@ def outcomes(**kwargs):
     success = kwargs['success']
 
     start = time()
-    injections = injections.exclude(target='TLB')
-    registers = injections.annotate(
-        register_name=Concat('register', Value(' '), 'register_index')
-    ).values_list('register_name', flat=True).distinct(
+    injections = injections.exclude(target='TLB').annotate(register_name=Case(
+        When(register_alias__isnull=True,
+             then=Concat('register', Value(' '), 'register_index')),
+        default=F('register_alias')))
+    registers = injections.values_list('register_name', flat=True).distinct(
     ).order_by('register_name')
     if len(registers) < 1:
         return
@@ -84,13 +85,11 @@ def outcomes(**kwargs):
         else:
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcome
-        data = injections.annotate(
-            register_name=Concat('register', Value(' '), 'register_index')
-        ).values_list('register_name').distinct().order_by('register_name'
-                                                           ).annotate(
-            count=Sum(Case(When(**when_kwargs),
-                           default=0, output_field=IntegerField()))
-        ).values_list('register_name', 'count')
+        data = injections.values_list('register_name').distinct().order_by(
+            'register_name').annotate(
+                count=Sum(Case(When(**when_kwargs),
+                               default=0, output_field=IntegerField()))
+            ).values_list('register_name', 'count')
         data = sorted(data, key=fix_sort_list)
         chart['series'].append({'data': list(zip(*data))[1],
                                 'name': str(outcome)})

@@ -1,3 +1,6 @@
+# if count is not present it is assumed to be 1
+# if bits is not present it is assumbed to be 32
+
 from random import randrange
 
 

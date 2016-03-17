@@ -5,6 +5,8 @@ from getpass import getpass
 
 import utilities
 
+# TODO: update target organization
+# TODO: update checkpoint monitoring with register aliases
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
