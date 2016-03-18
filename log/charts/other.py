@@ -74,12 +74,18 @@ def overview(**kwargs):
         chart = chart.replace('\"click_function\"', """
         function(event) {
             var outcomes = outcome_list;
-            window.location.assign('results?outcome='+outcomes[this.x]);
+            var filter;
+            if (window.location.href.indexOf('?') > -1) {
+                filter = window.location.href.replace(/.*\?/g, '&');
+            } else {
+                filter = '';
+            }
+            window.location.assign('results?outcome='+outcomes[this.x]+filter);
         }
         """.replace('\n    ', '\n                        ').replace(
             'outcome_list', outcome_list))
-    if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+        if group_categories:
+            chart = chart.replace('?outcome=', '?outcome_category=')
     chart = chart.replace('\"format_function\"', """
     function() {
         var outcomes = outcome_list;
@@ -172,8 +178,14 @@ def num_injections(**kwargs):
     chart_data.append(dumps(chart_percent, indent=4))
     chart = dumps(chart, indent=4).replace('\"click_function\"', """
     function(event) {
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
+        }
         window.location.assign('results?outcome='+this.series.name+
-                               '&num_injections='+this.category);
+                               '&num_injections='+this.category+filter);
     }
     """.replace('\n    ', '\n                        '))
     if group_categories:
