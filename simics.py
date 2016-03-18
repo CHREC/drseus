@@ -13,8 +13,8 @@ from time import sleep
 from dut import dut
 from error import DrSEUsError
 from simics_config import simics_config
-from targets.a9.simics import devices as a9_devices
-from targets.p2020.simics import devices as p2020_devices
+from targets.a9.simics import targets as a9_targets
+from targets.p2020.simics import targets as p2020_targets
 from targets import choose_register, choose_target
 from timeout import timeout, TimeoutException
 
@@ -35,10 +35,10 @@ class simics(object):
         self.options = options
         if database.campaign['architecture'] == 'p2020':
             self.board = 'p2020rdb'
-            self.targets = p2020_devices['p2020rdb']
+            self.targets = p2020_targets
         elif database.campaign['architecture'] == 'a9':
             self.board = 'a9x2'
-            self.targets = a9_devices['a9x2']
+            self.targets = a9_targets
         if options.command == 'inject' and options.selected_targets is not None:
             for target in options.selected_targets:
                 if target not in self.targets:

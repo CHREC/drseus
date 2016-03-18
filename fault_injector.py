@@ -6,7 +6,7 @@ from threading import Thread
 
 from database import database
 from error import DrSEUsError
-from jtag import bdi_p2020, openocd
+from jtag import bdi, openocd
 from simics import simics
 
 
@@ -18,7 +18,7 @@ class fault_injector(object):
             self.debugger = simics(self.db, options)
         else:
             if campaign['architecture'] == 'p2020':
-                self.debugger = bdi_p2020(self.db, options)
+                self.debugger = bdi(self.db, options)
             elif campaign['architecture'] == 'a9':
                 self.debugger = openocd(self.db, options, power_switch)
         if campaign['aux'] and not campaign['simics']:

@@ -4,54 +4,52 @@
 from random import randrange
 
 
-def calculate_target_bits(devices):
-    for device in devices:
-        for target in devices[device]:
-            # count bits for each target
-            total_bits = 0
-            for register in devices[device][target]['registers']:
-                if 'bits' in devices[device][target]['registers'][register]:
-                    bits = (devices[device][target]['registers'][register]
-                                   ['bits'])
+def calculate_target_bits(targets):
+    for target in targets:
+        # count bits for each target
+        total_bits = 0
+        for register in targets[target]['registers']:
+            if 'bits' in targets[target]['registers'][register]:
+                bits = (targets[target]['registers'][register]
+                               ['bits'])
+            else:
+                bits = 32
+            if 'count' in targets[target]['registers'][register]:
+                count = 1
+                if 'is_tlb' in \
+                    targets[target]['registers'][register] \
+                    and (targets[target]['registers'][register]
+                                ['is_tlb']):
+                    dimensions = (targets[target]['registers']
+                                         [register]['count'][:-1])
                 else:
-                    bits = 32
-                if 'count' in devices[device][target]['registers'][register]:
-                    count = 1
-                    if 'is_tlb' in \
-                        devices[device][target]['registers'][register] \
-                        and (devices[device][target]['registers'][register]
-                                    ['is_tlb']):
-                        dimensions = (devices[device][target]['registers']
-                                             [register]['count'][:-1])
-                    else:
-                        dimensions = (devices[device][target]['registers']
-                                             [register]['count'])
-                    for dimension in dimensions:
-                        count *= dimension
+                    dimensions = (targets[target]['registers']
+                                         [register]['count'])
+                for dimension in dimensions:
+                    count *= dimension
+            else:
+                count = 1
+            (targets[target]['registers']
+                    [register]['total_bits']) = count * bits
+            total_bits += count * bits
+            # if a register is partially implemented generate an adjust_bit
+            # mapping list to ensure an unimplemented field is not injected
+            if 'partial' in targets[target]['registers'][register] \
+                and (targets[target]['registers'][register]
+                            ['partial']):
+                adjust_bit = []
+                for field, field_range in (targets[target]
+                                                  ['registers'][register]
+                                                  ['fields'].items()):
+                    adjust_bit.extend(range(field_range[0],
+                                            field_range[1]+1))
+                if len(adjust_bit) != bits:
+                    raise Exception('Bits mismatch for register: ' +
+                                    register+' in target: '+target)
                 else:
-                    count = 1
-                (devices[device][target]['registers']
-                        [register]['total_bits']) = count * bits
-                total_bits += count * bits
-                # if a register is partially implemented generate an adjust_bit
-                # mapping list to ensure an unimplemented field is not injected
-                if 'partial' in devices[device][target]['registers'][register] \
-                    and (devices[device][target]['registers'][register]
-                                ['partial']):
-                    adjust_bit = []
-                    for field, field_range in (devices[device][target]
-                                                      ['registers'][register]
-                                                      ['fields'].items()):
-                        adjust_bit.extend(range(field_range[0],
-                                                field_range[1]+1))
-                    if len(adjust_bit) != bits:
-                        raise Exception('Bits mismatch for register: ' +
-                                        register+' in target: '+target +
-                                        ' in device: '+device)
-                    else:
-                        (devices[device][target]['registers'][register]
-                                ['adjust_bit']) = sorted(adjust_bit)
-            devices[device][target]['total_bits'] = total_bits
+                    (targets[target]['registers'][register]
+                            ['adjust_bit']) = sorted(adjust_bit)
+        targets[target]['total_bits'] = total_bits
 
 
 def choose_target(selected_targets, targets):

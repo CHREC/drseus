@@ -156,14 +156,12 @@ class database(object):
 
     def __create_result(self):
         self.result.update({'aux_output': '',
-                            'aux_serial_port': None,
                             'campaign_id': self.campaign['id'],
                             'cycles': None,
                             'data_diff': None,
                             'debugger_output': '',
                             'detected_errors': None,
                             'dut_output': '',
-                            'dut_serial_port': None,
                             'execution_time': None,
                             'num_injections': None,
                             'outcome_category': 'Incomplete',
@@ -173,7 +171,7 @@ class database(object):
         self.insert('result')
 
     def log_result(self, create_result=True):
-        if self.result['dut_serial_port'] is not None:
+        if 'dut_serial_port' in self.result:
             out = self.result['dut_serial_port']+', '
         else:
             out = ''

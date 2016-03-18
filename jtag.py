@@ -11,8 +11,8 @@ from time import sleep
 
 from dut import dut
 from error import DrSEUsError
-from targets.a9.jtag import devices as a9_devices
-from targets.p2020.jtag import devices as p2020_devices
+from targets.a9.jtag import targets as a9_targets
+from targets.p2020.jtag import targets as p2020_targets
 from targets import choose_register, choose_target
 
 
@@ -343,6 +343,8 @@ class bdi(jtag):
                       'wrong state for requested command', 'read access failed']
 
     def __init__(self, database, options):
+        self.prompts = ['P2020>']
+        self.targets = p2020_targets
         self.port = 23
         super().__init__(database, options)
         self.open()
@@ -374,12 +376,34 @@ class bdi(jtag):
         with self.db as db:
             db.log_event_success(event)
 
-    def reset_dut(self, expected_output, attempts):
+    def reset_dut(self, attempts=5):
+        expected_output = [
+            '- TARGET: processing user reset request',
+            '- BDI asserts HRESET',
+            '- Reset JTAG controller passed',
+            '- JTAG exists check passed',
+            '- BDI removes HRESET',
+            '- TARGET: resetting target passed',
+            '- TARGET: processing target startup \.\.\.\.',
+            '- TARGET: processing target startup passed']
         try:
             super().reset_dut(expected_output, 1)
         except DrSEUsError:
             self.reset_bdi()
             super().reset_dut(expected_output, max(attempts-1, 1))
+
+    def halt_dut(self):
+        super().halt_dut('halt 0 1', [
+            '- TARGET: core #0 has entered debug mode',
+            '- TARGET: core #1 has entered debug mode'])
+
+    def continue_dut(self):
+        super().continue_dut('go 0 1')
+
+    def select_core(self, core):
+        self.command('select '+str(core), ['Target CPU', 'Core state',
+                                           'Debug entry cause'],
+                     'Error selecting core')
 
     def get_mode(self):
         pass
@@ -435,72 +459,6 @@ class bdi(jtag):
         else:
             self.command('rm '+register+' '+value,
                          error_message='Error setting register value')
-
-
-class bdi_arm(bdi):
-    # BDI3000 with ZedBoard requires Linux kernel <= 3.6.0 (Xilinx TRD14-4)
-    def __init__(self, database, options):
-        self.prompts = ['A9#0>', 'A9#1>']
-        self.targets = a9_devices['a9_bdi']
-        super().__init__(database, options)
-
-    def reset_dut(self, attempts=5):
-        super().reset_dut([
-            '- TARGET: processing reset request',
-            '- TARGET: BDI removes TRST',
-            '- TARGET: Bypass check',
-            '- TARGET: JTAG exists check passed',
-            '- TARGET: BDI removes RESET',
-            '- TARGET: BDI waits for RESET inactive',
-            '- TARGET: Reset sequence passed',
-            '- TARGET: resetting target passed',
-            '- TARGET: processing target startup \.\.\.\.',
-            '- TARGET: processing target startup passed'], attempts)
-
-    def halt_dut(self):
-        super().halt_dut('halt 3', [
-            '- TARGET: core #0 has entered debug mode',
-            '- TARGET: core #1 has entered debug mode'])
-
-    def continue_dut(self):
-        super().continue_dut('cont 3')
-
-    def select_core(self, core):
-        self.command('select '+str(core), ['Core number', 'Core state',
-                                           'Debug entry cause', 'Current PC',
-                                           'Current CPSR'],
-                     'Error selecting core')
-
-
-class bdi_p2020(bdi):
-    def __init__(self, database, options):
-        self.prompts = ['P2020>']
-        self.targets = p2020_devices['p2020']
-        super().__init__(database, options)
-
-    def reset_dut(self, attempts=5):
-            super().reset_dut([
-                '- TARGET: processing user reset request',
-                '- BDI asserts HRESET',
-                '- Reset JTAG controller passed',
-                '- JTAG exists check passed',
-                '- BDI removes HRESET',
-                '- TARGET: resetting target passed',
-                '- TARGET: processing target startup \.\.\.\.',
-                '- TARGET: processing target startup passed'], attempts)
-
-    def halt_dut(self):
-        super().halt_dut('halt 0 1', [
-            '- TARGET: core #0 has entered debug mode',
-            '- TARGET: core #1 has entered debug mode'])
-
-    def continue_dut(self):
-        super().continue_dut('go 0 1')
-
-    def select_core(self, core):
-        self.command('select '+str(core), ['Target CPU', 'Core state',
-                                           'Debug entry cause'],
-                     'Error selecting core')
 
 
 class openocd(jtag):
@@ -559,7 +517,7 @@ class openocd(jtag):
                             'at '+options.dut_serial_port)
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
-        self.targets = a9_devices['a9']
+        self.targets = a9_targets
         self.port = find_open_port()
         super().__init__(database, options)
         if self.options.command == 'openocd' and self.options.gdb:
