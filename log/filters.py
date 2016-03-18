@@ -85,6 +85,11 @@ class injection(FilterSet):
             choices=register_access_choices)
         self.filters['register_access'].widget.attrs['size'] = min(
             len(register_access_choices), max_select_box_size)
+        register_alias_choices = self.choices(self.queryset, 'register_alias')
+        self.filters['register_alias'].extra.update(
+            choices=register_alias_choices)
+        self.filters['register_alias'].widget.attrs['size'] = min(
+            len(register_alias_choices), max_select_box_size)
         register_index_choices = self.choices(self.queryset, 'register_index')
         self.filters['register_index'].extra.update(
             choices=register_index_choices)
@@ -123,6 +128,9 @@ class injection(FilterSet):
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     register_access = MultipleChoiceFilter(
         label='Register access',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    register_alias = MultipleChoiceFilter(
+        label='Register alias',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     register_index = MultipleChoiceFilter(
         label='Register index',
@@ -203,6 +211,18 @@ class result(FilterSet):
             choices=register_choices)
         self.filters['injection__register'].widget.attrs['size'] = min(
             len(register_choices), max_select_box_size)
+        register_access_choices = injection.choices(
+            None, injections, 'register_access')
+        self.filters['injection__register_access'].extra.update(
+            choices=register_access_choices)
+        self.filters['injection__register_access'].widget.attrs['size'] = min(
+            len(register_access_choices), max_select_box_size)
+        register_alias_choices = injection.choices(
+            None, injections, 'register_alias')
+        self.filters['injection__register_alias'].extra.update(
+            choices=register_alias_choices)
+        self.filters['injection__register_alias'].widget.attrs['size'] = min(
+            len(register_alias_choices), max_select_box_size)
         register_index_choices = injection.choices(
             None, injections, 'register_index')
         self.filters['injection__register_index'].extra.update(
@@ -309,6 +329,12 @@ class result(FilterSet):
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__register = MultipleChoiceFilter(
         label='Register',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    injection__register_access = MultipleChoiceFilter(
+        label='Register access',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    injection__register_alias = MultipleChoiceFilter(
+        label='Register alias',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__register_index = MultipleChoiceFilter(
         label='Register index',
