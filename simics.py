@@ -800,24 +800,25 @@ class simics(object):
                 with simics_config('simics-workspace/'+checkpoint) as config:
                     registers = {}
                     for target in self.targets:
-                        if target != 'TLB':
-                            if 'count' in self.targets[target]:
-                                count = self.targets[target]['count']
-                            else:
-                                count = 1
-                            for target_index in range(count):
-                                config_object = ('DUT_'+self.board +
-                                                 self.targets[target]['OBJECT'])
-                                if count > 1:
-                                    config_object += '['+str(target_index)+']'
-                                if target == 'GPR':
-                                    target_key = config_object+':gprs'
-                                else:
-                                    target_key = config_object
-                                registers[target_key] = {}
-                                for register in (self.targets[target]
-                                                             ['registers']):
-                                    registers[target_key][register] = \
+                        if 'count' in self.targets[target]:
+                            count = self.targets[target]['count']
+                        else:
+                            count = 1
+                        for target_index in range(count):
+                            config_object = ('DUT_'+self.board +
+                                             self.targets[target]['OBJECT'])
+                            if count > 1:
+                                config_object += '['+str(target_index)+']'
+                            registers[config_object] = {}
+                            for register in self.targets[target]['registers']:
+                                if 'alias' in (self.targets[target]['registers']
+                                                           [register]):
+                                    register = \
+                                        (self.targets[target]['registers']
+                                                     [register]['alias']
+                                                     ['register'])
+                                if register not in registers[config_object]:
+                                    registers[config_object][register] = \
                                         config.get(config_object, register)
                 return registers
 
