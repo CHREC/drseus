@@ -65,6 +65,8 @@ class simics(object):
                                 stdin=PIPE, stdout=PIPE)
             try:
                 self.__command()
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
             except Exception as error:
                 self.simics.kill()
                 with self.db as db:
@@ -759,6 +761,8 @@ class simics(object):
                 # perform fault injection
                 injection.update(inject_register(
                     injected_checkpoint, register, target))
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
             except:
                 raise DrSEUsError('Error injecting fault')
             else:

@@ -112,6 +112,8 @@ class dut(object):
         for attempt in range(attempts):
             try:
                 self.serial.open()
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
             except Exception as error:
                 with self.db as db:
                     db.log_event('Warning' if attempt < attempts-1 else 'Error',
@@ -146,6 +148,8 @@ class dut(object):
             buff = None
             try:
                 in_bytes = self.serial.in_waiting
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
             except:
                 self.serial.reset_input_buffer()
             else:
@@ -167,6 +171,8 @@ class dut(object):
             with self.db as db:
                 db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                              'Flushed serial buffers', buff, success=True)
+        except KeyboardInterrupt:
+                raise KeyboardInterrupt
         except:
             with self.db as db:
                 db.log_event('Error', 'DUT' if not self.aux else 'AUX',
@@ -204,6 +210,8 @@ class dut(object):
                     ssh.connect(self.ip_address, port=self.scp_port,
                                 username='root', pkey=self.rsakey,
                                 allow_agent=False, look_for_keys=False)
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
             except Exception as error:
                 self.__attempt_exception(
                     attempt, attempts, error, 'SSH error',
@@ -212,6 +220,8 @@ class dut(object):
                 try:
                     with timeout(30):
                         dut_scp = SCPClient(ssh.get_transport())
+                except KeyboardInterrupt:
+                    raise KeyboardInterrupt
                 except Exception as error:
                     self.__attempt_exception(
                         attempt, attempts, error, 'SCP error',
@@ -220,6 +230,8 @@ class dut(object):
                     try:
                         with timeout(300):
                             dut_scp.put(files)
+                    except KeyboardInterrupt:
+                        raise KeyboardInterrupt
                     except Exception as error:
                         self.__attempt_exception(
                             attempt, attempts, error, 'SCP error',
@@ -252,6 +264,8 @@ class dut(object):
                     ssh.connect(self.ip_address, port=self.scp_port,
                                 username='root', pkey=self.rsakey,
                                 allow_agent=False, look_for_keys=False)
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
             except Exception as error:
                 self.__attempt_exception(
                     attempt, attempts, error, 'SSH error',
@@ -260,6 +274,8 @@ class dut(object):
                 try:
                     with timeout(60):
                         dut_scp = SCPClient(ssh.get_transport())
+                except KeyboardInterrupt:
+                    raise KeyboardInterrupt
                 except Exception as error:
                     self.__attempt_exception(
                         attempt, attempts, error, 'SCP error',
@@ -268,6 +284,8 @@ class dut(object):
                     try:
                         with timeout(300):
                             dut_scp.get(file_, local_path=local_path)
+                    except KeyboardInterrupt:
+                        raise KeyboardInterrupt
                     except Exception as error:
                         self.__attempt_exception(
                             attempt, attempts, error, 'SCP error',
@@ -397,6 +415,8 @@ class dut(object):
         if self.serial.timeout != self.options.timeout:
             try:
                 self.serial.timeout = self.options.timeout
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
             except:
                 with self.db as db:
                     db.log_event('Error', 'DUT' if not self.aux else 'AUX',
