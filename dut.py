@@ -172,7 +172,7 @@ class dut(object):
                 db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                              'Flushed serial buffers', buff, success=True)
         except KeyboardInterrupt:
-                raise KeyboardInterrupt
+            raise KeyboardInterrupt
         except:
             with self.db as db:
                 db.log_event('Error', 'DUT' if not self.aux else 'AUX',
@@ -452,18 +452,31 @@ class dut(object):
                              'Booted', success=True)
         return buff, returned
 
-    def command(self, command=None, flush=True):
+    def command(self, command=None, flush=True, attempts=5):
         with self.db as db:
             event = db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX', 'Command',
                                  command, success=False)
-        if command:
-            self.write(command+'\n')
-        else:
-            self.write('\n')
-        buff, returned = self.read_until(flush=flush)
-        with self.db as db:
-            db.log_event_success(event)
+        for attempt in range(attempts):
+            if command:
+                self.write(command+'\n')
+            else:
+                self.write('\n')
+            buff, returned = self.read_until(flush=flush)
+            if command and buff[:len(command)] != command:
+                if attempt < attempts-1:
+                    with self.db as db:
+                        db.log_event('Warning',
+                                     'DUT' if not self.aux else 'AUX',
+                                     'Command error', buff, success=False)
+                    sleep(30)
+                else:
+                    raise DrSEUsError(('DUT' if not self.aux else 'AUX') +
+                                      ' Command error', returned)
+            else:
+                with self.db as db:
+                    db.log_event_success(event)
+                break
         return buff, returned
 
     def do_login(self, change_prompt=False, flush=True):

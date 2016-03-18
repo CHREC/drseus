@@ -103,7 +103,7 @@ class power_switch(object):
         else:
             log = open('power_switch_log.txt', 'w')
             log.write('Outlet\tState\tTimestamp\n')
-        log.write(str(outlet)+'\t'+state+'\t' +
+        log.write(str(outlet)+'\t\t'+state+'\t\t' +
                   datetime.now().strftime('%b %d, %Y %I:%M:%S %p')+'\n')
         log.close()
         sleep(delay)
