@@ -1,5 +1,5 @@
 from django.db.models import Case, IntegerField, Sum, TextField, Value, When
-from django.db.models.functions import Concat, Length, Substr
+from django.db.models.functions import Concat
 from json import dumps
 from time import time
 
@@ -18,10 +18,8 @@ def outcomes(**kwargs):
 
     start = time()
     injections = injections.filter(target='TLB').annotate(
-        tlb_index=Substr('register_index', 1,
-                         Length('register_index')-2,
-                         output_field=TextField())).annotate(
-        register_name=Concat('register', Value(' '), 'tlb_index'))
+        register_name=Concat('register', Value(' '), 'register_index',
+                             output_field=TextField()))
     tlb_entries = injections.values_list('register_name', flat=True).distinct(
     ).order_by('register_name')
     if len(tlb_entries) < 1:

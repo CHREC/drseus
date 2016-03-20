@@ -1,7 +1,7 @@
 from json import load
 from os.path import exists
 from pyudev import Context
-from random import randrange, uniform
+from random import uniform
 from socket import AF_INET, SOCK_STREAM, socket
 from subprocess import DEVNULL, Popen
 from telnetlib import Telnet
@@ -13,7 +13,7 @@ from dut import dut
 from error import DrSEUsError
 from targets.a9.jtag import targets as a9_targets
 from targets.p2020.jtag import targets as p2020_targets
-from targets import choose_register, choose_target
+from targets import choose_bit, choose_register, choose_target
 
 
 class jtag(object):
@@ -165,59 +165,36 @@ class jtag(object):
             sleep(injection_time)
             self.halt_dut()
             mode = self.get_mode()
-            target = choose_target(self.options.selected_targets, self.targets)
-            register = choose_register(target, self.targets)
-            injection = {'processor_mode': mode,
+            target, target_index = \
+                choose_target(self.options.selected_targets, self.targets)
+            register, register_index, register_alias = \
+                choose_register(target, self.targets)
+            bit, field = choose_bit(register if register_alias is None
+                                    else register_alias,
+                                    register_index, target, self.targets)
+            injection = {'bit': bit,
+                         'field': field,
+                         'processor_mode': mode,
                          'register': register,
+                         'register_alias': register_alias,
+                         'register_index': register_index,
                          'result_id': self.db.result['id'],
                          'success': False,
                          'target': target,
+                         'target_index': target_index,
                          'time': injection_time,
                          'timestamp': None}
-            if ':' in target:
-                injection['target_index'] = target.split(':')[1]
-                target_index = int(injection['target_index'])
-                target = target.split(':')[0]
-                injection['target'] = target
-            else:
-                target_index = 0
             if target in ('CPU', 'GPR', 'TLB') or \
-                    ('CP' in self.targets[target] and
-                     self.targets[target]['CP']):
+                ('CP' in self.targets[target] and
+                    self.targets[target]['CP']):
                 self.select_core(target_index)
             if 'access' in self.targets[target]['registers'][register]:
                 injection['register_access'] = \
                     self.targets[target]['registers'][register]['access']
             injection['gold_value'] = \
                 self.get_register_value(register, target, target_index)
-            if 'bits' in self.targets[target]['registers'][register]:
-                num_bits_to_inject = \
-                    self.targets[target]['registers'][register]['bits']
-            else:
-                num_bits_to_inject = 32
-            bit_to_inject = randrange(num_bits_to_inject)
-            if 'adjust_bit' in \
-                    self.targets[target]['registers'][register]:
-                bit_to_inject = (self.targets[target]['registers']
-                                             [register]['adjust_bit']
-                                             [bit_to_inject])
-            if 'fields' in self.targets[target]['registers'][register]:
-                for field_name, field_bounds in \
-                    (self.targets[target]['registers']
-                                 [register]['fields'].items()):
-                    if bit_to_inject in range(field_bounds[0],
-                                              field_bounds[1]+1):
-                        injection['field'] = field_name
-                        break
-                else:
-                    with self.db as db:
-                        db.log_event('Warning', 'Debugger',
-                                     'Error finding register field name',
-                                     'target: '+target+', register: '+register +
-                                     ', bit: '+str(bit_to_inject))
-            injection['bit'] = bit_to_inject
             injection['injected_value'] = hex(
-                int(injection['gold_value'], base=16) ^ (1 << injection['bit']))
+                int(injection['gold_value'], base=16) ^ (1 << bit))
             with self.db as db:
                 db.insert('injection', injection)
             if self.options.debug:

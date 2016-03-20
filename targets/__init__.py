@@ -77,8 +77,9 @@ def choose_target(selected_targets, targets):
         raise Exception('Error choosing injection target')
     if 'count' in targets[target_to_inject]:
         target_index = randrange(targets[target_to_inject]['count'])
-        target_to_inject += ':'+str(target_index)
-    return target_to_inject
+    else:
+        target_index = None
+    return target_to_inject, target_index
 
 
 def choose_register(target, targets):
@@ -87,10 +88,7 @@ def choose_register(target, targets):
     Random selection takes into account the number of bits each register
     contains.
     """
-    if ':' in target:
-        target = target.split(':')[0]
     registers = targets[target]['registers']
-    register_to_inject = None
     register_list = []
     total_bits = 0
     for register in registers:
@@ -106,4 +104,96 @@ def choose_register(target, targets):
             break
     else:
         raise Exception('Error choosing register for target: '+target)
-    return register_to_inject
+    if 'count' in registers[register_to_inject]:
+        register_index = []
+        for dimension in registers[register_to_inject]['count']:
+            index = randrange(dimension)
+            register_index.append(index)
+    else:
+        register_index = None
+    if 'alias' in registers[register_to_inject]:
+        register_alias = register_to_inject
+        register_index = \
+            registers[register_to_inject]['alias']['register_index']
+        register_to_inject = registers[register_to_inject]['alias']['register']
+    else:
+        register_alias = None
+    return register_to_inject, register_index, register_alias
+
+
+def choose_bit(register_name, register_index, target, targets):
+    register = targets[target]['registers'][register_name]
+    if 'is_tlb' in register and register['is_tlb']:
+        fields = register['fields']
+        field_to_inject = None
+        fields_list = []
+        total_bits = 0
+        for field in fields:
+            bits = fields[field]['bits']
+            fields_list.append((field, bits))
+            total_bits += bits
+        random_bit = randrange(total_bits)
+        bit_sum = 0
+        for field in fields_list:
+            bit_sum += field[1]
+            if random_bit < bit_sum:
+                field_to_inject = field[0]
+                break
+        else:
+            raise Exception('Error choosing TLB field to inject')
+        if 'split' in fields[field_to_inject] and \
+                fields[field_to_inject]['split']:
+            total_bits = (fields[field_to_inject]['bits_h'] +
+                          fields[field_to_inject]['bits_l'])
+            random_bit = randrange(total_bits)
+            if random_bit < fields[field_to_inject]['bits_l']:
+                register_index[-1] = \
+                    fields[field_to_inject]['index_l']
+                start_bit_index = \
+                    fields[field_to_inject]['bit_indicies_l'][0]
+                end_bit_index = \
+                    fields[field_to_inject]['bit_indicies_l'][1]
+            else:
+                register_index[-1] = \
+                    fields[field_to_inject]['index_h']
+                start_bit_index = \
+                    fields[field_to_inject]['bit_indicies_h'][0]
+                end_bit_index = \
+                    fields[field_to_inject]['bit_indicies_h'][1]
+        else:
+            register_index[-1] = fields[field_to_inject]['index']
+            start_bit_index = \
+                fields[field_to_inject]['bit_indicies'][0]
+            end_bit_index = \
+                fields[field_to_inject]['bit_indicies'][1]
+        bit_to_inject = randrange(start_bit_index, end_bit_index+1)
+    else:
+        if 'bits' in register:
+            bit_to_inject = randrange(register['bits'])
+        else:
+            bit_to_inject = randrange(32)
+        if 'adjust_bit' in register:
+            bit_to_inject = register['adjust_bit'][bit_to_inject]
+        if 'fields' in register:
+            for field_name, field_bounds in register['fields'].items():
+                if bit_to_inject in range(field_bounds[0], field_bounds[1]+1):
+                    field_to_inject = field_name
+                    break
+            else:
+                raise Exception('Error finding register field name for '
+                                'target: '+target+', register: '+register_name +
+                                ', bit: '+str(bit_to_inject))
+        else:
+            field_to_inject = None
+    return bit_to_inject, field_to_inject
+
+
+def get_num_bits(register, target, targets):
+    register = targets[target]['registers'][register]
+    if 'actual_bits' in register:
+        num_bits = register['actual_bits']
+    elif 'bits' in register:
+        num_bits = register['bits']
+    else:
+        num_bits = 32
+    return num_bits

@@ -8,7 +8,7 @@ targets = {
         # LIMITATIONS: ALTCBAR and ALTCAR registers are unsupported.
         #              Interleaved SDRAM mappings are instead mapped
         #              sequentially.
-        'OBJECT': '.soc.ccsr',
+        'OBJECT': 'soc.ccsr',
         'registers': {
             'LAWAR': {
                 'count': (12, )
@@ -25,7 +25,7 @@ targets = {
     },
     'CPU': {
         'count': 2,
-        'OBJECT': '.soc.cpu',
+        'OBJECT': 'soc.cpu',
         'registers': {
             'pc': {},
             'l1cfg0': {},
@@ -193,7 +193,7 @@ targets = {
     },
     'GPR': {
         'count': 2,
-        'OBJECT': '.soc.cpu',
+        'OBJECT': 'soc.cpu',
         'registers': {
             'gprs': {
                 'count': (32, ),
@@ -203,11 +203,12 @@ targets = {
     },
     'TLB': {
         'count': 2,
-        'OBJECT': '.soc.cpu',
+        'OBJECT': 'soc.cpu',
         'registers': {
             'tlb0': {
                 'is_tlb': True,
                 'bits': 77,
+                'actual_bits': 32,
                 'count': (128, 4, 5),
                 'fields': {
                     'V': {
@@ -320,6 +321,7 @@ targets = {
             'tlb1': {
                 'is_tlb': True,
                 'bits': 76,
+                'actual_bits': 32,
                 'count': (16, 5),
                 'fields': {
                     'V': {
@@ -435,7 +437,7 @@ targets = {
         # LIMITATIONS: The DMA pause feature and DMA halt features have
         #              not been implemented.
         'count': 2,
-        'OBJECT': '.soc.dma',
+        'OBJECT': 'soc.dma',
         'registers': {
             'BCR': {
                 'count': (4, )
@@ -555,7 +557,7 @@ targets = {
     'ECM': {
         # LIMITATIONS: Handles enabling/disabling the cores only.
         #              Access errors are not monitored nor reported.
-        'OBJECT': '.soc.ecm',
+        'OBJECT': 'soc.ecm',
         'registers': {
             'EEBPCR': {}
             # Not Implemented
@@ -570,7 +572,7 @@ targets = {
         }
     },
     'ELBC': {
-        'OBJECT': '.soc.elbc',
+        'OBJECT': 'soc.elbc',
         'registers': {
             'BR': {
                 'count': (8, )
@@ -641,7 +643,7 @@ targets = {
         # LIMITATIONS: PIO mode not implemented (i.e. DMA must be used).
         #              Command and Data CRC check is not supported.
         #              Infinite data transfers not supported.
-        'OBJECT': '.soc.esdhc',
+        'OBJECT': 'soc.esdhc',
         'registers': {
             'regs_ADMAES': {},
             'regs_ADMASA': {
@@ -774,7 +776,7 @@ targets = {
         #              Transmission speed settings are unimplemented.
         #              When the throttle attribute is set, 3.125 Mbit is
         #              used as an upper bound for the bitrate.
-        'OBJECT': '.soc.espi',
+        'OBJECT': 'soc.espi',
         'registers': {
             'regs_CS_SPMODE': {
                 'count': (4, ),
@@ -823,7 +825,7 @@ targets = {
         #              functions are not implemented. Only RXF interrupt is
         #              generated when receiving buffers.
         'count': 3,
-        'OBJECT': '.soc.etsec',
+        'OBJECT': 'soc.etsec',
         'registers': {
             'ATTR': {},
             'ATTRELI': {},
@@ -1228,7 +1230,7 @@ targets = {
         }
     },
     'GPIO': {
-        'OBJECT': '.soc.gpio',
+        'OBJECT': 'soc.gpio',
         'registers': {
             'GPDAT': {},
             'GPDIR': {},
@@ -1239,7 +1241,7 @@ targets = {
         }
     },
     'GU': {
-        'OBJECT': '.soc.gu',
+        'OBJECT': 'soc.gu',
         'registers': {
             'AUTORSTSR': {},
             'CLKOCR': {},
@@ -1272,7 +1274,7 @@ targets = {
         # LIMITATIONS: Slave mode not supported
         #              Arbitration lost not supported/detectable
         'count': 2,
-        'OBJECT': '.soc.i2c',
+        'OBJECT': 'soc.i2c',
         'registers': {
             'I2CCR': {},
             'I2CDFSRR': {},
@@ -1283,7 +1285,7 @@ targets = {
         }
     },
     'L2SRAM': {
-        'OBJECT': '.soc.l2sram',
+        'OBJECT': 'soc.l2sram',
         'registers': {
             'L2CTL': {
                 'fields': {
@@ -1345,7 +1347,7 @@ targets = {
         }
     },
     'MC': {
-        'OBJECT': '.soc.mc',
+        'OBJECT': 'soc.mc',
         'registers': {
             'CAPTURE_ADDRESS': {},
             'CAPTURE_ATTRIBUTES': {},
@@ -1483,7 +1485,7 @@ targets = {
         #              Error management registers only have dummy
         #              implementation.
         'count': 3,
-        'OBJECT': '.soc.pcie_bridge',
+        'OBJECT': 'soc.pcie_bridge',
         'registers': {
             'PEX_CONFIG': {
                 'bits': 29,
@@ -1591,7 +1593,7 @@ targets = {
         # LIMITATIONS: The priority between interrupts with the same
         #              xVPR[PRIORITY] values are not guaranteed.
         #              Edge triggered interrupts are not supported.
-        'OBJECT': '.soc.pic',
+        'OBJECT': 'soc.pic',
         'registers': {
             'BRR1': {},
             'BRR2': {},
@@ -1694,7 +1696,7 @@ targets = {
         #       Operations crossing outbound window borders.
         #       Operations crossing inbound window borders.
         #       Incoming packet filtering based on target ID.
-        'OBJECT': '.soc.rapidio',
+        'OBJECT': 'soc.rapidio',
         'registers': {
             'regs_DMIRIR': {},
             'regs_DMR': {},
@@ -1956,7 +1958,7 @@ targets = {
         #              Asynchronous schedule park capability not
         #              implemented.
         #              Extensions to EHCI not implemented.
-        'OBJECT': '.soc.usb',
+        'OBJECT': 'soc.usb',
         'registers': {
             'regs_BURSTSIZE': {},  # Write-access not implemented
             'regs_DCCPARAMS': {},

@@ -108,7 +108,11 @@ class injection(FilterSet):
         choices = []
         for item in injections.values_list(attribute, flat=True).distinct():
             if item is not None:
-                choices.append((item, item))
+                if isinstance(item, list):
+                    choices.append(('{'+','.join(map(str, item))+'}',
+                                    ':'.join(map(str, item))))
+                else:
+                    choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
 
     bit = MultipleChoiceFilter(

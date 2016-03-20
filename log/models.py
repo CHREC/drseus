@@ -1,3 +1,4 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db.models import (BooleanField, BigIntegerField, DateTimeField,
                               FloatField, ForeignKey, IntegerField, Model,
                               NullBooleanField, TextField)
@@ -66,11 +67,11 @@ class injection(Model):
     register = TextField(null=True)
     register_access = TextField(null=True)
     register_alias = TextField(null=True)
-    register_index = TextField(null=True)
+    register_index = ArrayField(IntegerField(), null=True)
     result = ForeignKey(result)
     success = BooleanField()
     target = TextField(null=True)
-    target_index = TextField(null=True)
+    target_index = IntegerField(null=True)
     time = FloatField(null=True)
     timestamp = DateTimeField(null=True)
 

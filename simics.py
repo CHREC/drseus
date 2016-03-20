@@ -1,6 +1,6 @@
 from os import getcwd, listdir, makedirs, mkdir
 from os.path import exists
-from random import choice, randrange
+from random import choice
 from re import findall
 from shutil import copyfile
 from signal import SIGINT
@@ -15,7 +15,7 @@ from error import DrSEUsError
 from simics_config import simics_config
 from targets.a9.simics import targets as a9_targets
 from targets.p2020.simics import targets as p2020_targets
-from targets import choose_register, choose_target
+from targets import choose_bit, choose_register, choose_target, get_num_bits
 from timeout import timeout, TimeoutException
 
 
@@ -464,8 +464,9 @@ class simics(object):
             for register_diff in register_diffs:
                 for injection in injections:
                     if injection['register_index']:
-                        injected_register = (injection['register']+':' +
-                                             injection['register_index'])
+                        injected_register = \
+                            (injection['register']+':' +
+                             ':'.join(injection['register_index']))
                     else:
                         injected_register = injection['register']
                     if register_diff['config_object'] == \
@@ -526,206 +527,60 @@ class simics(object):
                 self.close()
         return injected_checkpoint
 
-    def __inject_checkpoint(self, injection_number, checkpoint,
-                            previous_injection=None):
+    def __inject_checkpoint(self, injection_number, checkpoint, injection=None):
         """
-        Create a new injected checkpoint (only performing injection on the
-        selected_targets if provided) and return the path of the injected
-        checkpoint.
+        Create a new injected checkpoint and return its path.
         """
 
-        def inject_register(injected_checkpoint, register, target):
-            """
-            Creates config file for injected_checkpoint with an injected value
-            for the register of the target in the gold_checkpoint and return the
-            injection information.
-            """
+        def inject_config(injected_checkpoint, injection, num_bits):
 
-            def flip_bit(value_to_inject, num_bits_to_inject, bit_to_inject):
+            def flip_bit(value_to_inject, bit_to_inject):
                 """
                 Flip the bit_to_inject of the binary representation of
                 value_to_inject and return the new value.
                 """
-                if bit_to_inject >= num_bits_to_inject or bit_to_inject < 0:
-                    raise DrSEUsError('invalid bit_to_inject: ' +
-                                      str(bit_to_inject) +
-                                      ' for num_bits_to_inject: ' +
-                                      str(num_bits_to_inject))
+                if bit_to_inject >= num_bits or bit_to_inject < 0:
+                    raise Exception('invalid bit_to_inject: ' +
+                                    str(bit_to_inject)+' for num_bits: ' +
+                                    str(num_bits))
                 value_to_inject = int(value_to_inject, base=0)
                 binary_list = list(
-                    str(bin(value_to_inject))[2:].zfill(num_bits_to_inject))
-                binary_list[num_bits_to_inject-1-bit_to_inject] = (
+                    str(bin(value_to_inject))[2:].zfill(num_bits))
+                binary_list[num_bits-1-bit_to_inject] = (
                     '1'
-                    if binary_list[num_bits_to_inject-1-bit_to_inject] == '0'
+                    if binary_list[num_bits-1-bit_to_inject] == '0'
                     else '0')
                 injected_value = int(''.join(binary_list), 2)
                 injected_value = hex(injected_value).rstrip('L')
                 return injected_value
 
-        # def inject_register(injected_checkpoint, register, target):
-            if previous_injection is None:
-                # create injection
-                injection = {}
-                injection['register'] = register
-                if ':' in target:
-                    target_index = target.split(':')[1]
-                    target = target.split(':')[0]
-                    config_object = ('DUT_'+self.board +
-                                     self.targets[target]['OBJECT'] +
-                                     '['+target_index+']')
-                else:
-                    target_index = None
-                    config_object = \
-                        'DUT_'+self.board+self.targets[target]['OBJECT']
-                injection['target_index'] = target_index
-                injection['target'] = target
-                injection['config_object'] = config_object
-                if 'count' in self.targets[target]['registers'][register]:
-                    register_index = []
-                    for dimension in (self.targets[target]['registers']
-                                                  [register]['count']):
-                        index = randrange(dimension)
-                        register_index.append(index)
-                else:
-                    register_index = None
-                # choose bit_to_inject and TLB field_to_inject
-                if ('is_tlb' in self.targets[target]['registers'][register] and
-                        self.targets[target]['registers'][register]['is_tlb']):
-                    fields = \
-                        self.targets[target]['registers'][register]['fields']
-                    field_to_inject = None
-                    fields_list = []
-                    total_bits = 0
-                    for field in fields:
-                        bits = fields[field]['bits']
-                        fields_list.append((field, bits))
-                        total_bits += bits
-                    random_bit = randrange(total_bits)
-                    bit_sum = 0
-                    for field in fields_list:
-                        bit_sum += field[1]
-                        if random_bit < bit_sum:
-                            field_to_inject = field[0]
-                            break
-                    else:
-                        raise DrSEUsError('Error choosing TLB field to inject')
-                    injection['field'] = field_to_inject
-                    if 'split' in fields[field_to_inject] and \
-                            fields[field_to_inject]['split']:
-                        total_bits = (fields[field_to_inject]['bits_h'] +
-                                      fields[field_to_inject]['bits_l'])
-                        random_bit = randrange(total_bits)
-                        if random_bit < fields[field_to_inject]['bits_l']:
-                            register_index[-1] = \
-                                fields[field_to_inject]['index_l']
-                            start_bit_index = \
-                                fields[field_to_inject]['bit_indicies_l'][0]
-                            end_bit_index = \
-                                fields[field_to_inject]['bit_indicies_l'][1]
-                        else:
-                            register_index[-1] = \
-                                fields[field_to_inject]['index_h']
-                            start_bit_index = \
-                                fields[field_to_inject]['bit_indicies_h'][0]
-                            end_bit_index = \
-                                fields[field_to_inject]['bit_indicies_h'][1]
-                    else:
-                        register_index[-1] = fields[field_to_inject]['index']
-                        start_bit_index = \
-                            fields[field_to_inject]['bit_indicies'][0]
-                        end_bit_index = \
-                            fields[field_to_inject]['bit_indicies'][1]
-                    num_bits_to_inject = 32
-                    bit_to_inject = randrange(start_bit_index, end_bit_index+1)
-                else:
-                    if 'bits' in self.targets[target]['registers'][register]:
-                        num_bits_to_inject = \
-                            self.targets[target]['registers'][register]['bits']
-                    else:
-                        num_bits_to_inject = 32
-                    bit_to_inject = randrange(num_bits_to_inject)
-                    if 'adjust_bit' in \
-                            self.targets[target]['registers'][register]:
-                        bit_to_inject = (self.targets[target]['registers']
-                                                     [register]['adjust_bit']
-                                                     [bit_to_inject])
-                    if 'actual_bits' in \
-                            self.targets[target]['registers'][register]:
-                        num_bits_to_inject = \
-                            (self.targets[target]['registers']
-                                         [register]['actual_bits'])
-                    if 'fields' in self.targets[target]['registers'][register]:
-                        for field_name, field_bounds in \
-                            (self.targets[target]['registers']
-                                         [register]['fields'].items()):
-                            if bit_to_inject in range(field_bounds[0],
-                                                      field_bounds[1]+1):
-                                field_to_inject = field_name
-                                break
-                        else:
-                            with self.db as db:
-                                db.log_event('Warning', 'Simics',
-                                             'Error finding register field '
-                                             'name',
-                                             'target: '+target +
-                                             ', register: '+register +
-                                             ', bit: '+str(bit_to_inject))
-                        injection['field'] = field_to_inject
-                    else:
-                        injection['field'] = None
-                injection['bit'] = bit_to_inject
-                if 'alias' in self.targets[target]['registers'][register]:
-                    injection['register_alias'] = register
-                    register_index = \
-                        (self.targets[target]['registers'][register]
-                                     ['alias']['register_index'])
-                    injection['register'] = register = \
-                        (self.targets[target]['registers'][register]
-                                     ['alias']['register'])
-                if register_index is not None:
-                    injection['register_index'] = ''
-                    for index in register_index:
-                        injection['register_index'] += str(index)+':'
-                    injection['register_index'] = \
-                        injection['register_index'][:-1]
-                else:
-                    injection['register_index'] = None
-            else:
-                # use previous injection data
-                config_object = previous_injection['config_object']
-                register = previous_injection['register']
-                register_index = previous_injection['register_index']
-                if register_index is not None:
-                    register_index = [int(index) for index
-                                      in register_index.split(':')]
-                injection = {}
-                injected_value = previous_injection['injected_value']
-            # perform checkpoint injection
+        # def inject_config(injected_checkpoint, injection, num_bits):
             with simics_config(injected_checkpoint) as config:
-                gold_value = config.get(config_object, register)
-                if register_index is None:
-                    if previous_injection is None:
-                        injected_value = flip_bit(
-                            gold_value, num_bits_to_inject, bit_to_inject)
-                    config.set(config_object, register, injected_value)
+                gold_value = config.get(injection['config_object'],
+                                        injection['register'])
+                if injection['register_index'] is None:
+                    if 'injected_value' not in injection:
+                        injected_value = flip_bit(gold_value, injection['bit'])
+                    config.set(injection['config_object'],
+                               injection['register'], injected_value)
                 else:
                     register_list_ = register_list = gold_value
-                    if previous_injection is None:
-                        for index in register_index:
+                    if 'injected_value' not in injection:
+                        for index in injection['register_index']:
                             gold_value = gold_value[index]
-                        injected_value = flip_bit(
-                            gold_value, num_bits_to_inject, bit_to_inject)
-                    for index in range(len(register_index)-1):
-                        register_list_ = register_list_[register_index[index]]
-                    register_list_[register_index[-1]] = injected_value
-                    config.set(config_object, register, register_list)
+                        injected_value = flip_bit(gold_value, injection['bit'])
+                    for index in range(len(injection['register_index'])-1):
+                        register_list_ = \
+                            register_list_[injection['register_index'][index]]
+                    register_list_[injection['register_index'][-1]] = \
+                        injected_value
+                    config.set(injection['config_object'],
+                               injection['register'], register_list)
                 config.save()
-            injection['gold_value'] = gold_value
-            injection['injected_value'] = injected_value
-            return injection
+            return gold_value, injected_value
 
     # def __inject_checkpoint(self, injection_number, checkpoint,
-    #                         previous_injection=None):
+    #                         injection=None):
         if injection_number == 1:
             gold_checkpoint = ('simics-workspace/gold-checkpoints/' +
                                str(self.db.campaign['id'])+'/' +
@@ -745,25 +600,49 @@ class simics(object):
         for checkpoint_file in checkpoint_files:
             copyfile(gold_checkpoint+'/'+checkpoint_file,
                      injected_checkpoint+'/'+checkpoint_file)
-        if previous_injection is None:
-            # choose injection target
-            target = choose_target(self.options.selected_targets, self.targets)
-            register = choose_register(target, self.targets)
-            injection = {'result_id': self.db.result['id'],
+        if injection is None:
+            target, target_index = \
+                choose_target(self.options.selected_targets, self.targets)
+            register, register_index, register_alias = \
+                choose_register(target, self.targets)
+            bit, field = choose_bit(register if register_alias is None
+                                    else register_alias,
+                                    register_index, target, self.targets)
+            num_bits = get_num_bits(register if register_alias is None
+                                    else register_alias,
+                                    target, self.targets)
+            if target_index is None:
+                config_object = ('DUT_'+self.board+'.' +
+                                 self.targets[target]['OBJECT'])
+            else:
+                config_object = ('DUT_'+self.board+'.' +
+                                 self.targets[target]['OBJECT'] +
+                                 '['+str(target_index)+']')
+            injection = {'bit': bit,
                          'checkpoint': checkpoint,
+                         'config_object': config_object,
+                         'field': field,
                          'register': register,
+                         'register_alias': register_alias,
+                         'register_index': register_index,
+                         'result_id': self.db.result['id'],
                          'success': False,
                          'target': target,
+                         'target_index': target_index,
                          'timestamp': None}
             with self.db as db:
                 db.insert('injection', injection)
             try:
                 # perform fault injection
-                injection.update(inject_register(
-                    injected_checkpoint, register, target))
+                injection['gold_value'], injection['injected_value'] = \
+                    inject_config(injected_checkpoint, injection, num_bits)
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except:
+                with self.db as db:
+                    db.update('injection', injection)
+                    db.log_event('Error', 'Simics', 'Error injecting fault',
+                                 db.log_exception, success=False)
                 raise DrSEUsError('Error injecting fault')
             else:
                 injection['success'] = True
@@ -783,7 +662,11 @@ class simics(object):
                 print(colored('injected value: ' +
                               injection['injected_value'], 'magenta'))
         else:
-            inject_register(injected_checkpoint, None, None)
+            num_bits = get_num_bits(injection['register'] if
+                                    injection['register_alias'] is None
+                                    else injection['register_alias'],
+                                    target, self.targets)
+            inject_config(injected_checkpoint, injection, num_bits)
         return injected_checkpoint.replace('simics-workspace/', '')
 
     def __compare_checkpoints(self, checkpoint, last_checkpoint):

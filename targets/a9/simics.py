@@ -3,7 +3,7 @@ from targets import calculate_target_bits
 targets = {
     'CPU': {
         'count': 2,
-        'OBJECT': '.coretile.mpcore.core',
+        'OBJECT': 'coretile.mpcore.core',
         'registers': {
             'cpsr': {},
             'lr_abt': {
@@ -151,7 +151,7 @@ targets = {
     },
     'FPGPR': {
         'count': 2,
-        'OBJECT': '.coretile.mpcore.core',
+        'OBJECT': 'coretile.mpcore.core',
         'registers': {
             'fpgprs': {
                 'bits': 64,
@@ -161,7 +161,7 @@ targets = {
     },
     'GPR': {
         'count': 2,
-        'OBJECT': '.coretile.mpcore.core',
+        'OBJECT': 'coretile.mpcore.core',
         'registers': {
             # 'gprs': {  # mod, fiq, irq, und, abt, svc, usr
             #     'count': (7, 16),
@@ -278,7 +278,7 @@ targets = {
     },
     # 'TLB': {
     #     'count': 2,
-    #     'OBJECT': '.coretile.mpcore.core',
+    #     'OBJECT': 'coretile.mpcore.core',
     #     'registers': {
     #         'tlb': {
     #             'count': (4, 7, 6),

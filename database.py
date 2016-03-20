@@ -137,7 +137,9 @@ class database(object):
                 table,
                 ', '.join(dictionary.keys()),
                 ', '.join(['%s']*len(dictionary))),
-            list(dictionary.values()))
+            [('{'+','.join(map(str, value))+'}') if isinstance(value, list) or
+             isinstance(value, tuple) else value
+             for value in dictionary.values()])
         dictionary['id'] = self.cursor.fetchone()[0]
 
     def update(self, table, dictionary=None):
@@ -152,7 +154,9 @@ class database(object):
                 table,
                 '=%s, '.join(dictionary.keys()),
                 str(dictionary['id'])),
-            list(dictionary.values()))
+            [('{'+','.join(map(str, value))+'}') if isinstance(value, list) or
+             isinstance(value, tuple) else value
+             for value in dictionary.values()])
 
     def __create_result(self):
         self.result.update({'aux_output': '',

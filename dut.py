@@ -457,13 +457,28 @@ class dut(object):
             event = db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX', 'Command',
                                  command, success=False)
+        if command:
+            if len(command) > 60:
+                split_command = ''
+                read_command = ''
+                for index, char in enumerate(command, start=1):
+                    if index % 60 == 0:
+                        split_command += '\\\n'
+                        read_command += '\\\n> '
+                    split_command += char
+                    read_command += char
+                command = split_command
+            else:
+                read_command = command
         for attempt in range(attempts):
             if command:
                 self.write(command+'\n')
             else:
                 self.write('\n')
             buff, returned = self.read_until(flush=flush)
-            if command and buff[:len(command)] != command:
+            if command and read_command not in buff.replace('\r\n', '\n'):
+                print(repr(buff))
+                print(repr(read_command))
                 if attempt < attempts-1:
                     with self.db as db:
                         db.log_event('Warning',

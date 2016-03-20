@@ -1,4 +1,4 @@
-from django.db.models import Case, F, IntegerField, Sum, Value, When
+from django.db.models import Case, F, IntegerField, Sum, TextField, Value, When
 from django.db.models.functions import Concat
 from json import dumps
 from time import time
@@ -19,7 +19,8 @@ def outcomes(**kwargs):
     start = time()
     injections = injections.exclude(target='TLB').annotate(register_name=Case(
         When(register_alias__isnull=True,
-             then=Concat('register', Value(' '), 'register_index')),
+             then=Concat('register', Value(' '), 'register_index',
+                         output_field=TextField())),
         default=F('register_alias')))
     registers = injections.values_list('register_name', flat=True).distinct(
     ).order_by('register_name')

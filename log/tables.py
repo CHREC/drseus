@@ -237,11 +237,12 @@ class injections(Table):
 
     class Meta:
         attrs = {'class': 'table table-bordered table-striped'}
-        fields = ('result_id', 'target', 'target_index', 'register', 'bit',
-                  'field', 'register_access', 'processor_mode', 'gold_value',
-                  'injected_value', 'success_')
+        fields = ('result_id', 'target', 'target_index', 'register',
+                  'register_index', 'bit', 'field', 'register_access',
+                  'processor_mode', 'gold_value', 'injected_value', 'success_')
         model = models.injection
-        order_by = ('target', 'target_index', 'register', 'bit', 'success')
+        order_by = ('target', 'target_index', 'register', 'register_index',
+                    'bit', 'success')
         template = 'django_tables2/bootstrap.html'
 
 
