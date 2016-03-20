@@ -511,6 +511,11 @@ backup = subparsers.add_parser(
     'backup', aliases=['b'],
     help='backup campaign-data, gold-checkpoints, and database',
     description='backup campaign-data, gold-checkpoints, and database')
+backup.add_argument(
+    '-d', '--db',
+    action='store_false',
+    dest='files',
+    help='dump database only')
 backup.set_defaults(func=utilities.backup)
 
 restore = subparsers.add_parser(
@@ -519,8 +524,14 @@ restore = subparsers.add_parser(
     description='restore campaign-data, gold-checkpoints, and database')
 restore.add_argument(
     'backup_file',
+    nargs='?',
     metavar='BACKUP_FILE',
     help='backup file to restore')
+restore.add_argument(
+    '-d', '--db',
+    action='store_false',
+    dest='files',
+    help='restore database dump only')
 restore.set_defaults(func=utilities.restore)
 
 clean = subparsers.add_parser(

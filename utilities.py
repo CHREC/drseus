@@ -290,7 +290,7 @@ def inject_campaign(options):
 def regenerate(options):
     campaign = get_campaign(options)
     if not campaign['simics']:
-        raise Exception('This feature is only available for Simics campaigns')
+        raise Exception('this feature is only available for Simics campaigns')
     with database(options) as db:
         db.result['id'] = options.result_id
         injections = db.get_item('injection')
@@ -459,44 +459,49 @@ def backup(options):
     print('dumping database...')
     database(options).backup_database(sql_backup)
     print('database dumped')
-    backup_name = ('backups/' +
-                   '-'.join([str(unit).zfill(2)
-                             for unit in datetime.now().timetuple()[:3]]) +
-                   '_' +
-                   '-'.join([str(unit).zfill(2)
-                             for unit in datetime.now().timetuple()[3:6]]))
-    num_items = 0
-    directories = ('campaign-data', 'simics-workspace/gold-checkpoints')
-    print('discovering files to archive')
-    for directory in directories:
-        num_items += traverse_directory(directory)
-    print('archiving files...')
-    with open_tar(backup_name+'.tar.gz', 'w:gz') \
-        as backup, ProgressBar(max_value=num_items, widgets=[
-            Percentage(), ' (',
-            SimpleProgress(format='%(value)d/%(max_value)d'), ') ', Bar(), ' ',
-            Timer()]) as progress_bar:
-        progress = [0, progress_bar]
+    if options.files:
+        backup_name = ('backups/' +
+                       '-'.join([str(unit).zfill(2)
+                                 for unit in datetime.now().timetuple()[:3]]) +
+                       '_' +
+                       '-'.join([str(unit).zfill(2)
+                                 for unit in datetime.now().timetuple()[3:6]]))
+        num_items = 0
+        directories = ('campaign-data', 'simics-workspace/gold-checkpoints')
+        print('discovering files to archive')
         for directory in directories:
-            traverse_directory(directory, backup, progress)
-    remove(sql_backup)
-    print('backup complete')
+            num_items += traverse_directory(directory)
+        print('archiving files...')
+        with open_tar(backup_name+'.tar.gz', 'w:gz') \
+            as backup, ProgressBar(max_value=num_items, widgets=[
+                Percentage(), ' (',
+                SimpleProgress(format='%(value)d/%(max_value)d'), ') ', Bar(),
+                ' ', Timer()]) as progress_bar:
+            progress = [0, progress_bar]
+            for directory in directories:
+                traverse_directory(directory, backup, progress)
+        remove(sql_backup)
+        print('backup complete')
 
 
 def restore(options):
-    if exists('campaign-data') or exists('simics-workspace/gold-checkpoints'):
-        if input('existing data will be deleted before restore '
-                 'operation, continue? [Y/n]: ') in ('n', 'N'):
-            return
-        if exists('campaign-data'):
-            rmtree('campaign-data')
-        if exists('simics-workspace/gold-checkpoints'):
-            rmtree('simics-workspace/gold-checkpoints')
-    print('restoring files...', end='')
-    stdout.flush()
-    with open_tar(options.backup_file, 'r:gz') as backup:
-        backup.extractall()
-    print('done')
+    if options.files and options.backup_file is None:
+        raise Exception('no backup file specified')
+    if options.files:
+        if exists('campaign-data') or \
+                exists('simics-workspace/gold-checkpoints'):
+            if input('existing data will be deleted before restore '
+                     'operation, continue? [Y/n]: ') in ('n', 'N'):
+                return
+            if exists('campaign-data'):
+                rmtree('campaign-data')
+            if exists('simics-workspace/gold-checkpoints'):
+                rmtree('simics-workspace/gold-checkpoints')
+        print('restoring files...', end='')
+        stdout.flush()
+        with open_tar(options.backup_file, 'r:gz') as backup:
+            backup.extractall()
+        print('done')
     for item in listdir('campaign-data'):
         if '.sql' in item:
             print('restoring database...')
@@ -505,6 +510,8 @@ def restore(options):
                     'campaign-data/'+item)
             print('database restored')
             break
+    else:
+        print('could not find .sql file to restore')
 
 
 def clean(options):
