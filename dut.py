@@ -478,8 +478,6 @@ class dut(object):
                 self.write('\n')
             buff, returned = self.read_until(flush=flush)
             if command and read_command not in buff.replace('\r\n', '\n'):
-                print(repr(buff))
-                print(repr(read_command))
                 if attempt < attempts-1:
                     with self.db as db:
                         db.log_event('Warning',
