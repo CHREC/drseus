@@ -1,6 +1,8 @@
 from io import StringIO
 from os.path import exists, isdir
 from paramiko import AutoAddPolicy, RSAKey, SSHClient
+from re import compile as regex
+from re import DOTALL, escape
 from scp import SCPClient
 from serial import Serial
 from serial.serialutil import SerialException
@@ -458,26 +460,15 @@ class dut(object):
             event = db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX', 'Command',
                                  command, success=False)
-        if command:
-            if len(command) > 60:
-                split_command = ''
-                read_command = ''
-                for index, char in enumerate(command, start=1):
-                    if index % 60 == 0:
-                        split_command += '\\\n'
-                        read_command += '\\\n> '
-                    split_command += char
-                    read_command += char
-                command = split_command
-            else:
-                read_command = command
         for attempt in range(attempts):
             if command:
                 self.write(command+'\n')
             else:
                 self.write('\n')
             buff, returned = self.read_until(flush=flush)
-            if command and read_command not in buff.replace('\r\n', '\n'):
+            if command and command not in buff and not regex(  # sorry!
+                    escape('_____'.join(command)).replace('_____', '.*'),
+                    DOTALL).search(buff):
                 if attempt < attempts-1:
                     with self.db as db:
                         db.log_event('Warning',
