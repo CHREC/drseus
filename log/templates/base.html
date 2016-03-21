@@ -19,23 +19,17 @@
             <div class="wrapper">
 
                 <header class="main-header">
-                    <!-- Logo -->
                     <a href="/" class="logo">
-                        <!-- mini logo for sidebar mini 50x50 pixels -->
                         <span class="logo-mini">DrS</span>
-                        <!-- logo for regular state and mobile devices -->
                         <span class="logo-lg">DrSEUs</span>
                     </a>
-                    <!-- Header Navbar: style can be found in header.less -->
                     <nav class="navbar navbar-static-top" role="navigation">
-                        <!-- Sidebar toggle button-->
                         <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
                             <span class="sr-only">Toggle navigation</span>
                         </a>
                         <div class="navbar-custom-menu">
                             <ul class="nav navbar-nav">
                                 {% if filter %}
-                                    <!-- Control Sidebar Toggle Button -->
                                     <li><a href="#" data-toggle="control-sidebar"><i class="fa fa-filter"></i> Filter</a></li>
                                     <li><a href="javascript:{}" onclick="document.getElementById('get_form').submit(); return false;"><i class="fa fa-check"></i> Apply</a></li>
                                     <li><a href="javascript:{}" onclick="clear_filter()"><i class="fa fa-close"></i> Clear</a></li>
@@ -45,11 +39,8 @@
                     </nav>
                 </header>
 
-                <!-- Left side column. contains the logo and sidebar -->
                 <aside class="main-sidebar">
-                    <!-- sidebar: style can be found in sidebar.less -->
                     <section class="sidebar">
-                        <!-- sidebar menu: : style can be found in sidebar.less -->
                         <ul class="sidebar-menu">
                             {% for name, link, id, icon in navigation_items %}
                                 <li id="{{ id }}-navigation-link">
@@ -73,7 +64,6 @@
                             {% block sidebar_block %}{% endblock %}
                         </ul>
                     </section>
-                    <!-- /.sidebar -->
                 </aside>
 
                 <div class="content-wrapper">
@@ -100,7 +90,6 @@
                 </footer>
 
                 {% if filter %}
-                    <!-- Control Sidebar -->
                     <aside class="control-sidebar control-sidebar-dark">
                         {% if filter_tabs %}
                             <ul class="nav nav-tabs nav-justified control-sidebar-tabs">
@@ -196,27 +185,22 @@
                 }
                 return false;
             });
+
             function clear_filter() {
                 window.location.assign(window.location.href.replace(/\?.*/g, ''));
-            }
-
-            function fix_charts() {
-                setTimeout(function () {
-                    $('.chart-container').each(function() {
-                        $(this).highcharts().reflow();
-                    });
-                }, 500);
             }
         </script>
         {% block script %}{% endblock %}
         <script src="{% get_static_prefix %}js/jquery.slimscroll.min.js"></script>
         <script src="{% get_static_prefix %}js/bootstrap.min.js"></script>
         <script src="{% get_static_prefix %}js/AdminLTE.min.js"></script>
-        {% if error_title and error_message %}
-            <script>
+        <script>
+            $(".content-wrapper, .right-side").css('min-height', window-height - $('.main-footer').outerHeight());
+
+            {% if error_title and error_message %}
                 $('#error-modal').modal('show')
-            </script>
-        {% endif %}
+            {% endif %}
+        </script>
         <script src="{% get_static_prefix %}js/highcharts/highcharts.js" type="text/javascript"></script>
         <script src="{% get_static_prefix %}js/highcharts/exporting.js" type="text/javascript"></script>
         <script src="{% get_static_prefix %}js/highcharts/offline-exporting.js" type="text/javascript"></script>
@@ -231,15 +215,19 @@
                     $.each(chart_data, function(index, chartoptions) {
                         chart = new Highcharts.Chart(chartoptions);
                     });
-                    fix_charts();
-                });
-                setTimeout(function () {
+                    $(window).trigger('resize');
                     $('.chart-loading-icon').each(function() {
                         this.parentNode.removeChild(this);
                     });
-                }, 500);
+                });
 
-                $('.sidebar-toggle').on('click', fix_charts);
+                $('.sidebar-toggle').on('click', function() {
+                    setTimeout(function () {
+                        $('.chart-container').each(function() {
+                            $(this).highcharts().reflow();
+                        });
+                    }, 250);
+                });
 
                 $('.expand').on('click', function () {
                     $(this).parents('.box').children('.box-body').children('.chart-container').each(function() {

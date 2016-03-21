@@ -28,15 +28,15 @@ td .console {
     margin: 0 auto;
     width: 90%;
 }
-.table-container {
-    overflow-x: auto;
-}
 .output-image {
     text-align: center;
 }
 .output-image img {
     max-width:100%;
     max-height:100%;
+}
+.table-container {
+    overflow-x: auto;
 }
 .table-container th.asc:after {
     content: '\0000a0\0025b2';
@@ -45,4 +45,32 @@ td .console {
 .table-container th.desc:after {
     content: '\0000a0\0025bc';
     float: right;
+}
+
+/*Fixed layout*/
+.control-sidebar {
+    position: fixed;
+    max-height: 100%;
+    overflow: auto;
+    padding-bottom: 50px;
+}
+.main-header,
+.main-sidebar,
+.left-side {
+    position: fixed;
+}
+.main-header {
+    top: 0;
+    right: 0;
+    left: 0;
+}
+.content-wrapper,
+.right-side {
+    padding-top: 50px;
+}
+@media (max-width: 767px) {
+    .content-wrapper,
+    .right-side {
+        padding-top: 100px;
+    }
 }
