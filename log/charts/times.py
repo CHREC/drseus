@@ -46,7 +46,7 @@ def outcomes(**kwargs):
             'series': {
                 # 'point': {
                 #     'events': {
-                #         'click': 'click_function'
+                #         'click': '__click_function__'
                 #     }
                 # },
                 'stacking': True
@@ -59,7 +59,7 @@ def outcomes(**kwargs):
         'xAxis': {
             'categories': times,
             'labels': {
-                'formatter': 'format_function'
+                'formatter': '__format_function__'
             },
             'title': {
                 'text': 'Injection Time (Seconds)'
@@ -88,13 +88,14 @@ def outcomes(**kwargs):
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
-    chart_data.append(dumps(chart, indent=4).replace('\"format_function\"', """
+    chart_data.append(dumps(chart, indent=4).replace(
+        '\"__format_function__\"', """
     function() {
         return this.value.toFixed(4);
     }
     """.replace('\n    ', '\n                    ')))
     chart_data.append(dumps(chart_smooth, indent=4).replace(
-        '\"format_function\"', """
+        '\"__format_function__\"', """
     function() {
         return this.value.toFixed(4);
     }
@@ -145,7 +146,7 @@ def data_diff(**kwargs):
         #     'series': {
         #         'point': {
         #             'events': {
-        #                 'click': 'click_function'
+        #                 'click': '__click_function__'
         #             }
         #         }
         #     }
@@ -157,7 +158,7 @@ def data_diff(**kwargs):
         'xAxis': {
             'categories': times,
             'labels': {
-                'formatter': 'format_function'
+                'formatter': '__format_function__'
             },
             'title': {
                 'text': 'Injection Time (Seconds)'
@@ -176,7 +177,8 @@ def data_diff(**kwargs):
     chart['series'][0]['data'] = count_intervals(
         injections.values_list('time', 'result__data_diff'), times,
         data_diff=True)
-    chart_data.append(dumps(chart, indent=4).replace('\"format_function\"', """
+    chart_data.append(dumps(chart, indent=4).replace(
+        '\"__format_function__\"', """
     function() {
         return this.value.toFixed(4);
     }
@@ -229,7 +231,7 @@ def execution_times(**kwargs):
             'series': {
                 # 'point': {
                 #     'events': {
-                #         'click': 'click_function'
+                #         'click': '__click_function__'
                 #     }
                 # },
                 'stacking': True
@@ -242,7 +244,7 @@ def execution_times(**kwargs):
         'xAxis': {
             'categories': times,
             'labels': {
-                'formatter': 'format_function'
+                'formatter': '__format_function__'
             },
             'title': {
                 'text': 'Execution Time (Seconds) for '
@@ -275,13 +277,14 @@ def execution_times(**kwargs):
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
-    chart_data.append(dumps(chart, indent=4).replace('\"format_function\"', """
+    chart_data.append(dumps(chart, indent=4).replace(
+        '\"__format_function__\"', """
     function() {
         return this.value.toFixed(4);
     }
     """.replace('\n    ', '\n                    ')))
     chart_data.append(dumps(chart_smooth, indent=4).replace(
-        '\"format_function\"', """
+        '\"__format_function__\"', """
     function() {
         return this.value.toFixed(4);
     }

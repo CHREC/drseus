@@ -41,7 +41,7 @@ def overview(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 }
             }
@@ -50,7 +50,7 @@ def overview(**kwargs):
             {
                 'data': [],
                 'dataLabels': {
-                    'formatter': 'format_function',
+                    'formatter': '__format_function__',
                 },
                 'name': 'Outcomes'
             }
@@ -71,29 +71,29 @@ def overview(**kwargs):
     outcome_list = dumps(outcomes)
     chart = dumps(chart, indent=4)
     if not success:
-        chart = chart.replace('\"click_function\"', """
+        chart = chart.replace('\"__click_function__\"', """
         function(event) {
-            var outcomes = outcome_list;
+            var outcomes = __outcome_list__;
             var filter;
             if (window.location.href.indexOf('?') > -1) {
                 filter = window.location.href.replace(/.*\?/g, '&');
             } else {
                 filter = '';
             }
-            window.location.assign('results?outcome='+outcomes[this.x]+filter);
+            window.open('results?outcome='+outcomes[this.x]+filter);
         }
         """.replace('\n    ', '\n                        ').replace(
-            'outcome_list', outcome_list))
+            '__outcome_list__', outcome_list))
         if group_categories:
             chart = chart.replace('?outcome=', '?outcome_category=')
-    chart = chart.replace('\"format_function\"', """
+    chart = chart.replace('\"__format_function__\"', """
     function() {
-        var outcomes = outcome_list;
+        var outcomes = __outcome_list__;
         return ''+outcomes[parseInt(this.point.x)]+' '+
         Highcharts.numberFormat(this.percentage, 1)+'%';
     }
     """.replace('\n    ', '\n                    ').replace(
-        'outcome_list', outcome_list))
+        '__outcome_list__', outcome_list))
     chart_data.append(chart)
     chart_list.append({
         'id': 'overview_chart',
@@ -138,7 +138,7 @@ def num_injections(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
                 'stacking': True
@@ -176,7 +176,7 @@ def num_injections(**kwargs):
     chart_percent['yAxis']['labels'] = {'format': '{value}%'}
     chart_percent['yAxis']['title']['text'] = 'Percent of Results'
     chart_data.append(dumps(chart_percent, indent=4))
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
     function(event) {
         var filter;
         if (window.location.href.indexOf('?') > -1) {
@@ -184,8 +184,8 @@ def num_injections(**kwargs):
         } else {
             filter = '';
         }
-        window.location.assign('results?outcome='+this.series.name+
-                               '&num_injections='+this.category+filter);
+        window.open('results?outcome='+this.series.name+
+                    '&num_injections='+this.category+filter);
     }
     """.replace('\n    ', '\n                        '))
     if group_categories:

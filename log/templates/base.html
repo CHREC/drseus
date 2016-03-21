@@ -78,6 +78,21 @@
 
                 <div class="content-wrapper">
                     {% block body %}{% endblock %}
+                    <div class="modal fade" id="error-modal">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title">{{ error_title }}</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <p>{{ error_message }}</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Okay</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <footer class="main-footer">
@@ -190,13 +205,18 @@
                     $('.chart-container').each(function() {
                         $(this).highcharts().reflow();
                     });
-                }, 1000);
+                }, 500);
             }
         </script>
         {% block script %}{% endblock %}
         <script src="{% get_static_prefix %}js/jquery.slimscroll.min.js"></script>
         <script src="{% get_static_prefix %}js/bootstrap.min.js"></script>
         <script src="{% get_static_prefix %}js/AdminLTE.min.js"></script>
+        {% if error_title and error_message %}
+            <script>
+                $('#error-modal').modal('show')
+            </script>
+        {% endif %}
         <script src="{% get_static_prefix %}js/highcharts/highcharts.js" type="text/javascript"></script>
         <script src="{% get_static_prefix %}js/highcharts/exporting.js" type="text/javascript"></script>
         <script src="{% get_static_prefix %}js/highcharts/offline-exporting.js" type="text/javascript"></script>
@@ -211,8 +231,8 @@
                     $.each(chart_data, function(index, chartoptions) {
                         chart = new Highcharts.Chart(chartoptions);
                     });
+                    fix_charts();
                 });
-                fix_charts();
                 setTimeout(function () {
                     $('.chart-loading-icon').each(function() {
                         this.parentNode.removeChild(this);

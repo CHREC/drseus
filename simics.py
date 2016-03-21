@@ -611,13 +611,10 @@ class simics(object):
             num_bits = get_num_bits(register if register_alias is None
                                     else register_alias,
                                     target, self.targets)
-            if target_index is None:
-                config_object = ('DUT_'+self.board+'.' +
-                                 self.targets[target]['OBJECT'])
-            else:
-                config_object = ('DUT_'+self.board+'.' +
-                                 self.targets[target]['OBJECT'] +
-                                 '['+str(target_index)+']')
+            config_object = ('DUT_'+self.board+'.' +
+                             self.targets[target]['OBJECT'])
+            if target_index is not None:
+                config_object += '['+str(target_index)+']'
             injection = {'bit': bit,
                          'checkpoint': checkpoint,
                          'config_object': config_object,
@@ -692,11 +689,12 @@ class simics(object):
                         else:
                             count = 1
                         for target_index in range(count):
-                            config_object = ('DUT_'+self.board +
+                            config_object = ('DUT_'+self.board+'.' +
                                              self.targets[target]['OBJECT'])
                             if count > 1:
                                 config_object += '['+str(target_index)+']'
-                            registers[config_object] = {}
+                            if config_object not in registers:
+                                registers[config_object] = {}
                             for register in self.targets[target]['registers']:
                                 if 'alias' in (self.targets[target]['registers']
                                                            [register]):
@@ -718,11 +716,7 @@ class simics(object):
                         log_diffs(db, config_object, register+':'+str(index),
                                   gold_value[index], monitored_value[index])
                 else:
-                    if isinstance(monitored_value, str):
-                        monitored_value = int(monitored_value, base=0)
-                    if isinstance(gold_value, str):
-                        gold_value = int(gold_value, base=0)
-                    if monitored_value != gold_value:
+                    if int(monitored_value, base=0) != int(gold_value, base=0):
                         register_diff = {
                             'result_id': self.db.result['id'],
                             'checkpoint': checkpoint,
@@ -734,8 +728,15 @@ class simics(object):
 
         # def compare_registers(checkpoint, gold_checkpoint,
         #                       monitored_checkpoint):
+            # import pprint
             gold_registers = get_registers(gold_checkpoint)
+            # with open('gold_regs.txt', 'w') as gold_out:
+            #     pp = pprint.PrettyPrinter(indent=4, stream=gold_out)
+            #     pp.pprint(gold_registers)
             monitored_registers = get_registers(monitored_checkpoint)
+            # with open('mon_regs.txt', 'w') as mon_out:
+            #     pp = pprint.PrettyPrinter(indent=4, stream=mon_out)
+            #     pp.pprint(monitored_registers)
             with self.db as db:
                 for config_object in gold_registers:
                     for register in gold_registers[config_object]:

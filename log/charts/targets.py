@@ -42,7 +42,7 @@ def outcomes(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
                 'stacking': True
@@ -88,36 +88,60 @@ def outcomes(**kwargs):
             'text': 'Percent of Injections'
         }
     }
-    chart_percent = dumps(chart_percent, indent=4).replace('\"click_function\"', """
-    function(event) {
-        window.location.assign('results?outcome='+this.series.name+
-                               '&injection__target='+this.category);
-    }
-    """.replace('\n    ', '\n                        '))
-    if group_categories:
-        chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
+    chart_percent = dumps(chart_percent, indent=4)
+    if not success:
+        chart_percent = chart_percent.replace('\"__click_function__\"', """
+        function(event) {
+            var filter;
+            if (window.location.href.indexOf('?') > -1) {
+                filter = window.location.href.replace(/.*\?/g, '&');
+            } else {
+                filter = '';
+            }
+            window.open('results?outcome='+this.series.name+
+                        '&injection__target='+this.category+filter);
+        }
+        """.replace('\n    ', '\n                        '))
+        if group_categories:
+            chart_percent = chart_percent.replace('?outcome=',
+                                                  '?outcome_category=')
     chart_data.append(chart_percent)
     if len(outcomes) == 1 and not success:
         chart_log = deepcopy(chart)
         chart_log['chart']['renderTo'] = 'targets_chart_log'
         chart_log['yAxis']['type'] = 'logarithmic'
-        chart_log = dumps(chart_log, indent=4).replace('\"click_function\"', """
+        chart_log = dumps(chart_log, indent=4).replace(
+            '\"__click_function__\"', """
         function(event) {
-            window.location.assign('results?outcome='+this.series.name+
-                                   '&injection__target='+this.category);
+            var filter;
+            if (window.location.href.indexOf('?') > -1) {
+                filter = window.location.href.replace(/.*\?/g, '&');
+            } else {
+                filter = '';
+            }
+            window.open('results?outcome='+this.series.name+
+                        '&injection__target='+this.category+filter);
         }
         """.replace('\n    ', '\n                        '))
         if group_categories:
             chart_log = chart_log.replace('?outcome=', '?outcome_category=')
         chart_data.append(chart_log)
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
-    function(event) {
-        window.location.assign('results?outcome='+this.series.name+
-                               '&injection__target='+this.category);
-    }
-    """.replace('\n    ', '\n                        '))
-    if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart = dumps(chart, indent=4)
+    if not success:
+        chart = chart.replace('\"__click_function__\"', """
+        function(event) {
+            var filter;
+            if (window.location.href.indexOf('?') > -1) {
+                filter = window.location.href.replace(/.*\?/g, '&');
+            } else {
+                filter = '';
+            }
+            window.open('results?outcome='+this.series.name+
+                        '&injection__target='+this.category+filter);
+        }
+        """.replace('\n    ', '\n                        '))
+        if group_categories:
+            chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
     chart_list.append({
         'id': 'targets_chart',
@@ -160,7 +184,7 @@ def propagation(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 }
             }
@@ -204,9 +228,15 @@ def propagation(**kwargs):
             mem_diff_list.append(None)
     chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
     function(event) {
-        window.location.assign('results?injection__target='+this.category);
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
+        }
+        window.open('results?injection__target='+this.category+filter);
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
@@ -251,7 +281,7 @@ def data_diff(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 }
             }
@@ -282,9 +312,15 @@ def data_diff(**kwargs):
                          default='result__data_diff'))
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 for x in data]})
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
     function(event) {
-        window.location.assign('results?injection__target='+this.category);
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
+        }
+        window.open('results?injection__target='+this.category+filter);
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)
@@ -331,7 +367,7 @@ def execution_time(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 }
             }
@@ -356,9 +392,15 @@ def execution_time(**kwargs):
         'target').annotate(avg=Avg('result__execution_time')).values_list(
             'avg', flat=True))
     chart['series'].append({'data': data})
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
     function(event) {
-        window.location.assign('results?injection__target='+this.category);
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
+        }
+        window.open('results?injection__target='+this.category+filter);
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)

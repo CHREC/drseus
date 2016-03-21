@@ -19,11 +19,15 @@ def outcomes(**kwargs):
     start = time()
     injections = injections.exclude(target='TLB').annotate(register_name=Case(
         When(register_alias__isnull=True,
-             then=Concat('register', Value(' '), 'register_index',
-                         output_field=TextField())),
+             then=Case(When(register_index__isnull=True, then=F('register')),
+                       default=Concat('register', Value(':'), 'register_index',
+                                      output_field=TextField()))),
         default=F('register_alias')))
     registers = injections.values_list('register_name', flat=True).distinct(
     ).order_by('register_name')
+    alias_list = list(injections.exclude(
+        register_alias__isnull=True).values_list(
+            'register_alias', flat=True).distinct().order_by('register_alias'))
     if len(registers) < 1:
         return
     registers = sorted(registers, key=fix_sort)
@@ -53,7 +57,7 @@ def outcomes(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
                 'stacking': True
@@ -94,23 +98,36 @@ def outcomes(**kwargs):
         data = sorted(data, key=fix_sort_list)
         chart['series'].append({'data': list(zip(*data))[1],
                                 'name': str(outcome)})
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
-    function(event) {
-        var reg = this.category.split(':');
-        var register = reg[0];
-        var index = reg[1];
-        if (index) {
-            window.location.assign('results?outcome='+this.series.name+
-                                   '&injection__register='+register+
-                                   '&injection__register_index='+index);
-        } else {
-            window.location.assign('results?outcome='+this.series.name+
-                                   '&injection__register='+register);
+    chart = dumps(chart, indent=4)
+    if not success:
+        chart = chart.replace('\"__click_function__\"', """
+        function(event) {
+            var aliases = __alias_list__;
+            var reg = this.category.split(':');
+            var register = reg[0];
+            var index = reg[1];
+            var filter;
+            if (window.location.href.indexOf('?') > -1) {
+                filter = window.location.href.replace(/.*\?/g, '&');
+            } else {
+                filter = '';
+            }
+            if (aliases.indexOf(this.category) > -1) {
+                window.open('results?outcome='+this.series.name+
+                            '&injection__register_alias='+this.category+filter);
+            } else if (index) {
+                window.open('results?outcome='+this.series.name+
+                            '&injection__register='+register+
+                            '&injection__register_index='+index+filter);
+            } else {
+                window.open('results?outcome='+this.series.name+
+                            '&injection__register='+register+filter);
+            }
         }
-    }
-    """.replace('\n    ', '\n                        '))
-    if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+        """.replace('\n    ', '\n                        ')).replace(
+            '__alias_list__', str(alias_list))
+        if group_categories:
+            chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
     chart_list.append({
         'id': 'registers_chart',
@@ -156,7 +173,7 @@ def fields(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
                 'stacking': True
@@ -191,14 +208,22 @@ def fields(**kwargs):
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
-    function(event) {
-        window.location.assign('results?outcome='+this.series.name+
-                               '&injection__field='+this.category);
-    }
-    """.replace('\n    ', '\n                        '))
-    if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart = dumps(chart, indent=4)
+    if not success:
+        chart = chart.replace('\"__click_function__\"', """
+        function(event) {
+            var filter;
+            if (window.location.href.indexOf('?') > -1) {
+                filter = window.location.href.replace(/.*\?/g, '&');
+            } else {
+                filter = '';
+            }
+            window.open('results?outcome='+this.series.name+
+                        '&injection__field='+this.category+filter);
+        }
+        """.replace('\n    ', '\n                        '))
+        if group_categories:
+            chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
     chart_list.append({
         'id': 'register_fields_chart',
@@ -244,7 +269,7 @@ def bits(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
                 'stacking': True
@@ -280,14 +305,22 @@ def bits(**kwargs):
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': str(outcome)})
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
-    function(event) {
-        window.location.assign('results?outcome='+this.series.name+
-                               '&injection__bit='+this.category);
-    }
-    """.replace('\n    ', '\n                        '))
-    if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
+    chart = dumps(chart, indent=4)
+    if not success:
+        chart = chart.replace('\"__click_function__\"', """
+        function(event) {
+            var filter;
+            if (window.location.href.indexOf('?') > -1) {
+                filter = window.location.href.replace(/.*\?/g, '&');
+            } else {
+                filter = '';
+            }
+            window.open('results?outcome='+this.series.name+
+                        '&injection__bit='+this.category+filter);
+        }
+        """.replace('\n    ', '\n                        '))
+        if group_categories:
+            chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
     chart_list.append({
         'id': 'register_bits_chart',

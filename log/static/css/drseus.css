@@ -1,9 +1,16 @@
+.box-body .resize {
+    max-height: 1000px;
+    overflow-y: auto;
+}
+.box-body .resize td .console{
+    max-height: initial;
+}
 .console {
     background-color: initial;
     color: initial;
     display: block;
     height: 500px;
-    overflow: auto;
+    overflow-y: auto;
     white-space: pre-wrap;
     word-wrap: break-word;
 }
@@ -12,12 +19,17 @@ td .console {
     max-height: 500px;
     max-width: 120ex;
 }
+@media (max-width: 1200px) {
+    td .console {
+        max-width: 60ex;
+    }
+}
 .filter-field {
     margin: 0 auto;
     width: 90%;
 }
 .table-container {
-    overflow: auto;
+    overflow-x: auto;
 }
 .output-image {
     text-align: center;

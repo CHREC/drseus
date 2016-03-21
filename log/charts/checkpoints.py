@@ -43,7 +43,7 @@ def outcomes(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
                 'stacking': True
@@ -85,10 +85,16 @@ def outcomes(**kwargs):
             'name': outcome,
             'stacking': True})
     chart_data.append(dumps(chart_smooth, indent=4))
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
     function(event) {
-        window.location.assign('results?outcome='+this.series.name+
-                               '&injection__checkpoint='+this.category);
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
+        }
+        window.open('results?outcome='+this.series.name+
+                    '&injection__checkpoint='+this.category+filter);
     }
     """.replace('\n    ', '\n                        '))
     if group_categories:
@@ -137,7 +143,7 @@ def data_diff(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
             }
@@ -169,9 +175,15 @@ def data_diff(**kwargs):
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 if x is not None else 0
                                      for x in data]})
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
     function(event) {
-        window.location.assign('results?injection__checkpoint='+this.category);
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
+        }
+        window.open('results?injection__checkpoint='+this.category+filter);
     }
     """.replace('\n    ', '\n                        '))
     chart_data.append(chart)

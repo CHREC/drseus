@@ -35,7 +35,8 @@ def campaigns_page(request):
     chart_data = campaigns_chart(models.result.objects.all())
     RequestConfig(request).configure(campaign_table)
     return render(request, 'campaigns.html', {
-        'chart_data': chart_data, 'campaign_table': campaign_table,
+        'campaign_table': campaign_table,
+        'chart_data': chart_data,
         'navigation_items': navigation_items})
 
 
@@ -52,9 +53,12 @@ def campaign_page(request, campaign_id):
     RequestConfig(request, paginate=False).configure(campaign_table)
     RequestConfig(request, paginate=False).configure(event_table)
     return render(request, 'campaign.html', {
-        'campaign': campaign, 'campaign_table': campaign_table,
-        'chart_data': chart_data, 'navigation_items': navigation_items,
-        'event_table': event_table, 'campaign_items': campaign_items,
+        'campaign': campaign,
+        'campaign_items': campaign_items,
+        'campaign_table': campaign_table,
+        'chart_data': chart_data,
+        'event_table': event_table,
+        'navigation_items': navigation_items,
         'output_image': output_image})
 
 
@@ -72,7 +76,14 @@ def charts_page(request, campaign_id=None, group_categories=False):
         campaign_items_ = None
         results = models.result.objects.all()
     result_filter = filters.result(request.GET, queryset=results)
-    results = result_filter.qs
+    error_title = None
+    error_message = None
+    if results.count() and not result_filter.qs.count():
+        error_title = 'Filter Error'
+        error_message = 'Filter did not return any results and was ignored.'
+        result_filter = filters.result(None, queryset=results)
+    else:
+        results = result_filter.qs
     if results.count() > 0:
         chart_data, chart_list = results_charts(results, group_categories)
         chart_list = sorted(chart_list, key=lambda x: x['order'])
@@ -80,9 +91,15 @@ def charts_page(request, campaign_id=None, group_categories=False):
         chart_data = None
         chart_list = None
     return render(request, 'charts.html', {
-        'campaign': campaign, 'campaign_items': campaign_items_,
-        'categories': group_categories, 'chart_data': chart_data,
-        'chart_list': chart_list, 'filter': result_filter, 'filter_tabs': True,
+        'campaign': campaign,
+        'campaign_items': campaign_items_,
+        'categories': group_categories,
+        'chart_data': chart_data,
+        'chart_list': chart_list,
+        'error_message': error_message,
+        'error_title': error_title,
+        'filter': result_filter,
+        'filter_tabs': True,
         'navigation_items': navigation_items})
 
 
@@ -96,15 +113,26 @@ def events_page(request, campaign_id=None):
         campaign_items_ = None
         events = models.event.objects.all()
     event_filter = filters.event(request.GET, queryset=events)
-    events = event_filter.qs
+    error_title = None
+    error_message = None
+    if events.count() and not event_filter.qs.count():
+        error_title = 'Filter Error'
+        error_message = 'Filter did not return any events and was ignored.'
+        event_filter = filters.event(None, queryset=events)
+    else:
+        events = event_filter.qs
     event_table = tables.events(events)
     RequestConfig(
         request, paginate={'per_page': table_length}).configure(event_table)
     return render(request, 'events.html', {
-        'campaign': campaign, 'navigation_items': navigation_items,
+        'campaign': campaign,
+        'campaign_items': campaign_items_,
+        'error_message': error_message,
+        'error_title': error_title,
         'event_count': '{:,}'.format(events.count()),
-        'event_table': event_table, 'filter': event_filter,
-        'campaign_items': campaign_items_})
+        'event_table': event_table,
+        'filter': event_filter,
+        'navigation_items': navigation_items})
 
 
 def injections_page(request, campaign_id=None):
@@ -118,6 +146,14 @@ def injections_page(request, campaign_id=None):
         campaign_items_ = None
         injections = models.injection.objects.all()
     injection_filter = filters.injection(request.GET, queryset=injections)
+    error_title = None
+    error_message = None
+    if injections.count() and not injection_filter.qs.count():
+        error_title = 'Filter Error'
+        error_message = 'Filter did not return any injections and was ignored.'
+        injection_filter = filters.injection(None, queryset=injections)
+    else:
+        injections = injection_filter.qs
     injections = injection_filter.qs
     if injections.count() > 0:
         chart_data, chart_list = injections_charts(injections)
@@ -129,12 +165,16 @@ def injections_page(request, campaign_id=None):
     RequestConfig(
         request, paginate={'per_page': table_length}).configure(injection_table)
     return render(request, 'injections.html', {
-        'campaign': campaign, 'chart_data': chart_data,
-        'chart_list': chart_list, 'navigation_items': navigation_items,
+        'campaign': campaign,
+        'campaign_items': campaign_items_,
+        'chart_data': chart_data,
+        'chart_list': chart_list,
+        'error_message': error_message,
+        'error_title': error_title,
         'filter': injection_filter,
         'injection_count': '{:,}'.format(injections.count()),
-        'campaign_items': campaign_items_,
-        'injection_table': injection_table})
+        'injection_table': injection_table,
+        'navigation_items': navigation_items})
 
 
 def results_page(request, campaign_id=None):
@@ -153,14 +193,15 @@ def results_page(request, campaign_id=None):
         campaign_items_ = None
         output_image = True
         results = models.result.objects.all()
-    unfiltered_results = results.count()
     result_filter = filters.result(request.GET, queryset=results)
-    results = result_filter.qs
-    if unfiltered_results and not results.count():
-        if campaign_id:
-            return redirect('/campaign/'+campaign_id+'/results')
-        else:
-            return redirect('/results')
+    error_title = None
+    error_message = None
+    if results.count() and not result_filter.qs.count():
+        error_title = 'Filter Error'
+        error_message = 'Filter did not return any results and was ignored.'
+        result_filter = filters.result(None, queryset=results)
+    else:
+        results = result_filter.qs
     if request.method == 'GET':
         if (('view_output' in request.GET or
                 'view_output_image' in request.GET) and
@@ -181,9 +222,11 @@ def results_page(request, campaign_id=None):
                     id__in=result_ids).order_by('-id')
             if results.count():
                 return render(request, 'output.html', {
-                    'campaign': campaign, 'image': image,
+                    'campaign': campaign,
                     'campaign_items': campaign_items if campaign else None,
-                    'navigation_items': navigation_items, 'results': results})
+                    'image': image,
+                    'navigation_items': navigation_items,
+                    'results': results})
             else:
                 results = result_filter.qs
         elif ('view_output_all' in request.GET or
@@ -200,9 +243,11 @@ def results_page(request, campaign_id=None):
                     id__in=result_ids).order_by('-id')
             if results.count():
                 return render(request, 'output.html', {
-                    'campaign': campaign, 'image': image,
+                    'campaign': campaign,
                     'campaign_items': campaign_items if campaign else None,
-                    'navigation_items': navigation_items, 'results': results})
+                    'image': image,
+                    'navigation_items': navigation_items,
+                    'results': results})
             else:
                 results = result_filter.qs
     elif request.method == 'POST':
@@ -239,9 +284,14 @@ def results_page(request, campaign_id=None):
     RequestConfig(
         request, paginate={'per_page': table_length}).configure(result_table)
     return render(request, 'results.html', {
-        'campaign': campaign, 'navigation_items': navigation_items,
-        'filter': result_filter, 'filter_tabs': True,
-        'campaign_items': campaign_items_, 'output_image': output_image,
+        'campaign': campaign,
+        'campaign_items': campaign_items_,
+        'error_message': error_message,
+        'error_title': error_title,
+        'filter': result_filter,
+        'filter_tabs': True,
+        'navigation_items': navigation_items,
+        'output_image': output_image,
         'result_count': '{:,}'.format(results.count()),
         'result_table': result_table})
 
@@ -298,11 +348,16 @@ def result_page(request, result_id):
     RequestConfig(request, paginate=False).configure(event_table)
     RequestConfig(request, paginate=False).configure(injection_table)
     return render(request, 'result.html', {
-        'campaign_items': campaign_items_, 'event_table': event_table,
-        'filter': register_filter, 'injection_table': injection_table,
-        'memory_table': memory_table, 'navigation_items': navigation_items,
-        'output_image': output_image, 'register_table': register_table,
-        'result': result, 'result_table': result_table})
+        'campaign_items': campaign_items_,
+        'event_table': event_table,
+        'filter': register_filter,
+        'injection_table': injection_table,
+        'memory_table': memory_table,
+        'navigation_items': navigation_items,
+        'output_image': output_image,
+        'register_table': register_table,
+        'result': result,
+        'result_table': result_table})
 
 
 def output(request, result_id=None, campaign_id=None):

@@ -14,7 +14,6 @@ def outcomes(**kwargs):
     injections = kwargs['injections']
     order = kwargs['order']
     outcomes = kwargs['outcomes']
-    success = kwargs['success']
 
     start = time()
     injections = injections.filter(target='TLB').annotate(
@@ -50,7 +49,7 @@ def outcomes(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
                 'stacking': True
@@ -78,11 +77,8 @@ def outcomes(**kwargs):
     }
     for outcome in outcomes:
         when_kwargs = {'then': 1}
-        if success:
-            when_kwargs['success'] = outcome
-        else:
-            when_kwargs['result__outcome_category' if group_categories
-                        else 'result__outcome'] = outcome
+        when_kwargs['result__outcome_category' if group_categories
+                    else 'result__outcome'] = outcome
         data = injections.values_list('register_name').distinct().order_by(
             'register_name').annotate(
                 count=Sum(Case(When(**when_kwargs),
@@ -91,18 +87,24 @@ def outcomes(**kwargs):
         data = sorted(data, key=fix_sort_list)
         chart['series'].append({'data': list(zip(*data))[1],
                                 'name': str(outcome)})
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
     function(event) {
         var reg = this.category.split(':');
         var register = reg[0];
         var index = reg[1];
-        if (index) {
-            window.location.assign('results?outcome='+this.series.name+
-                                   '&injection__register='+register+
-                                   '&injection__register_index='+index);
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
         } else {
-            window.location.assign('results?outcome='+this.series.name+
-                                   '&injection__register='+register);
+            filter = '';
+        }
+        if (index) {
+            window.open('results?outcome='+this.series.name+
+                        '&injection__register='+register+
+                        '&injection__register_index='+index+filter);
+        } else {
+            window.open('results?outcome='+this.series.name+
+                        '&injection__register='+register+filter);
         }
     }
     """.replace('\n    ', '\n                        '))
@@ -152,7 +154,7 @@ def fields(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
                 'stacking': True
@@ -184,10 +186,16 @@ def fields(**kwargs):
                                output_field=IntegerField()))
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
-    chart = dumps(chart, indent=4).replace('\"click_function\"', """
+    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
     function(event) {
-        window.location.assign('results?outcome='+this.series.name+
-                               '&injection__field='+this.category);
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
+        }
+        window.open('results?outcome='+this.series.name+
+                    '&injection__field='+this.category+filter);
     }
     """.replace('\n    ', '\n                        '))
     if group_categories:

@@ -7,9 +7,6 @@ datetime_format = 'M j, Y h:i:s A'
 
 
 class campaigns(Table):
-    # id_ = TemplateColumn(
-    #     '<a href="/campaign/{{ value }}/info">{{ value }}</a>',
-    #     accessor='id')
     links = TemplateColumn(
         '<a href="/campaign/{{ record.id }}/info">'
         '<i class="fa fa-info"></i></a> &nbsp;'
@@ -35,7 +32,6 @@ class campaigns(Table):
             models.result.objects.filter(campaign=record.id).count())
 
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('links', 'id', 'results', 'command', 'architecture', 'simics',
                   'execution_time', 'cycles', 'timestamp')
         model = models.campaign
@@ -64,7 +60,6 @@ class campaign(Table):
             models.result.objects.filter(campaign=record.id).count())
 
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('id', 'timestamp', 'results', 'command', 'aux_command',
                   'description', 'architecture', 'simics', 'aux',
                   'execution_time', 'cycles', 'output_file', 'checkpoints',
@@ -75,14 +70,12 @@ class campaign(Table):
 
 
 class results(Table):
-    events = Column(empty_values=(), orderable=False)
     id_ = TemplateColumn(  # LinkColumn()
         '<a href="/result/{{ value }}">{{ value }}</a>', accessor='id')
     registers = Column(empty_values=(), orderable=False)
     select_box = CheckBoxColumn(
         accessor='id',
         attrs={'th__input': {'onclick': 'update_selection(this)'}})
-    injection_success = Column(empty_values=(), orderable=False)
     timestamp = DateTimeColumn(format=datetime_format)
     targets = Column(empty_values=(), orderable=False)
 
@@ -95,24 +88,6 @@ class results(Table):
 
     def render_execution_time(self, record):
         return '{0:.4f}'.format(record.execution_time)
-
-    def render_events(self, record):
-        return '{:,}'.format(
-            models.event.objects.filter(result_id=record.id).count())
-
-    def render_injection_success(self, record):
-        success = '-'
-        if record is not None:
-            for injection in models.injection.objects.filter(result=record.id):
-                if injection.success is None:
-                    success = '-'
-                    break
-                elif not injection.success:
-                    success = '\u2718'
-                    break
-                else:
-                    success = '\u2714'
-        return success
 
     def render_registers(self, record):
         if record is not None:
@@ -144,11 +119,9 @@ class results(Table):
             return '-'
 
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('select_box', 'id_', 'dut_serial_port', 'timestamp',
                   'outcome_category', 'outcome', 'execution_time', 'cycles',
-                  'data_diff', 'events', 'targets', 'registers',
-                  'injection_success')
+                  'data_diff', 'targets', 'registers')
         model = models.result
         order_by = '-id_'
         template = 'django_tables2/bootstrap.html'
@@ -172,7 +145,6 @@ class result(Table):
         return '{0:.4f}'.format(record.execution_time)
 
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('dut_serial_port', 'timestamp', 'outcome_category', 'outcome',
                   'execution_time', 'cycles', 'num_injections', 'data_diff',
                   'detected_errors')
@@ -200,7 +172,6 @@ class events(Table):
     timestamp = DateTimeColumn(format=datetime_format)
 
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('select_box', 'result_id', 'timestamp', 'level', 'source',
                   'type', 'success_', 'description')
         model = models.event
@@ -219,7 +190,6 @@ class event(Table):
     timestamp = DateTimeColumn(format=datetime_format)
 
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('timestamp', 'level', 'source', 'type', 'success_',
                   'description')
         model = models.event
@@ -233,10 +203,13 @@ class injections(Table):
         '{% else %}<a href="/campaign/{{ record.campaign_id }}/info">'
         'Campaign</a>{% endif %}',
         accessor='result_id')
-    success_ = Column(accessor='success')
+    success_ = TemplateColumn(
+        '{% if value == None %}-'
+        '{% elif value %}<span class="true">\u2714</span>'
+        '{% else %}<span class="false">\u2718</span>{% endif %}',
+        accessor='success')
 
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('result_id', 'target', 'target_index', 'register',
                   'register_index', 'bit', 'field', 'register_access',
                   'processor_mode', 'gold_value', 'injected_value', 'success_')
@@ -247,14 +220,17 @@ class injections(Table):
 
 
 class hw_injection(Table):
-    success_ = BooleanColumn(accessor='success')
+    success_ = TemplateColumn(
+        '{% if value == None %}-'
+        '{% elif value %}<span class="true">\u2714</span>'
+        '{% else %}<span class="false">\u2718</span>{% endif %}',
+        accessor='success')
     timestamp = DateTimeColumn(format=datetime_format)
 
     def render_time(self, record):
         return '{0:.6f}'.format(models.injection.objects.get(id=record.id).time)
 
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('timestamp', 'time', 'target', 'target_index', 'register',
                   'register_index', 'bit', 'field', 'gold_value',
                   'injected_value', 'success_')
@@ -264,11 +240,14 @@ class hw_injection(Table):
 
 
 class simics_injection(Table):
-    success_ = BooleanColumn(accessor='success')
+    success_ = TemplateColumn(
+        '{% if value == None %}-'
+        '{% elif value %}<span class="true">\u2714</span>'
+        '{% else %}<span class="false">\u2718</span>{% endif %}',
+        accessor='success')
     timestamp = DateTimeColumn(format=datetime_format)
 
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('timestamp', 'checkpoint', 'target', 'target_index',
                   'register', 'register_index', 'register_alias', 'bit',
                   'field', 'gold_value', 'injected_value', 'success_')
@@ -279,7 +258,6 @@ class simics_injection(Table):
 
 class simics_register_diff(Table):
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('checkpoint', 'config_object', 'register', 'gold_value',
                   'monitored_value')
         model = models.simics_register_diff
@@ -288,7 +266,6 @@ class simics_register_diff(Table):
 
 class simics_memory_diff(Table):
     class Meta:
-        attrs = {'class': 'table table-bordered table-striped'}
         fields = ('checkpoint', 'image_index', 'block')
         model = models.simics_memory_diff
         template = 'django_tables2/bootstrap.html'

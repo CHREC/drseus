@@ -40,7 +40,7 @@ def campaigns_chart(queryset):
             'series': {
                 'point': {
                     'events': {
-                        'click': 'click_function'
+                        'click': '__click_function__'
                     }
                 },
                 'stacking': 'percent'
@@ -73,10 +73,10 @@ def campaigns_chart(queryset):
             ).values_list('count', flat=True))
         chart['series'].append({'data': data, 'name': outcome})
     chart = dumps(chart, indent=4)
-    chart = chart.replace('\"click_function\"', """
+    chart = chart.replace('\"__click_function__\"', """
     function(event) {
-        window.location.assign('/campaign/'+this.category+
-                               '/results?outcome_category='+this.series.name);
+        window.open('/campaign/'+this.category+
+                    '/results?outcome_category='+this.series.name);
     }
     """.replace('\n    ', '\n                        '))
     return '['+chart+']'.replace(
@@ -116,6 +116,15 @@ def target_bits_chart(campaign):
         'legend': {
             'enabled': False
         },
+        'plotOptions': {
+            'series': {
+                'point': {
+                    'events': {
+                        'click': '__click_function__'
+                    }
+                }
+            }
+        },
         'title': {
             'text': None
         },
@@ -136,6 +145,12 @@ def target_bits_chart(campaign):
         bits.append(injection_targets[target]['total_bits'])
     chart['series'] = [{'data': bits}]
     return ('['+dumps(chart, indent=4)+']').replace(
+        '\"__click_function__\"', """
+    function(event) {
+        window.open('/campaign/__campaign_id__'+
+                    '/results?injection__target='+this.category);
+    }
+    """).replace('__campaign_id__', str(campaign.id)).replace(
         '\n', '\n                        ')
 
 
