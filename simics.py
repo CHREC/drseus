@@ -463,12 +463,12 @@ class simics(object):
                 return False
             for register_diff in register_diffs:
                 for injection in injections:
-                    if injection['register_index']:
+                    if injection['register_index'] is None:
+                        injected_register = injection['register']
+                    else:
                         injected_register = \
                             (injection['register']+':' +
-                             ':'.join(injection['register_index']))
-                    else:
-                        injected_register = injection['register']
+                             ':'.join(map(str, injection['register_index'])))
                     if register_diff['config_object'] == \
                         injection['config_object'] and \
                             register_diff['register'] == injected_register:
