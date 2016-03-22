@@ -1,5 +1,5 @@
-from django_tables2 import (BooleanColumn, CheckBoxColumn, Column,
-                            DateTimeColumn, Table, TemplateColumn)
+from django_tables2 import (CheckBoxColumn, Column, DateTimeColumn, Table,
+                            TemplateColumn)
 
 from log import models
 
