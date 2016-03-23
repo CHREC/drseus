@@ -38,11 +38,21 @@ def calculate_target_bits(targets):
                 and (targets[target]['registers'][register]
                             ['partial']):
                 adjust_bit = []
-                for field, field_range in (targets[target]
-                                                  ['registers'][register]
-                                                  ['fields'].items()):
-                    adjust_bit.extend(range(field_range[0],
-                                            field_range[1]+1))
+                if 'is_tlb' in \
+                    targets[target]['registers'][register] \
+                    and (targets[target]['registers'][register]
+                                ['is_tlb']):
+                    for field_range in (targets[target]['registers'][register]
+                                               ['fields'].values()):
+                        adjust_bit.extend(range(field_range[0],
+                                                field_range[1]+1))
+                else:
+                    for field in (targets[target]['registers'][register]
+                                         ['fields']):
+                        try:
+                            adjust_bit.extend(range(field[1][0], field[1][1]+1))
+                        except:
+                            print(field)
                 if len(adjust_bit) != bits:
                     raise Exception('Bits mismatch for register: ' +
                                     register+' in target: '+target)
@@ -175,9 +185,9 @@ def choose_bit(register_name, register_index, target, targets):
         if 'adjust_bit' in register:
             bit_to_inject = register['adjust_bit'][bit_to_inject]
         if 'fields' in register:
-            for field_name, field_bounds in register['fields'].items():
-                if bit_to_inject in range(field_bounds[0], field_bounds[1]+1):
-                    field_to_inject = field_name
+            for field in register['fields']:
+                if bit_to_inject in range(field[1][0], field[1][1]+1):
+                    field_to_inject = field[0]
                     break
             else:
                 raise Exception('Error finding register field name for '

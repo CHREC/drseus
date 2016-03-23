@@ -11,10 +11,10 @@ targets = {
         'OBJECT': 'soc.ccsr',
         'registers': {
             'LAWAR': {
-                'count': (12, )
+                'count': [12]
             },
             'LAWBAR': {
-                'count': (12, )
+                'count': [12]
             },
             'CCSRBAR': {},
             'BPTR': {}
@@ -196,7 +196,7 @@ targets = {
         'OBJECT': 'soc.cpu',
         'registers': {
             'gprs': {
-                'count': (32, ),
+                'count': [32],
                 'bits': 64
             }
         }
@@ -209,27 +209,27 @@ targets = {
                 'is_tlb': True,
                 'bits': 77,
                 'actual_bits': 32,
-                'count': (128, 4, 5),
+                'count': [128, 4, 5],
                 'fields': {
                     'V': {
                         'bits': 1,
                         'index': 1,
-                        'bit_indicies': (63-32, 63-32)
+                        'bit_indicies': [63-32, 63-32]
                     },
                     'TS': {
                         'bits': 1,
                         'index': 1,
-                        'bit_indicies': (63-51, 63-51)
+                        'bit_indicies': [63-51, 63-51]
                     },
                     'TID': {
                         'bits': 8,
                         'index': 1,
-                        'bit_indicies': (63-47, 63-40)
+                        'bit_indicies': [63-47, 63-40]
                     },
                     'EPN': {
                         'bits': 20,
                         'index': 2,
-                        'bit_indicies': (63-51, 63-32)
+                        'bit_indicies': [63-51, 63-32]
                     },
                     'RPN': {
                         'bits': 24,
@@ -238,83 +238,83 @@ targets = {
                         'bits_l': 20,
                         'index_h': 4,
                         'index_l': 3,
-                        'bit_indicies_h': (63-63, 63-60),
-                        'bit_indicies_l': (63-51, 63-32)
+                        'bit_indicies_h': [63-63, 63-60],
+                        'bit_indicies_l': [63-51, 63-32]
                     },
                     'SIZE': {
                         'bits': 4,
                         'index': 1,
-                        'bit_indicies': (63-55, 63-52)
+                        'bit_indicies': [63-55, 63-52]
                     },
                     'UX': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-58, 63-58)
+                        'bit_indicies': [63-58, 63-58]
                     },
                     'SX': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-59, 63-59)
+                        'bit_indicies': [63-59, 63-59]
                     },
                     'UW': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-60, 63-60)
+                        'bit_indicies': [63-60, 63-60]
                     },
                     'SW': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-61, 63-61)
+                        'bit_indicies': [63-61, 63-61]
                     },
                     'UR': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-62, 63-62)
+                        'bit_indicies': [63-62, 63-62]
                     },
                     'SR': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-63, 63-63)
+                        'bit_indicies': [63-63, 63-63]
                     },
                     'W': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-59, 63-59)
+                        'bit_indicies': [63-59, 63-59]
                     },
                     'I': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-60, 63-60)
+                        'bit_indicies': [63-60, 63-60]
                     },
                     'M': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-61, 63-61)
+                        'bit_indicies': [63-61, 63-61]
                     },
                     'G': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-62, 63-62)
+                        'bit_indicies': [63-62, 63-62]
                     },
                     'E': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-63, 63-63)
+                        'bit_indicies': [63-63, 63-63]
                     },
                     'X': {
                         'bits': 2,
                         'index': 2,
-                        'bit_indicies': (63-58, 63-57)
+                        'bit_indicies': [63-58, 63-57]
                     },
                     'U': {
                         'bits': 4,
                         'index': 3,
-                        'bit_indicies': (63-57, 63-54)
+                        'bit_indicies': [63-57, 63-54]
                     },
                     'NV': {
                         'bits': 2,
                         'index': 0,
-                        'bit_indicies': (63-63, 63-62)
+                        'bit_indicies': [63-63, 63-62]
                     }
                 }
             },
@@ -322,27 +322,27 @@ targets = {
                 'is_tlb': True,
                 'bits': 76,
                 'actual_bits': 32,
-                'count': (16, 5),
+                'count': [16, 5],
                 'fields': {
                     'V': {
                         'bits': 1,
                         'index': 1,
-                        'bit_indicies': (63-32, 63-32)
+                        'bit_indicies': [63-32, 63-32]
                     },
                     'TS': {
                         'bits': 1,
                         'index': 1,
-                        'bit_indicies': (63-51, 63-51)
+                        'bit_indicies': [63-51, 63-51]
                     },
                     'TID': {
                         'bits': 8,
                         'index': 1,
-                        'bit_indicies': (63-47, 63-40)
+                        'bit_indicies': [63-47, 63-40]
                     },
                     'EPN': {
                         'bits': 20,
                         'index': 2,
-                        'bit_indicies': (63-51, 63-32)
+                        'bit_indicies': [63-51, 63-32]
                     },
                     'RPN': {
                         'bits': 24,
@@ -351,83 +351,83 @@ targets = {
                         'bits_l': 20,
                         'index_h': 4,
                         'index_l': 3,
-                        'bit_indicies_h': (63-63, 63-60),
-                        'bit_indicies_l': (63-51, 63-32)
+                        'bit_indicies_h': [63-63, 63-60],
+                        'bit_indicies_l': [63-51, 63-32]
                     },
                     'SIZE': {
                         'bits': 4,
                         'index': 1,
-                        'bit_indicies': (63-55, 63-52)
+                        'bit_indicies': [63-55, 63-52]
                     },
                     'UX': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-58, 63-58)
+                        'bit_indicies': [63-58, 63-58]
                     },
                     'SX': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-59, 63-59)
+                        'bit_indicies': [63-59, 63-59]
                     },
                     'UW': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-60, 63-60)
+                        'bit_indicies': [63-60, 63-60]
                     },
                     'SW': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-61, 63-61)
+                        'bit_indicies': [63-61, 63-61]
                     },
                     'UR': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-62, 63-62)
+                        'bit_indicies': [63-62, 63-62]
                     },
                     'SR': {
                         'bits': 1,
                         'index': 3,
-                        'bit_indicies': (63-63, 63-63)
+                        'bit_indicies': [63-63, 63-63]
                     },
                     'W': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-59, 63-59)
+                        'bit_indicies': [63-59, 63-59]
                     },
                     'I': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-60, 63-60)
+                        'bit_indicies': [63-60, 63-60]
                     },
                     'M': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-61, 63-61)
+                        'bit_indicies': [63-61, 63-61]
                     },
                     'G': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-62, 63-62)
+                        'bit_indicies': [63-62, 63-62]
                     },
                     'E': {
                         'bits': 1,
                         'index': 2,
-                        'bit_indicies': (63-63, 63-63)
+                        'bit_indicies': [63-63, 63-63]
                     },
                     'X': {
                         'bits': 2,
                         'index': 2,
-                        'bit_indicies': (63-58, 63-57)
+                        'bit_indicies': [63-58, 63-57]
                     },
                     'U': {
                         'bits': 4,
                         'index': 3,
-                        'bit_indicies': (63-57, 63-54)
+                        'bit_indicies': [63-57, 63-54]
                     },
                     'IPROT': {
                         'bits': 1,
                         'index': 1,
-                        'bit_indicies': (63-33, 63-33)
+                        'bit_indicies': [63-33, 63-33]
                     }
                 }
             }
@@ -440,117 +440,117 @@ targets = {
         'OBJECT': 'soc.dma',
         'registers': {
             'BCR': {
-                'count': (4, )
+                'count': [4]
             },
             'CLNDAR': {
-                'count': (4, )
+                'count': [4]
             },
             'CLSDAR': {
-                'count': (4, )
+                'count': [4]
             },
             'DAR': {
-                'count': (4, )
+                'count': [4]
             },
             'DATR': {
-                'count': (4, ),
+                'count': [4],
                 'bits': 28,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved3': (31-0, 31-0),
-                    'NLWR': (31-1, 31-1),
-                    'Reserved2': (31-6, 31-2),
-                    'DSME': (31-7, 31-7),
-                    'Reserved1': (31-11, 31-8),
+                'fields': [
+                    ['Reserved', [31-0, 31-0]],
+                    ['NLWR', [31-1, 31-1]],
+                    ['Reserved', [31-6, 31-2]],
+                    ['DSME', [31-7, 31-7]],
+                    ['Reserved', [31-11, 31-8]],
                     # Not Implemented
-                    # 'DWRITETTYPE': (31-15, 31-12),
-                    'Reserved0': (31-31, 31-16)
+                    # ['DWRITETTYPE', [31-15, 31-12]],
+                    ['Reserved', [31-31, 31-16]]
                     # Not Implemented: DPCI_ORDER, DTFLOWLVL, DTRANSINT
-                },
+                ]
             },
             # Pseudo register, not present in Simics checkpoint config files
             # P2020 docs say this is just a combination of other channel
             # status bits
             # 'DGSR': {},
             'DSR': {
-                'count': (4, )
+                'count': [4]
             },
             'ECLNDAR': {
-                'count': (4, )
+                'count': [4]
             },
             'ECLSDAR': {
-                'count': (4, )
+                'count': [4]
             },
             'ENLNDAR': {
-                'count': (4, )
+                'count': [4]
             },
             'ENLSDAR': {
-                'count': (4, )
+                'count': [4]
             },
             'MR': {
-                'count': (4, ),
+                'count': [4],
                 'bits': 30,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved3': (31-3, 31-0),
-                    'BWC': (31-7, 31-4),
-                    'Reserved2': (31-9, 31-8),
+                'fields': [
+                    ['Reserved', [31-3, 31-0]],
+                    ['BWC', [31-7, 31-4]],
+                    ['Reserved', [31-9, 31-8]],
                     # Not Implemented
-                    # 'EMP_EN': (31-10, 31-10),
-                    'Reserved1': (31-12, 31-11),
-                    'EMS_EN': (31-13, 31-13),
-                    'DAHTS': (31-15, 31-14),
-                    'SAHTS': (31-17, 31-16),
-                    'DAHE': (31-18, 31-18),
-                    'SAHE': (31-19, 31-19),
-                    'Reserved0': (31-20, 31-20),
-                    'SRW': (31-21, 31-21),
-                    'EOSIE': (31-22, 31-22),
-                    'EOLINE': (31-23, 31-23),
-                    'EOLSIE': (31-24, 31-24),
-                    'EIE': (31-25, 31-25),
-                    'XFE': (31-26, 31-26),
-                    'CDSM_SWSM': (31-27, 31-27),
-                    'CA': (31-28, 31-28),
-                    'CTM': (31-29, 31-29),
-                    'CC': (31-30, 31-30)
+                    # ['EMP_EN', [31-10, 31-10]],
+                    ['Reserved', [31-12, 31-11]],
+                    ['EMS_EN', [31-13, 31-13]],
+                    ['DAHTS', [31-15, 31-14]],
+                    ['SAHTS', [31-17, 31-16]],
+                    ['DAHE', [31-18, 31-18]],
+                    ['SAHE', [31-19, 31-19]],
+                    ['Reserved', [31-20, 31-20]],
+                    ['SRW', [31-21, 31-21]],
+                    ['EOSIE', [31-22, 31-22]],
+                    ['EOLINE', [31-23, 31-23]],
+                    ['EOLSIE', [31-24, 31-24]],
+                    ['EIE', [31-25, 31-25]],
+                    ['XFE', [31-26, 31-26]],
+                    ['CDSM_SWSM', [31-27, 31-27]],
+                    ['CA', [31-28, 31-28]],
+                    ['CTM', [31-29, 31-29]],
+                    ['CC', [31-30, 31-30]]
                     # Not Implemented
-                    # 'CS': (31-31, 31-31)
-                },
+                    # ['CS', [31-31, 31-31]]
+                ]
             },
             'NLDAR': {
-                'count': (4, )
+                'count': [4]
             },
             'NLNDAR': {
-                'count': (4, )
+                'count': [4]
             },
             'NLSDAR': {
-                'count': (4, )
+                'count': [4]
             },
             'SAR': {
-                'count': (4, )
+                'count': [4]
             },
             'SATR': {
-                'count': (4, ),
+                'count': [4],
                 'bits': 28,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved2': (31-6, 31-0),
-                    'SSME': (31-7, 31-7),
-                    'Reserved1': (31-11, 31-8),
+                'fields': [
+                    ['Reserved', [31-6, 31-0]],
+                    ['SSME', [31-7, 31-7]],
+                    ['Reserved', [31-11, 31-8]],
                     # Not Implemented
-                    # 'SREADTTYPE': (31-15, 31-12),
-                    'Reserved0': (31-31, 31-16)
+                    # ['SREADTTYPE', [31-15, 31-12]],
+                    ['Reserved', [31-31, 31-16]]
                     # Not Implemented: SPCI_ORDER, STFLOWLVL, STRANSIT
-                },
+                ]
             },
             'SR': {
-                'count': (4, )
+                'count': [4]
             },
             'SSR': {
-                'count': (4, )
+                'count': [4]
             }
         }
     },
@@ -575,16 +575,16 @@ targets = {
         'OBJECT': 'soc.elbc',
         'registers': {
             'BR': {
-                'count': (8, )
+                'count': [8]
             },
             'OR': {
-                'count': (8, )
+                'count': [8]
             },
             'FBAR': {},
             'FBCR': {},
             'FCR': {},
             'FECC': {
-                'count': (4, )
+                'count': [4]
             },
             'FIR': {},
             'FMR': {},
@@ -593,35 +593,35 @@ targets = {
                 'bits': 15,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'LDIS': (31-0, 31-0),
-                    'Reserved2': (31-7, 31-1),
+                'fields': [
+                    ['LDIS', [31-0, 31-0]],
+                    ['Reserved', [31-7, 31-1]],
                     # Not Implemented
-                    # 'BCTLC': (31-9, 31-8),
-                    # 'AHD': (31-10, 31-10),
-                    'Reserved1': (31-13, 31-11),
+                    # ['BCTLC', [31-9, 31-8]],
+                    # ['AHD', [31-10, 31-10]],
+                    ['Reserved', [31-13, 31-11]],
                     # Not Implemented
-                    # 'LPBSE': (31-14, 31-14),
-                    # 'EPAR': (31-15, 31-15),
-                    # 'BMT': (31-23, 31-16),
-                    'Reserved0': (31-27, 31-24),
+                    # ['LPBSE', [31-14, 31-14]],
+                    # ['EPAR', [31-15, 31-15]],
+                    # ['BMT', [31-23, 31-16]],
+                    ['Reserved', [31-27, 31-24]],
                     # Not Implemented
-                    # 'BMTPS': (31-31, 31-28)
-                },
+                    # ['BMTPS', [31-31, 31-28]]
+                ]
             },
             'LCRR': {
                 'bits': 25,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'PBYP': (31-0, 31-0),
-                    'Reserved1': (31-13, 31-1),
+                'fields': [
+                    ['PBYP', [31-0, 31-0]],
+                    ['Reserved', [31-13, 31-1]],
                     # Not Implemented
-                    # 'EADC': (31-15, 31-14),
-                    'Reserved0': (31-26, 31-16),
+                    # ['EADC', [31-15, 31-14]],
+                    ['Reserved', [31-26, 31-16]],
                     # Not Implemented
-                    # 'CLKDIV': (31-31, 31-27)
-                },
+                    # ['CLKDIV', [31-31, 31-27]]
+                ]
             },
             'LSOR': {},
             'LTEAR': {},
@@ -647,31 +647,31 @@ targets = {
         'registers': {
             'regs_ADMAES': {},
             'regs_ADMASA': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_AUTOC12ERR': {},
             'regs_BLKATTR': {},
             'regs_CMDARG': {},
             'regs_CMDRSP': {
-                'count': (4, )
+                'count': [4]
             },
             # 'regs_DATPORT': {},
             'regs_DCR': {
                 'bits': 28,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved2': (31-15, 31-0),
-                    'PRI': (31-17, 31-16),
-                    'Reserved1': (31-24, 31-18),
+                'fields': [
+                    ['Reserved', [31-15, 31-0]],
+                    ['PRI', [31-17, 31-16]],
+                    ['Reserved', [31-24, 31-18]],
                     # Not Implemented
-                    # 'SNOOP': (31-25, 31-25),
-                    'Reserved0': (31-28, 31-26),
+                    # ['SNOOP', [31-25, 31-25]],
+                    ['Reserved', [31-28, 31-26]],
                     # Not Implemented
-                    # 'RD_SAFE': (31-29, 31-29),
-                    # 'RD_PFE': (31-30, 31-30),
-                    # 'RD_PF_SIZE': (31-31, 31-31)
-                }
+                    # ['RD_SAFE', [31-29, 31-29]],
+                    # ['RD_PFE', [31-30, 31-30]],
+                    # ['RD_PF_SIZE', [31-31, 31-31]]
+                ]
             },
             'regs_DSADDR': {},
             'regs_HOSTCAPBLT': {},
@@ -680,94 +680,94 @@ targets = {
             'regs_IRQSTAT': {},
             'regs_IRQSTATEN': {},
             'regs_MAXCUR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_PROCTL': {
                 'bits': 22,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
+                'fields': [
                     # Field IABG - Not implemented.
                     # Field WECINT - Not implemented.
-                    'Reserved3': (31-4, 31-0),
+                    ['Reserved', [31-4, 31-0]],
                     # Not Implemented
-                    # 'WECRM': (31-5, 31-5),
-                    # 'WECINS': (31-6, 31-6),
-                    'Reserved2': (31-12, 31-7),
+                    # ['WECRM', [31-5, 31-5]],
+                    # ['WECINS', [31-6, 31-6]],
+                    ['Reserved', [31-12, 31-7]],
                     # Not Implemented
-                    # 'RWCTL': (31-13, 31-13),
-                    # 'CREQ': (31-14, 31-14),
-                    # 'SABGREQ': (31-15, 31-15),
-                    'Reserved1': (31-23, 31-16),
+                    # ['RWCTL', [31-13, 31-13]],
+                    # ['CREQ', [31-14, 31-14]],
+                    # ['SABGREQ', [31-15, 31-15]],
+                    ['Reserved', [31-23, 31-16]],
                     # Not Implemented
-                    # 'CDSS': (31-24, 31-24),
-                    # 'CDTL': (31-25, 31-25),
-                    'EMODE': (31-27, 31-26),
+                    # ['CDSS', [31-24, 31-24]],
+                    # ['CDTL', [31-25, 31-25]],
+                    ['EMODE', [31-27, 31-26]],
                     # Not Implemented
-                    # 'D3CD': (31-28, 31-28),
-                    # 'DTW': (31-30, 31-29),
-                    'Reserved0': (31-31, 31-31)
-                }
+                    # ['D3CD', [31-28, 31-28]],
+                    # ['DTW', [31-30, 31-29]],
+                    ['Reserved', [31-31, 31-31]]
+                ]
             },
             'regs_PRSSTAT': {},
             'regs_SYSCTL': {
                 'bits': 12,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved2': (31-3, 31-0),
+                'fields': [
+                    ['Reserved', [31-3, 31-0]],
                     # Not Implemented
-                    # 'INITA': (31-4, 31-4),
-                    'RSTD': (31-5, 31-5),
-                    'RSTC': (31-6, 31-6),
-                    'RSTA': (31-7, 31-7),
-                    'Reserved1': (31-11, 31-8),
+                    # ['INITA', [31-4, 31-4]],
+                    ['RSTD', [31-5, 31-5]],
+                    ['RSTC', [31-6, 31-6]],
+                    ['RSTA', [31-7, 31-7]],
+                    ['Reserved', [31-11, 31-8]],
                     # Not Implemented
-                    # 'DTOCV': (31-15, 31-12),
-                    # 'SDCLKFS': (31-23, 31-16),
-                    # 'DVS': (31-27, 31-24),
-                    'Reserved0': (31-28, 31-28),
+                    # ['DTOCV', [31-15, 31-12]],
+                    # ['SDCLKFS', [31-23, 31-16]],
+                    # ['DVS', [31-27, 31-24]],
+                    ['Reserved', [31-28, 31-28]],
                     # Not Implemented
-                    # 'PEREN': (31-29, 31-29),
-                    # 'HCKEN': (31-30, 31-30),
-                    # 'IPGEN': (31-31, 31-31)
-                }
+                    # ['PEREN', [31-29, 31-29]],
+                    # ['HCKEN', [31-30, 31-30]],
+                    # ['IPGEN', [31-31, 31-31]]
+                ]
             },
             'regs_WML': {
                 'bits': 16,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved1': (31-7, 31-0),
+                'fields': [
+                    ['Reserved', [31-7, 31-0]],
                     # Not Implemented
-                    # 'WR_WML': (31-15, 31-8),
-                    'Reserved0': (31-23, 31-16),
+                    # ['WR_WML', [31-15, 31-8]],
+                    ['Reserved', [31-23, 31-16]],
                     # Not Implemented
-                    # 'RD_WML': (31-31, 31-24)
-                }
+                    # ['RD_WML', [31-31, 31-24]]
+                ]
             },
             'regs_XFERTYP': {
                 'bits': 30,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved3': (31-1, 31-0),
-                    'CMDINX': (31-7, 31-2),
+                'fields': [
+                    ['Reserved', [31-1, 31-0]],
+                    ['CMDINX', [31-7, 31-2]],
                     # Not Implemented
-                    # 'CMDTYP': (31-9, 31-8),
-                    'DPSEL': (31-10, 31-10),
-                    'CICEN': (31-11, 31-11),
-                    'CCCEN': (31-12, 31-12),
-                    'Reserved2': (31-13, 31-13),
-                    'RSPTYP': (31-15, 31-14),
-                    'Reserved1': (31-25, 31-16),
-                    'MSBSEL': (31-26, 31-26),
-                    'DTDSEL': (31-27, 31-27),
-                    'Reserved0': (31-28, 31-28),
-                    'AC12EN': (31-29, 31-29),
-                    'BCEN': (31-30, 31-30),
-                    'DMAEN': (31-31, 31-31)
-                }
+                    # ['CMDTYP', [31-9, 31-8]],
+                    ['DPSEL', [31-10, 31-10]],
+                    ['CICEN', [31-11, 31-11]],
+                    ['CCCEN', [31-12, 31-12]],
+                    ['Reserved', [31-13, 31-13]],
+                    ['RSPTYP', [31-15, 31-14]],
+                    ['Reserved', [31-25, 31-16]],
+                    ['MSBSEL', [31-26, 31-26]],
+                    ['DTDSEL', [31-27, 31-27]],
+                    ['Reserved', [31-28, 31-28]],
+                    ['AC12EN', [31-29, 31-29]],
+                    ['BCEN', [31-30, 31-30]],
+                    ['DMAEN', [31-31, 31-31]]
+                ]
             },
         }
     },
@@ -779,40 +779,40 @@ targets = {
         'OBJECT': 'soc.espi',
         'registers': {
             'regs_CS_SPMODE': {
-                'count': (4, ),
+                'count': [4],
                 'bits': 12,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'CI': (31-0, 31-0),
-                    'CP': (31-1, 31-1),
-                    'REV': (31-2, 31-2),
+                'fields': [
+                    ['CI', [31-0, 31-0]],
+                    ['CP', [31-1, 31-1]],
+                    ['REV', [31-2, 31-2]],
                     # Not Implemented
-                    # 'DIV16': (31-3, 31-3),
-                    # 'PM': (31-7, 31-4),
-                    # 'ODD': (31-8, 31-8),
-                    'Reseved1': (31-10, 31-9),
+                    # ['DIV16', [31-3, 31-3]],
+                    # ['PM', [31-7, 31-4]],
+                    # ['ODD', [31-8, 31-8]],
+                    ['Reseved', [31-10, 31-9]],
                     # Not Implemented
-                    # 'POL': (31-11, 31-11),
-                    'LEN': (31-15, 31-12),
+                    # ['POL', [31-11, 31-11]],
+                    ['LEN', [31-15, 31-12]],
                     # Not Implemented
-                    # 'CSBEF': (31-19, 31-16),
-                    # 'CSAFT': (31-23, 31-20),
-                    # 'CSCG': (31-28, 31-24),
-                    'Reserved0': (31-31, 31-29)
-                }
+                    # ['CSBEF', [31-19, 31-16]],
+                    # ['CSAFT', [31-23, 31-20]],
+                    # ['CSCG', [31-28, 31-24]],
+                    ['Reserved', [31-31, 31-29]]
+                ]
             },
             'regs_SPCOM': {
-                'fields': {
-                    'CS': (31-1, 31-0),
-                    'RxDelay': (31-2, 31-2),
-                    'DO': (31-3, 31-3),  # Write-access not implemented
-                    'TO': (31-4, 31-4),
-                    'HLD': (31-5, 31-5),
-                    'Reserved': (31-7, 31-6),
-                    'RxSKIP': (31-15, 31-8),
-                    'TRANLEN': (31-31, 31-16)
-                }
+                'fields': [
+                    ['CS', [31-1, 31-0]],
+                    ['RxDelay', [31-2, 31-2]],
+                    ['DO', [31-3, 31-3]],  # Write-access not implemented
+                    ['TO', [31-4, 31-4]],
+                    ['HLD', [31-5, 31-5]],
+                    ['Reserved', [31-7, 31-6]],
+                    ['RxSKIP', [31-15, 31-8]],
+                    ['TRANLEN', [31-31, 31-16]]
+                ]
             },
             'regs_SPIE': {},
             'regs_SPIM': {},
@@ -836,53 +836,53 @@ targets = {
                 'bits': 30,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved2': (31-15, 31-0),
-                    'LE': (31-16, 31-16),
-                    'Reserved1': (31-23, 31-17),
-                    'TDSEN': (31-24, 31-24),
-                    'TBDSEN': (31-25, 31-25),
-                    'Reserved0': (31-26, 31-26),
-                    'GRS': (31-27, 31-27),
-                    'GTS': (31-28, 31-28),  # Tx is not restarted
-                                            # when cleared
+                'fields': [
+                    ['Reserved', [31-15, 31-0]],
+                    ['LE', [31-16, 31-16]],
+                    ['Reserved', [31-23, 31-17]],
+                    ['TDSEN', [31-24, 31-24]],
+                    ['TBDSEN', [31-25, 31-25]],
+                    ['Reserved', [31-26, 31-26]],
+                    ['GRS', [31-27, 31-27]],
+                    ['GTS', [31-28, 31-28]],  # Tx is not restarted
+                                              # when cleared
                     # Not Implemented
-                    # 'TOD': (31-29, 31-29),
-                    # 'WWR': (31-30, 31-30),
-                    'WOP': (31-31, 31-31)
-                }
+                    # ['TOD', [31-29, 31-29]],
+                    # ['WWR', [31-30, 31-30]],
+                    ['WOP', [31-31, 31-31]]
+                ]
             },
             'ECNTRL': {
                 'bits': 28,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved2': (31-16, 31-0),
+                'fields': [
+                    ['Reserved', [31-16, 31-0]],
                     # Not Implemented
-                    # 'CLRCNT': (31-17, 31-17),
-                    # 'AUTOZ': (31-18, 31-18),
-                    # 'STEN': (31-19, 31-19),
-                    'Reserved1': (31-24, 31-20),
-                    'GMIIM': (31-25, 31-25),
-                    'TBIM': (31-26, 31-26),
-                    'RPM': (31-27, 31-27),
+                    # ['CLRCNT', [31-17, 31-17]],
+                    # ['AUTOZ', [31-18, 31-18]],
+                    # ['STEN', [31-19, 31-19]],
+                    ['Reserved', [31-24, 31-20]],
+                    ['GMIIM', [31-25, 31-25]],
+                    ['TBIM', [31-26, 31-26]],
+                    ['RPM', [31-27, 31-27]],
                     # Not Implemented
-                    # 'R100M': (31-28, 31-28),
-                    'RMM': (31-29, 31-29),
-                    'SGMIIM': (31-30, 31-30),
-                    'Reserved0': (31-31, 31-31)
-                }
+                    # ['R100M', [31-28, 31-28]],
+                    ['RMM', [31-29, 31-29]],
+                    ['SGMIIM', [31-30, 31-30]],
+                    ['Reserved', [31-31, 31-31]]
+                ]
             },
             'EDIS': {},
             'FIFO_TX_STARVE': {},
             'FIFO_TX_STARVE_SHUTOFF': {},
             'FIFO_TX_THR': {},
             'GADDR': {
-                'count': (8, )
+                'count': [8]
             },
             'HAFDUP': {},
             'IADDR': {
-                'count': (8, )
+                'count': [8]
             },
             'IEVENT': {},
             'IFSTAT': {},
@@ -892,71 +892,71 @@ targets = {
                 'bits': 23,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
+                'fields': [
                     # Not Implemented
-                    # 'Soft_Reset': (31-0, 31-0),
-                    'Reserved2': (31-11, 31-1),
+                    # ['Soft_Reset', [31-0, 31-0]],
+                    ['Reserved', [31-11, 31-1]],
                     # Not Implemented
-                    # 'Reset_Rx_MC': (31-12, 31-12),
-                    # 'Reset_Tx_MC': (31-13, 31-13),
-                    # 'Reset_Rx_Fun': (31-14, 31-14),
-                    # 'Reset_Tx_Fun': (31-15, 31-15),
-                    'Reserved1': (31-22, 31-16),
-                    'Loop_Back': (31-23, 31-23),
-                    'Reserved0': (31-25, 31-24),
+                    # ['Reset_Rx_MC', [31-12, 31-12]],
+                    # ['Reset_Tx_MC', [31-13, 31-13]],
+                    # ['Reset_Rx_Fun', [31-14, 31-14]],
+                    # ['Reset_Tx_Fun', [31-15, 31-15]],
+                    ['Reserved', [31-22, 31-16]],
+                    ['Loop_Back', [31-23, 31-23]],
+                    ['Reserved', [31-25, 31-24]],
                     # Not Implemented
-                    # 'Rx_Flow': (31-26, 31-26),
-                    # 'Tx_Flow': (31-27, 31-27),
-                    # 'Syncd_Rx_EN': (31-28, 31-28),
-                    'Rx_EN': (31-29, 31-29),
+                    # ['Rx_Flow', [31-26, 31-26]],
+                    # ['Tx_Flow', [31-27, 31-27]],
+                    # ['Syncd_Rx_EN', [31-28, 31-28]],
+                    ['Rx_EN', [31-29, 31-29]],
                     # Not Implemented
-                    # 'Syncd_Tx_EN': (31-30, 31-30),
-                    'Tx_EN': (31-31, 31-31)
-                }
+                    # ['Syncd_Tx_EN', [31-30, 31-30]],
+                    ['Tx_EN', [31-31, 31-31]]
+                ]
             },
             'MACCFG2': {
                 'bits': 29,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved1': (31-15, 31-0),
-                    'Preamble_Length': (31-19, 31-16),
-                    'Reserved0': (31-21, 31-20),
-                    'I_F_Mode': (31-23, 31-22),
-                    'PreAM_RxEN': (31-24, 31-24),
-                    'PreAM_TxEN': (31-25, 31-25),
+                'fields': [
+                    ['Reserved', [31-15, 31-0]],
+                    ['Preamble_Length', [31-19, 31-16]],
+                    ['Reserved', [31-21, 31-20]],
+                    ['I_F_Mode', [31-23, 31-22]],
+                    ['PreAM_RxEN', [31-24, 31-24]],
+                    ['PreAM_TxEN', [31-25, 31-25]],
                     # Not Implemented
-                    # 'Huge_Frame': (31-26, 31-26),
-                    # 'Length_Check': (31-27, 31-27),
-                    'MPEN': (31-28, 31-28),
-                    'PAD_CRC': (31-29, 31-29),
-                    'CRC_EN': (31-30, 31-30),
+                    # ['Huge_Frame', [31-26, 31-26]],
+                    # ['Length_Check', [31-27, 31-27]],
+                    ['MPEN', [31-28, 31-28]],
+                    ['PAD_CRC', [31-29, 31-29]],
+                    ['CRC_EN', [31-30, 31-30]],
                     # Not Implemented
-                    # 'Full_Duplex': (31-31, 31-31)
-                }
+                    # ['Full_Duplex', [31-31, 31-31]]
+                ]
             },
             'MACSTNADDR1': {},
             'MACSTNADDR2': {},
             'MAC_ADD1': {
-                'count': (15, )
+                'count': [15]
             },
             'MAC_ADD2': {
-                'count': (15, )
+                'count': [15]
             },
             'MAXFRM': {},
             'MIIMADD': {},
             'MIIMCFG': {
                 'bits': 27,
-                'fields': {
+                'fields': [
                     # Not Implemented
-                    # 'Reset_Mgmt': (31-0, 31-0),
-                    'Reserved1': (31-36, 31-1),
+                    # ['Reset_Mgmt', [31-0, 31-0]],
+                    ['Reserved', [31-36, 31-1]],
                     # Not Implemented
-                    # 'No_Pre': (31-27, 31-27),
-                    'Reserved0': (31-28, 31-28),
+                    # ['No_Pre', [31-27, 31-27]],
+                    ['Reserved', [31-28, 31-28]],
                     # Not Implemented
-                    # 'MgmtClk': (31-31, 31-29)
-                }
+                    # ['MgmtClk', [31-31, 31-29]]
+                ]
             },
             'MIIMCOM': {},
             'MIIMCON': {},
@@ -967,14 +967,14 @@ targets = {
             'PTV': {},
             'RALN': {},
             'RBASE': {
-                'count': (8, )
+                'count': [8]
             },
             'RBASEH': {},
             'RBCA': {},
             'RBDBPH': {},
             'RBIFX': {},
             'RBPTR': {
-                'count': (8, )
+                'count': [8]
             },
             'RBYT': {},
             'RCDE': {},
@@ -983,30 +983,30 @@ targets = {
                 'bits': 30,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
+                'fields': [
                     # Field CFA - Not implemented.
-                    'L2OFF': (31-6, 31-0),
+                    ['L2OFF', [31-6, 31-0]],
                     # Not Implemented
-                    # 'TS': (31-7, 31-7),
-                    'Reserved3': (31-10, 31-8),
-                    'PAL': (31-15, 31-11),
-                    'Reserved2': (31-16, 31-16),
+                    # ['TS', [31-7, 31-7]],
+                    ['Reserved', [31-10, 31-8]],
+                    ['PAL', [31-15, 31-11]],
+                    ['Reserved', [31-16, 31-16]],
                     # Not Implemented
-                    # 'LFC': (31-17, 31-17),
-                    'VLEX': (31-18, 31-18),
-                    'FILREN': (31-19, 31-19),
-                    'FSQEN': (31-20, 31-20),
-                    'GHTX': (31-21, 31-21),
-                    'IPCSEN': (31-22, 31-22),
-                    'TUCSEN': (31-23, 31-23),
-                    'PRSDEP': (25-25, 25-24),
-                    'Reserved1': (31-26, 31-26),
-                    'BC_REJ': (31-27, 31-27),
-                    'PROM': (31-28, 31-28),
-                    'RSF': (31-29, 31-29),
-                    'EMEN': (31-30, 31-30),
-                    'Reserved0': (31-31, 31-31)
-                }
+                    # ['LFC', [31-17, 31-17]],
+                    ['VLEX', [31-18, 31-18]],
+                    ['FILREN', [31-19, 31-19]],
+                    ['FSQEN', [31-20, 31-20]],
+                    ['GHTX', [31-21, 31-21]],
+                    ['IPCSEN', [31-22, 31-22]],
+                    ['TUCSEN', [31-23, 31-23]],
+                    ['PRSDEP', [25-25, 25-24]],
+                    ['Reserved', [31-26, 31-26]],
+                    ['BC_REJ', [31-27, 31-27]],
+                    ['PROM', [31-28, 31-28]],
+                    ['RSF', [31-29, 31-29]],
+                    ['EMEN', [31-30, 31-30]],
+                    ['Reserved', [31-31, 31-31]]
+                ]
             },
             'RDRP': {},
             'RFCS': {},
@@ -1020,21 +1020,21 @@ targets = {
             'RQUEUE': {},
             'RSTAT': {},
             'RSVD': {
-                'count': (6, )
+                'count': [6]
             },
             'RUND': {},
             'RXCF': {},
             'RXPF': {},
             'RXUO': {},
             'TBASE': {
-                'count': (8, )
+                'count': [8]
             },
             'TBASEH': {},
             'TBCA': {},
             'TBDBPH': {},
             'TBIPA': {},
             'TBPTR': {
-                'count': (8, )
+                'count': [8]
             },
             'TBYT': {},
             'TCTRL': {},
@@ -1071,19 +1071,19 @@ targets = {
                 'bits': 9,
                 'partial': True,
                 'actual_bits': 16,
-                'fields': {
+                'fields': [
                     # Not Implemented
-                    # 'Next_Page': (15-0, 15-0),
-                    'Reserved2': (15-1, 15-1),
+                    # ['Next_Page', [15-0, 15-0]],
+                    ['Reserved', [15-1, 15-1]],
                     # Not Implemented
-                    # 'Remote_Fault': (15-3, 15-2),
-                    'Reserved1': (15-6, 15-4),
+                    # ['Remote_Fault', [15-3, 15-2]],
+                    ['Reserved', [15-6, 15-4]],
                     # Not Implemented
-                    # 'Pause': (15-8, 15-7),
-                    # 'Half_Duplex': (15-9, 15-9),
-                    # 'Full_Duplex': (15-10, 15-10),
-                    'Reserved0': (15-15, 15-11)
-                }
+                    # ['Pause', [15-8, 15-7]],
+                    # ['Half_Duplex', [15-9, 15-9]],
+                    # ['Full_Duplex', [15-10, 15-10]],
+                    ['Reserved', [15-15, 15-11]]
+                ]
             },
             'tbi_ANEX': {
                 'bits': 16
@@ -1098,38 +1098,38 @@ targets = {
                 'bits': 2,
                 'partial': True,
                 'actual_bits': 16,
-                'fields': {
+                'fields': [
                     # Not Implemented
-                    # 'Next_Page': (15-0, 15-0),
-                    'Reserved': (15-1, 15-1),
+                    # ['Next_Page', [15-0, 15-0]],
+                    ['Reserved', [15-1, 15-1]],
                     # Not Implemented
-                    # 'Msg_Page': (15-2, 15-2),
-                    # 'Ack2': (15-3, 15-3),
-                    'Toggle': (15-4, 15-4)
+                    # ['Msg_Page', [15-2, 15-2]],
+                    # ['Ack2', [15-3, 15-3]],
+                    ['Toggle', [15-4, 15-4]]
                     # Not Implemented
-                    # 'Message_Un-formatted_Code_Field': (15-15, 15-5)
-                }
+                    # ['Message_Un-formatted_Code_Field', [15-15, 15-5]]
+                ]
             },
             'tbi_CR': {
                 'bits': 10,
                 'partial': True,
                 'actual_bits': 16,
-                'fields': {
+                'fields': [
                     # Not Implemented
-                    # 'PHY_Reset': (15-0, 15-0),
-                    'Reserved3': (15-1, 15-1),
+                    # ['PHY_Reset', [15-0, 15-0]],
+                    ['Reserved', [15-1, 15-1]],
                     # Not Implemented
-                    # 'Speed_0': (15-2, 15-2),
-                    # 'AN_Enable': (15-3, 15-3),
-                    'Reserved2': (15-5, 15-4),
+                    # ['Speed_0', [15-2, 15-2]],
+                    # ['AN_Enable', [15-3, 15-3]],
+                    ['Reserved', [15-5, 15-4]],
                     # Not Implemented
-                    # 'Reset_AN': (15-6, 15-6),
-                    # 'Full_Duplex': (15-7, 15-7),
-                    'Reserved1': (15-8, 15-8),
+                    # ['Reset_AN', [15-6, 15-6]],
+                    # ['Full_Duplex', [15-7, 15-7]],
+                    ['Reserved', [15-8, 15-8]],
                     # Not Implemented
-                    # 'Speed_1': (15-9, 15-9),
-                    'Reserved0': (15-15, 15-10)
-                }
+                    # ['Speed_1', [15-9, 15-9]],
+                    ['Reserved', [15-15, 15-10]]
+                ]
             },
             'tbi_EXST': {
                 'bits': 16
@@ -1138,14 +1138,14 @@ targets = {
                 'bits': 2,
                 'partial': True,
                 'actual_bits': 16,
-                'fields': {
+                'fields': [
                     # Not Implemented
-                    # 'Jitter_Enable': (15-0, 15-0),
-                    # 'Jitter_Select': (15-3, 15-1),
-                    'Reserved': (15-5, 15-4),
+                    # ['Jitter_Enable', [15-0, 15-0]],
+                    # ['Jitter_Select', [15-3, 15-1]],
+                    ['Reserved', [15-5, 15-4]],
                     # Not Implemented
-                    # 'Custom_Jitter_Pattern': (15-15, 15-6)
-                }
+                    # ['Custom_Jitter_Pattern', [15-15, 15-6]]
+                ]
             },
             'tbi_SR': {
                 'bits': 16
@@ -1154,22 +1154,22 @@ targets = {
                 'bits': 10,
                 'partial': True,
                 'actual_bits': 16,
-                'fields': {
+                'fields': [
                     # Not Implemented
-                    # 'Soft_Reset': (15-0, 15-0),
-                    'Reserved3': (15-1, 15-1),
+                    # ['Soft_Reset', [15-0, 15-0]],
+                    ['Reserved', [15-1, 15-1]],
                     # Not Implemented
-                    # 'Disable_Rx_Dis': (15-2, 15-2),
-                    # 'Disable_Tx_Dis': (15-3, 15-3),
-                    'Reserved2': (15-6, 15-4),
+                    # ['Disable_Rx_Dis', [15-2, 15-2]],
+                    # ['Disable_Tx_Dis', [15-3, 15-3]],
+                    ['Reserved', [15-6, 15-4]],
                     # Not Implemented
-                    # 'AN_Sense': (15-7, 15-7),
-                    'Reserved1': (15-9, 15-8),
+                    # ['AN_Sense', [15-7, 15-7]],
+                    ['Reserved', [15-9, 15-8]],
                     # Not Implemented
-                    # 'Clock_Select': (15-10, 15-10),
-                    # 'MI_Mode': (15-11, 15-11),
-                    'Reserved0': (15-15, 15-12)
-                }
+                    # ['Clock_Select', [15-10, 15-10]],
+                    # ['MI_Mode', [15-11, 15-11]],
+                    ['Reserved', [15-15, 15-12]]
+                ]
             }
             # Not Implemented
             # 'FIFOCFG': {},
@@ -1178,16 +1178,16 @@ targets = {
             # 'FIFO_RX_PAUSE': {},
             # 'FIFO_RX_PAUSE_SHUTOFF': {},
             # 'RFBPTR': {
-            #     'count': (8, )
+            #     'count': [8]
             # },
             # 'RQFCR': {},
             # 'RQFPR': {},
             # 'RQPRM': {
-            #     'count': (8, )
+            #     'count': [8]
             # },
             # 'RREJ': {},
             # 'RXIC': {
-            #     'fields': {
+            #     'fields': [
             #         # Field ICCS - Coalescing on timer is not yet
             #         #              supported.
             #         # Field ICEN - Not implemented.
@@ -1288,52 +1288,52 @@ targets = {
         'OBJECT': 'soc.l2sram',
         'registers': {
             'L2CTL': {
-                'fields': {
-                    'L2E': (31-0, 31-0),
-                    'L2I': (31-1, 31-1),
-                    'L2SIZ': (31-3, 31-2),
-                    'Reserved5': (31-8, 31-4),
-                    'L2DO': (31-9, 31-9),        # Write-access not
-                                                 # implemented
-                    'L2IO': (31-10, 31-10),      # Write-access not
-                                                 # implemented
-                    'Reserved4': (31-11, 31-11),
-                    'L2INTDIS': (31-12, 31-12),  # Write-access not
-                                                 # implemented
-                    'L2SRAM': (31-15, 31-13),
-                    'Reserved3': (31-17, 31-16),
-                    'L2LO': (31-18, 31-18),      # Write-access not
-                                                 # implemented
-                    'L2LSC': (31-19, 31-19),     # Write-access not
-                                                 # implemented
-                    'Reserved2': (31-20, 31-20),
-                    'L2LFR': (31-21, 31-21),
-                    'L2LFRID': (31-23, 31-22),   # Write-access not
-                                                 # implemented
-                    'Reserved1': (31-27, 31-24),
-                    'L2STASHDIS': (31-28, 31-28),
-                    'Reserverd0': (31-29, 31-29),
-                    'L2STASHCTL': (31-31, 31-30)
-                }
+                'fields': [
+                    ['L2E', [31-0, 31-0]],
+                    ['L2I', [31-1, 31-1]],
+                    ['L2SIZ', [31-3, 31-2]],
+                    ['Reserved', [31-8, 31-4]],
+                    ['L2DO', [31-9, 31-9]],        # Write-access not
+                                                   # implemented
+                    ['L2IO', [31-10, 31-10]],      # Write-access not
+                                                   # implemented
+                    ['Reserved', [31-11, 31-11]],
+                    ['L2INTDIS', [31-12, 31-12]],  # Write-access not
+                                                   # implemented
+                    ['L2SRAM', [31-15, 31-13]],
+                    ['Reserved', [31-17, 31-16]],
+                    ['L2LO', [31-18, 31-18]],      # Write-access not
+                                                   # implemented
+                    ['L2LSC', [31-19, 31-19]],     # Write-access not
+                                                   # implemented
+                    ['Reserved', [31-20, 31-20]],
+                    ['L2LFR', [31-21, 31-21]],
+                    ['L2LFRID', [31-23, 31-22]],   # Write-access not
+                                                   # implemented
+                    ['Reserved', [31-27, 31-24]],
+                    ['L2STASHDIS', [31-28, 31-28]],
+                    ['Reserved', [31-29, 31-29]],
+                    ['L2STASHCTL', [31-31, 31-30]]
+                ]
             },
             'L2SRBAREA': {
-                'count': (2, )
+                'count': [2]
             },
             'L2SRBAR': {
-                'count': (2, )
+                'count': [2]
             }
             # Not Implemented
             # 'L2CAPTDATAHI': {},
             # 'L2CAPTDATALO': {},
             # 'L2CAPTECC': {},
             # 'L2CEWAREA': {
-            #     'count': (4, )
+            #     'count': [4]
             # },
             # 'L2CEWAR': {
-            #     'count': (4, )
+            #     'count': [4]
             # },
             # 'L2CEWCR': {
-            #     'count': (4, )
+            #     'count': [4]
             # },
             # 'L2ERRADDR': {},
             # 'L2ERRATTR': {},
@@ -1355,37 +1355,37 @@ targets = {
             'CAPTURE_DATA_LO': {},
             'CAPTURE_ECC': {},
             'CS_BNDS': {
-                'count': (4, ),
-                'fields': {
-                    'Reserved1': (31-3, 31-0),
-                    'SAn': (31-15, 31-4),
-                    'Reserved0': (31-19, 31-16),
-                    'EAn': (31-31, 31-20)
-                }
+                'count': [4],
+                'fields': [
+                    ['Reserved', [31-3, 31-0]],
+                    ['SAn', [31-15, 31-4]],
+                    ['Reserved', [31-19, 31-16]],
+                    ['EAn', [31-31, 31-20]]
+                ]
             },
             'CS_CONFIG': {
-                'count': (4, ),
-                'fields': {
-                    'CS_EN': (31-0, 31-0),
-                    'Reserved3': (31-7, 31-1),
-                    'AP_EN': (31-8, 31-8),
-                    'ODT_RD_CFG': (31-11, 31-9),
-                    'Reserved2': (31-12, 31-12),
-                    'ODT_WR_CFG': (31-15, 31-13),
-                    'BA_BITS_CS': (31-17, 31-16),
-                    'Reserved1': (31-20, 31-18),
-                    'ROW_BITS_CS': (31-23, 31-21),
-                    'Reserved0': (31-28, 31-24),
-                    'COL_BITS_CS': (31-31, 31-29)
-                }
+                'count': [4],
+                'fields': [
+                    ['CS_EN', [31-0, 31-0]],
+                    ['Reserved', [31-7, 31-1]],
+                    ['AP_EN', [31-8, 31-8]],
+                    ['ODT_RD_CFG', [31-11, 31-9]],
+                    ['Reserved', [31-12, 31-12]],
+                    ['ODT_WR_CFG', [31-15, 31-13]],
+                    ['BA_BITS_CS', [31-17, 31-16]],
+                    ['Reserved', [31-20, 31-18]],
+                    ['ROW_BITS_CS', [31-23, 31-21]],
+                    ['Reserved', [31-28, 31-24]],
+                    ['COL_BITS_CS', [31-31, 31-29]]
+                ]
             },
             'CS_CONFIG_2': {
-                'count': (4, ),
-                'fields': {
-                    'Reserved1': (31-4, 31-0),
-                    'PASR_CFG': (31-7, 31-5),
-                    'Reserved0': (31-31, 31-8)
-                }
+                'count': [4],
+                'fields': [
+                    ['Reserved', [31-4, 31-0]],
+                    ['PASR_CFG', [31-7, 31-5]],
+                    ['Reserved', [31-31, 31-8]]
+                ]
             },
             'DATA_ERR_INJECT_HI': {},
             'DATA_ERR_INJECT_LO': {},
@@ -1395,55 +1395,55 @@ targets = {
                 'bits': 31,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'MEM_EN': (31-0, 31-0),
-                    'SREN': (31-1, 31-1),
-                    'ECC_EN': (31-2, 31-2),
-                    'RD_EN': (31-3, 31-3),
-                    'Reserved4': (31-4, 31-4),
-                    'SDRAM_TYPE': (31-7, 31-5),
-                    'Reserved3': (31-9, 31-8),
-                    'DYN_PWR': (31-10, 31-10),
-                    'DBW': (31-12, 31-11),
-                    '8_BE': (31-13, 31-13),
-                    'Reserved2': (31-14, 31-14),
-                    '3T_EN': (31-15, 31-15),
-                    '2T_EN': (31-16, 31-16),
-                    'BA_INTLV_CTL': (31-23, 31-17),
-                    'Reserved1': (31-25, 31-24),
-                    'x32_EN': (31-26, 31-26),
-                    'PCHB8': (31-27, 31-27),
-                    'HSE': (31-28, 31-28),
-                    'Reserved0': (31-29, 31-29),
-                    'MEM_HALT': (31-30, 31-30)
+                'fields': [
+                    ['MEM_EN', [31-0, 31-0]],
+                    ['SREN', [31-1, 31-1]],
+                    ['ECC_EN', [31-2, 31-2]],
+                    ['RD_EN', [31-3, 31-3]],
+                    ['Reserved', [31-4, 31-4]],
+                    ['SDRAM_TYPE', [31-7, 31-5]],
+                    ['Reserved', [31-9, 31-8]],
+                    ['DYN_PWR', [31-10, 31-10]],
+                    ['DBW', [31-12, 31-11]],
+                    ['8_BE', [31-13, 31-13]],
+                    ['Reserved', [31-14, 31-14]],
+                    ['3T_EN', [31-15, 31-15]],
+                    ['2T_EN', [31-16, 31-16]],
+                    ['BA_INTLV_CTL', [31-23, 31-17]],
+                    ['Reserved', [31-25, 31-24]],
+                    ['x32_EN', [31-26, 31-26]],
+                    ['PCHB8', [31-27, 31-27]],
+                    ['HSE', [31-28, 31-28]],
+                    ['Reserved', [31-29, 31-29]],
+                    ['MEM_HALT', [31-30, 31-30]]
                     # Not Implemented
-                    # 'BI': (31-31, 31-31)
-                },
+                    # ['BI', [31-31, 31-31]]
+                ]
             },
             'DDR_SDRAM_CFG_2': {
                 'bits': 31,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'FRC_SR': (31-0, 31-0),
-                    'SR_IE': (31-1, 31-1),
-                    'DLL_RST_DIS': (31-2, 31-2),
-                    'Reserved5': (31-3, 31-3),
-                    'DQS_CFG': (31-5, 31-4),
-                    'Reserved4': (31-8, 31-6),
-                    'ODT_CFG': (31-10, 31-9),
-                    'Reserved3': (31-15, 31-11),
-                    'NUM_PR': (31-19, 31-16),
-                    'Reserved2': (31-24, 31-20),
-                    'OBC_CFG': (31-25, 31-25),
-                    'AP_EN': (31-26, 31-26),
+                'fields': [
+                    ['FRC_SR', [31-0, 31-0]],
+                    ['SR_IE', [31-1, 31-1]],
+                    ['DLL_RST_DIS', [31-2, 31-2]],
+                    ['Reserved', [31-3, 31-3]],
+                    ['DQS_CFG', [31-5, 31-4]],
+                    ['Reserved', [31-8, 31-6]],
+                    ['ODT_CFG', [31-10, 31-9]],
+                    ['Reserved', [31-15, 31-11]],
+                    ['NUM_PR', [31-19, 31-16]],
+                    ['Reserved', [31-24, 31-20]],
+                    ['OBC_CFG', [31-25, 31-25]],
+                    ['AP_EN', [31-26, 31-26]],
                     # Not Implemented
-                    # 'D_INIT': (31-27, 31-27),
-                    'Reserved1': (31-28, 31-28),
-                    'RCW_EN': (31-29, 31-29),
-                    'Reserved0': (31-30, 31-30),
-                    'MD_EN': (31-31, 31-31)
-                },
+                    # ['D_INIT', [31-27, 31-27]],
+                    ['Reserved', [31-28, 31-28]],
+                    ['RCW_EN', [31-29, 31-29]],
+                    ['Reserved', [31-30, 31-30]],
+                    ['MD_EN', [31-31, 31-31]]
+                ]
             },
             'DDR_SDRAM_CLK_CNTRL': {},
             'DDR_SDRAM_INTERVAL': {},
@@ -1491,15 +1491,15 @@ targets = {
                 'bits': 29,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved1': (31-26, 31-0),
+                'fields': [
+                    ['Reserved', [31-26, 31-0]],
                     # Not Implemented
-                    # 'SAC': (31-27, 31-27),
-                    'Reserved0': (31-29, 31-28),
+                    # ['SAC', [31-27, 31-27]],
+                    ['Reserved', [31-29, 31-28]],
                     # Not Implemented
-                    # 'SP': (31-30, 31-30),
-                    # 'SCC': (31-31, 31-31)
-                }
+                    # ['SP', [31-30, 31-30]],
+                    # ['SCC', [31-31, 31-31]]
+                ]
             },
             'PEX_CONFIG_ADDR': {},
             'PEX_CONFIG_RTY_TOR': {},  # Timeout will never occur
@@ -1510,64 +1510,64 @@ targets = {
             'PEX_PME_MES_DR': {},
             'PEX_PME_MES_IER': {},
             'PEX_inbound_ITAR': {
-                'count': (3, )
+                'count': [3]
             },
             'PEX_inbound_IWAR': {
-                'count': (3, ),
-                'fields': {
-                    'EN': (31-0, 31-0),
-                    'Reserved2': (31-1, 31-1),
-                    'PF': (31-2, 31-2),        # Not forced to 0 when
-                                               # TRGT = CCSRBAR
-                    'Reserved1': (31-7, 31-3),
-                    'TRGT': (31-11, 31-8),
-                    'RTT': (31-15, 31-12),     # Only read transaction type
-                                               # implemented (0x4)
-                    'WTT': (31-19, 31-16),     # Only write transaction type
-                                               # implemented (0x4)
-                    'Reserved0': (31-25, 31-20),
-                    'IWS': (31-31, 31-26)
-                }
+                'count': [3],
+                'fields': [
+                    ['EN', [31-0, 31-0]],
+                    ['Reserved', [31-1, 31-1]],
+                    ['PF', [31-2, 31-2]],          # Not forced to 0 when
+                                                   # TRGT = CCSRBAR
+                    ['Reserved', [31-7, 31-3]],
+                    ['TRGT', [31-11, 31-8]],
+                    ['RTT', [31-15, 31-12]],       # Only read transaction type
+                                                   # implemented (0x4)
+                    ['WTT', [31-19, 31-16]],       # Only write transaction type
+                                                   # implemented (0x4)
+                    ['Reserved', [31-25, 31-20]],
+                    ['IWS', [31-31, 31-26]]
+                ]
             },
             'PEX_inbound_IWBAR': {
-                'count': (3, )
+                'count': [3]
             },
             'PEX_inbound_IWBEAR': {
-                'count': (3, )
+                'count': [3]
             },
             'PEX_outbound_OTAR': {
-                'count': (5, )
+                'count': [5]
             },
             'PEX_outbound_OTEAR': {
-                'count': (5, )
+                'count': [5]
             },
             'PEX_outbound_OTWBAR': {
-                'count': (5, )
+                'count': [5]
             },
             'PEX_outbound_OWAR': {
-                'count': (5, ),
+                'count': [5],
                 'bits': 27,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'EN': (31-0, 31-0),
-                    'Reserved3': (31-2, 31-1),
+                'fields': [
+                    ['EN', [31-0, 31-0]],
+                    ['Reserved', [31-2, 31-1]],
                     # Not Implemented
-                    # 'ROE': (31-3, 31-3),
-                    # 'NS': (31-4, 31-4),
-                    'Reserved2': (31-7, 31-5),
+                    # ['ROE', [31-3, 31-3]],
+                    # ['NS', [31-4, 31-4]],
+                    ['Reserved', [31-7, 31-5]],
                     # Not Implemented
-                    # 'TC': (31-10, 31-8),
-                    'Reserved1': (31-11, 31-11),
-                    'RTT': (31-15, 31-12),
-                    'WTT': (31-19, 31-16),
-                    'Reserved0': (31-25, 31-20),
-                    'OWS': (31-31, 31-26)
-                }
+                    # ['TC', [31-10, 31-8]],
+                    ['Reserved', [31-11, 31-11]],
+                    ['RTT', [31-15, 31-12]],
+                    ['WTT', [31-19, 31-16]],
+                    ['Reserved', [31-25, 31-20]],
+                    ['OWS', [31-31, 31-26]]
+                ]
             }
             # Not found in P2020 Docs
             # 'command': {
-            #     'fields': {
+            #     'fields': [
             #         Field fb - Not implemented.
             #         Field mwi - Not implemented.
             #         Field pe - Not implemented.
@@ -1579,7 +1579,7 @@ targets = {
             # }
             # Not Implemented
             # 'PEX_ERR_CAP_R': {
-            #     'count': (4, )
+            #     'count': [4]
             # },
             # 'PEX_ERR_CAP_STAT': {},
             # 'PEX_ERR_DISR': {},
@@ -1598,86 +1598,86 @@ targets = {
             'BRR1': {},
             'BRR2': {},
             'EIDR': {
-                'count': (12, )
+                'count': [12]
             },
             'EIVPR': {
-                'count': (12, )
+                'count': [12]
             },
             'FRR': {},
             'GCR': {},
             'GT_GTBCR': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'GT_GTCCR': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'GT_GTDR': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'GT_GTVPR': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'GT_TCR': {
-                'count': (2, )
+                'count': [2]
             },
             'GT_TFRR': {
-                'count': (2, )
+                'count': [2]
             },
             'IIDR': {
-                'count': (64, )
+                'count': [64]
             },
             'IIVPR': {
-                'count': (64, )
+                'count': [64]
             },
             'IPIVPR': {
-                'count': (4, )
+                'count': [4]
             },
             'MSG_MER': {
-                'count': (2, )
+                'count': [2]
             },
             'MSG_MIDR': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'MSG_MIVPR': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'MSG_MSGR': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'MSI_MSIDR': {
-                'count': (1, 8)
+                'count': [1, 8]
             },
             'MSI_MSIR': {
-                'count': (1, 8)
+                'count': [1, 8]
             },
             'MSI_MSISR': {
-                'count': (1, )
+                'count': [1]
             },
             'MSI_MSIVPR': {
-                'count': (1, 8)
+                'count': [1, 8]
             },
             'PIR': {},
             'PM_MR': {
-                'count': (4, 3)
+                'count': [4, 3]
             },
             'P_CTPR': {
-                'count': (8, )  # only 3 in P2020 docs
+                'count': [8]  # only 3 in P2020 docs
             },
             'P_IPIDR': {
-                'count': (8, 4)  # only 3 in P2020 docs
+                'count': [8, 4]  # only 3 in P2020 docs
             },
             'SVR': {},
             'VIR': {}
             # Not Implemented
             # 'CISR': {
-            #     'count': (3, )
+            #     'count': [3]
             # },
             # 'ERQSR': {},
             # 'IRQSR': {
-            #     'count': (3, )
+            #     'count': [3]
             # },
             # 'MSG_MSR': {
-            #     'count': (2, )
+            #     'count': [2]
             # }
         }
     },
@@ -1712,67 +1712,67 @@ targets = {
             'regs_LLCR': {},
             'regs_LRETCR': {},
             'regs_M_EIFQDPAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_EIFQEPAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_EODQDPAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_EODQEPAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_EOSAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_IFQDPAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_IFQEPAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_IMIRIR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_IMR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_ISR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_ODATR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_ODCR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_ODPR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_ODQDPAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_ODQEPAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_OMGR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_OMLR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_OMR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_ORETCR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_OSAR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_M_OSR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_ODDATR': {},
             'regs_ODDPR': {},
@@ -1803,87 +1803,87 @@ targets = {
             'regs_pe_features': {},
             'regs_pe_ll_status': {},
             'regs_port_AACR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_port_LOPTTLCR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_port_RIWAR0': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_port_RIWARn': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'regs_port_RIWBARn': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'regs_port_RIWTAR0': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_port_RIWTARn': {
-                'count': (2, 4)
+                'count': [2, 4]
             },
             'regs_port_ROWAR0': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_port_ROWARn': {
-                'count': (2, 8)
+                'count': [2, 8]
             },
             'regs_port_ROWBARn': {
-                'count': (2, 8)
+                'count': [2, 8]
             },
             'regs_port_ROWS1R': {
-                'count': (2, 8)
+                'count': [2, 8]
             },
             'regs_port_ROWS2R': {
-                'count': (2, 8)
+                'count': [2, 8]
             },
             'regs_port_ROWS3R': {
-                'count': (2, 8)
+                'count': [2, 8]
             },
             'regs_port_ROWTAR0': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_port_ROWTARn': {
-                'count': (2, 8)
+                'count': [2, 8]
             },
             'regs_port_ROWTEAR': {
-                'count': (2, 8)
+                'count': [2, 8]
             },
             'regs_port_ROWTEAR0': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_port_SLCSR': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_port_block_header': {},
             'regs_port_general_control': {},
             'regs_port_link_timeout': {},
             'regs_port_port_control': {
-                'count': (2, ),
+                'count': [2],
                 'bits': 28,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'PW': (31-1, 31-0),
-                    'IPW': (31-4, 31-2),
-                    'PWO': (31-7, 31-5),
+                'fields': [
+                    ['PW', [31-1, 31-0]],
+                    ['IPW', [31-4, 31-2]],
+                    ['PWO', [31-7, 31-5]],
                     # Not Implemented
-                    # 'PD': (31-8, 31-8),
-                    # 'OPE': (31-9, 31-9),
-                    # 'IPE': (31-10, 31-10),
-                    'ECD': (31-11, 31-11),
-                    'MEP': (31-12, 31-12),
-                    'Reserved': (31-27, 31-13),
-                    'SPF': (31-28, 31-28),
-                    'DPE': (31-29, 31-29),
+                    # ['PD', [31-8, 31-8]],
+                    # ['OPE', [31-9, 31-9]],
+                    # ['IPE', [31-10, 31-10]],
+                    ['ECD', [31-11, 31-11]],
+                    ['MEP', [31-12, 31-12]],
+                    ['Reserved', [31-27, 31-13]],
+                    ['SPF', [31-28, 31-28]],
+                    ['DPE', [31-29, 31-29]],
                     # Not Implemented
-                    # 'PL': (31-30, 31-30),
-                    'PT': (31-31, 31-31)
-                }
+                    # ['PL', [31-30, 31-30]],
+                    ['PT', [31-31, 31-31]]
+                ]
             },
             'regs_port_port_error_and_status': {
-                'count': (2, )
+                'count': [2]
             },
             'regs_portwrite_target_id': {},
             'regs_src_operations': {},
@@ -1896,52 +1896,52 @@ targets = {
             # 'regs_layer_capture_control': {},
             # 'regs_layer_capture_device_id': {},
             # 'regs_port_ADIDCSR': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_IECSR': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_PCR': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_SLEICR': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_link_maintenance_request': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_link_maintenance_response': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_capture_attributes': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_capture_packet_1': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_capture_packet_2': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_capture_packet_3': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_capture_symbol': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_port_error_detect': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_port_error_rate': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_port_error_rate_enable': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_port_error_rate_threshold': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_port_port_local_ackid_status': {
-            #     'count': (2, )
+            #     'count': [2]
             # }
         }
     },
@@ -1971,13 +1971,13 @@ targets = {
                 'bits': 30,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved1': (5, 31),
-                    # 'SDIS': (4, 4),
-                    # 'SLOM': (3, 3),
-                    'Reserved0': (2, 2),
-                    'CM': (0, 1)
-                }
+                'fields': [
+                    ['Reserved', [5, 31]],
+                    # ['SDIS', [4, 4]],
+                    # ['SLOM', [3, 3]],
+                    ['Reserved', [2, 2]],
+                    ['CM', [0, 1]]
+                ]
             },
             'usb_regs_caplength': {
                 'bits': 8
@@ -1994,103 +1994,103 @@ targets = {
             'usb_regs_hcsparams': {},
             'usb_regs_periodiclistbase': {},
             'usb_regs_prtsc': {
-                'count': (1, ),
+                'count': [1],
                 'bits': 26,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
+                'fields': [
                     # Not Implemented
-                    # 'PTS': (30, 31),
-                    'Reserved2': (28, 29),
-                    'PSPD': (26, 27),
-                    'Reserved1': (25, 25),
+                    # ['PTS', [30, 31]],
+                    ['Reserved', [28, 29]],
+                    ['PSPD', [26, 27]],
+                    ['Reserved', [25, 25]],
                     # Not Implemented
-                    # 'PFSC': (24, 24),
-                    'PHCD': (23, 23),
+                    # ['PFSC', [24, 24]],
+                    ['PHCD', [23, 23]],
                     # Not Implemented
-                    # 'WKOC': (22, 22),
-                    # 'WKDS': (21, 21),
-                    # 'WKCN': (20, 20),
-                    'PTC': (16, 19),     # Write-access not implemented
-                    'PIC': (14, 15),
-                    'PO': (13, 13),
-                    'PP': (12, 12),
-                    'LS': (10, 11),
-                    'Reserved0': (9, 9),
-                    'PR': (8, 8),
-                    'SUSP': (7, 7),      # Write-access not implemented
-                    'FPR': (6, 6),       # Write-access not implemented
-                    'OCC': (5, 5),       # Read-access not implemented
-                    'OCA': (4, 4),       # Read-access not implemented
-                    'PEC': (3, 3),
-                    'PE': (2, 2),
-                    'CSC': (1, 1),
-                    'CCS': (0, 0)
-                }
+                    # ['WKOC', [22, 22]],
+                    # ['WKDS', [21, 21]],
+                    # ['WKCN', [20, 20]],
+                    ['PTC', [16, 19]],     # Write-access not implemented
+                    ['PIC', [14, 15]],
+                    ['PO', [13, 13]],
+                    ['PP', [12, 12]],
+                    ['LS', [10, 11]],
+                    ['Reserved', [9, 9]],
+                    ['PR', [8, 8]],
+                    ['SUSP', [7, 7]],      # Write-access not implemented
+                    ['FPR', [6, 6]],       # Write-access not implemented
+                    ['OCC', [5, 5]],       # Read-access not implemented
+                    ['OCA', [4, 4]],       # Read-access not implemented
+                    ['PEC', [3, 3]],
+                    ['PE', [2, 2]],
+                    ['CSC', [1, 1]],
+                    ['CCS', [0, 0]]
+                ]
             },
             'usb_regs_reserved': {},
             'usb_regs_usbcmd': {
                 'bits': 21,
                 'partial': True,
                 'actual_bits': 32,
-                'fields': {
-                    'Reserved2': (24, 31),
+                'fields': [
+                    ['Reserved', [24, 31]],
                     # Not Implemented
-                    # 'ITC': (16, 23),
-                    'FS2': (15, 15),      # Write-access not implemented
-                    'ATDTW': (14, 14),    # Write-access not implemented
-                    'SUTW': (13, 13),     # Write-access not implemented
-                    'Reserved1': (12, 12),
+                    # ['ITC', [16, 23]],
+                    ['FS2', [15, 15]],      # Write-access not implemented
+                    ['ATDTW', [14, 14]],    # Write-access not implemented
+                    ['SUTW', [13, 13]],     # Write-access not implemented
+                    ['Reserved', [12, 12]],
                     # Not Implemented
-                    # 'ASPE': (11, 11),
-                    'Reserved0': (10, 10),
+                    # ['ASPE', [11, 11]],
+                    ['Reserved', [10, 10]],
                     # Not Implemented
-                    # 'ASP': (8, 9),
-                    'LR': (7, 7),         # Write-access not implemented
-                    'IAA': (6, 6),
-                    'ASE': (5, 5),
-                    'PSE': (4, 4),
-                    'FS': (2, 3),
-                    'RST': (1, 1),
-                    'RS': (0, 0)
-                }
+                    # ['ASP', [8, 9]],
+                    ['LR', [7, 7]],         # Write-access not implemented
+                    ['IAA', [6, 6]],
+                    ['ASE', [5, 5]],
+                    ['PSE', [4, 4]],
+                    ['FS', [2, 3]],
+                    ['RST', [1, 1]],
+                    ['RS', [0, 0]]
+                ]
             },
             'usb_regs_usbintr': {
-                'fields': {
-                    'Reserved1': (11, 31),
-                    'ULPIE': (10, 10),    # Write-access not implemented
-                    'Reserved0': (9, 9),
-                    'SLE': (8, 8),        # Write-access not implemented
-                    'SRE': (7, 7),        # Write-access not implemented
-                    'URE': (6, 6),        # Write-access not implemented
-                    'AAE': (5, 5),
-                    'SEE': (4, 4),
-                    'FRE': (3, 3),
-                    'PCE': (2, 2),
-                    'UEE': (1, 1),
-                    'UE': (0, 0)
-                }
+                'fields': [
+                    ['Reserved', [11, 31]],
+                    ['ULPIE', [10, 10]],    # Write-access not implemented
+                    ['Reserved', [9, 9]],
+                    ['SLE', [8, 8]],        # Write-access not implemented
+                    ['SRE', [7, 7]],        # Write-access not implemented
+                    ['URE', [6, 6]],        # Write-access not implemented
+                    ['AAE', [5, 5]],
+                    ['SEE', [4, 4]],
+                    ['FRE', [3, 3]],
+                    ['PCE', [2, 2]],
+                    ['UEE', [1, 1]],
+                    ['UE', [0, 0]]
+                ]
             },
             'usb_regs_usbsts': {
-                'fields': {
-                    'Reserved2': (16, 31),
-                    'AS': (15, 15),        # Read-access not implemented
-                    'PS': (14, 14),
-                    'RCL': (13, 13),       # Read-access not implemented
-                    'HCH': (12, 12),
-                    'Reserved1': (11, 11),
-                    'ULPII': (10, 10),     # Write-access not implemented
-                    'Resevrved0': (9, 9),
-                    'SLI': (8, 8),         # Write-access not implemented
-                    'SRI': (7, 7),         # Write-access not implemented
-                    'URI': (6, 6),         # Write-access not implemented
-                    'AAI': (5, 5),
-                    'SEI': (4, 4),
-                    'FRI': (3, 3),
-                    'PCI': (2, 2),
-                    'UEI': (1, 1),
-                    'UI': (0, 0)
-                }
+                'fields': [
+                    ['Reserved', [16, 31]],
+                    ['AS', [15, 15]],        # Read-access not implemented
+                    ['PS', [14, 14]],
+                    ['RCL', [13, 13]],       # Read-access not implemented
+                    ['HCH', [12, 12]],
+                    ['Reserved', [11, 11]],
+                    ['ULPII', [10, 10]],     # Write-access not implemented
+                    ['Reserved', [9, 9]],
+                    ['SLI', [8, 8]],         # Write-access not implemented
+                    ['SRI', [7, 7]],         # Write-access not implemented
+                    ['URI', [6, 6]],         # Write-access not implemented
+                    ['AAI', [5, 5]],
+                    ['SEI', [4, 4]],
+                    ['FRI', [3, 3]],
+                    ['PCI', [2, 2]],
+                    ['UEI', [1, 1]],
+                    ['UI', [0, 0]]
+                ]
             }
             # Not Implemented
             # 'regs_AGE_CNT_THRESH': {},
@@ -2098,7 +2098,7 @@ targets = {
             # 'regs_ENDPOINTPRIME': {},
             # 'regs_ENDPTCOMPLETE': {},
             # 'regs_ENDPTCTRL': {
-            #     'count': (3, )
+            #     'count': [3]
             # },
             # 'regs_ENDPTFLUSH': {},
             # 'regs_ENDPTSETUPSTAT': {},
@@ -2106,7 +2106,7 @@ targets = {
             # 'regs_PRI_CTRL': {},
             # 'regs_SI_CTRL': {},
             # 'regs_SNOOP': {
-            #     'count': (2, )
+            #     'count': [2]
             # },
             # 'regs_TXFILLTUNING': {},
             # 'regs_ULPI_VIEWPORT': {}

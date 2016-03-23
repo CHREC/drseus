@@ -24,13 +24,13 @@ targets = {
             #     'CRm': 0,
             #     'Op2': 0,
             #     'access': 'r',
-            #     'fields': {
-            #         'Implementer': (24, 31),
-            #         'Variant': (20, 23),
-            #         'Architecture': (16, 19),
-            #         'Primary part number': (4, 15),
-            #         'Revision': (0, 3)
-            #     }
+            #     'fields': [
+            #         ['Implementer', [24, 31]],
+            #         ['Variant', [20, 23]],
+            #         ['Architecture', [16, 19]],
+            #         ['Primary part number', [4, 15]],
+            #         ['Revision', [0, 3]]
+            #     ]
             # },
             # 'CTR': {
             #     'CP': 15,
@@ -55,14 +55,14 @@ targets = {
             #     'CRm': 0,
             #     'Op2': 3,
             #     'access': 'r',
-            #     'fields': {
-            #         'SBZ': (24, 31),
-            #         'ILsize': (16, 23),
-            #         'DLsize': (8, 15),
-            #         'SBZ/UNP': (3, 7),
-            #         'TLB_size': (1, 2),
-            #         'nU': (0, 0)
-            #     }
+            #     'fields': [
+            #         ['SBZ', [24, 31]],
+            #         ['ILsize', [16, 23]],
+            #         ['DLsize', [8, 15]],
+            #         ['SBZ/UNP', [3, 7]],
+            #         ['TLB_size', [1, 2]],
+            #         ['nU', [0, 0]]
+            #     ]
             # },
             # 'MPIDR': {
             #     'CP': 15,
@@ -71,14 +71,14 @@ targets = {
             #     'CRm': 0,
             #     'Op2': 5,
             #     'access': 'r',
-            #     'fields': {
-            #         'FMT': (31, 31),
-            #         'U': (30, 30),
-            #         'SBZ1': (12, 29),
-            #         'Cluster ID': (8, 11),
-            #         'SBZ0': (2, 7),
-            #         'CPU ID': (0, 1)
-            #     }
+            #     'fields': [
+            #         ['FMT', [31, 31]],
+            #         ['U', [30, 30]],
+            #         ['SBZ', [12, 29]],
+            #         ['Cluster ID', [8, 11]],
+            #         ['SBZ', [2, 7]],
+            #         ['CPU ID', [0, 1]]
+            #     ]
             # },
             # 'REVIDR': {
             #     'CP': 15,
@@ -199,15 +199,15 @@ targets = {
             #     'CRm': 0,
             #     'Op2': 0,
             #     'access': 'r',
-            #     'fields': {
-            #         'WT': (31, 31),
-            #         'WB': (30, 30),
-            #         'RA': (29, 29),
-            #         'WA': (28, 28),
-            #         'NumSets': (13, 27),
-            #         'Associativity': (3, 12),
-            #         'LineSize': (0, 2)
-            #     }
+            #     'fields': [
+            #         ['WT', [31, 31]],
+            #         ['WB', [30, 30]],
+            #         ['RA', [29, 29]],
+            #         ['WA', [28, 28]],
+            #         ['NumSets', [13, 27]],
+            #         ['Associativity', [3, 12]],
+            #         ['LineSize', [0, 2]]
+            #     ]
             # },
             # 'CLIDR': {
             #     'CP': 15,
@@ -232,11 +232,11 @@ targets = {
                 'CRm': 0,
                 'Op2': 0,
                 'access': 'rw',
-                'fields': {
-                    'UNP/SBZ': (4, 31),
-                    'Level': (1, 3),
-                    'InD': (0, 0)
-                }
+                'fields': [
+                    ['UNP/SBZ', [4, 31]],
+                    ['Level', [1, 3]],
+                    ['InD', [0, 0]]
+                ]
             }
         }
     },
@@ -251,33 +251,33 @@ targets = {
                 'CRm': 0,
                 'Op2': 0,
                 'access': 'rw',
-                'fields': {
-                    'SBZ': (31, 31),
-                    'TE': (30, 30),
-                    'AFE': (29, 29),
-                    'TRE': (28, 28),
-                    'NMFI': (27, 27),
-                    'RAZ/SBZP3': (26, 26),
-                    'EE': (25, 25),
-                    'RAZ/WI2': (24, 24),
-                    'RAO/SBOP3': (22, 23),
-                    'RAZ/WI1': (21, 21),
-                    'RAZ/SBZP2': (19, 20),
-                    'RAO/SBOP2': (18, 18),
-                    'RAZ/WI0': (17, 17),
-                    'RAO/SBOP1': (16, 16),
-                    'RAZ/SBZP1': (15, 15),
-                    'RR': (14, 14),
-                    'V': (13, 13),
-                    'I': (12, 12),
-                    'Z': (11, 11),
-                    'SW': (10, 10),
-                    'RAZ/SBZP0': (7, 9),
-                    'RAO/SBOP0': (3, 6),
-                    'C': (2, 2),
-                    'A': (1, 1),
-                    'M': (0, 0)
-                }
+                'fields': [
+                    ['SBZ', [31, 31]],
+                    ['TE', [30, 30]],
+                    ['AFE', [29, 29]],
+                    ['TRE', [28, 28]],
+                    ['NMFI', [27, 27]],
+                    ['RAZ/SBZP', [26, 26]],
+                    ['EE', [25, 25]],
+                    ['RAZ/WI', [24, 24]],
+                    ['RAO/SBOP', [22, 23]],
+                    ['RAZ/WI', [21, 21]],
+                    ['RAZ/SBZP', [19, 20]],
+                    ['RAO/SBOP', [18, 18]],
+                    ['RAZ/WI', [17, 17]],
+                    ['RAO/SBOP', [16, 16]],
+                    ['RAZ/SBZP', [15, 15]],
+                    ['RR', [14, 14]],
+                    ['V', [13, 13]],
+                    ['I', [12, 12]],
+                    ['Z', [11, 11]],
+                    ['SW', [10, 10]],
+                    ['RAZ/SBZP', [7, 9]],
+                    ['RAO/SBOP', [3, 6]],
+                    ['C', [2, 2]],
+                    ['A', [1, 1]],
+                    ['M', [0, 0]]
+                ]
             },
             'TTBR0': {
                 'CP': 15,
@@ -402,14 +402,14 @@ targets = {
                 'CRm': 0,
                 'Op2': 2,
                 'access': 'rw',
-                'fields': {
-                    'ASEDIS': (31, 31),
-                    'D32DIS': (30, 30),
-                    'RAZ/WI1': (24, 29),
-                    'cp11': (22, 23),
-                    'cp10': (20, 21),
-                    'RAZ/WI0': (0, 19)
-                }
+                'fields': [
+                    ['ASEDIS', [31, 31]],
+                    ['D32DIS', [30, 30]],
+                    ['RAZ/WI', [24, 29]],
+                    ['cp11', [22, 23]],
+                    ['cp10', [20, 21]],
+                    ['RAZ/WI', [0, 19]]
+                ]
             },
             'DMB': {
                 'CP': 15,
@@ -426,13 +426,13 @@ targets = {
                 'CRm': 1,
                 'Op2': 1,
                 'access': 'rw',
-                'fields': {
-                    'UNK/SBZP1': (9, 31),
-                    'VA': (8, 8),
-                    'VI': (7, 7),
-                    'VF': (6, 6),
-                    'UNK/SBZP0': (0, 5)
-                }
+                'fields': [
+                    ['UNK/SBZP', [9, 31]],
+                    ['VA', [8, 8]],
+                    ['VI', [7, 7]],
+                    ['VF', [6, 6]],
+                    ['UNK/SBZP', [0, 5]]
+                ]
             },
             'Power Control Register': {
                 'CP': 15,
@@ -441,12 +441,12 @@ targets = {
                 'CRm': 0,
                 'Op2': 0,
                 'access': 'rw',
-                'fields': {
-                    'Reserved1': (11, 31),
-                    'max_clk_latency': (8, 10),
-                    'Reserved0': (1, 7),
-                    'Enable dynamic clock gating': (0, 0)
-                }
+                'fields': [
+                    ['Reserved', [11, 31]],
+                    ['max_clk_latency', [8, 10]],
+                    ['Reserved', [1, 7]],
+                    ['Enable dynamic clock gating', [0, 0]]
+                ]
             },
             'NEON Busy Register': {
                 'CP': 15,
@@ -455,10 +455,10 @@ targets = {
                 'CRm': 1,
                 'Op2': 0,
                 'access': 'r',
-                'fields': {
-                    'Reserved': (1, 31),
-                    'NEON busy': (0, 0)
-                }
+                'fields': [
+                    ['Reserved', [1, 31]],
+                    ['NEON busy', [0, 0]]
+                ]
             }
         }
     },
@@ -653,13 +653,13 @@ targets = {
                 'CRm': 1,
                 'Op2': 3,
                 'access': 'rw',
-                'fields': {
-                    'UNK/SBZP1': (9, 31),
-                    'AMO': (8, 8),
-                    'IMO': (7, 7),
-                    'IFO': (6, 6),
-                    'UNK/SBZP0': (0, 5)
-                }
+                'fields': [
+                    ['UNK/SBZP', [9, 31]],
+                    ['AMO', [8, 8]],
+                    ['IMO', [7, 7]],
+                    ['IFO', [6, 6]],
+                    ['UNK/SBZP', [0, 5]]
+                ]
             },
             'NOP': {
                 'CP': 15,
@@ -816,11 +816,11 @@ targets = {
                 'CRm': 1,
                 'Op2': 1,
                 'access': 'rw',
-                'fields': {
-                    'Reserved': (2, 31),
-                    'Secure User Non-invasive Debug Enable': (1, 1),
-                    'Secure User Invasive Debug Enable': (0, 0)
-                }
+                'fields': [
+                    ['Reserved', [2, 31]],
+                    ['Secure User Non-invasive Debug Enable', [1, 1]],
+                    ['Secure User Invasive Debug Enable', [0, 0]]
+                ]
             },
             'NSACR': {
                 'CP': 15,
@@ -829,18 +829,18 @@ targets = {
                 'CRm': 1,
                 'Op2': 2,
                 'access': 'rw',
-                'fields': {
-                    'UNK/SBZP2': (19, 31),
-                    'NS_SMP': (18, 18),
-                    'TL': (17, 17),
-                    'PLE': (16, 16),
-                    'NSASEDIS': (15, 15),
-                    'NSD32DIS': (14, 14),
-                    'UNK/SBZP1': (12, 13),
-                    'CP11': (11, 11),
-                    'CP10': (10, 10),
-                    'UNK/SBZP0': (0, 9)
-                }
+                'fields': [
+                    ['UNK/SBZP', [19, 31]],
+                    ['NS_SMP', [18, 18]],
+                    ['TL', [17, 17]],
+                    ['PLE', [16, 16]],
+                    ['NSASEDIS', [15, 15]],
+                    ['NSD32DIS', [14, 14]],
+                    ['UNK/SBZP', [12, 13]],
+                    ['CP11', [11, 11]],
+                    ['CP10', [10, 10]],
+                    ['UNK/SBZP', [0, 9]]
+                ]
             },
             'VBAR': {
                 'CP': 15,
@@ -879,12 +879,12 @@ targets = {
             #     'CRm': 0,
             #     'Op2': 0,
             #     'access': 'r',
-            #     'fields': {
-            #         'RAZ1': (21, 31),
-            #         'PLE FIFO size': (16, 20),
-            #         'RAZ0': (1, 15),
-            #         'Present': (0, 0)
-            #     }
+            #     'fields': [
+            #         ['RAZ', [21, 31]],
+            #         ['PLE FIFO size', [16, 20]],
+            #         ['RAZ', [1, 15]],
+            #         ['Present', [0, 0]]
+            #     ]
             # },
             # 'PLEASR': {
             #     'CP': 15,
@@ -893,10 +893,10 @@ targets = {
             #     'CRm': 0,
             #     'Op2': 2,
             #     'access': 'r',
-            #     'fields': {
-            #         'Reserved/RAZ': (1, 31),
-            #         'R': (0, 0)
-            #     }
+            #     'fields': [
+            #         ['Reserved/RAZ', [1, 31]],
+            #         ['R', [0, 0]]
+            #     ]
             # },
             # 'PLEFSR': {
             #     'CP': 15,
@@ -905,10 +905,10 @@ targets = {
             #     'CRm': 0,
             #     'Op2': 4,
             #     'access': 'r',
-            #     'fields': {
-            #         'Reserved/RAZ/WI': (5, 31),
-            #         'Available entries': (0, 4)
-            #     }
+            #     'fields': [
+            #         ['Reserved/RAZ/WI', [5, 31]],
+            #         ['Available entries', [0, 4]]
+            #     ]
             # },
             'PLEUAR': {
                 'CP': 15,
@@ -917,10 +917,10 @@ targets = {
                 'CRm': 1,
                 'Op2': 0,
                 'access': 'rw',
-                'fields': {
-                    'RAZ': (1, 31),
-                    'U': (0, 0)
-                }
+                'fields': [
+                    ['RAZ', [1, 31]],
+                    ['U', [0, 0]]
+                ]
             },
             'PLEPCR': {
                 'CP': 15,
@@ -929,12 +929,12 @@ targets = {
                 'CRm': 1,
                 'Op2': 1,
                 'access': 'rw',
-                'fields': {
-                    'RAZ': (30, 31),
-                    'Block size mask': (16, 29),
-                    'Block number mask': (8, 15),
-                    'PLE wait states': (0, 7)
-                }
+                'fields': [
+                    ['RAZ', [30, 31]],
+                    ['Block size mask', [16, 29]],
+                    ['Block number mask', [8, 15]],
+                    ['PLE wait states', [0, 7]]
+                ]
             }
         }
     },
@@ -1077,12 +1077,12 @@ targets = {
                 'CRm': 0,
                 'Op2': 0,
                 'access': 'rw',
-                'fields': {
-                    'UNK/SBZP1': (30, 31),
-                    'Victim': (28, 29),
-                    'UNK/SBZP0': (1, 27),
-                    'P': (0, 0)
-                }
+                'fields': [
+                    ['UNK/SBZP', [30, 31]],
+                    ['Victim', [28, 29]],
+                    ['UNK/SBZP', [1, 27]],
+                    ['P', [0, 0]]
+                ]
             },
             'Select Lockdown TLB Entry for read': {
                 'CP': 15,
@@ -1091,10 +1091,10 @@ targets = {
                 'CRm': 4,
                 'Op2': 2,
                 'access': 'w',
-                'fields': {
-                    'UNK/SBZP': (2, 31),
-                    'Index': (0, 1)
-                }
+                'fields': [
+                    ['UNK/SBZP', [2, 31]],
+                    ['Index', [0, 1]]
+                ]
             },
             'Select Lockdown TLB Entry for write': {
                 'CP': 15,
@@ -1103,10 +1103,10 @@ targets = {
                 'CRm': 4,
                 'Op2': 4,
                 'access': 'w',
-                'fields': {
-                    'UNK/SBZP': (2, 31),
-                    'Index': (0, 1)
-                }
+                'fields': [
+                    ['UNK/SBZP', [2, 31]],
+                    ['Index', [0, 1]]
+                ]
             },
             'Main TLB VA register': {
                 'CP': 15,
@@ -1115,12 +1115,12 @@ targets = {
                 'CRm': 5,
                 'Op2': 2,
                 'access': 'rw',
-                'fields': {
-                    'VPN': (12, 31),
-                    'UNK/SBZP': (11, 11),
-                    'NS': (10, 10),
-                    'Process': (0, 9)
-                }
+                'fields': [
+                    ['VPN', [12, 31]],
+                    ['UNK/SBZP', [11, 11]],
+                    ['NS', [10, 10]],
+                    ['Process', [0, 9]]
+                ]
             },
             'Main TLB PA register': {
                 'CP': 15,
@@ -1129,14 +1129,14 @@ targets = {
                 'CRm': 6,
                 'Op2': 2,
                 'access': 'rw',
-                'fields': {
-                    'PPN': (12, 31),
-                    'UNK/SBZP1': (8, 11),
-                    'SZ': (6, 7),
-                    'UNK/SBZP0': (4, 5),
-                    'AP': (1, 3),
-                    'V': (0, 0)
-                }
+                'fields': [
+                    ['PPN', [12, 31]],
+                    ['UNK/SBZP', [8, 11]],
+                    ['SZ', [6, 7]],
+                    ['UNK/SBZP', [4, 5]],
+                    ['AP', [1, 3]],
+                    ['V', [0, 0]]
+                ]
             },
             'Main TLB Attribute register': {
                 'CP': 15,
@@ -1145,15 +1145,15 @@ targets = {
                 'CRm': 7,
                 'Op2': 2,
                 'access': 'rw',
-                'fields': {
-                    'UNK/SBZP': (12, 31),
-                    'NS': (11, 11),
-                    'Domain': (7, 10),
-                    'XN': (6, 6),
-                    'TEX': (3, 5),
-                    'CB': (1, 2),
-                    'S': (0, 0)
-                }
+                'fields': [
+                    ['UNK/SBZP', [12, 31]],
+                    ['NS', [11, 11]],
+                    ['Domain', [7, 10]],
+                    ['XN', [6, 6]],
+                    ['TEX', [3, 5]],
+                    ['CB', [1, 2]],
+                    ['S', [0, 0]]
+                ]
             }
         }
     },
@@ -1168,18 +1168,18 @@ targets = {
                 'CRm': 0,
                 'Op2': 1,
                 'access': 'rw',
-                'fields': {
-                    'UNP/SBZP': (10, 31),
-                    'Parity on': (9, 9),
-                    'Alloc in one way': (8, 8),
-                    'EXCL': (7, 7),
-                    'SMP': (6, 6),
-                    'RAZ/WI': (4, 5),
-                    'Write full line of zeros mode': (3, 3),
-                    'L1 prefetch enable': (2, 2),
-                    'L2 prefetch enable': (1, 1),
-                    'FW': (0, 0)
-                }
+                'fields': [
+                    ['UNP/SBZP', [10, 31]],
+                    ['Parity on', [9, 9]],
+                    ['Alloc in one way', [8, 8]],
+                    ['EXCL', [7, 7]],
+                    ['SMP', [6, 6]],
+                    ['RAZ/WI', [4, 5]],
+                    ['Write full line of zeros mode', [3, 3]],
+                    ['L1 prefetch enable', [2, 2]],
+                    ['L2 prefetch enable', [1, 1]],
+                    ['FW', [0, 0]]
+                ]
             },
             'Configuration Base Address': {
                 'CP': 15,
@@ -1202,15 +1202,15 @@ targets = {
             #     'CRm': 0,
             #     'Op2': 0,
             #     'access': 'rw',
-            #     'fields': {
-            #         'Arch': (28, 31),
-            #         'Design': (20, 27),
-            #         'SArchMajor': (12, 19),
-            #         'SArchMinor': (8, 11),
-            #         'RAZ': (7, 7),
-            #         'TrTbleFrm': (6, 6),
-            #         'TrTbleSz': (0, 5)
-            #     }
+            #     'fields': [
+            #         ['Arch', [28, 31]],
+            #         ['Design', [20, 27]],
+            #         ['SArchMajor', [12, 19]],
+            #         ['SArchMinor', [8, 11]],
+            #         ['RAZ', [7, 7]],
+            #         ['TrTbleFrm', [6, 6]],
+            #         ['TrTbleSz', [0, 5]]
+            #     ]
             # },
             'JOSCR': {
                 'CP': 14,
@@ -1219,11 +1219,11 @@ targets = {
                 'CRm': 0,
                 'Op2': 0,
                 'access': 'rw',
-                'fields': {
-                    'Reserved/RAZ': (2, 31),
-                    'CV': (1, 1),
-                    'CD': (0, 0)
-                }
+                'fields': [
+                    ['Reserved/RAZ', [2, 31]],
+                    ['CV', [1, 1]],
+                    ['CD', [0, 0]]
+                ]
             },
             'JMCR': {
                 'CP': 14,
@@ -1232,16 +1232,16 @@ targets = {
                 'CRm': 0,
                 'Op2': 0,
                 'access': 'rw',
-                'fields': {
-                    'nAR': (31, 31),
-                    'FP': (30, 30),
-                    'AP': (29, 29),
-                    'OP': (28, 28),
-                    'IS': (27, 27),
-                    'SP': (26, 26),
-                    'UNK/SBZP': (1, 25),
-                    'JE': (0, 0)
-                }
+                'fields': [
+                    ['nAR', [31, 31]],
+                    ['FP', [30, 30]],
+                    ['AP', [29, 29]],
+                    ['OP', [28, 28]],
+                    ['IS', [27, 27]],
+                    ['SP', [26, 26]],
+                    ['UNK/SBZP', [1, 25]],
+                    ['JE', [0, 0]]
+                ]
             },
             'Jazelle Parameters Register': {
                 'CP': 14,
@@ -1250,14 +1250,14 @@ targets = {
                 'CRm': 0,
                 'Op2': 0,
                 'access': 'rw',
-                'fields': {
-                    'UNK/SBZP': (22, 31),
-                    'BSH': (17, 21),
-                    'sADO': (12, 16),
-                    'ARO': (8, 11),
-                    'STO': (4, 7),
-                    'ODO': (0, 3)
-                }
+                'fields': [
+                    ['UNK/SBZP', [22, 31]],
+                    ['BSH', [17, 21]],
+                    ['sADO', [12, 16]],
+                    ['ARO', [8, 11]],
+                    ['STO', [4, 7]],
+                    ['ODO', [0, 3]]
+                ]
             },
             'Jazelle Configurable Opcode Translation Table Register': {
                 'CP': 14,
@@ -1266,12 +1266,12 @@ targets = {
                 'CRm': 0,
                 'Op2': 0,
                 'access': 'w',
-                'fields': {
-                    'UNK/SBZP1': (16, 31),
-                    'Opcode': (10, 15),
-                    'UNK/SBZP0': (4, 9),
-                    'Operation': (0, 3)
-                }
+                'fields': [
+                    ['UNK/SBZP', [16, 31]],
+                    ['Opcode', [10, 15]],
+                    ['UNK/SBZP', [4, 9]],
+                    ['Operation', [0, 3]]
+                ]
             }
         }
     },
