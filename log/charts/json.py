@@ -86,16 +86,16 @@ def campaigns_chart(queryset):
 def target_bits_chart(campaign):
     if campaign.simics:
         if campaign.architecture == 'p2020':
-            injection_targets = devices.p2020.simics.targets
+            injection_targets = devices.p2020.simics_targets
         elif campaign.architecture == 'a9':
-            injection_targets = devices.a9.simics.targets
+            injection_targets = devices.a9.simics_targets
         else:
             return '[]'
     else:
         if campaign.architecture == 'p2020':
-            injection_targets = devices.p2020.jtag.targets
+            injection_targets = devices.p2020.jtag_targets
         elif campaign.architecture == 'a9':
-            injection_targets = devices.a9.jtag.targets
+            injection_targets = devices.a9.jtag_targets
         else:
             return '[]'
     target_list = sorted(injection_targets.keys())

@@ -1,5 +1,3 @@
-from targets import calculate_target_bits
-
 # bits are listed as MSB:0 LSB:31 hence 31-i in bit ranges
 # 32-bit CPU register bits are listed as MSB:32 LSB:63 hence 63-i in bit ranges
 
@@ -2113,5 +2111,3 @@ targets = {
         }
     }
 }
-
-calculate_target_bits(targets)

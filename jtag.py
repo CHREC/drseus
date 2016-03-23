@@ -11,8 +11,8 @@ from time import sleep
 
 from dut import dut
 from error import DrSEUsError
-from targets.a9.jtag import targets as a9_targets
-from targets.p2020.jtag import targets as p2020_targets
+from targets.a9 import jtag_targets as a9_targets
+from targets.p2020 import jtag_targets as p2020_targets
 from targets import choose_bit, choose_register, choose_target
 
 

@@ -13,8 +13,8 @@ from time import sleep
 from dut import dut
 from error import DrSEUsError
 from simics_config import simics_config
-from targets.a9.simics import targets as a9_targets
-from targets.p2020.simics import targets as p2020_targets
+from targets.a9 import simics_targets as a9_targets
+from targets.p2020 import simics_targets as p2020_targets
 from targets import choose_bit, choose_register, choose_target, get_num_bits
 from timeout import timeout, TimeoutException
 

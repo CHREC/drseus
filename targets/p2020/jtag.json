@@ -1,0 +1,5490 @@
+{
+    "CCSR": {
+        "base": [
+            4292870144
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "ALTCAR": {
+                "access": "rw",
+                "offset": 16
+            },
+            "ALTCBAR": {
+                "access": "rw",
+                "offset": 8
+            },
+            "BPTR": {
+                "access": "rw",
+                "offset": 32
+            },
+            "CCSRBAR": {
+                "access": "rw",
+                "offset": 0
+            }
+        }
+    },
+    "CPU": {
+        "count": 2,
+        "registers": {
+            "bbear": {},
+            "bbtar": {},
+            "bucsr": {},
+            "csrr0": {},
+            "csrr1": {},
+            "ctr": {},
+            "dac1": {},
+            "dac2": {},
+            "dbcr0": {},
+            "dbcr1": {},
+            "dbcr2": {},
+            "dbsr": {},
+            "dear": {},
+            "dec": {},
+            "decar": {},
+            "esr": {},
+            "hid0": {},
+            "hid1": {},
+            "iac1": {},
+            "iac2": {},
+            "ivor0": {},
+            "ivor1": {},
+            "ivor10": {},
+            "ivor11": {},
+            "ivor12": {},
+            "ivor13": {},
+            "ivor14": {},
+            "ivor15": {},
+            "ivor2": {},
+            "ivor3": {},
+            "ivor32": {},
+            "ivor33": {},
+            "ivor34": {},
+            "ivor35": {},
+            "ivor4": {},
+            "ivor5": {},
+            "ivor6": {},
+            "ivor7": {},
+            "ivor8": {},
+            "ivor9": {},
+            "ivpr": {},
+            "l1cfg0": {},
+            "l1cfg1": {},
+            "l1csr0": {},
+            "l1csr1": {},
+            "lr": {},
+            "mas0": {},
+            "mas1": {},
+            "mas2": {},
+            "mas3": {},
+            "mas4": {},
+            "mas6": {},
+            "mas7": {},
+            "mcsr": {},
+            "mcsrr0": {},
+            "mcsrr1": {},
+            "mmucfg": {},
+            "mmucsr0": {},
+            "pid": {},
+            "pid0": {},
+            "pid1": {},
+            "pid2": {},
+            "pir": {},
+            "pvr": {},
+            "spefscr": {},
+            "sprg0": {},
+            "sprg1": {},
+            "sprg2": {},
+            "sprg3": {},
+            "sprg3_ro": {},
+            "sprg4": {},
+            "sprg4_ro": {},
+            "sprg5": {},
+            "sprg5_ro": {},
+            "sprg6": {},
+            "sprg6_ro": {},
+            "sprg7": {},
+            "sprg7_ro": {},
+            "srr0": {},
+            "srr1": {},
+            "svr": {},
+            "tbl": {},
+            "tbl_ro": {},
+            "tbu": {},
+            "tbu_ro": {},
+            "tcr": {},
+            "tlb0cfg": {},
+            "tlb1cfg": {},
+            "tsr": {},
+            "usprg0": {},
+            "xer": {}
+        }
+    },
+    "DEBUG": {
+        "base": [
+            4293795840
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "CCIDR": {
+                "access": "rw",
+                "offset": 164
+            },
+            "PCIDR": {
+                "access": "rw",
+                "offset": 160
+            },
+            "TBACR": {
+                "access": "rw",
+                "offset": 96
+            },
+            "TBADHR": {
+                "access": "rw",
+                "offset": 100
+            },
+            "TBADR": {
+                "access": "rw",
+                "offset": 104
+            },
+            "TBAMR": {
+                "access": "rw",
+                "offset": 84
+            },
+            "TBAR": {
+                "access": "rw",
+                "offset": 76
+            },
+            "TBCR0": {
+                "access": "rw",
+                "offset": 64
+            },
+            "TBCR1": {
+                "access": "rw",
+                "offset": 68
+            },
+            "TBSR": {
+                "access": "rw",
+                "offset": 92
+            },
+            "TBTMR": {
+                "access": "rw",
+                "offset": 88
+            },
+            "TOSR": {
+                "access": "rw",
+                "offset": 176
+            },
+            "WMAMR": {
+                "access": "rw",
+                "offset": 20
+            },
+            "WMAR": {
+                "access": "rw",
+                "offset": 12
+            },
+            "WMCR0": {
+                "access": "rw",
+                "offset": 0
+            },
+            "WMCR1": {
+                "access": "rw",
+                "offset": 4
+            },
+            "WMSR": {
+                "access": "rw",
+                "offset": 28
+            },
+            "WMTMR": {
+                "access": "rw",
+                "offset": 24
+            }
+        }
+    },
+    "DMA": {
+        "base": [
+            4293005312,
+            4292919296
+        ],
+        "count": 2,
+        "memory_mapped": true,
+        "registers": {
+            "BCR0": {
+                "access": "rw",
+                "offset": 288
+            },
+            "BCR1": {
+                "access": "rw",
+                "offset": 416
+            },
+            "BCR2": {
+                "access": "rw",
+                "offset": 544
+            },
+            "BCR3": {
+                "access": "rw",
+                "offset": 672
+            },
+            "CLNDAR0": {
+                "access": "rw",
+                "offset": 268
+            },
+            "CLNDAR1": {
+                "access": "rw",
+                "offset": 396
+            },
+            "CLNDAR2": {
+                "access": "rw",
+                "offset": 524
+            },
+            "CLNDAR3": {
+                "access": "rw",
+                "offset": 652
+            },
+            "CLSDAR0": {
+                "access": "rw",
+                "offset": 308
+            },
+            "CLSDAR1": {
+                "access": "rw",
+                "offset": 436
+            },
+            "CLSDAR2": {
+                "access": "rw",
+                "offset": 564
+            },
+            "CLSDAR3": {
+                "access": "rw",
+                "offset": 692
+            },
+            "DAR0": {
+                "access": "rw",
+                "offset": 284
+            },
+            "DAR1": {
+                "access": "rw",
+                "offset": 412
+            },
+            "DAR2": {
+                "access": "rw",
+                "offset": 540
+            },
+            "DAR3": {
+                "access": "rw",
+                "offset": 668
+            },
+            "DATR0": {
+                "access": "rw",
+                "offset": 280
+            },
+            "DATR1": {
+                "access": "rw",
+                "offset": 408
+            },
+            "DATR2": {
+                "access": "rw",
+                "offset": 536
+            },
+            "DATR3": {
+                "access": "rw",
+                "offset": 664
+            },
+            "DGSR": {
+                "access": "r",
+                "offset": 768
+            },
+            "DSR0": {
+                "access": "rw",
+                "offset": 324
+            },
+            "DSR1": {
+                "access": "rw",
+                "offset": 452
+            },
+            "DSR2": {
+                "access": "rw",
+                "offset": 580
+            },
+            "DSR3": {
+                "access": "rw",
+                "offset": 708
+            },
+            "ECLNDAR0": {
+                "access": "rw",
+                "offset": 264
+            },
+            "ECLNDAR1": {
+                "access": "rw",
+                "offset": 392
+            },
+            "ECLNDAR2": {
+                "access": "rw",
+                "offset": 520
+            },
+            "ECLNDAR3": {
+                "access": "rw",
+                "offset": 648
+            },
+            "ECLSDAR0": {
+                "access": "rw",
+                "offset": 304
+            },
+            "ECLSDAR1": {
+                "access": "rw",
+                "offset": 432
+            },
+            "ECLSDAR2": {
+                "access": "rw",
+                "offset": 560
+            },
+            "ECLSDAR3": {
+                "access": "rw",
+                "offset": 688
+            },
+            "ENLNDAR0": {
+                "access": "rw",
+                "offset": 292
+            },
+            "ENLNDAR1": {
+                "access": "rw",
+                "offset": 420
+            },
+            "ENLNDAR2": {
+                "access": "rw",
+                "offset": 548
+            },
+            "ENLNDAR3": {
+                "access": "rw",
+                "offset": 676
+            },
+            "ENLSDAR0": {
+                "access": "rw",
+                "offset": 312
+            },
+            "ENLSDAR1": {
+                "access": "rw",
+                "offset": 440
+            },
+            "ENLSDAR2": {
+                "access": "rw",
+                "offset": 568
+            },
+            "ENLSDAR3": {
+                "access": "rw",
+                "offset": 696
+            },
+            "MR0": {
+                "access": "rw",
+                "offset": 256
+            },
+            "MR1": {
+                "access": "rw",
+                "offset": 384
+            },
+            "MR2": {
+                "access": "rw",
+                "offset": 512
+            },
+            "MR3": {
+                "access": "rw",
+                "offset": 640
+            },
+            "NLNDAR0": {
+                "access": "rw",
+                "offset": 296
+            },
+            "NLNDAR1": {
+                "access": "rw",
+                "offset": 424
+            },
+            "NLNDAR2": {
+                "access": "rw",
+                "offset": 552
+            },
+            "NLNDAR3": {
+                "access": "rw",
+                "offset": 680
+            },
+            "NLSDAR0": {
+                "access": "rw",
+                "offset": 316
+            },
+            "NLSDAR1": {
+                "access": "rw",
+                "offset": 444
+            },
+            "NLSDAR2": {
+                "access": "rw",
+                "offset": 572
+            },
+            "NLSDAR3": {
+                "access": "rw",
+                "offset": 700
+            },
+            "SAR0": {
+                "access": "rw",
+                "offset": 276
+            },
+            "SAR1": {
+                "access": "rw",
+                "offset": 404
+            },
+            "SAR2": {
+                "access": "rw",
+                "offset": 532
+            },
+            "SAR3": {
+                "access": "rw",
+                "offset": 660
+            },
+            "SATR0": {
+                "access": "rw",
+                "offset": 272
+            },
+            "SATR1": {
+                "access": "rw",
+                "offset": 400
+            },
+            "SATR2": {
+                "access": "rw",
+                "offset": 528
+            },
+            "SATR3": {
+                "access": "rw",
+                "offset": 656
+            },
+            "SR0": {
+                "access": "rw",
+                "offset": 260
+            },
+            "SR1": {
+                "access": "rw",
+                "offset": 388
+            },
+            "SR2": {
+                "access": "rw",
+                "offset": 516
+            },
+            "SR3": {
+                "access": "rw",
+                "offset": 644
+            },
+            "SSR0": {
+                "access": "rw",
+                "offset": 320
+            },
+            "SSR1": {
+                "access": "rw",
+                "offset": 448
+            },
+            "SSR2": {
+                "access": "rw",
+                "offset": 576
+            },
+            "SSR3": {
+                "access": "rw",
+                "offset": 704
+            }
+        }
+    },
+    "DUART": {
+        "base": [
+            4292887808,
+            4292888064
+        ],
+        "count": 2,
+        "memory_mapped": true,
+        "registers": {
+            "UAFR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 2
+            },
+            "UDLB": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 0
+            },
+            "UDMB": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 1
+            },
+            "UDSR": {
+                "access": "r",
+                "bits": 8,
+                "offset": 16
+            },
+            "UFCR": {
+                "access": "w",
+                "bits": 8,
+                "offset": 2
+            },
+            "UIER": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 1
+            },
+            "UIIR": {
+                "access": "r",
+                "bits": 8,
+                "offset": 2
+            },
+            "ULCR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 3
+            },
+            "ULSR": {
+                "access": "r",
+                "bits": 8,
+                "offset": 5
+            },
+            "UMCR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 4
+            },
+            "UMSR": {
+                "access": "r",
+                "bits": 8,
+                "offset": 6
+            },
+            "URBR": {
+                "access": "r",
+                "bits": 8,
+                "offset": 0
+            },
+            "USCR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 7
+            },
+            "UTHR": {
+                "access": "w",
+                "bits": 8,
+                "offset": 0
+            }
+        }
+    },
+    "ECM": {
+        "base": [
+            4292874240
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "EEATR": {
+                "access": "r",
+                "offset": 3596
+            },
+            "EEBACR": {
+                "access": "rw",
+                "offset": 0
+            },
+            "EEBPCR": {
+                "access": "rw",
+                "offset": 16
+            },
+            "EEDR": {
+                "access": "w1c",
+                "offset": 3584
+            },
+            "EEER": {
+                "access": "rw",
+                "offset": 3592
+            },
+            "EEHADR": {
+                "access": "r",
+                "offset": 3604
+            },
+            "EELADR": {
+                "access": "r",
+                "offset": 3600
+            },
+            "EIPBRR1": {
+                "access": "r",
+                "offset": 3064
+            },
+            "EIPBRR2": {
+                "access": "r",
+                "offset": 3068
+            }
+        }
+    },
+    "ELBC": {
+        "base": [
+            4292890624
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "BR0": {
+                "access": "rw",
+                "offset": 0
+            },
+            "BR1": {
+                "access": "rw",
+                "offset": 8
+            },
+            "BR2": {
+                "access": "rw",
+                "offset": 16
+            },
+            "BR3": {
+                "access": "rw",
+                "offset": 24
+            },
+            "BR4": {
+                "access": "rw",
+                "offset": 32
+            },
+            "BR5": {
+                "access": "rw",
+                "offset": 40
+            },
+            "BR6": {
+                "access": "rw",
+                "offset": 48
+            },
+            "BR7": {
+                "access": "rw",
+                "offset": 56
+            },
+            "FBAR": {
+                "access": "rw",
+                "offset": 236
+            },
+            "FBCR": {
+                "access": "rw",
+                "offset": 244
+            },
+            "FCR": {
+                "access": "rw",
+                "offset": 232
+            },
+            "FECC0": {
+                "access": "r",
+                "offset": 256
+            },
+            "FECC1": {
+                "access": "r",
+                "offset": 260
+            },
+            "FECC2": {
+                "access": "r",
+                "offset": 264
+            },
+            "FECC3": {
+                "access": "r",
+                "offset": 268
+            },
+            "FIR": {
+                "access": "rw",
+                "offset": 228
+            },
+            "FMR": {
+                "access": "rw",
+                "offset": 224
+            },
+            "FPARl": {
+                "access": "rw",
+                "offset": 240
+            },
+            "FPARs": {
+                "access": "rw",
+                "offset": 240
+            },
+            "LBCR": {
+                "access": "rw",
+                "offset": 208
+            },
+            "LCRR": {
+                "access": "rw",
+                "offset": 212
+            },
+            "LSOR": {
+                "access": "rw",
+                "offset": 144
+            },
+            "LTEAR": {
+                "access": "rw",
+                "offset": 192
+            },
+            "LTEATR": {
+                "access": "rw",
+                "offset": 188
+            },
+            "LTECCR": {
+                "access": "w1c",
+                "offset": 196
+            },
+            "LTEDR": {
+                "access": "rw",
+                "offset": 180
+            },
+            "LTEIR": {
+                "access": "rw",
+                "offset": 184
+            },
+            "LTESR": {
+                "access": "w1c",
+                "offset": 176
+            },
+            "LURT": {
+                "access": "rw",
+                "offset": 160
+            },
+            "MAMR": {
+                "access": "rw",
+                "offset": 112
+            },
+            "MAR": {
+                "access": "rw",
+                "offset": 104
+            },
+            "MBMR": {
+                "access": "rw",
+                "offset": 116
+            },
+            "MCMR": {
+                "access": "rw",
+                "offset": 120
+            },
+            "MDRf": {
+                "access": "rw",
+                "offset": 136
+            },
+            "MDRu": {
+                "access": "rw",
+                "offset": 136
+            },
+            "MRTPR": {
+                "access": "rw",
+                "offset": 132
+            },
+            "ORf0": {
+                "access": "rw",
+                "offset": 4
+            },
+            "ORf1": {
+                "access": "rw",
+                "offset": 12
+            },
+            "ORf2": {
+                "access": "rw",
+                "offset": 20
+            },
+            "ORf3": {
+                "access": "rw",
+                "offset": 28
+            },
+            "ORf4": {
+                "access": "rw",
+                "offset": 36
+            },
+            "ORf5": {
+                "access": "rw",
+                "offset": 44
+            },
+            "ORf6": {
+                "access": "rw",
+                "offset": 52
+            },
+            "ORf7": {
+                "access": "rw",
+                "offset": 60
+            },
+            "ORg0": {
+                "access": "rw",
+                "offset": 4
+            },
+            "ORg1": {
+                "access": "rw",
+                "offset": 12
+            },
+            "ORg2": {
+                "access": "rw",
+                "offset": 20
+            },
+            "ORg3": {
+                "access": "rw",
+                "offset": 28
+            },
+            "ORg4": {
+                "access": "rw",
+                "offset": 36
+            },
+            "ORg5": {
+                "access": "rw",
+                "offset": 44
+            },
+            "ORg6": {
+                "access": "rw",
+                "offset": 52
+            },
+            "ORg7": {
+                "access": "rw",
+                "offset": 60
+            },
+            "ORu0": {
+                "access": "rw",
+                "offset": 4
+            },
+            "ORu1": {
+                "access": "rw",
+                "offset": 12
+            },
+            "ORu2": {
+                "access": "rw",
+                "offset": 20
+            },
+            "ORu3": {
+                "access": "rw",
+                "offset": 28
+            },
+            "ORu4": {
+                "access": "rw",
+                "offset": 36
+            },
+            "ORu5": {
+                "access": "rw",
+                "offset": 44
+            },
+            "ORu6": {
+                "access": "rw",
+                "offset": 52
+            },
+            "ORu7": {
+                "access": "rw",
+                "offset": 60
+            }
+        }
+    },
+    "ESDHC": {
+        "base": [
+            4293058560
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "AUTOC12ERR": {
+                "access": "r",
+                "offset": 60
+            },
+            "BLKATTR": {
+                "access": "rw",
+                "offset": 4
+            },
+            "CMDARG": {
+                "access": "rw",
+                "offset": 8
+            },
+            "CMDRSP0": {
+                "access": "r",
+                "offset": 16
+            },
+            "CMDRSP1": {
+                "access": "r",
+                "offset": 20
+            },
+            "CMDRSP2": {
+                "access": "r",
+                "offset": 24
+            },
+            "CMDRSP3": {
+                "access": "r",
+                "offset": 28
+            },
+            "DATPORT": {
+                "access": "rw",
+                "offset": 32
+            },
+            "DCR": {
+                "access": "rw",
+                "offset": 1036
+            },
+            "DSADDR": {
+                "access": "rw",
+                "offset": 0
+            },
+            "FEVT": {
+                "access": "w",
+                "offset": 80
+            },
+            "HOSTCAPBLT": {
+                "access": "r",
+                "offset": 64
+            },
+            "HOSTVER": {
+                "access": "r",
+                "offset": 252
+            },
+            "IRQSIGEN": {
+                "access": "rw",
+                "offset": 56
+            },
+            "IRQSTAT": {
+                "access": "rw",
+                "offset": 48
+            },
+            "IRQSTATEN": {
+                "access": "rw",
+                "offset": 52
+            },
+            "PROCTL": {
+                "access": "rw",
+                "offset": 40
+            },
+            "PRSSTAT": {
+                "access": "r",
+                "offset": 36
+            },
+            "SYSCTL": {
+                "access": "rw",
+                "offset": 44
+            },
+            "WML": {
+                "access": "rw",
+                "offset": 68
+            },
+            "XFERTYP": {
+                "access": "rw",
+                "offset": 12
+            }
+        }
+    },
+    "ESPI": {
+        "base": [
+            4292898816
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "SPCOM": {
+                "access": "w",
+                "offset": 12
+            },
+            "SPIE": {
+                "access": "rw",
+                "offset": 4
+            },
+            "SPIM": {
+                "access": "rw",
+                "offset": 8
+            },
+            "SPIRF": {
+                "access": "r",
+                "offset": 20
+            },
+            "SPITF": {
+                "access": "w",
+                "offset": 16
+            },
+            "SPMODE": {
+                "access": "rw",
+                "offset": 0
+            },
+            "SPMODE0": {
+                "access": "rw",
+                "offset": 32
+            },
+            "SPMODE1": {
+                "access": "rw",
+                "offset": 36
+            },
+            "SPMODE2": {
+                "access": "rw",
+                "offset": 40
+            },
+            "SPMODE3": {
+                "access": "rw",
+                "offset": 44
+            }
+        }
+    },
+    "ETSEC": {
+        "base": [
+            4293017600,
+            4293021696,
+            4293025792
+        ],
+        "count": 3,
+        "memory_mapped": true,
+        "registers": {
+            "ATTR": {
+                "access": "rw",
+                "offset": 3064
+            },
+            "ATTRELI": {
+                "access": "rw",
+                "offset": 3068
+            },
+            "CAM1": {
+                "access": "rw",
+                "offset": 1848
+            },
+            "CAM2": {
+                "access": "rw",
+                "offset": 1852
+            },
+            "CAR1": {
+                "access": "w1c",
+                "offset": 1840
+            },
+            "CAR2": {
+                "access": "rw",
+                "offset": 1844
+            },
+            "DFVLAN": {
+                "access": "rw",
+                "offset": 264
+            },
+            "DMACTRL": {
+                "access": "rw",
+                "offset": 44
+            },
+            "ECNTRL": {
+                "access": "rw",
+                "offset": 32
+            },
+            "EDIS": {
+                "access": "rw",
+                "offset": 24
+            },
+            "GADDR0": {
+                "access": "rw",
+                "offset": 2176
+            },
+            "GADDR1": {
+                "access": "rw",
+                "offset": 2180
+            },
+            "GADDR2": {
+                "access": "rw",
+                "offset": 2184
+            },
+            "GADDR3": {
+                "access": "rw",
+                "offset": 2188
+            },
+            "GADDR4": {
+                "access": "rw",
+                "offset": 2192
+            },
+            "GADDR5": {
+                "access": "rw",
+                "offset": 2196
+            },
+            "GADDR6": {
+                "access": "rw",
+                "offset": 2200
+            },
+            "GADDR7": {
+                "access": "rw",
+                "offset": 2204
+            },
+            "HAFDUP": {
+                "access": "rw",
+                "offset": 1292
+            },
+            "IEVENT": {
+                "access": "w1c",
+                "offset": 16
+            },
+            "IFSTAT": {
+                "access": "r",
+                "offset": 1340
+            },
+            "IGADDR0": {
+                "access": "rw",
+                "offset": 2048
+            },
+            "IGADDR1": {
+                "access": "rw",
+                "offset": 2052
+            },
+            "IGADDR2": {
+                "access": "rw",
+                "offset": 2056
+            },
+            "IGADDR3": {
+                "access": "rw",
+                "offset": 2060
+            },
+            "IGADDR4": {
+                "access": "rw",
+                "offset": 2064
+            },
+            "IGADDR5": {
+                "access": "rw",
+                "offset": 2068
+            },
+            "IGADDR6": {
+                "access": "rw",
+                "offset": 2072
+            },
+            "IGADDR7": {
+                "access": "rw",
+                "offset": 2076
+            },
+            "IMASK": {
+                "access": "rw",
+                "offset": 20
+            },
+            "IPGIFG": {
+                "access": "rw",
+                "offset": 1288
+            },
+            "MAC01ADDR1": {
+                "access": "rw",
+                "offset": 1352
+            },
+            "MAC01ADDR2": {
+                "access": "rw",
+                "offset": 1356
+            },
+            "MAC02ADDR1": {
+                "access": "rw",
+                "offset": 1360
+            },
+            "MAC02ADDR2": {
+                "access": "rw",
+                "offset": 1364
+            },
+            "MAC03ADDR1": {
+                "access": "rw",
+                "offset": 1368
+            },
+            "MAC03ADDR2": {
+                "access": "rw",
+                "offset": 1372
+            },
+            "MAC04ADDR1": {
+                "access": "rw",
+                "offset": 1376
+            },
+            "MAC04ADDR2": {
+                "access": "rw",
+                "offset": 1380
+            },
+            "MAC05ADDR1": {
+                "access": "rw",
+                "offset": 1384
+            },
+            "MAC05ADDR2": {
+                "access": "rw",
+                "offset": 1388
+            },
+            "MAC06ADDR1": {
+                "access": "rw",
+                "offset": 1392
+            },
+            "MAC06ADDR2": {
+                "access": "rw",
+                "offset": 1396
+            },
+            "MAC07ADDR1": {
+                "access": "rw",
+                "offset": 1400
+            },
+            "MAC07ADDR2": {
+                "access": "rw",
+                "offset": 1404
+            },
+            "MAC08ADDR1": {
+                "access": "rw",
+                "offset": 1408
+            },
+            "MAC08ADDR2": {
+                "access": "rw",
+                "offset": 1412
+            },
+            "MAC09ADDR1": {
+                "access": "rw",
+                "offset": 1416
+            },
+            "MAC09ADDR2": {
+                "access": "rw",
+                "offset": 1420
+            },
+            "MAC10ADDR1": {
+                "access": "rw",
+                "offset": 1424
+            },
+            "MAC10ADDR2": {
+                "access": "rw",
+                "offset": 1428
+            },
+            "MAC11ADDR1": {
+                "access": "rw",
+                "offset": 1432
+            },
+            "MAC11ADDR2": {
+                "access": "rw",
+                "offset": 1436
+            },
+            "MAC12ADDR1": {
+                "access": "rw",
+                "offset": 1440
+            },
+            "MAC12ADDR2": {
+                "access": "rw",
+                "offset": 1444
+            },
+            "MAC13ADDR1": {
+                "access": "rw",
+                "offset": 1448
+            },
+            "MAC13ADDR2": {
+                "access": "rw",
+                "offset": 1452
+            },
+            "MAC14ADDR1": {
+                "access": "rw",
+                "offset": 1456
+            },
+            "MAC14ADDR2": {
+                "access": "rw",
+                "offset": 1460
+            },
+            "MAC15ADDR1": {
+                "access": "rw",
+                "offset": 1464
+            },
+            "MAC15ADDR2": {
+                "access": "rw",
+                "offset": 1468
+            },
+            "MACCFG1": {
+                "access": "rw",
+                "offset": 1280
+            },
+            "MACCFG2": {
+                "access": "rw",
+                "offset": 1284
+            },
+            "MACSTNADDR1": {
+                "access": "rw",
+                "offset": 1344
+            },
+            "MACSTNADDR2": {
+                "access": "rw",
+                "offset": 1348
+            },
+            "MAXFRM": {
+                "access": "rw",
+                "offset": 1296
+            },
+            "MIIMADD": {
+                "access": "rw",
+                "offset": 1320
+            },
+            "MIIMCFG": {
+                "access": "rw",
+                "offset": 1312
+            },
+            "MIIMCOM": {
+                "access": "rw",
+                "offset": 1316
+            },
+            "MIIMCON": {
+                "access": "w",
+                "offset": 1324
+            },
+            "MIIMIND": {
+                "access": "r",
+                "offset": 1332
+            },
+            "MIIMSTAT": {
+                "access": "r",
+                "offset": 1328
+            },
+            "MRBLR": {
+                "access": "rw",
+                "offset": 832
+            },
+            "PTV": {
+                "access": "rw",
+                "offset": 40
+            },
+            "RALN": {
+                "access": "rw",
+                "offset": 1724
+            },
+            "RBASE0": {
+                "access": "rw",
+                "offset": 1028
+            },
+            "RBASE1": {
+                "access": "rw",
+                "offset": 1036
+            },
+            "RBASE2": {
+                "access": "rw",
+                "offset": 1044
+            },
+            "RBASE3": {
+                "access": "rw",
+                "offset": 1052
+            },
+            "RBASE4": {
+                "access": "rw",
+                "offset": 1060
+            },
+            "RBASE5": {
+                "access": "rw",
+                "offset": 1068
+            },
+            "RBASE6": {
+                "access": "rw",
+                "offset": 1076
+            },
+            "RBASE7": {
+                "access": "rw",
+                "offset": 1084
+            },
+            "RBASEH": {
+                "access": "rw",
+                "offset": 1024
+            },
+            "RBCA": {
+                "access": "rw",
+                "offset": 1708
+            },
+            "RBDBPH": {
+                "access": "rw",
+                "offset": 896
+            },
+            "RBIFX": {
+                "access": "rw",
+                "offset": 816
+            },
+            "RBPTR0": {
+                "access": "rw",
+                "offset": 900
+            },
+            "RBPTR1": {
+                "access": "rw",
+                "offset": 908
+            },
+            "RBPTR2": {
+                "access": "rw",
+                "offset": 916
+            },
+            "RBPTR3": {
+                "access": "rw",
+                "offset": 924
+            },
+            "RBPTR4": {
+                "access": "rw",
+                "offset": 932
+            },
+            "RBPTR5": {
+                "access": "rw",
+                "offset": 940
+            },
+            "RBPTR6": {
+                "access": "rw",
+                "offset": 948
+            },
+            "RBPTR7": {
+                "access": "rw",
+                "offset": 956
+            },
+            "RBYT": {
+                "access": "rw",
+                "offset": 1692
+            },
+            "RCDE": {
+                "access": "rw",
+                "offset": 1732
+            },
+            "RCSE": {
+                "access": "rw",
+                "offset": 1736
+            },
+            "RCTRL": {
+                "access": "rw",
+                "offset": 768
+            },
+            "RDRP": {
+                "access": "rw",
+                "offset": 1756
+            },
+            "RFBPTR0": {
+                "access": "rw",
+                "offset": 3140
+            },
+            "RFBPTR1": {
+                "access": "rw",
+                "offset": 3148
+            },
+            "RFBPTR2": {
+                "access": "rw",
+                "offset": 3156
+            },
+            "RFBPTR3": {
+                "access": "rw",
+                "offset": 3164
+            },
+            "RFBPTR4": {
+                "access": "rw",
+                "offset": 3172
+            },
+            "RFBPTR5": {
+                "access": "rw",
+                "offset": 3180
+            },
+            "RFBPTR6": {
+                "access": "rw",
+                "offset": 3188
+            },
+            "RFBPTR7": {
+                "access": "rw",
+                "offset": 3196
+            },
+            "RFCS": {
+                "access": "rw",
+                "offset": 1700
+            },
+            "RFLR": {
+                "access": "rw",
+                "offset": 1728
+            },
+            "RFRG": {
+                "access": "rw",
+                "offset": 1748
+            },
+            "RJBR": {
+                "access": "rw",
+                "offset": 1752
+            },
+            "RMCA": {
+                "access": "rw",
+                "offset": 1704
+            },
+            "ROVR": {
+                "access": "rw",
+                "offset": 1744
+            },
+            "RPKT": {
+                "access": "rw",
+                "offset": 1696
+            },
+            "RQFAR": {
+                "access": "rw",
+                "offset": 820
+            },
+            "RQFCR": {
+                "access": "rw",
+                "offset": 824
+            },
+            "RQFPR": {
+                "access": "rw",
+                "offset": 828
+            },
+            "RQPRM0": {
+                "access": "rw",
+                "offset": 3072
+            },
+            "RQPRM1": {
+                "access": "rw",
+                "offset": 3076
+            },
+            "RQPRM2": {
+                "access": "rw",
+                "offset": 3080
+            },
+            "RQPRM3": {
+                "access": "rw",
+                "offset": 3084
+            },
+            "RQPRM4": {
+                "access": "rw",
+                "offset": 3088
+            },
+            "RQPRM5": {
+                "access": "rw",
+                "offset": 3092
+            },
+            "RQPRM6": {
+                "access": "rw",
+                "offset": 3096
+            },
+            "RQPRM7": {
+                "access": "rw",
+                "offset": 3100
+            },
+            "RQUEUE": {
+                "access": "rw",
+                "offset": 788
+            },
+            "RREJ": {
+                "access": "rw",
+                "offset": 1856
+            },
+            "RSTAT": {
+                "access": "w1c",
+                "offset": 772
+            },
+            "RUND": {
+                "access": "rw",
+                "offset": 1740
+            },
+            "RXCF": {
+                "access": "rw",
+                "offset": 1712
+            },
+            "RXIC": {
+                "access": "rw",
+                "offset": 784
+            },
+            "RXPF": {
+                "access": "rw",
+                "offset": 1716
+            },
+            "RXUO": {
+                "access": "rw",
+                "offset": 1720
+            },
+            "TBASE0": {
+                "access": "rw",
+                "offset": 516
+            },
+            "TBASE1": {
+                "access": "rw",
+                "offset": 524
+            },
+            "TBASE2": {
+                "access": "rw",
+                "offset": 532
+            },
+            "TBASE3": {
+                "access": "rw",
+                "offset": 540
+            },
+            "TBASE4": {
+                "access": "rw",
+                "offset": 548
+            },
+            "TBASE5": {
+                "access": "rw",
+                "offset": 556
+            },
+            "TBASE6": {
+                "access": "rw",
+                "offset": 564
+            },
+            "TBASE7": {
+                "access": "rw",
+                "offset": 572
+            },
+            "TBASEH": {
+                "access": "rw",
+                "offset": 512
+            },
+            "TBCA": {
+                "access": "rw",
+                "offset": 1772
+            },
+            "TBDBPH": {
+                "access": "rw",
+                "offset": 384
+            },
+            "TBIPA": {
+                "access": "rw",
+                "offset": 48
+            },
+            "TBPTR0": {
+                "access": "rw",
+                "offset": 388
+            },
+            "TBPTR1": {
+                "access": "rw",
+                "offset": 396
+            },
+            "TBPTR2": {
+                "access": "rw",
+                "offset": 404
+            },
+            "TBPTR3": {
+                "access": "rw",
+                "offset": 412
+            },
+            "TBPTR4": {
+                "access": "rw",
+                "offset": 420
+            },
+            "TBPTR5": {
+                "access": "rw",
+                "offset": 428
+            },
+            "TBPTR6": {
+                "access": "rw",
+                "offset": 436
+            },
+            "TBPTR7": {
+                "access": "rw",
+                "offset": 444
+            },
+            "TBYT": {
+                "access": "rw",
+                "offset": 1760
+            },
+            "TCTRL": {
+                "access": "rw",
+                "offset": 256
+            },
+            "TDFR": {
+                "access": "rw",
+                "offset": 1780
+            },
+            "TDRP": {
+                "access": "rw",
+                "offset": 1812
+            },
+            "TEDF": {
+                "access": "rw",
+                "offset": 1784
+            },
+            "TFCS": {
+                "access": "rw",
+                "offset": 1820
+            },
+            "TFRG": {
+                "access": "rw",
+                "offset": 1836
+            },
+            "TJBR": {
+                "access": "rw",
+                "offset": 1816
+            },
+            "TLCL": {
+                "access": "rw",
+                "offset": 1796
+            },
+            "TMCA": {
+                "access": "rw",
+                "offset": 1768
+            },
+            "TMCL": {
+                "access": "rw",
+                "offset": 1792
+            },
+            "TMR_RXTS_H": {
+                "access": "r",
+                "offset": 1216
+            },
+            "TMR_RXTS_L": {
+                "access": "r",
+                "offset": 1220
+            },
+            "TMR_TXTS1_H": {
+                "access": "r",
+                "offset": 704
+            },
+            "TMR_TXTS1_ID": {
+                "access": "r",
+                "offset": 640
+            },
+            "TMR_TXTS1_L": {
+                "access": "r",
+                "offset": 708
+            },
+            "TMR_TXTS2_H": {
+                "access": "r",
+                "offset": 712
+            },
+            "TMR_TXTS2_ID": {
+                "access": "r",
+                "offset": 644
+            },
+            "TMR_TXTS2_L": {
+                "access": "r",
+                "offset": 716
+            },
+            "TNCL": {
+                "access": "rw",
+                "offset": 1804
+            },
+            "TOVR": {
+                "access": "rw",
+                "offset": 1828
+            },
+            "TPKT": {
+                "access": "rw",
+                "offset": 1764
+            },
+            "TQUEUE": {
+                "access": "rw",
+                "offset": 276
+            },
+            "TR03WT": {
+                "access": "rw",
+                "offset": 320
+            },
+            "TR127": {
+                "access": "rw",
+                "offset": 1668
+            },
+            "TR1K": {
+                "access": "rw",
+                "offset": 1680
+            },
+            "TR255": {
+                "access": "rw",
+                "offset": 1672
+            },
+            "TR47WT": {
+                "access": "rw",
+                "offset": 324
+            },
+            "TR511": {
+                "access": "rw",
+                "offset": 1676
+            },
+            "TR64": {
+                "access": "rw",
+                "offset": 1664
+            },
+            "TRMAX": {
+                "access": "rw",
+                "offset": 1684
+            },
+            "TRMGV": {
+                "access": "rw",
+                "offset": 1688
+            },
+            "TSCL": {
+                "access": "rw",
+                "offset": 1788
+            },
+            "TSEC_ID": {
+                "access": "r",
+                "offset": 0
+            },
+            "TSEC_ID2": {
+                "access": "r",
+                "offset": 4
+            },
+            "TSTAT": {
+                "access": "w1c",
+                "offset": 260
+            },
+            "TUND": {
+                "access": "rw",
+                "offset": 1832
+            },
+            "TXCF": {
+                "access": "rw",
+                "offset": 1824
+            },
+            "TXCL": {
+                "access": "rw",
+                "offset": 1800
+            },
+            "TXIC": {
+                "access": "rw",
+                "offset": 272
+            },
+            "TXPF": {
+                "access": "rw",
+                "offset": 1776
+            }
+        }
+    },
+    "ETSEC_1588": {
+        "base": [
+            4293017600
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "TMROFF_H": {
+                "access": "rw",
+                "offset": 3632
+            },
+            "TMROFF_L": {
+                "access": "rw",
+                "offset": 3636
+            },
+            "TMR_ACC": {
+                "access": "rw",
+                "offset": 3620
+            },
+            "TMR_ADD": {
+                "access": "rw",
+                "offset": 3616
+            },
+            "TMR_ALARM1_H": {
+                "access": "rw",
+                "offset": 3648
+            },
+            "TMR_ALARM1_L": {
+                "access": "rw",
+                "offset": 3652
+            },
+            "TMR_ALARM2_H": {
+                "access": "rw",
+                "offset": 3656
+            },
+            "TMR_ALARM2_L": {
+                "access": "rw",
+                "offset": 3660
+            },
+            "TMR_CNT_H": {
+                "access": "rw",
+                "offset": 3608
+            },
+            "TMR_CNT_L": {
+                "access": "rw",
+                "offset": 3612
+            },
+            "TMR_CTRL": {
+                "access": "rw",
+                "offset": 3584
+            },
+            "TMR_ETTS1_H": {
+                "access": "rw",
+                "offset": 3744
+            },
+            "TMR_ETTS1_L": {
+                "access": "rw",
+                "offset": 3748
+            },
+            "TMR_ETTS2_H": {
+                "access": "rw",
+                "offset": 3752
+            },
+            "TMR_ETTS2_L": {
+                "access": "rw",
+                "offset": 3756
+            },
+            "TMR_FIPER1": {
+                "access": "rw",
+                "offset": 3712
+            },
+            "TMR_FIPER2": {
+                "access": "rw",
+                "offset": 3716
+            },
+            "TMR_PEMASK": {
+                "access": "rw",
+                "offset": 3600
+            },
+            "TMR_PEVENT": {
+                "access": "rw",
+                "offset": 3596
+            },
+            "TMR_PRSC": {
+                "access": "rw",
+                "offset": 3624
+            },
+            "TMR_STAT": {
+                "access": "rw",
+                "offset": 3604
+            },
+            "TMR_TEMASK": {
+                "access": "rw",
+                "offset": 3592
+            },
+            "TMR_TEVENT": {
+                "access": "w1c",
+                "offset": 3588
+            }
+        }
+    },
+    "GPIO": {
+        "base": [
+            4292931584
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "GPDAT": {
+                "access": "rw",
+                "offset": 8
+            },
+            "GPDIR": {
+                "access": "rw",
+                "offset": 0
+            },
+            "GPICR": {
+                "access": "rw",
+                "offset": 20
+            },
+            "GPIER": {
+                "access": "w1c",
+                "offset": 12
+            },
+            "GPIMR": {
+                "access": "rw",
+                "offset": 16
+            },
+            "GPODR": {
+                "access": "rw",
+                "offset": 4
+            }
+        }
+    },
+    "GPR": {
+        "count": 2,
+        "registers": {
+            "egpr0": {
+                "bits": 64
+            },
+            "egpr1": {
+                "bits": 64
+            },
+            "egpr10": {
+                "bits": 64
+            },
+            "egpr11": {
+                "bits": 64
+            },
+            "egpr12": {
+                "bits": 64
+            },
+            "egpr13": {
+                "bits": 64
+            },
+            "egpr14": {
+                "bits": 64
+            },
+            "egpr15": {
+                "bits": 64
+            },
+            "egpr16": {
+                "bits": 64
+            },
+            "egpr17": {
+                "bits": 64
+            },
+            "egpr18": {
+                "bits": 64
+            },
+            "egpr19": {
+                "bits": 64
+            },
+            "egpr2": {
+                "bits": 64
+            },
+            "egpr20": {
+                "bits": 64
+            },
+            "egpr21": {
+                "bits": 64
+            },
+            "egpr22": {
+                "bits": 64
+            },
+            "egpr23": {
+                "bits": 64
+            },
+            "egpr24": {
+                "bits": 64
+            },
+            "egpr25": {
+                "bits": 64
+            },
+            "egpr26": {
+                "bits": 64
+            },
+            "egpr27": {
+                "bits": 64
+            },
+            "egpr28": {
+                "bits": 64
+            },
+            "egpr29": {
+                "bits": 64
+            },
+            "egpr3": {
+                "bits": 64
+            },
+            "egpr30": {
+                "bits": 64
+            },
+            "egpr31": {
+                "bits": 64
+            },
+            "egpr4": {
+                "bits": 64
+            },
+            "egpr5": {
+                "bits": 64
+            },
+            "egpr6": {
+                "bits": 64
+            },
+            "egpr7": {
+                "bits": 64
+            },
+            "egpr8": {
+                "bits": 64
+            },
+            "egpr9": {
+                "bits": 64
+            }
+        }
+    },
+    "GU": {
+        "base": [
+            4293787648
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "AUTORSTSR": {
+                "access": "w1c",
+                "offset": 156
+            },
+            "CLKOCR": {
+                "access": "rw",
+                "offset": 3584
+            },
+            "DDRCLKDR": {
+                "access": "rw",
+                "offset": 2856
+            },
+            "DEVDISR": {
+                "access": "rw",
+                "offset": 112
+            },
+            "ECMCR": {
+                "access": "rw",
+                "offset": 3616
+            },
+            "ECTRSTCR": {
+                "access": "rw",
+                "offset": 152
+            },
+            "GPPORCR": {
+                "access": "r",
+                "offset": 32
+            },
+            "IOVSELSR": {
+                "access": "r",
+                "offset": 192
+            },
+            "MCPSUMR": {
+                "access": "w1c",
+                "offset": 144
+            },
+            "PMCDR": {
+                "access": "rw",
+                "offset": 140
+            },
+            "PMUXCR": {
+                "access": "rw",
+                "offset": 96
+            },
+            "PORBMSR": {
+                "access": "r",
+                "offset": 4
+            },
+            "PORDBGMSR": {
+                "access": "r",
+                "offset": 16
+            },
+            "PORDEVSR": {
+                "access": "r",
+                "offset": 12
+            },
+            "PORDEVSR2": {
+                "access": "r",
+                "offset": 20
+            },
+            "PORPLLSR": {
+                "access": "r",
+                "offset": 0
+            },
+            "POWMGTCSR": {
+                "access": "rw",
+                "offset": 128
+            },
+            "PVR": {
+                "access": "r",
+                "offset": 160
+            },
+            "RSTCR": {
+                "access": "rw",
+                "offset": 176
+            },
+            "RSTRSCR": {
+                "access": "rw",
+                "offset": 148
+            },
+            "SDHCDCR": {
+                "access": "rw",
+                "offset": 3940
+            },
+            "SRDSCR0": {
+                "access": "rw",
+                "offset": 12288
+            },
+            "SRDSCR1": {
+                "access": "rw",
+                "offset": 12292
+            },
+            "SRDSCR2": {
+                "access": "rw",
+                "offset": 12296
+            },
+            "SRDSCR4": {
+                "access": "rw",
+                "offset": 12304
+            },
+            "SRDSCR5": {
+                "access": "rw",
+                "offset": 12308
+            },
+            "SRDSCR6": {
+                "access": "rw",
+                "offset": 12312
+            },
+            "SVR": {
+                "access": "r",
+                "offset": 164
+            }
+        }
+    },
+    "I2C": {
+        "base": [
+            4292882432,
+            4292882688
+        ],
+        "count": 2,
+        "memory_mapped": true,
+        "registers": {
+            "I2CADR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 0
+            },
+            "I2CCR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 8
+            },
+            "I2CDFSRR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 20
+            },
+            "I2CDR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 16
+            },
+            "I2CFDR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 4
+            },
+            "I2CSR": {
+                "access": "rw",
+                "bits": 8,
+                "offset": 12
+            }
+        }
+    },
+    "L2SRAM": {
+        "base": [
+            4292878336
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "L2CAPTDATAHI": {
+                "access": "r",
+                "offset": 3616
+            },
+            "L2CAPTDATALO": {
+                "access": "r",
+                "offset": 3620
+            },
+            "L2CAPTECC": {
+                "access": "r",
+                "offset": 3624
+            },
+            "L2CEWAR0": {
+                "access": "rw",
+                "offset": 16
+            },
+            "L2CEWAR1": {
+                "access": "rw",
+                "offset": 32
+            },
+            "L2CEWAR2": {
+                "access": "rw",
+                "offset": 48
+            },
+            "L2CEWAR3": {
+                "access": "rw",
+                "offset": 64
+            },
+            "L2CEWAREA0": {
+                "access": "rw",
+                "offset": 20
+            },
+            "L2CEWAREA1": {
+                "access": "rw",
+                "offset": 36
+            },
+            "L2CEWAREA2": {
+                "access": "rw",
+                "offset": 52
+            },
+            "L2CEWAREA3": {
+                "access": "rw",
+                "offset": 68
+            },
+            "L2CEWCR0": {
+                "access": "rw",
+                "offset": 24
+            },
+            "L2CEWCR1": {
+                "access": "rw",
+                "offset": 40
+            },
+            "L2CEWCR2": {
+                "access": "rw",
+                "offset": 56
+            },
+            "L2CEWCR3": {
+                "access": "rw",
+                "offset": 72
+            },
+            "L2CTL": {
+                "access": "rw",
+                "offset": 0
+            },
+            "L2CWAP": {
+                "access": "rw",
+                "offset": 4
+            },
+            "L2ERRADDRH": {
+                "access": "r",
+                "offset": 3668
+            },
+            "L2ERRADDRL": {
+                "access": "r",
+                "offset": 3664
+            },
+            "L2ERRATTR": {
+                "access": "rw",
+                "offset": 3660
+            },
+            "L2ERRCTL": {
+                "access": "rw",
+                "offset": 3672
+            },
+            "L2ERRDET": {
+                "access": "w1c",
+                "offset": 3648
+            },
+            "L2ERRDIS": {
+                "access": "rw",
+                "offset": 3652
+            },
+            "L2ERRINJCTL": {
+                "access": "rw",
+                "offset": 3592
+            },
+            "L2ERRINJHI": {
+                "access": "rw",
+                "offset": 3584
+            },
+            "L2ERRINJLO": {
+                "access": "rw",
+                "offset": 3588
+            },
+            "L2ERRINTEN": {
+                "access": "rw",
+                "offset": 3656
+            },
+            "L2SRBAR0": {
+                "access": "rw",
+                "offset": 256
+            },
+            "L2SRBAR1": {
+                "access": "rw",
+                "offset": 264
+            },
+            "L2SRBAREA0": {
+                "access": "rw",
+                "offset": 260
+            },
+            "L2SRBAREA1": {
+                "access": "rw",
+                "offset": 268
+            }
+        }
+    },
+    "LAW": {
+        "base": [
+            4292870144
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "LAWAR0": {
+                "access": "rw",
+                "offset": 3088
+            },
+            "LAWAR1": {
+                "access": "rw",
+                "offset": 3120
+            },
+            "LAWAR10": {
+                "access": "rw",
+                "offset": 3408
+            },
+            "LAWAR11": {
+                "access": "rw",
+                "offset": 3440
+            },
+            "LAWAR2": {
+                "access": "rw",
+                "offset": 3152
+            },
+            "LAWAR3": {
+                "access": "rw",
+                "offset": 3184
+            },
+            "LAWAR4": {
+                "access": "rw",
+                "offset": 3216
+            },
+            "LAWAR5": {
+                "access": "rw",
+                "offset": 3248
+            },
+            "LAWAR6": {
+                "access": "rw",
+                "offset": 3280
+            },
+            "LAWAR7": {
+                "access": "rw",
+                "offset": 3312
+            },
+            "LAWAR8": {
+                "access": "rw",
+                "offset": 3344
+            },
+            "LAWAR9": {
+                "access": "rw",
+                "offset": 3376
+            },
+            "LAWBAR0": {
+                "access": "rw",
+                "offset": 3080
+            },
+            "LAWBAR1": {
+                "access": "rw",
+                "offset": 3112
+            },
+            "LAWBAR10": {
+                "access": "rw",
+                "offset": 3400
+            },
+            "LAWBAR11": {
+                "access": "rw",
+                "offset": 3432
+            },
+            "LAWBAR2": {
+                "access": "rw",
+                "offset": 3144
+            },
+            "LAWBAR3": {
+                "access": "rw",
+                "offset": 3176
+            },
+            "LAWBAR4": {
+                "access": "rw",
+                "offset": 3208
+            },
+            "LAWBAR5": {
+                "access": "rw",
+                "offset": 3240
+            },
+            "LAWBAR6": {
+                "access": "rw",
+                "offset": 3272
+            },
+            "LAWBAR7": {
+                "access": "rw",
+                "offset": 3304
+            },
+            "LAWBAR8": {
+                "access": "rw",
+                "offset": 3336
+            },
+            "LAWBAR9": {
+                "access": "rw",
+                "offset": 3368
+            }
+        }
+    },
+    "MC": {
+        "base": [
+            4292878336
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "CAPTURE_ADDRESS": {
+                "access": "rw",
+                "offset": 3664
+            },
+            "CAPTURE_ATTRIBUTES": {
+                "access": "rw",
+                "offset": 3660
+            },
+            "CAPTURE_DATA_HI": {
+                "access": "rw",
+                "offset": 3616
+            },
+            "CAPTURE_DATA_LO": {
+                "access": "rw",
+                "offset": 3620
+            },
+            "CAPTURE_ECC": {
+                "access": "rw",
+                "offset": 3624
+            },
+            "CAPTURE_EXT_ADDRESS": {
+                "access": "rw",
+                "offset": 3668
+            },
+            "CS0_BNDS": {
+                "access": "rw",
+                "offset": 0
+            },
+            "CS0_CONFIG": {
+                "access": "rw",
+                "offset": 128
+            },
+            "CS0_CONFIG_2": {
+                "access": "rw",
+                "offset": 192
+            },
+            "CS1_BNDS": {
+                "access": "rw",
+                "offset": 8
+            },
+            "CS1_CONFIG": {
+                "access": "rw",
+                "offset": 132
+            },
+            "CS1_CONFIG_2": {
+                "access": "rw",
+                "offset": 196
+            },
+            "CS2_BNDS": {
+                "access": "rw",
+                "offset": 16
+            },
+            "CS2_CONFIG": {
+                "access": "rw",
+                "offset": 136
+            },
+            "CS2_CONFIG_2": {
+                "access": "rw",
+                "offset": 200
+            },
+            "CS3_BNDS": {
+                "access": "rw",
+                "offset": 24
+            },
+            "CS3_CONFIG": {
+                "access": "rw",
+                "offset": 140
+            },
+            "CS3_CONFIG_2": {
+                "access": "rw",
+                "offset": 204
+            },
+            "DATA_ERR_INJECT_HI": {
+                "access": "rw",
+                "offset": 3584
+            },
+            "DATA_ERR_INJECT_LO": {
+                "access": "rw",
+                "offset": 3588
+            },
+            "DDRCDR_1": {
+                "access": "rw",
+                "offset": 2856
+            },
+            "DDRCDR_2": {
+                "access": "rw",
+                "offset": 2860
+            },
+            "DDRDSR_1": {
+                "access": "r",
+                "offset": 2848
+            },
+            "DDRDSR_2": {
+                "access": "r",
+                "offset": 2852
+            },
+            "DDR_DATA_INIT": {
+                "access": "rw",
+                "offset": 296
+            },
+            "DDR_INIT_ADDR": {
+                "access": "rw",
+                "offset": 328
+            },
+            "DDR_INIT_EXT_ADDR": {
+                "access": "rw",
+                "offset": 332
+            },
+            "DDR_IP_REV1": {
+                "access": "r",
+                "offset": 3064
+            },
+            "DDR_IP_REV2": {
+                "access": "r",
+                "offset": 3068
+            },
+            "DDR_SDRAM_CFG": {
+                "access": "rw",
+                "offset": 272
+            },
+            "DDR_SDRAM_CFG_2": {
+                "access": "rw",
+                "offset": 276
+            },
+            "DDR_SDRAM_CLK_CNTL": {
+                "access": "rw",
+                "offset": 304
+            },
+            "DDR_SDRAM_INTERVAL": {
+                "access": "rw",
+                "offset": 292
+            },
+            "DDR_SDRAM_MD_CNTL": {
+                "access": "rw",
+                "offset": 288
+            },
+            "DDR_SDRAM_MODE": {
+                "access": "rw",
+                "offset": 280
+            },
+            "DDR_SDRAM_MODE_2": {
+                "access": "rw",
+                "offset": 284
+            },
+            "DDR_SDRAM_RCW_1": {
+                "access": "rw",
+                "offset": 384
+            },
+            "DDR_SDRAM_RCW_2": {
+                "access": "rw",
+                "offset": 388
+            },
+            "DDR_SR_CNTR": {
+                "access": "rw",
+                "offset": 380
+            },
+            "DDR_WRLVL_CNTL": {
+                "access": "rw",
+                "offset": 372
+            },
+            "DDR_WRLVL_CNTL_2": {
+                "access": "rw",
+                "offset": 400
+            },
+            "DDR_WRLVL_CNTL_3": {
+                "access": "rw",
+                "offset": 404
+            },
+            "DDR_ZQ_CNTL": {
+                "access": "rw",
+                "offset": 368
+            },
+            "ERR_DETECT": {
+                "access": "w1c",
+                "offset": 3648
+            },
+            "ERR_DISABLE": {
+                "access": "rw",
+                "offset": 3652
+            },
+            "ERR_INJECT": {
+                "access": "rw",
+                "offset": 3592
+            },
+            "ERR_INT_EN": {
+                "access": "rw",
+                "offset": 3656
+            },
+            "ERR_SBE": {
+                "access": "rw",
+                "offset": 3672
+            },
+            "TIMING_CFG_0": {
+                "access": "rw",
+                "offset": 260
+            },
+            "TIMING_CFG_1": {
+                "access": "rw",
+                "offset": 264
+            },
+            "TIMING_CFG_2": {
+                "access": "rw",
+                "offset": 268
+            },
+            "TIMING_CFG_3": {
+                "access": "rw",
+                "offset": 256
+            },
+            "TIMING_CFG_4": {
+                "access": "rw",
+                "offset": 352
+            },
+            "TIMING_CFG_5": {
+                "access": "rw",
+                "offset": 356
+            }
+        }
+    },
+    "PCIE": {
+        "base": [
+            4292911104,
+            4292907008,
+            4292902912
+        ],
+        "count": 3,
+        "memory_mapped": true,
+        "registers": {
+            "PEXITAR1": {
+                "access": "rw",
+                "offset": 3552
+            },
+            "PEXITAR2": {
+                "access": "rw",
+                "offset": 3520
+            },
+            "PEXITAR3": {
+                "access": "rw",
+                "offset": 3488
+            },
+            "PEXIWAR1": {
+                "access": "rw",
+                "offset": 3568
+            },
+            "PEXIWAR2": {
+                "access": "rw",
+                "offset": 3536
+            },
+            "PEXIWAR3": {
+                "access": "rw",
+                "offset": 3504
+            },
+            "PEXIWBAR1": {
+                "access": "rw",
+                "offset": 3560
+            },
+            "PEXIWBAR2": {
+                "access": "rw",
+                "offset": 3528
+            },
+            "PEXIWBAR3": {
+                "access": "rw",
+                "offset": 3496
+            },
+            "PEXIWBEAR2": {
+                "access": "rw",
+                "offset": 3532
+            },
+            "PEXIWBEAR3": {
+                "access": "rw",
+                "offset": 3500
+            },
+            "PEXOTAR0": {
+                "access": "rw",
+                "offset": 3072
+            },
+            "PEXOTAR1": {
+                "access": "rw",
+                "offset": 3104
+            },
+            "PEXOTAR2": {
+                "access": "rw",
+                "offset": 3136
+            },
+            "PEXOTAR3": {
+                "access": "rw",
+                "offset": 3168
+            },
+            "PEXOTAR4": {
+                "access": "rw",
+                "offset": 3200
+            },
+            "PEXOTEAR0": {
+                "access": "rw",
+                "offset": 3076
+            },
+            "PEXOTEAR1": {
+                "access": "rw",
+                "offset": 3108
+            },
+            "PEXOTEAR2": {
+                "access": "rw",
+                "offset": 3140
+            },
+            "PEXOTEAR3": {
+                "access": "rw",
+                "offset": 3172
+            },
+            "PEXOTEAR4": {
+                "access": "rw",
+                "offset": 3204
+            },
+            "PEXOWAR0": {
+                "access": "rw",
+                "offset": 3088
+            },
+            "PEXOWAR1": {
+                "access": "rw",
+                "offset": 3120
+            },
+            "PEXOWAR2": {
+                "access": "rw",
+                "offset": 3152
+            },
+            "PEXOWAR3": {
+                "access": "rw",
+                "offset": 3184
+            },
+            "PEXOWAR4": {
+                "access": "rw",
+                "offset": 3216
+            },
+            "PEXOWBAR1": {
+                "access": "rw",
+                "offset": 3112
+            },
+            "PEXOWBAR2": {
+                "access": "rw",
+                "offset": 3144
+            },
+            "PEXOWBAR3": {
+                "access": "rw",
+                "offset": 3176
+            },
+            "PEXOWBAR4": {
+                "access": "rw",
+                "offset": 3208
+            },
+            "PEX_CONFIG": {
+                "access": "rw",
+                "offset": 20
+            },
+            "PEX_CONFIG_ADDR": {
+                "access": "rw",
+                "offset": 0
+            },
+            "PEX_CONFIG_DATA": {
+                "access": "rw",
+                "offset": 4
+            },
+            "PEX_CONF_RTY_TOR": {
+                "access": "rw",
+                "offset": 16
+            },
+            "PEX_ERR_CAP_R0": {
+                "access": "rw",
+                "offset": 3624
+            },
+            "PEX_ERR_CAP_R1": {
+                "access": "rw",
+                "offset": 3628
+            },
+            "PEX_ERR_CAP_R2": {
+                "access": "rw",
+                "offset": 3632
+            },
+            "PEX_ERR_CAP_R3": {
+                "access": "rw",
+                "offset": 3636
+            },
+            "PEX_ERR_CAP_STAT": {
+                "access": "rw",
+                "offset": 3616
+            },
+            "PEX_ERR_DISR": {
+                "access": "rw",
+                "offset": 3600
+            },
+            "PEX_ERR_DR": {
+                "access": "w1c",
+                "offset": 3584
+            },
+            "PEX_ERR_EN": {
+                "access": "rw",
+                "offset": 3592
+            },
+            "PEX_IP_BLK_REV1": {
+                "access": "r",
+                "offset": 3064
+            },
+            "PEX_IP_BLK_REV2": {
+                "access": "r",
+                "offset": 3068
+            },
+            "PEX_OTB_CPL_TOR": {
+                "access": "rw",
+                "offset": 12
+            },
+            "PEX_PMCR": {
+                "access": "rw",
+                "offset": 44
+            },
+            "PEX_PME_MES_DISR": {
+                "access": "rw",
+                "offset": 36
+            },
+            "PEX_PME_MES_DR": {
+                "access": "w1c",
+                "offset": 32
+            },
+            "PEX_PME_MES_IER": {
+                "access": "rw",
+                "offset": 40
+            }
+        }
+    },
+    "PERFMON": {
+        "base": [
+            4293791744
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "PMC0_lower": {
+                "access": "rw",
+                "offset": 24
+            },
+            "PMC0_upper": {
+                "access": "rw",
+                "offset": 28
+            },
+            "PMC1": {
+                "access": "rw",
+                "offset": 40
+            },
+            "PMC10": {
+                "access": "rw",
+                "offset": 184
+            },
+            "PMC11": {
+                "access": "rw",
+                "offset": 200
+            },
+            "PMC2": {
+                "access": "rw",
+                "offset": 56
+            },
+            "PMC3": {
+                "access": "rw",
+                "offset": 72
+            },
+            "PMC4": {
+                "access": "rw",
+                "offset": 88
+            },
+            "PMC5": {
+                "access": "rw",
+                "offset": 104
+            },
+            "PMC6": {
+                "access": "rw",
+                "offset": 120
+            },
+            "PMC7": {
+                "access": "rw",
+                "offset": 136
+            },
+            "PMC8": {
+                "access": "rw",
+                "offset": 152
+            },
+            "PMC9": {
+                "access": "rw",
+                "offset": 168
+            },
+            "PMGC0": {
+                "access": "rw",
+                "offset": 0
+            },
+            "PMLCA0": {
+                "access": "rw",
+                "offset": 16
+            },
+            "PMLCA1": {
+                "access": "rw",
+                "offset": 32
+            },
+            "PMLCA10": {
+                "access": "rw",
+                "offset": 176
+            },
+            "PMLCA11": {
+                "access": "rw",
+                "offset": 192
+            },
+            "PMLCA2": {
+                "access": "rw",
+                "offset": 48
+            },
+            "PMLCA3": {
+                "access": "rw",
+                "offset": 64
+            },
+            "PMLCA4": {
+                "access": "rw",
+                "offset": 80
+            },
+            "PMLCA5": {
+                "access": "rw",
+                "offset": 96
+            },
+            "PMLCA6": {
+                "access": "rw",
+                "offset": 112
+            },
+            "PMLCA7": {
+                "access": "rw",
+                "offset": 128
+            },
+            "PMLCA8": {
+                "access": "rw",
+                "offset": 144
+            },
+            "PMLCA9": {
+                "access": "rw",
+                "offset": 160
+            },
+            "PMLCB0": {
+                "access": "rw",
+                "offset": 20
+            },
+            "PMLCB1": {
+                "access": "rw",
+                "offset": 36
+            },
+            "PMLCB10": {
+                "access": "rw",
+                "offset": 180
+            },
+            "PMLCB11": {
+                "access": "rw",
+                "offset": 196
+            },
+            "PMLCB2": {
+                "access": "rw",
+                "offset": 52
+            },
+            "PMLCB3": {
+                "access": "rw",
+                "offset": 68
+            },
+            "PMLCB4": {
+                "access": "rw",
+                "offset": 84
+            },
+            "PMLCB5": {
+                "access": "rw",
+                "offset": 100
+            },
+            "PMLCB6": {
+                "access": "rw",
+                "offset": 116
+            },
+            "PMLCB7": {
+                "access": "rw",
+                "offset": 132
+            },
+            "PMLCB8": {
+                "access": "rw",
+                "offset": 148
+            },
+            "PMLCB9": {
+                "access": "rw",
+                "offset": 164
+            }
+        }
+    },
+    "PIC": {
+        "base": [
+            4293132288
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "BRR1": {
+                "access": "r",
+                "offset": 0
+            },
+            "BRR2": {
+                "access": "r",
+                "offset": 16
+            },
+            "CISR0": {
+                "access": "r",
+                "offset": 4912
+            },
+            "CISR1": {
+                "access": "r",
+                "offset": 4928
+            },
+            "CISR2": {
+                "access": "r",
+                "offset": 4932
+            },
+            "CTPR": {
+                "access": "rw",
+                "offset": 128
+            },
+            "CTPR_CPU0": {
+                "access": "rw",
+                "offset": 131200
+            },
+            "CTPR_CPU1": {
+                "access": "rw",
+                "offset": 135296
+            },
+            "EIDR0": {
+                "access": "rw",
+                "offset": 65552
+            },
+            "EIDR1": {
+                "access": "rw",
+                "offset": 65584
+            },
+            "EIDR10": {
+                "access": "rw",
+                "offset": 65872
+            },
+            "EIDR11": {
+                "access": "rw",
+                "offset": 65904
+            },
+            "EIDR2": {
+                "access": "rw",
+                "offset": 65616
+            },
+            "EIDR3": {
+                "access": "rw",
+                "offset": 65648
+            },
+            "EIDR4": {
+                "access": "rw",
+                "offset": 65680
+            },
+            "EIDR5": {
+                "access": "rw",
+                "offset": 65712
+            },
+            "EIDR6": {
+                "access": "rw",
+                "offset": 65744
+            },
+            "EIDR7": {
+                "access": "rw",
+                "offset": 65776
+            },
+            "EIDR8": {
+                "access": "rw",
+                "offset": 65808
+            },
+            "EIDR9": {
+                "access": "rw",
+                "offset": 65840
+            },
+            "EIVPR0": {
+                "access": "rw",
+                "offset": 65536
+            },
+            "EIVPR1": {
+                "access": "rw",
+                "offset": 65568
+            },
+            "EIVPR10": {
+                "access": "rw",
+                "offset": 65856
+            },
+            "EIVPR11": {
+                "access": "rw",
+                "offset": 65888
+            },
+            "EIVPR2": {
+                "access": "rw",
+                "offset": 65600
+            },
+            "EIVPR3": {
+                "access": "rw",
+                "offset": 65632
+            },
+            "EIVPR4": {
+                "access": "rw",
+                "offset": 65664
+            },
+            "EIVPR5": {
+                "access": "rw",
+                "offset": 65696
+            },
+            "EIVPR6": {
+                "access": "rw",
+                "offset": 65728
+            },
+            "EIVPR7": {
+                "access": "rw",
+                "offset": 65760
+            },
+            "EIVPR8": {
+                "access": "rw",
+                "offset": 65792
+            },
+            "EIVPR9": {
+                "access": "rw",
+                "offset": 65824
+            },
+            "EOI": {
+                "access": "w",
+                "offset": 176
+            },
+            "EOI_CPU0": {
+                "access": "w",
+                "offset": 131248
+            },
+            "EOI_CPU1": {
+                "access": "w",
+                "offset": 135344
+            },
+            "ERQSR": {
+                "access": "r",
+                "offset": 4872
+            },
+            "FRR": {
+                "access": "r",
+                "offset": 4096
+            },
+            "GCR": {
+                "access": "rw",
+                "offset": 4128
+            },
+            "GTBCRA0": {
+                "access": "rw",
+                "offset": 4368
+            },
+            "GTBCRA1": {
+                "access": "rw",
+                "offset": 4432
+            },
+            "GTBCRA2": {
+                "access": "rw",
+                "offset": 4496
+            },
+            "GTBCRA3": {
+                "access": "rw",
+                "offset": 4560
+            },
+            "GTBCRB0": {
+                "access": "rw",
+                "offset": 8464
+            },
+            "GTBCRB1": {
+                "access": "rw",
+                "offset": 8528
+            },
+            "GTBCRB2": {
+                "access": "rw",
+                "offset": 8592
+            },
+            "GTBCRB3": {
+                "access": "rw",
+                "offset": 8656
+            },
+            "GTCCRA0": {
+                "access": "r",
+                "offset": 4352
+            },
+            "GTCCRA1": {
+                "access": "r",
+                "offset": 4416
+            },
+            "GTCCRA2": {
+                "access": "r",
+                "offset": 4480
+            },
+            "GTCCRA3": {
+                "access": "r",
+                "offset": 4544
+            },
+            "GTCCRB0": {
+                "access": "r",
+                "offset": 8448
+            },
+            "GTCCRB1": {
+                "access": "r",
+                "offset": 8512
+            },
+            "GTCCRB2": {
+                "access": "r",
+                "offset": 8576
+            },
+            "GTCCRB3": {
+                "access": "r",
+                "offset": 8640
+            },
+            "GTDRA0": {
+                "access": "rw",
+                "offset": 4400
+            },
+            "GTDRA1": {
+                "access": "rw",
+                "offset": 4464
+            },
+            "GTDRA2": {
+                "access": "rw",
+                "offset": 4528
+            },
+            "GTDRA3": {
+                "access": "rw",
+                "offset": 4592
+            },
+            "GTDRB0": {
+                "access": "rw",
+                "offset": 8496
+            },
+            "GTDRB1": {
+                "access": "rw",
+                "offset": 8560
+            },
+            "GTDRB2": {
+                "access": "rw",
+                "offset": 8624
+            },
+            "GTDRB3": {
+                "access": "rw",
+                "offset": 8688
+            },
+            "GTVPRA0": {
+                "access": "rw",
+                "offset": 4384
+            },
+            "GTVPRA1": {
+                "access": "rw",
+                "offset": 4448
+            },
+            "GTVPRA2": {
+                "access": "rw",
+                "offset": 4512
+            },
+            "GTVPRA3": {
+                "access": "rw",
+                "offset": 4576
+            },
+            "GTVPRB0": {
+                "access": "rw",
+                "offset": 8480
+            },
+            "GTVPRB1": {
+                "access": "rw",
+                "offset": 8544
+            },
+            "GTVPRB2": {
+                "access": "rw",
+                "offset": 8608
+            },
+            "GTVPRB3": {
+                "access": "rw",
+                "offset": 8672
+            },
+            "IACK": {
+                "access": "r",
+                "offset": 160
+            },
+            "IACK_CPU0": {
+                "access": "r",
+                "offset": 131232
+            },
+            "IACK_CPU1": {
+                "access": "r",
+                "offset": 135328
+            },
+            "IIDR0": {
+                "access": "rw",
+                "offset": 66064
+            },
+            "IIDR1": {
+                "access": "rw",
+                "offset": 66096
+            },
+            "IIDR10": {
+                "access": "rw",
+                "offset": 66384
+            },
+            "IIDR11": {
+                "access": "rw",
+                "offset": 66416
+            },
+            "IIDR12": {
+                "access": "rw",
+                "offset": 66448
+            },
+            "IIDR13": {
+                "access": "rw",
+                "offset": 66480
+            },
+            "IIDR14": {
+                "access": "rw",
+                "offset": 66512
+            },
+            "IIDR15": {
+                "access": "rw",
+                "offset": 66544
+            },
+            "IIDR16": {
+                "access": "rw",
+                "offset": 66576
+            },
+            "IIDR17": {
+                "access": "rw",
+                "offset": 66608
+            },
+            "IIDR18": {
+                "access": "rw",
+                "offset": 66640
+            },
+            "IIDR19": {
+                "access": "rw",
+                "offset": 66672
+            },
+            "IIDR2": {
+                "access": "rw",
+                "offset": 66128
+            },
+            "IIDR20": {
+                "access": "rw",
+                "offset": 66704
+            },
+            "IIDR21": {
+                "access": "rw",
+                "offset": 66736
+            },
+            "IIDR22": {
+                "access": "rw",
+                "offset": 66768
+            },
+            "IIDR23": {
+                "access": "rw",
+                "offset": 66800
+            },
+            "IIDR24": {
+                "access": "rw",
+                "offset": 66832
+            },
+            "IIDR25": {
+                "access": "rw",
+                "offset": 66864
+            },
+            "IIDR26": {
+                "access": "rw",
+                "offset": 66896
+            },
+            "IIDR27": {
+                "access": "rw",
+                "offset": 66928
+            },
+            "IIDR28": {
+                "access": "rw",
+                "offset": 66960
+            },
+            "IIDR29": {
+                "access": "rw",
+                "offset": 66992
+            },
+            "IIDR3": {
+                "access": "rw",
+                "offset": 66160
+            },
+            "IIDR30": {
+                "access": "rw",
+                "offset": 67024
+            },
+            "IIDR31": {
+                "access": "rw",
+                "offset": 67056
+            },
+            "IIDR32": {
+                "access": "rw",
+                "offset": 67088
+            },
+            "IIDR33": {
+                "access": "rw",
+                "offset": 67120
+            },
+            "IIDR34": {
+                "access": "rw",
+                "offset": 67152
+            },
+            "IIDR35": {
+                "access": "rw",
+                "offset": 67184
+            },
+            "IIDR36": {
+                "access": "rw",
+                "offset": 67216
+            },
+            "IIDR37": {
+                "access": "rw",
+                "offset": 67248
+            },
+            "IIDR38": {
+                "access": "rw",
+                "offset": 67280
+            },
+            "IIDR39": {
+                "access": "rw",
+                "offset": 67312
+            },
+            "IIDR4": {
+                "access": "rw",
+                "offset": 66192
+            },
+            "IIDR40": {
+                "access": "rw",
+                "offset": 67344
+            },
+            "IIDR41": {
+                "access": "rw",
+                "offset": 67376
+            },
+            "IIDR42": {
+                "access": "rw",
+                "offset": 67408
+            },
+            "IIDR43": {
+                "access": "rw",
+                "offset": 67440
+            },
+            "IIDR44": {
+                "access": "rw",
+                "offset": 67472
+            },
+            "IIDR45": {
+                "access": "rw",
+                "offset": 67504
+            },
+            "IIDR46": {
+                "access": "rw",
+                "offset": 67536
+            },
+            "IIDR47": {
+                "access": "rw",
+                "offset": 67568
+            },
+            "IIDR48": {
+                "access": "rw",
+                "offset": 67600
+            },
+            "IIDR49": {
+                "access": "rw",
+                "offset": 67632
+            },
+            "IIDR5": {
+                "access": "rw",
+                "offset": 66224
+            },
+            "IIDR50": {
+                "access": "rw",
+                "offset": 67664
+            },
+            "IIDR51": {
+                "access": "rw",
+                "offset": 67696
+            },
+            "IIDR52": {
+                "access": "rw",
+                "offset": 67728
+            },
+            "IIDR53": {
+                "access": "rw",
+                "offset": 67760
+            },
+            "IIDR54": {
+                "access": "rw",
+                "offset": 67792
+            },
+            "IIDR55": {
+                "access": "rw",
+                "offset": 67824
+            },
+            "IIDR56": {
+                "access": "rw",
+                "offset": 67856
+            },
+            "IIDR57": {
+                "access": "rw",
+                "offset": 67888
+            },
+            "IIDR58": {
+                "access": "rw",
+                "offset": 67920
+            },
+            "IIDR59": {
+                "access": "rw",
+                "offset": 67952
+            },
+            "IIDR6": {
+                "access": "rw",
+                "offset": 66256
+            },
+            "IIDR60": {
+                "access": "rw",
+                "offset": 67984
+            },
+            "IIDR61": {
+                "access": "rw",
+                "offset": 68016
+            },
+            "IIDR62": {
+                "access": "rw",
+                "offset": 68048
+            },
+            "IIDR63": {
+                "access": "rw",
+                "offset": 68080
+            },
+            "IIDR7": {
+                "access": "rw",
+                "offset": 66288
+            },
+            "IIDR8": {
+                "access": "rw",
+                "offset": 66320
+            },
+            "IIDR9": {
+                "access": "rw",
+                "offset": 66352
+            },
+            "IIVPR0": {
+                "access": "rw",
+                "offset": 66048
+            },
+            "IIVPR1": {
+                "access": "rw",
+                "offset": 66080
+            },
+            "IIVPR10": {
+                "access": "rw",
+                "offset": 66368
+            },
+            "IIVPR11": {
+                "access": "rw",
+                "offset": 66400
+            },
+            "IIVPR12": {
+                "access": "rw",
+                "offset": 66432
+            },
+            "IIVPR13": {
+                "access": "rw",
+                "offset": 66464
+            },
+            "IIVPR14": {
+                "access": "rw",
+                "offset": 66496
+            },
+            "IIVPR15": {
+                "access": "rw",
+                "offset": 66528
+            },
+            "IIVPR16": {
+                "access": "rw",
+                "offset": 66560
+            },
+            "IIVPR17": {
+                "access": "rw",
+                "offset": 66592
+            },
+            "IIVPR18": {
+                "access": "rw",
+                "offset": 66624
+            },
+            "IIVPR19": {
+                "access": "rw",
+                "offset": 66656
+            },
+            "IIVPR2": {
+                "access": "rw",
+                "offset": 66112
+            },
+            "IIVPR20": {
+                "access": "rw",
+                "offset": 66688
+            },
+            "IIVPR21": {
+                "access": "rw",
+                "offset": 66720
+            },
+            "IIVPR22": {
+                "access": "rw",
+                "offset": 66752
+            },
+            "IIVPR23": {
+                "access": "rw",
+                "offset": 66784
+            },
+            "IIVPR24": {
+                "access": "rw",
+                "offset": 66816
+            },
+            "IIVPR25": {
+                "access": "rw",
+                "offset": 66848
+            },
+            "IIVPR26": {
+                "access": "rw",
+                "offset": 66880
+            },
+            "IIVPR27": {
+                "access": "rw",
+                "offset": 66912
+            },
+            "IIVPR28": {
+                "access": "rw",
+                "offset": 66944
+            },
+            "IIVPR29": {
+                "access": "rw",
+                "offset": 66976
+            },
+            "IIVPR3": {
+                "access": "rw",
+                "offset": 66144
+            },
+            "IIVPR30": {
+                "access": "rw",
+                "offset": 67008
+            },
+            "IIVPR31": {
+                "access": "rw",
+                "offset": 67040
+            },
+            "IIVPR32": {
+                "access": "rw",
+                "offset": 67072
+            },
+            "IIVPR33": {
+                "access": "rw",
+                "offset": 67104
+            },
+            "IIVPR34": {
+                "access": "rw",
+                "offset": 67136
+            },
+            "IIVPR35": {
+                "access": "rw",
+                "offset": 67168
+            },
+            "IIVPR36": {
+                "access": "rw",
+                "offset": 67200
+            },
+            "IIVPR37": {
+                "access": "rw",
+                "offset": 67232
+            },
+            "IIVPR38": {
+                "access": "rw",
+                "offset": 67264
+            },
+            "IIVPR39": {
+                "access": "rw",
+                "offset": 67296
+            },
+            "IIVPR4": {
+                "access": "rw",
+                "offset": 66176
+            },
+            "IIVPR40": {
+                "access": "rw",
+                "offset": 67328
+            },
+            "IIVPR41": {
+                "access": "rw",
+                "offset": 67360
+            },
+            "IIVPR42": {
+                "access": "rw",
+                "offset": 67392
+            },
+            "IIVPR43": {
+                "access": "rw",
+                "offset": 67424
+            },
+            "IIVPR44": {
+                "access": "rw",
+                "offset": 67456
+            },
+            "IIVPR45": {
+                "access": "rw",
+                "offset": 67488
+            },
+            "IIVPR46": {
+                "access": "rw",
+                "offset": 67520
+            },
+            "IIVPR47": {
+                "access": "rw",
+                "offset": 67552
+            },
+            "IIVPR48": {
+                "access": "rw",
+                "offset": 67584
+            },
+            "IIVPR49": {
+                "access": "rw",
+                "offset": 67616
+            },
+            "IIVPR5": {
+                "access": "rw",
+                "offset": 66208
+            },
+            "IIVPR50": {
+                "access": "rw",
+                "offset": 67648
+            },
+            "IIVPR51": {
+                "access": "rw",
+                "offset": 67680
+            },
+            "IIVPR52": {
+                "access": "rw",
+                "offset": 67712
+            },
+            "IIVPR53": {
+                "access": "rw",
+                "offset": 67744
+            },
+            "IIVPR54": {
+                "access": "rw",
+                "offset": 67776
+            },
+            "IIVPR55": {
+                "access": "rw",
+                "offset": 67808
+            },
+            "IIVPR56": {
+                "access": "rw",
+                "offset": 67840
+            },
+            "IIVPR57": {
+                "access": "rw",
+                "offset": 67872
+            },
+            "IIVPR58": {
+                "access": "rw",
+                "offset": 67904
+            },
+            "IIVPR59": {
+                "access": "rw",
+                "offset": 67936
+            },
+            "IIVPR6": {
+                "access": "rw",
+                "offset": 66240
+            },
+            "IIVPR60": {
+                "access": "rw",
+                "offset": 67968
+            },
+            "IIVPR61": {
+                "access": "rw",
+                "offset": 68000
+            },
+            "IIVPR62": {
+                "access": "rw",
+                "offset": 68032
+            },
+            "IIVPR63": {
+                "access": "rw",
+                "offset": 68064
+            },
+            "IIVPR7": {
+                "access": "rw",
+                "offset": 66272
+            },
+            "IIVPR8": {
+                "access": "rw",
+                "offset": 66304
+            },
+            "IIVPR9": {
+                "access": "rw",
+                "offset": 66336
+            },
+            "IPIDR0": {
+                "access": "w",
+                "offset": 64
+            },
+            "IPIDR1": {
+                "access": "w",
+                "offset": 80
+            },
+            "IPIDR2": {
+                "access": "w",
+                "offset": 96
+            },
+            "IPIDR3": {
+                "access": "w",
+                "offset": 112
+            },
+            "IPIDR_CPU00": {
+                "access": "w",
+                "offset": 131136
+            },
+            "IPIDR_CPU01": {
+                "access": "w",
+                "offset": 131152
+            },
+            "IPIDR_CPU02": {
+                "access": "w",
+                "offset": 131168
+            },
+            "IPIDR_CPU03": {
+                "access": "w",
+                "offset": 131184
+            },
+            "IPIDR_CPU10": {
+                "access": "w",
+                "offset": 135232
+            },
+            "IPIDR_CPU11": {
+                "access": "w",
+                "offset": 135248
+            },
+            "IPIDR_CPU12": {
+                "access": "w",
+                "offset": 135264
+            },
+            "IPIDR_CPU13": {
+                "access": "w",
+                "offset": 135280
+            },
+            "IPIVPR0": {
+                "access": "rw",
+                "offset": 4256
+            },
+            "IPIVPR1": {
+                "access": "rw",
+                "offset": 4272
+            },
+            "IPIVPR2": {
+                "access": "rw",
+                "offset": 4288
+            },
+            "IPIVPR3": {
+                "access": "rw",
+                "offset": 4304
+            },
+            "IRQSR0": {
+                "access": "r",
+                "offset": 4880
+            },
+            "IRQSR1": {
+                "access": "r",
+                "offset": 4896
+            },
+            "IRQSR2": {
+                "access": "r",
+                "offset": 4900
+            },
+            "MER": {
+                "access": "rw",
+                "offset": 5376
+            },
+            "MERa": {
+                "access": "rw",
+                "offset": 9472
+            },
+            "MIDR0": {
+                "access": "rw",
+                "offset": 71184
+            },
+            "MIDR1": {
+                "access": "rw",
+                "offset": 71216
+            },
+            "MIDR2": {
+                "access": "rw",
+                "offset": 71248
+            },
+            "MIDR3": {
+                "access": "rw",
+                "offset": 71280
+            },
+            "MIDR4": {
+                "access": "rw",
+                "offset": 71312
+            },
+            "MIDR5": {
+                "access": "rw",
+                "offset": 71344
+            },
+            "MIDR6": {
+                "access": "rw",
+                "offset": 71376
+            },
+            "MIDR7": {
+                "access": "rw",
+                "offset": 71408
+            },
+            "MIVPR0": {
+                "access": "rw",
+                "offset": 71168
+            },
+            "MIVPR1": {
+                "access": "rw",
+                "offset": 71200
+            },
+            "MIVPR2": {
+                "access": "rw",
+                "offset": 71232
+            },
+            "MIVPR3": {
+                "access": "rw",
+                "offset": 71264
+            },
+            "MIVPR4": {
+                "access": "rw",
+                "offset": 71296
+            },
+            "MIVPR5": {
+                "access": "rw",
+                "offset": 71328
+            },
+            "MIVPR6": {
+                "access": "rw",
+                "offset": 71360
+            },
+            "MIVPR7": {
+                "access": "rw",
+                "offset": 71392
+            },
+            "MSGR0": {
+                "access": "rw",
+                "offset": 5120
+            },
+            "MSGR1": {
+                "access": "rw",
+                "offset": 5136
+            },
+            "MSGR2": {
+                "access": "rw",
+                "offset": 5152
+            },
+            "MSGR3": {
+                "access": "rw",
+                "offset": 5168
+            },
+            "MSGRa4": {
+                "access": "rw",
+                "offset": 9216
+            },
+            "MSGRa5": {
+                "access": "rw",
+                "offset": 9232
+            },
+            "MSGRa6": {
+                "access": "rw",
+                "offset": 9248
+            },
+            "MSGRa7": {
+                "access": "rw",
+                "offset": 9264
+            },
+            "MSIDR0": {
+                "access": "rw",
+                "offset": 72720
+            },
+            "MSIDR1": {
+                "access": "rw",
+                "offset": 72752
+            },
+            "MSIDR2": {
+                "access": "rw",
+                "offset": 72784
+            },
+            "MSIDR3": {
+                "access": "rw",
+                "offset": 72816
+            },
+            "MSIDR4": {
+                "access": "rw",
+                "offset": 72848
+            },
+            "MSIDR5": {
+                "access": "rw",
+                "offset": 72880
+            },
+            "MSIDR6": {
+                "access": "rw",
+                "offset": 72912
+            },
+            "MSIDR7": {
+                "access": "rw",
+                "offset": 72944
+            },
+            "MSIIR": {
+                "access": "w",
+                "offset": 5952
+            },
+            "MSIR0": {
+                "access": "r",
+                "offset": 5632
+            },
+            "MSIR1": {
+                "access": "r",
+                "offset": 5648
+            },
+            "MSIR2": {
+                "access": "r",
+                "offset": 5664
+            },
+            "MSIR3": {
+                "access": "r",
+                "offset": 5680
+            },
+            "MSIR4": {
+                "access": "r",
+                "offset": 5696
+            },
+            "MSIR5": {
+                "access": "r",
+                "offset": 5712
+            },
+            "MSIR6": {
+                "access": "r",
+                "offset": 5728
+            },
+            "MSIR7": {
+                "access": "r",
+                "offset": 5744
+            },
+            "MSISR": {
+                "access": "r",
+                "offset": 5920
+            },
+            "MSIVPR0": {
+                "access": "rw",
+                "offset": 72704
+            },
+            "MSIVPR1": {
+                "access": "rw",
+                "offset": 72736
+            },
+            "MSIVPR2": {
+                "access": "rw",
+                "offset": 72768
+            },
+            "MSIVPR3": {
+                "access": "rw",
+                "offset": 72800
+            },
+            "MSIVPR4": {
+                "access": "rw",
+                "offset": 72832
+            },
+            "MSIVPR5": {
+                "access": "rw",
+                "offset": 72864
+            },
+            "MSIVPR6": {
+                "access": "rw",
+                "offset": 72896
+            },
+            "MSIVPR7": {
+                "access": "rw",
+                "offset": 72928
+            },
+            "MSR": {
+                "access": "rw",
+                "offset": 5392
+            },
+            "MSRa": {
+                "access": "rw",
+                "offset": 9488
+            },
+            "PIR": {
+                "access": "rw",
+                "offset": 4240
+            },
+            "PM0MR0": {
+                "access": "rw",
+                "offset": 4944
+            },
+            "PM0MR1": {
+                "access": "rw",
+                "offset": 4960
+            },
+            "PM0MR2": {
+                "access": "rw",
+                "offset": 4964
+            },
+            "PM1MR0": {
+                "access": "rw",
+                "offset": 4976
+            },
+            "PM1MR1": {
+                "access": "rw",
+                "offset": 4992
+            },
+            "PM1MR2": {
+                "access": "rw",
+                "offset": 4996
+            },
+            "PM2MR0": {
+                "access": "rw",
+                "offset": 5008
+            },
+            "PM2MR1": {
+                "access": "rw",
+                "offset": 5024
+            },
+            "PM2MR2": {
+                "access": "rw",
+                "offset": 5028
+            },
+            "PM3MR0": {
+                "access": "rw",
+                "offset": 5040
+            },
+            "PM3MR1": {
+                "access": "rw",
+                "offset": 5056
+            },
+            "PM3MR2": {
+                "access": "rw",
+                "offset": 5060
+            },
+            "SVR": {
+                "access": "rw",
+                "offset": 4320
+            },
+            "TCRA": {
+                "access": "rw",
+                "offset": 4864
+            },
+            "TCRB": {
+                "access": "rw",
+                "offset": 8960
+            },
+            "TFRRA": {
+                "access": "rw",
+                "offset": 4336
+            },
+            "TFRRB": {
+                "access": "rw",
+                "offset": 8432
+            },
+            "VIR": {
+                "access": "r",
+                "offset": 4224
+            },
+            "WHOAMI": {
+                "access": "r",
+                "offset": 144
+            },
+            "WHOAMI_CPU0": {
+                "access": "r",
+                "offset": 131216
+            },
+            "WHOAMI_CPU1": {
+                "access": "r",
+                "offset": 135312
+            }
+        }
+    },
+    "RAPIDIO": {
+        "base": [
+            4293656576
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "AICAR": {
+                "access": "rw",
+                "offset": 12
+            },
+            "AIDCAR": {
+                "access": "rw",
+                "offset": 8
+            },
+            "BDIDCSR": {
+                "access": "rw",
+                "offset": 96
+            },
+            "CTCSR": {
+                "access": "rw",
+                "offset": 108
+            },
+            "DICAR": {
+                "access": "r",
+                "offset": 4
+            },
+            "DIDCAR": {
+                "access": "r",
+                "offset": 0
+            },
+            "DOCAR": {
+                "access": "r",
+                "offset": 28
+            },
+            "EIDQDPAR": {
+                "access": "rw",
+                "offset": 78952
+            },
+            "EIDQEPAR": {
+                "access": "rw",
+                "offset": 78960
+            },
+            "EIM0FQDPAR": {
+                "access": "rw",
+                "offset": 77928
+            },
+            "EIM0FQEPAR": {
+                "access": "rw",
+                "offset": 77936
+            },
+            "EIM1FQDPAR": {
+                "access": "rw",
+                "offset": 78184
+            },
+            "EIM1FQEPAR": {
+                "access": "rw",
+                "offset": 78192
+            },
+            "EIPWQBAR": {
+                "access": "rw",
+                "offset": 79080
+            },
+            "EOM0DQDPAR": {
+                "access": "rw",
+                "offset": 77832
+            },
+            "EOM0DQEPAR": {
+                "access": "rw",
+                "offset": 77860
+            },
+            "EOM0SAR": {
+                "access": "rw",
+                "offset": 77840
+            },
+            "EOM1DQDPAR": {
+                "access": "rw",
+                "offset": 78088
+            },
+            "EOM1DQEPAR": {
+                "access": "rw",
+                "offset": 78116
+            },
+            "EOM1SAR": {
+                "access": "rw",
+                "offset": 78096
+            },
+            "EPWISR": {
+                "access": "r",
+                "offset": 65552
+            },
+            "ERBH": {
+                "access": "r",
+                "offset": 1536
+            },
+            "HBDIDLCSR": {
+                "access": "rw",
+                "offset": 104
+            },
+            "IDMIRIR": {
+                "access": "rw",
+                "offset": 78968
+            },
+            "IDMR": {
+                "access": "rw",
+                "offset": 78944
+            },
+            "IDQDPAR": {
+                "access": "rw",
+                "offset": 78956
+            },
+            "IDQEPAR": {
+                "access": "rw",
+                "offset": 78964
+            },
+            "IDSR": {
+                "access": "rw",
+                "offset": 78948
+            },
+            "IM0FQDPAR": {
+                "access": "rw",
+                "offset": 77932
+            },
+            "IM0FQEPAR": {
+                "access": "rw",
+                "offset": 77940
+            },
+            "IM0MIRIR": {
+                "access": "rw",
+                "offset": 77944
+            },
+            "IM0MR": {
+                "access": "rw",
+                "offset": 77920
+            },
+            "IM0SR": {
+                "access": "rw",
+                "offset": 77924
+            },
+            "IM1FQDPAR": {
+                "access": "rw",
+                "offset": 78188
+            },
+            "IM1FQEPAR": {
+                "access": "rw",
+                "offset": 78196
+            },
+            "IM1MIRIR": {
+                "access": "rw",
+                "offset": 78200
+            },
+            "IM1MR": {
+                "access": "rw",
+                "offset": 78176
+            },
+            "IM1SR": {
+                "access": "rw",
+                "offset": 78180
+            },
+            "IPBRR1": {
+                "access": "r",
+                "offset": 68600
+            },
+            "IPBRR2": {
+                "access": "r",
+                "offset": 68604
+            },
+            "IPWMR": {
+                "access": "rw",
+                "offset": 79072
+            },
+            "IPWQBAR": {
+                "access": "rw",
+                "offset": 79084
+            },
+            "IPWSR": {
+                "access": "rw",
+                "offset": 79076
+            },
+            "LCSBA1CSR": {
+                "access": "rw",
+                "offset": 92
+            },
+            "LLCR": {
+                "access": "rw",
+                "offset": 65540
+            },
+            "LRETCR": {
+                "access": "rw",
+                "offset": 65568
+            },
+            "LTLACCSR": {
+                "access": "rw",
+                "offset": 1556
+            },
+            "LTLCCCSR": {
+                "access": "rw",
+                "offset": 1564
+            },
+            "LTLDIDCCSR": {
+                "access": "rw",
+                "offset": 1560
+            },
+            "LTLEDCSR": {
+                "access": "rw",
+                "offset": 1544
+            },
+            "LTLEECSR": {
+                "access": "rw",
+                "offset": 1548
+            },
+            "MCSR": {
+                "access": "r",
+                "offset": 64
+            },
+            "ODDATR": {
+                "access": "rw",
+                "offset": 78876
+            },
+            "ODDPR": {
+                "access": "rw",
+                "offset": 78872
+            },
+            "ODMR": {
+                "access": "rw",
+                "offset": 78848
+            },
+            "ODRETCR": {
+                "access": "rw",
+                "offset": 78892
+            },
+            "ODSR": {
+                "access": "rw",
+                "offset": 78852
+            },
+            "OM0DATR": {
+                "access": "rw",
+                "offset": 77852
+            },
+            "OM0DCR": {
+                "access": "rw",
+                "offset": 77856
+            },
+            "OM0DPR": {
+                "access": "rw",
+                "offset": 77848
+            },
+            "OM0DQDPAR": {
+                "access": "rw",
+                "offset": 77836
+            },
+            "OM0DQEPAR": {
+                "access": "rw",
+                "offset": 77864
+            },
+            "OM0MGR": {
+                "access": "rw",
+                "offset": 77872
+            },
+            "OM0MLR": {
+                "access": "rw",
+                "offset": 77876
+            },
+            "OM0MR": {
+                "access": "rw",
+                "offset": 77824
+            },
+            "OM0RETCR": {
+                "access": "rw",
+                "offset": 77868
+            },
+            "OM0SAR": {
+                "access": "rw",
+                "offset": 77844
+            },
+            "OM0SR": {
+                "access": "rw",
+                "offset": 77828
+            },
+            "OM1DATR": {
+                "access": "rw",
+                "offset": 78108
+            },
+            "OM1DCR": {
+                "access": "rw",
+                "offset": 78112
+            },
+            "OM1DPR": {
+                "access": "rw",
+                "offset": 78104
+            },
+            "OM1DQDPAR": {
+                "access": "rw",
+                "offset": 78092
+            },
+            "OM1DQEPAR": {
+                "access": "rw",
+                "offset": 78120
+            },
+            "OM1MGR": {
+                "access": "rw",
+                "offset": 78128
+            },
+            "OM1MLR": {
+                "access": "rw",
+                "offset": 78132
+            },
+            "OM1MR": {
+                "access": "rw",
+                "offset": 78080
+            },
+            "OM1RETCR": {
+                "access": "rw",
+                "offset": 78124
+            },
+            "OM1SAR": {
+                "access": "rw",
+                "offset": 78100
+            },
+            "OM1SR": {
+                "access": "rw",
+                "offset": 78084
+            },
+            "P1AACR": {
+                "access": "rw",
+                "offset": 65824
+            },
+            "P1ADIDCSR": {
+                "access": "rw",
+                "offset": 65792
+            },
+            "P1CCSR": {
+                "access": "rw",
+                "offset": 348
+            },
+            "P1ECACSR": {
+                "access": "rw",
+                "offset": 1608
+            },
+            "P1EDCSR": {
+                "access": "rw",
+                "offset": 1600
+            },
+            "P1ERCSR": {
+                "access": "rw",
+                "offset": 1640
+            },
+            "P1ERECSR": {
+                "access": "rw",
+                "offset": 1604
+            },
+            "P1ERTCSR": {
+                "access": "rw",
+                "offset": 1644
+            },
+            "P1ESCSR": {
+                "access": "rw",
+                "offset": 344
+            },
+            "P1IECSR": {
+                "access": "w1c",
+                "offset": 65840
+            },
+            "P1LASCSR": {
+                "access": "rw",
+                "offset": 328
+            },
+            "P1LMREQCSR": {
+                "access": "rw",
+                "offset": 320
+            },
+            "P1LMRESPCSR": {
+                "access": "r",
+                "offset": 324
+            },
+            "P1LOPTTLCR": {
+                "access": "rw",
+                "offset": 65828
+            },
+            "P1PCR": {
+                "access": "rw",
+                "offset": 65856
+            },
+            "P1PCSECCSR0": {
+                "access": "rw",
+                "offset": 1612
+            },
+            "P1PECCSR1": {
+                "access": "rw",
+                "offset": 1616
+            },
+            "P1PECCSR2": {
+                "access": "rw",
+                "offset": 1620
+            },
+            "P1PECCSR3": {
+                "access": "rw",
+                "offset": 1624
+            },
+            "P1RIWAR0": {
+                "access": "rw",
+                "offset": 69104
+            },
+            "P1RIWAR1": {
+                "access": "rw",
+                "offset": 69072
+            },
+            "P1RIWAR2": {
+                "access": "rw",
+                "offset": 69040
+            },
+            "P1RIWAR3": {
+                "access": "rw",
+                "offset": 69008
+            },
+            "P1RIWAR4": {
+                "access": "rw",
+                "offset": 68976
+            },
+            "P1RIWBAR1": {
+                "access": "rw",
+                "offset": 69064
+            },
+            "P1RIWBAR2": {
+                "access": "rw",
+                "offset": 69032
+            },
+            "P1RIWBAR3": {
+                "access": "rw",
+                "offset": 69000
+            },
+            "P1RIWBAR4": {
+                "access": "rw",
+                "offset": 68968
+            },
+            "P1RIWTAR0": {
+                "access": "rw",
+                "offset": 69088
+            },
+            "P1RIWTAR1": {
+                "access": "rw",
+                "offset": 69056
+            },
+            "P1RIWTAR2": {
+                "access": "rw",
+                "offset": 69024
+            },
+            "P1RIWTAR3": {
+                "access": "rw",
+                "offset": 68992
+            },
+            "P1RIWTAR4": {
+                "access": "rw",
+                "offset": 68960
+            },
+            "P1ROWAR0": {
+                "access": "rw",
+                "offset": 68624
+            },
+            "P1ROWAR1": {
+                "access": "rw",
+                "offset": 68656
+            },
+            "P1ROWAR2": {
+                "access": "rw",
+                "offset": 68688
+            },
+            "P1ROWAR3": {
+                "access": "rw",
+                "offset": 68720
+            },
+            "P1ROWAR4": {
+                "access": "rw",
+                "offset": 68752
+            },
+            "P1ROWAR5": {
+                "access": "rw",
+                "offset": 68784
+            },
+            "P1ROWAR6": {
+                "access": "rw",
+                "offset": 68816
+            },
+            "P1ROWAR7": {
+                "access": "rw",
+                "offset": 68848
+            },
+            "P1ROWAR8": {
+                "access": "rw",
+                "offset": 68880
+            },
+            "P1ROWBAR1": {
+                "access": "rw",
+                "offset": 68648
+            },
+            "P1ROWBAR2": {
+                "access": "rw",
+                "offset": 68680
+            },
+            "P1ROWBAR3": {
+                "access": "rw",
+                "offset": 68712
+            },
+            "P1ROWBAR4": {
+                "access": "rw",
+                "offset": 68744
+            },
+            "P1ROWBAR5": {
+                "access": "rw",
+                "offset": 68776
+            },
+            "P1ROWBAR6": {
+                "access": "rw",
+                "offset": 68808
+            },
+            "P1ROWBAR7": {
+                "access": "rw",
+                "offset": 68840
+            },
+            "P1ROWBAR8": {
+                "access": "rw",
+                "offset": 68872
+            },
+            "P1ROWS1R1": {
+                "access": "rw",
+                "offset": 68660
+            },
+            "P1ROWS1R2": {
+                "access": "rw",
+                "offset": 68692
+            },
+            "P1ROWS1R3": {
+                "access": "rw",
+                "offset": 68724
+            },
+            "P1ROWS1R4": {
+                "access": "rw",
+                "offset": 68756
+            },
+            "P1ROWS1R5": {
+                "access": "rw",
+                "offset": 68788
+            },
+            "P1ROWS1R6": {
+                "access": "rw",
+                "offset": 68820
+            },
+            "P1ROWS1R7": {
+                "access": "rw",
+                "offset": 68852
+            },
+            "P1ROWS1R8": {
+                "access": "rw",
+                "offset": 68884
+            },
+            "P1ROWS2R1": {
+                "access": "rw",
+                "offset": 68664
+            },
+            "P1ROWS2R2": {
+                "access": "rw",
+                "offset": 68696
+            },
+            "P1ROWS2R3": {
+                "access": "rw",
+                "offset": 68728
+            },
+            "P1ROWS2R4": {
+                "access": "rw",
+                "offset": 68760
+            },
+            "P1ROWS2R5": {
+                "access": "rw",
+                "offset": 68792
+            },
+            "P1ROWS2R6": {
+                "access": "rw",
+                "offset": 68824
+            },
+            "P1ROWS2R7": {
+                "access": "rw",
+                "offset": 68856
+            },
+            "P1ROWS2R8": {
+                "access": "rw",
+                "offset": 68888
+            },
+            "P1ROWS3R1": {
+                "access": "rw",
+                "offset": 68668
+            },
+            "P1ROWS3R2": {
+                "access": "rw",
+                "offset": 68700
+            },
+            "P1ROWS3R3": {
+                "access": "rw",
+                "offset": 68732
+            },
+            "P1ROWS3R4": {
+                "access": "rw",
+                "offset": 68764
+            },
+            "P1ROWS3R5": {
+                "access": "rw",
+                "offset": 68796
+            },
+            "P1ROWS3R6": {
+                "access": "rw",
+                "offset": 68828
+            },
+            "P1ROWS3R7": {
+                "access": "rw",
+                "offset": 68860
+            },
+            "P1ROWS3R8": {
+                "access": "rw",
+                "offset": 68892
+            },
+            "P1ROWTAR0": {
+                "access": "rw",
+                "offset": 68608
+            },
+            "P1ROWTAR1": {
+                "access": "rw",
+                "offset": 68640
+            },
+            "P1ROWTAR2": {
+                "access": "rw",
+                "offset": 68672
+            },
+            "P1ROWTAR3": {
+                "access": "rw",
+                "offset": 68704
+            },
+            "P1ROWTAR4": {
+                "access": "rw",
+                "offset": 68736
+            },
+            "P1ROWTAR5": {
+                "access": "rw",
+                "offset": 68768
+            },
+            "P1ROWTAR6": {
+                "access": "rw",
+                "offset": 68800
+            },
+            "P1ROWTAR7": {
+                "access": "rw",
+                "offset": 68832
+            },
+            "P1ROWTAR8": {
+                "access": "rw",
+                "offset": 68864
+            },
+            "P1ROWTEAR0": {
+                "access": "rw",
+                "offset": 68612
+            },
+            "P1ROWTEAR1": {
+                "access": "rw",
+                "offset": 68644
+            },
+            "P1ROWTEAR2": {
+                "access": "rw",
+                "offset": 68676
+            },
+            "P1ROWTEAR3": {
+                "access": "rw",
+                "offset": 68708
+            },
+            "P1ROWTEAR4": {
+                "access": "rw",
+                "offset": 68740
+            },
+            "P1ROWTEAR5": {
+                "access": "rw",
+                "offset": 68772
+            },
+            "P1ROWTEAR6": {
+                "access": "rw",
+                "offset": 68804
+            },
+            "P1ROWTEAR7": {
+                "access": "rw",
+                "offset": 68836
+            },
+            "P1ROWTEAR8": {
+                "access": "rw",
+                "offset": 68868
+            },
+            "P1SLCSR": {
+                "access": "w1c",
+                "offset": 65880
+            },
+            "P1SLEICR": {
+                "access": "rw",
+                "offset": 65888
+            },
+            "P2AACR": {
+                "access": "rw",
+                "offset": 65952
+            },
+            "P2ADIDCSR": {
+                "access": "rw",
+                "offset": 65920
+            },
+            "P2CCSR": {
+                "access": "rw",
+                "offset": 380
+            },
+            "P2ECACSR": {
+                "access": "rw",
+                "offset": 1672
+            },
+            "P2EDCSR": {
+                "access": "rw",
+                "offset": 1664
+            },
+            "P2ERCSR": {
+                "access": "rw",
+                "offset": 1704
+            },
+            "P2ERECSR": {
+                "access": "rw",
+                "offset": 1668
+            },
+            "P2ERTCSR": {
+                "access": "rw",
+                "offset": 1708
+            },
+            "P2ESCSR": {
+                "access": "rw",
+                "offset": 376
+            },
+            "P2IECSR": {
+                "access": "w1c",
+                "offset": 65968
+            },
+            "P2LASCSR": {
+                "access": "rw",
+                "offset": 360
+            },
+            "P2LMREQCSR": {
+                "access": "rw",
+                "offset": 352
+            },
+            "P2LMRESPCSR": {
+                "access": "r",
+                "offset": 356
+            },
+            "P2LOPTTLCR": {
+                "access": "rw",
+                "offset": 65956
+            },
+            "P2PCR": {
+                "access": "rw",
+                "offset": 65984
+            },
+            "P2PCSECCSR0": {
+                "access": "rw",
+                "offset": 1676
+            },
+            "P2PECCSR1": {
+                "access": "rw",
+                "offset": 1680
+            },
+            "P2PECCSR2": {
+                "access": "rw",
+                "offset": 1684
+            },
+            "P2PECCSR3": {
+                "access": "rw",
+                "offset": 1688
+            },
+            "P2RIWAR0": {
+                "access": "rw",
+                "offset": 69616
+            },
+            "P2RIWAR1": {
+                "access": "rw",
+                "offset": 69584
+            },
+            "P2RIWAR2": {
+                "access": "rw",
+                "offset": 69552
+            },
+            "P2RIWAR3": {
+                "access": "rw",
+                "offset": 69520
+            },
+            "P2RIWAR4": {
+                "access": "rw",
+                "offset": 69488
+            },
+            "P2RIWBAR1": {
+                "access": "rw",
+                "offset": 69576
+            },
+            "P2RIWBAR2": {
+                "access": "rw",
+                "offset": 69544
+            },
+            "P2RIWBAR3": {
+                "access": "rw",
+                "offset": 69512
+            },
+            "P2RIWBAR4": {
+                "access": "rw",
+                "offset": 69480
+            },
+            "P2RIWTAR0": {
+                "access": "rw",
+                "offset": 69600
+            },
+            "P2RIWTAR1": {
+                "access": "rw",
+                "offset": 69568
+            },
+            "P2RIWTAR2": {
+                "access": "rw",
+                "offset": 69536
+            },
+            "P2RIWTAR3": {
+                "access": "rw",
+                "offset": 69504
+            },
+            "P2RIWTAR4": {
+                "access": "rw",
+                "offset": 69472
+            },
+            "P2ROWAR0": {
+                "access": "rw",
+                "offset": 69136
+            },
+            "P2ROWAR1": {
+                "access": "rw",
+                "offset": 69168
+            },
+            "P2ROWAR2": {
+                "access": "rw",
+                "offset": 69200
+            },
+            "P2ROWAR3": {
+                "access": "rw",
+                "offset": 69232
+            },
+            "P2ROWAR4": {
+                "access": "rw",
+                "offset": 69264
+            },
+            "P2ROWAR5": {
+                "access": "rw",
+                "offset": 69296
+            },
+            "P2ROWAR6": {
+                "access": "rw",
+                "offset": 69328
+            },
+            "P2ROWAR7": {
+                "access": "rw",
+                "offset": 69360
+            },
+            "P2ROWAR8": {
+                "access": "rw",
+                "offset": 69392
+            },
+            "P2ROWBAR1": {
+                "access": "rw",
+                "offset": 69160
+            },
+            "P2ROWBAR2": {
+                "access": "rw",
+                "offset": 69192
+            },
+            "P2ROWBAR3": {
+                "access": "rw",
+                "offset": 69224
+            },
+            "P2ROWBAR4": {
+                "access": "rw",
+                "offset": 69256
+            },
+            "P2ROWBAR5": {
+                "access": "rw",
+                "offset": 69288
+            },
+            "P2ROWBAR6": {
+                "access": "rw",
+                "offset": 69320
+            },
+            "P2ROWBAR7": {
+                "access": "rw",
+                "offset": 69352
+            },
+            "P2ROWBAR8": {
+                "access": "rw",
+                "offset": 69384
+            },
+            "P2ROWS1R1": {
+                "access": "rw",
+                "offset": 69172
+            },
+            "P2ROWS1R2": {
+                "access": "rw",
+                "offset": 69204
+            },
+            "P2ROWS1R3": {
+                "access": "rw",
+                "offset": 69236
+            },
+            "P2ROWS1R4": {
+                "access": "rw",
+                "offset": 69268
+            },
+            "P2ROWS1R5": {
+                "access": "rw",
+                "offset": 69300
+            },
+            "P2ROWS1R6": {
+                "access": "rw",
+                "offset": 69332
+            },
+            "P2ROWS1R7": {
+                "access": "rw",
+                "offset": 69364
+            },
+            "P2ROWS1R8": {
+                "access": "rw",
+                "offset": 69396
+            },
+            "P2ROWS2R1": {
+                "access": "rw",
+                "offset": 69176
+            },
+            "P2ROWS2R2": {
+                "access": "rw",
+                "offset": 69208
+            },
+            "P2ROWS2R3": {
+                "access": "rw",
+                "offset": 69240
+            },
+            "P2ROWS2R4": {
+                "access": "rw",
+                "offset": 69272
+            },
+            "P2ROWS2R5": {
+                "access": "rw",
+                "offset": 69304
+            },
+            "P2ROWS2R6": {
+                "access": "rw",
+                "offset": 69336
+            },
+            "P2ROWS2R7": {
+                "access": "rw",
+                "offset": 69368
+            },
+            "P2ROWS2R8": {
+                "access": "rw",
+                "offset": 69400
+            },
+            "P2ROWS3R1": {
+                "access": "rw",
+                "offset": 69180
+            },
+            "P2ROWS3R2": {
+                "access": "rw",
+                "offset": 69212
+            },
+            "P2ROWS3R3": {
+                "access": "rw",
+                "offset": 69244
+            },
+            "P2ROWS3R4": {
+                "access": "rw",
+                "offset": 69276
+            },
+            "P2ROWS3R5": {
+                "access": "rw",
+                "offset": 69308
+            },
+            "P2ROWS3R6": {
+                "access": "rw",
+                "offset": 69340
+            },
+            "P2ROWS3R7": {
+                "access": "rw",
+                "offset": 69372
+            },
+            "P2ROWS3R8": {
+                "access": "rw",
+                "offset": 69404
+            },
+            "P2ROWTAR0": {
+                "access": "rw",
+                "offset": 69120
+            },
+            "P2ROWTAR1": {
+                "access": "rw",
+                "offset": 69152
+            },
+            "P2ROWTAR2": {
+                "access": "rw",
+                "offset": 69184
+            },
+            "P2ROWTAR3": {
+                "access": "rw",
+                "offset": 69216
+            },
+            "P2ROWTAR4": {
+                "access": "rw",
+                "offset": 69248
+            },
+            "P2ROWTAR5": {
+                "access": "rw",
+                "offset": 69280
+            },
+            "P2ROWTAR6": {
+                "access": "rw",
+                "offset": 69312
+            },
+            "P2ROWTAR7": {
+                "access": "rw",
+                "offset": 69344
+            },
+            "P2ROWTAR8": {
+                "access": "rw",
+                "offset": 69376
+            },
+            "P2ROWTEAR0": {
+                "access": "rw",
+                "offset": 69124
+            },
+            "P2ROWTEAR1": {
+                "access": "rw",
+                "offset": 69156
+            },
+            "P2ROWTEAR2": {
+                "access": "rw",
+                "offset": 69188
+            },
+            "P2ROWTEAR3": {
+                "access": "rw",
+                "offset": 69220
+            },
+            "P2ROWTEAR4": {
+                "access": "rw",
+                "offset": 69252
+            },
+            "P2ROWTEAR5": {
+                "access": "rw",
+                "offset": 69284
+            },
+            "P2ROWTEAR6": {
+                "access": "rw",
+                "offset": 69316
+            },
+            "P2ROWTEAR7": {
+                "access": "rw",
+                "offset": 69348
+            },
+            "P2ROWTEAR8": {
+                "access": "rw",
+                "offset": 69380
+            },
+            "P2SLCSR": {
+                "access": "w1c",
+                "offset": 66008
+            },
+            "P2SLEICR": {
+                "access": "rw",
+                "offset": 66016
+            },
+            "PEFCAR": {
+                "access": "r",
+                "offset": 16
+            },
+            "PELLCCSR": {
+                "access": "r",
+                "offset": 76
+            },
+            "PGCCSR": {
+                "access": "rw",
+                "offset": 316
+            },
+            "PLTOCCSR": {
+                "access": "rw",
+                "offset": 288
+            },
+            "PMBH0": {
+                "access": "r",
+                "offset": 256
+            },
+            "PRETCR": {
+                "access": "rw",
+                "offset": 65664
+            },
+            "PRTOCCSR": {
+                "access": "rw",
+                "offset": 292
+            },
+            "PWDCSR": {
+                "access": "r",
+                "offset": 68
+            },
+            "SOCAR": {
+                "access": "r",
+                "offset": 24
+            }
+        }
+    },
+    "USB": {
+        "base": [
+            4293009408
+        ],
+        "count": 1,
+        "memory_mapped": true,
+        "registers": {
+            "AGE_CNT_THRESH": {
+                "access": "rw",
+                "offset": 1032
+            },
+            "ASYNCLISTADDR": {
+                "access": "rw",
+                "offset": 344
+            },
+            "BURSTSIZE": {
+                "access": "rw",
+                "offset": 352
+            },
+            "CAPLENGTH": {
+                "access": "r",
+                "bits": 8,
+                "offset": 256
+            },
+            "CONFIGFLAG": {
+                "access": "r",
+                "offset": 384
+            },
+            "CONTROL": {
+                "access": "rw",
+                "offset": 1280
+            },
+            "DCCPARAMS": {
+                "access": "r",
+                "offset": 292
+            },
+            "DCIVERSION": {
+                "access": "r",
+                "bits": 16,
+                "offset": 288
+            },
+            "DEVICEADDR": {
+                "access": "rw",
+                "offset": 340
+            },
+            "ENDPOINTLISTADDR": {
+                "access": "rw",
+                "offset": 344
+            },
+            "ENDPOINTPRIME": {
+                "access": "rw",
+                "offset": 432
+            },
+            "ENDPTCOMPLETE": {
+                "access": "w1c",
+                "offset": 444
+            },
+            "ENDPTCTRL0": {
+                "access": "rw",
+                "offset": 448
+            },
+            "ENDPTCTRL1": {
+                "access": "rw",
+                "offset": 452
+            },
+            "ENDPTCTRL2": {
+                "access": "rw",
+                "offset": 456
+            },
+            "ENDPTCTRL3": {
+                "access": "rw",
+                "offset": 460
+            },
+            "ENDPTCTRL4": {
+                "access": "rw",
+                "offset": 464
+            },
+            "ENDPTCTRL5": {
+                "access": "rw",
+                "offset": 468
+            },
+            "ENDPTFLUSH": {
+                "access": "rw",
+                "offset": 436
+            },
+            "ENDPTSETUPSTAT": {
+                "access": "w1c",
+                "offset": 428
+            },
+            "ENDPTSTATUS": {
+                "access": "r",
+                "offset": 440
+            },
+            "FRINDEX": {
+                "access": "rw",
+                "offset": 332
+            },
+            "HCCPARAMS": {
+                "access": "r",
+                "offset": 264
+            },
+            "HCIVERSION": {
+                "access": "r",
+                "bits": 16,
+                "offset": 258
+            },
+            "HCSPARAMS": {
+                "access": "r",
+                "offset": 260
+            },
+            "ID": {
+                "access": "r",
+                "offset": 0
+            },
+            "PERIODICLISTBASE": {
+                "access": "rw",
+                "offset": 340
+            },
+            "PORTSC": {
+                "access": "rw",
+                "offset": 388
+            },
+            "PRI_CTRL": {
+                "access": "rw",
+                "offset": 1036
+            },
+            "SI_CTRL": {
+                "access": "rw",
+                "offset": 1040
+            },
+            "SNOOP1": {
+                "access": "rw",
+                "offset": 1024
+            },
+            "SNOOP2": {
+                "access": "rw",
+                "offset": 1028
+            },
+            "TXFILLTUNING": {
+                "access": "rw",
+                "offset": 356
+            },
+            "ULPI_VIEWPORT": {
+                "access": "rw",
+                "offset": 368
+            },
+            "USBINTR": {
+                "access": "rw",
+                "offset": 328
+            },
+            "USBMODE": {
+                "access": "rw",
+                "offset": 424
+            },
+            "USBSTS": {
+                "access": "rw",
+                "offset": 324
+            }
+        }
+    }
+}
