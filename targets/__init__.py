@@ -1,6 +1,7 @@
 # if count is not present it is assumed to be 1
 # if bits is not present it is assumbed to be 32
 
+from json import dump, load
 from random import randrange
 
 
@@ -207,3 +208,14 @@ def get_num_bits(register, target, targets):
     else:
         num_bits = 32
     return num_bits
+
+
+def load_targets(architecture, type_):
+    with open('targets/'+architecture+'/'+type_+'.json', 'r') as json_file:
+        targets = load(json_file)
+    return targets
+
+
+def save_targets(architecture, type_, targets):
+    with open('targets/'+architecture+'/'+type_+'.json', 'w') as json_file:
+        dump(targets, json_file, indent=4, sort_keys=True)
