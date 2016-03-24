@@ -2029,7 +2029,7 @@
             }
         }
     },
-    "GU": {
+    "GUTS": {
         "base": [
             4293787648
         ],
@@ -2428,7 +2428,7 @@
             }
         }
     },
-    "MC": {
+    "DDR": {
         "base": [
             4292878336
         ],
@@ -5472,6 +5472,10 @@
             "ULPI_VIEWPORT": {
                 "access": "rw",
                 "offset": 368
+            },
+            "USBCMD": {
+                "access": "rw",
+                "offset": 320
             },
             "USBINTR": {
                 "access": "rw",
