@@ -1,0 +1,5047 @@
+{
+    "CCSR": {
+        "OBJECT": "soc.ccsr",
+        "limitations": "ALTCBAR and ALTCAR registers are unsupported. Interleaved SDRAM mappings are instead mapped sequentially.",
+        "registers": {
+            "BPTR": {},
+            "CCSRBAR": {},
+            "LAWAR": {
+                "count": [
+                    12
+                ]
+            },
+            "LAWBAR": {
+                "count": [
+                    12
+                ]
+            }
+        },
+        "unused_registers": {
+            "ALTCAR": {},
+            "ALTCBAR": {}
+        }
+    },
+    "CPU": {
+        "OBJECT": "soc.cpu",
+        "count": 2,
+        "registers": {
+            "acc": {
+                "bits": 64
+            },
+            "atbl": {},
+            "atbu": {},
+            "cr": {},
+            "csrr0": {},
+            "csrr1": {},
+            "ctr": {},
+            "dac1": {},
+            "dac2": {},
+            "dbcr0": {},
+            "dbcr1": {},
+            "dbcr2": {},
+            "dbsr": {},
+            "dear": {},
+            "dec": {},
+            "decar": {},
+            "esr": {},
+            "hid0": {},
+            "hid1": {},
+            "iac1": {},
+            "iac2": {},
+            "iarr": {},
+            "ivor0": {},
+            "ivor1": {},
+            "ivor10": {},
+            "ivor11": {},
+            "ivor12": {},
+            "ivor13": {},
+            "ivor14": {},
+            "ivor15": {},
+            "ivor2": {},
+            "ivor3": {},
+            "ivor32": {},
+            "ivor33": {},
+            "ivor34": {},
+            "ivor35": {},
+            "ivor4": {},
+            "ivor5": {},
+            "ivor6": {},
+            "ivor7": {},
+            "ivor8": {},
+            "ivor9": {},
+            "ivpr": {},
+            "l1cfg0": {},
+            "l1cfg1": {},
+            "l1csr0": {},
+            "l1csr1": {},
+            "lr": {},
+            "mas0": {},
+            "mas1": {},
+            "mas2": {},
+            "mas3": {},
+            "mas4": {},
+            "mas6": {},
+            "mas7": {},
+            "mcar": {},
+            "mcsr": {},
+            "mcsrr0": {},
+            "mcsrr1": {},
+            "mmucfg": {},
+            "mmucsr0": {},
+            "msr": {},
+            "pc": {},
+            "pid0": {},
+            "pid1": {},
+            "pid2": {},
+            "pir": {},
+            "pmc0": {},
+            "pmc1": {},
+            "pmc10": {},
+            "pmc11": {},
+            "pmc12": {},
+            "pmc13": {},
+            "pmc14": {},
+            "pmc15": {},
+            "pmc2": {},
+            "pmc3": {},
+            "pmc4": {},
+            "pmc5": {},
+            "pmc6": {},
+            "pmc7": {},
+            "pmc8": {},
+            "pmc9": {},
+            "pmgc0": {},
+            "pmlca0": {},
+            "pmlca1": {},
+            "pmlca10": {},
+            "pmlca11": {},
+            "pmlca12": {},
+            "pmlca13": {},
+            "pmlca14": {},
+            "pmlca15": {},
+            "pmlca2": {},
+            "pmlca3": {},
+            "pmlca4": {},
+            "pmlca5": {},
+            "pmlca6": {},
+            "pmlca7": {},
+            "pmlca8": {},
+            "pmlca9": {},
+            "pmlcb0": {},
+            "pmlcb1": {},
+            "pmlcb10": {},
+            "pmlcb11": {},
+            "pmlcb12": {},
+            "pmlcb13": {},
+            "pmlcb14": {},
+            "pmlcb15": {},
+            "pmlcb2": {},
+            "pmlcb3": {},
+            "pmlcb4": {},
+            "pmlcb5": {},
+            "pmlcb6": {},
+            "pmlcb7": {},
+            "pmlcb8": {},
+            "pmlcb9": {},
+            "pvr": {},
+            "spefscr": {},
+            "sprg0": {},
+            "sprg1": {},
+            "sprg2": {},
+            "sprg3": {},
+            "sprg4": {},
+            "sprg5": {},
+            "sprg6": {},
+            "sprg7": {},
+            "srr0": {},
+            "srr1": {},
+            "svr": {},
+            "tbl": {},
+            "tbu": {},
+            "tcr": {},
+            "tlb0cfg": {},
+            "tlb1cfg": {},
+            "tsr": {},
+            "usprg0": {},
+            "xer": {}
+        },
+        "unused_registers": {
+            "bbear": {},
+            "bbtar": {},
+            "bucsr": {},
+            "hdbcr0": {},
+            "hdbcr1": {},
+            "hdbcr5": {},
+            "npidr1": {},
+            "upmc0": {},
+            "upmc1": {},
+            "upmc2": {},
+            "upmc3": {},
+            "upmgc0": {},
+            "upmlca0": {},
+            "upmlca1": {},
+            "upmlca2": {},
+            "upmlca3": {},
+            "upmlcb0": {},
+            "upmlcb1": {},
+            "upmlcb2": {},
+            "upmlcb3": {}
+        }
+    },
+    "DMA": {
+        "OBJECT": "soc.dma",
+        "count": 2,
+        "limitations": "The DMA pause feature and DMA halt features have not been implemented.",
+        "registers": {
+            "BCR": {
+                "count": [
+                    4
+                ]
+            },
+            "CLNDAR": {
+                "count": [
+                    4
+                ]
+            },
+            "CLSDAR": {
+                "count": [
+                    4
+                ]
+            },
+            "DAR": {
+                "count": [
+                    4
+                ]
+            },
+            "DATR": {
+                "actual_bits": 32,
+                "bits": 28,
+                "count": [
+                    4
+                ],
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "NLWR",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            25,
+                            29
+                        ]
+                    ],
+                    [
+                        "DSME",
+                        [
+                            24,
+                            24
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            20,
+                            23
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "DWRITETTYPE",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "DPCI_ORDER"
+                    ],
+                    [
+                        "DTFLOWLVL"
+                    ],
+                    [
+                        "DTRANSINT"
+                    ]
+                ]
+            },
+            "DSR": {
+                "count": [
+                    4
+                ]
+            },
+            "ECLNDAR": {
+                "count": [
+                    4
+                ]
+            },
+            "ECLSDAR": {
+                "count": [
+                    4
+                ]
+            },
+            "ENLNDAR": {
+                "count": [
+                    4
+                ]
+            },
+            "ENLSDAR": {
+                "count": [
+                    4
+                ]
+            },
+            "MR": {
+                "actual_bits": 32,
+                "bits": 30,
+                "count": [
+                    4
+                ],
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            28,
+                            31
+                        ]
+                    ],
+                    [
+                        "BWC",
+                        [
+                            24,
+                            27
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            22,
+                            23
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            19,
+                            20
+                        ]
+                    ],
+                    [
+                        "EMS_EN",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "DAHTS",
+                        [
+                            16,
+                            17
+                        ]
+                    ],
+                    [
+                        "SAHTS",
+                        [
+                            14,
+                            15
+                        ]
+                    ],
+                    [
+                        "DAHE",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "SAHE",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "SRW",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "EOSIE",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "EOLINE",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "EOLSIE",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "EIE",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "XFE",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "CDSM_SWSM",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "CA",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "CTM",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "CC",
+                        [
+                            1,
+                            1
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "EMP_EN",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "CS",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "NLDAR": {
+                "count": [
+                    4
+                ]
+            },
+            "NLNDAR": {
+                "count": [
+                    4
+                ]
+            },
+            "NLSDAR": {
+                "count": [
+                    4
+                ]
+            },
+            "SAR": {
+                "count": [
+                    4
+                ]
+            },
+            "SATR": {
+                "actual_bits": 32,
+                "bits": 28,
+                "count": [
+                    4
+                ],
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            25,
+                            31
+                        ]
+                    ],
+                    [
+                        "SSME",
+                        [
+                            24,
+                            24
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            20,
+                            23
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "SREADTTYPE",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "SPCI_ORDER"
+                    ],
+                    [
+                        "STFLOWLVL"
+                    ],
+                    [
+                        "STRANSIT"
+                    ]
+                ]
+            },
+            "SR": {
+                "count": [
+                    4
+                ]
+            },
+            "SSR": {
+                "count": [
+                    4
+                ]
+            }
+        },
+        "unused_registers": {
+            "DGSR": {}
+        }
+    },
+    "ECM": {
+        "OBJECT": "soc.ecm",
+        "limitations": "Handles enabling/disabling the cores only. Access errors are not monitored nor reported.",
+        "registers": {
+            "EEBPCR": {}
+        },
+        "unused_registers": {
+            "ECMIP_REV1": {},
+            "ECMIP_REV2": {},
+            "EEATR": {},
+            "EEBACR": {},
+            "EEDR": {},
+            "EEER": {},
+            "EEHADR": {},
+            "EELADR": {}
+        }
+    },
+    "ELBC": {
+        "OBJECT": "soc.elbc",
+        "registers": {
+            "BR": {
+                "count": [
+                    8
+                ]
+            },
+            "FBAR": {},
+            "FBCR": {},
+            "FCR": {},
+            "FECC": {
+                "count": [
+                    4
+                ]
+            },
+            "FIR": {},
+            "FMR": {},
+            "FPAR": {},
+            "LBCR": {
+                "actual_bits": 32,
+                "bits": 15,
+                "fields": [
+                    [
+                        "LDIS",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            30
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            18,
+                            20
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            4,
+                            7
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "BCTLC",
+                        [
+                            22,
+                            23
+                        ]
+                    ],
+                    [
+                        "AHD",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "LPBSE",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "EPAR",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "BMT",
+                        [
+                            8,
+                            15
+                        ]
+                    ],
+                    [
+                        "BMTPS",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "LCRR": {
+                "actual_bits": 32,
+                "bits": 25,
+                "fields": [
+                    [
+                        "PBYP",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            18,
+                            30
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            5,
+                            15
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "EADC",
+                        [
+                            16,
+                            17
+                        ]
+                    ],
+                    [
+                        "CLKDIV",
+                        [
+                            0,
+                            4
+                        ]
+                    ]
+                ]
+            },
+            "LSOR": {},
+            "LTEAR": {},
+            "LTEATR": {},
+            "LTECCR": {},
+            "LTEDR": {},
+            "LTEIR": {},
+            "LTESR": {},
+            "LURT": {},
+            "MAMR": {},
+            "MAR": {},
+            "MBMR": {},
+            "MCMR": {},
+            "MDR": {},
+            "MRTPR": {},
+            "OR": {
+                "count": [
+                    8
+                ]
+            }
+        }
+    },
+    "ESDHC": {
+        "OBJECT": "soc.esdhc",
+        "limitations": "PIO mode not implemented (i.e. DMA must be used). Command and Data CRC check is not supported. Infinite data transfers not supported.",
+        "registers": {
+            "regs_ADMAES": {},
+            "regs_ADMASA": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_AUTOC12ERR": {},
+            "regs_BLKATTR": {},
+            "regs_CMDARG": {},
+            "regs_CMDRSP": {
+                "count": [
+                    4
+                ]
+            },
+            "regs_DCR": {
+                "actual_bits": 32,
+                "bits": 28,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            31
+                        ]
+                    ],
+                    [
+                        "PRI",
+                        [
+                            14,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            7,
+                            13
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            5
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "SNOOP",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "RD_SAFE",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "RD_PFE",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "RD_PF_SIZE",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "regs_DSADDR": {},
+            "regs_HOSTCAPBLT": {},
+            "regs_HOSTVER": {},
+            "regs_IRQSIGEN": {},
+            "regs_IRQSTAT": {},
+            "regs_IRQSTATEN": {},
+            "regs_MAXCUR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_PROCTL": {
+                "actual_bits": 32,
+                "bits": 22,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            27,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            19,
+                            24
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            15
+                        ]
+                    ],
+                    [
+                        "EMODE",
+                        [
+                            4,
+                            5
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "IABG"
+                    ],
+                    [
+                        "WECINT"
+                    ],
+                    [
+                        "WECRM",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "WECINS",
+                        [
+                            25,
+                            25
+                        ]
+                    ],
+                    [
+                        "RWCTL",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "CREQ",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "SABGREQ",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "CDSS",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "CDTL",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "D3CD",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "DTW",
+                        [
+                            1,
+                            2
+                        ]
+                    ]
+                ]
+            },
+            "regs_PRSSTAT": {},
+            "regs_SYSCTL": {
+                "actual_bits": 32,
+                "bits": 12,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            28,
+                            31
+                        ]
+                    ],
+                    [
+                        "RSTD",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "RSTC",
+                        [
+                            25,
+                            25
+                        ]
+                    ],
+                    [
+                        "RSTA",
+                        [
+                            24,
+                            24
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            20,
+                            23
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            3
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "INITA",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "DTOCV",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "SDCLKFS",
+                        [
+                            8,
+                            15
+                        ]
+                    ],
+                    [
+                        "DVS",
+                        [
+                            4,
+                            7
+                        ]
+                    ],
+                    [
+                        "PEREN",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "HCKEN",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "IPGEN",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "regs_WML": {
+                "actual_bits": 32,
+                "bits": 16,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            15
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "WR_WML",
+                        [
+                            16,
+                            23
+                        ]
+                    ],
+                    [
+                        "RD_WML",
+                        [
+                            0,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            "regs_XFERTYP": {
+                "actual_bits": 32,
+                "bits": 30,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            30,
+                            31
+                        ]
+                    ],
+                    [
+                        "CMDINX",
+                        [
+                            24,
+                            29
+                        ]
+                    ],
+                    [
+                        "DPSEL",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "CICEN",
+                        [
+                            20,
+                            20
+                        ]
+                    ],
+                    [
+                        "CCCEN",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "RSPTYP",
+                        [
+                            16,
+                            17
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            15
+                        ]
+                    ],
+                    [
+                        "MSBSEL",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "DTDSEL",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "AC12EN",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "BCEN",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "DMAEN",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "CMDTYP",
+                        [
+                            22,
+                            23
+                        ]
+                    ]
+                ]
+            }
+        },
+        "unused_registers": {
+            "regs_DATPORT": {}
+        }
+    },
+    "ESPI": {
+        "OBJECT": "soc.espi",
+        "limitations": "Dual Output and RapidS are both unimplemented Transmission speed settings are unimplemented. When the throttle attribute is set, 3.125 Mbit is used as an upper bound for the bitrate.",
+        "registers": {
+            "regs_CS_SPMODE": {
+                "actual_bits": 32,
+                "bits": 12,
+                "count": [
+                    4
+                ],
+                "fields": [
+                    [
+                        "CI",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "CP",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "REV",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "Reseved",
+                        [
+                            21,
+                            22
+                        ]
+                    ],
+                    [
+                        "LEN",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            2
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "DIV16",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "PM",
+                        [
+                            24,
+                            27
+                        ]
+                    ],
+                    [
+                        "ODD",
+                        [
+                            23,
+                            23
+                        ]
+                    ],
+                    [
+                        "POL",
+                        [
+                            20,
+                            20
+                        ]
+                    ],
+                    [
+                        "CSBEF",
+                        [
+                            12,
+                            15
+                        ]
+                    ],
+                    [
+                        "CSAFT",
+                        [
+                            8,
+                            11
+                        ]
+                    ],
+                    [
+                        "CSCG",
+                        [
+                            3,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            "regs_SPCOM": {
+                "fields": [
+                    [
+                        "CS",
+                        [
+                            30,
+                            31
+                        ]
+                    ],
+                    [
+                        "RxDelay",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "DO",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "TO",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "HLD",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            25
+                        ]
+                    ],
+                    [
+                        "RxSKIP",
+                        [
+                            16,
+                            23
+                        ]
+                    ],
+                    [
+                        "TRANLEN",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "regs_SPIE": {},
+            "regs_SPIM": {},
+            "regs_SPMODE": {}
+        }
+    },
+    "ETSEC": {
+        "OBJECT": "soc.etsec",
+        "count": 3,
+        "limitations": "Huge frames, interrupt coalescing, statistics counters, lossless flow control and timer related functions are not implemented. Only RXF interrupt is generated when receiving buffers.",
+        "registers": {
+            "ATTR": {},
+            "ATTRELI": {},
+            "CAM1": {},
+            "CAM2": {},
+            "DFVLAN": {},
+            "DMACTRL": {
+                "actual_bits": 32,
+                "bits": 30,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            31
+                        ]
+                    ],
+                    [
+                        "LE",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            14
+                        ]
+                    ],
+                    [
+                        "TDSEN",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "TBDSEN",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "GRS",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "GTS",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "WOP",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "TOD",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "WWR",
+                        [
+                            1,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "ECNTRL": {
+                "actual_bits": 32,
+                "bits": 28,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            15,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            7,
+                            11
+                        ]
+                    ],
+                    [
+                        "GMIIM",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "TBIM",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "RPM",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "RMM",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "SGMIIM",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "CLRCNT",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "AUTOZ",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "STEN",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "R100M",
+                        [
+                            3,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "EDIS": {},
+            "FIFO_TX_STARVE": {},
+            "FIFO_TX_STARVE_SHUTOFF": {},
+            "FIFO_TX_THR": {},
+            "GADDR": {
+                "count": [
+                    8
+                ]
+            },
+            "HAFDUP": {},
+            "IADDR": {
+                "count": [
+                    8
+                ]
+            },
+            "IEVENT": {},
+            "IFSTAT": {},
+            "IMASK": {},
+            "IPGIFGI": {},
+            "MACCFG1": {
+                "actual_bits": 32,
+                "bits": 23,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            20,
+                            30
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            9,
+                            15
+                        ]
+                    ],
+                    [
+                        "Loop_Back",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "Rx_EN",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "Tx_EN",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "Soft_Reset",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reset_Rx_MC",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "Reset_Tx_MC",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "Reset_Rx_Fun",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "Reset_Tx_Fun",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "Rx_Flow",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "Tx_Flow",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "Syncd_Rx_EN",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "Syncd_Tx_EN",
+                        [
+                            1,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "MACCFG2": {
+                "actual_bits": 32,
+                "bits": 29,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            31
+                        ]
+                    ],
+                    [
+                        "Preamble_Length",
+                        [
+                            12,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            10,
+                            11
+                        ]
+                    ],
+                    [
+                        "I_F_Mode",
+                        [
+                            8,
+                            9
+                        ]
+                    ],
+                    [
+                        "PreAM_RxEN",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "PreAM_TxEN",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "MPEN",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "PAD_CRC",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "CRC_EN",
+                        [
+                            1,
+                            1
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "Huge_Frame",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "Length_Check",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "Full_Duplex",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "MACSTNADDR1": {},
+            "MACSTNADDR2": {},
+            "MAC_ADD1": {
+                "count": [
+                    15
+                ]
+            },
+            "MAC_ADD2": {
+                "count": [
+                    15
+                ]
+            },
+            "MAXFRM": {},
+            "MIIMADD": {},
+            "MIIMCFG": {
+                "bits": 27,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            -5,
+                            30
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            3
+                        ]
+                    ]
+                ],
+                "unused_fields": [
+                    [
+                        "Reset_Mgmt",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "No_Pre",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "MgmtClk",
+                        [
+                            0,
+                            2
+                        ]
+                    ]
+                ]
+            },
+            "MIIMCOM": {},
+            "MIIMCON": {},
+            "MIIMIND": {},
+            "MIIMSTAT": {},
+            "MINFLR": {},
+            "MRBLR": {},
+            "PTV": {},
+            "RALN": {},
+            "RBASE": {
+                "count": [
+                    8
+                ]
+            },
+            "RBASEH": {},
+            "RBCA": {},
+            "RBDBPH": {},
+            "RBIFX": {},
+            "RBPTR": {
+                "count": [
+                    8
+                ]
+            },
+            "RBYT": {},
+            "RCDE": {},
+            "RCSE": {},
+            "RCTRL": {
+                "actual_bits": 32,
+                "bits": 30,
+                "fields": [
+                    [
+                        "L2OFF",
+                        [
+                            25,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            21,
+                            23
+                        ]
+                    ],
+                    [
+                        "PAL",
+                        [
+                            16,
+                            20
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "VLEX",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "FILREN",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "FSQEN",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "GHTX",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "IPCSEN",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "TUCSEN",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "PRSDEP",
+                        [
+                            0,
+                            1
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "BC_REJ",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "PROM",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "RSF",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "EMEN",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "CFA"
+                    ],
+                    [
+                        "TS",
+                        [
+                            24,
+                            24
+                        ]
+                    ],
+                    [
+                        "LFC",
+                        [
+                            14,
+                            14
+                        ]
+                    ]
+                ]
+            },
+            "RDRP": {},
+            "RFCS": {},
+            "RFLR": {},
+            "RFRG": {},
+            "RJBR": {},
+            "RMCA": {},
+            "ROVR": {},
+            "RPKT": {},
+            "RQFAR": {},
+            "RQUEUE": {},
+            "RSTAT": {},
+            "RSVD": {
+                "count": [
+                    6
+                ]
+            },
+            "RUND": {},
+            "RXCF": {},
+            "RXPF": {},
+            "RXUO": {},
+            "TBASE": {
+                "count": [
+                    8
+                ]
+            },
+            "TBASEH": {},
+            "TBCA": {},
+            "TBDBPH": {},
+            "TBIPA": {},
+            "TBPTR": {
+                "count": [
+                    8
+                ]
+            },
+            "TBYT": {},
+            "TCTRL": {},
+            "TDFR": {},
+            "TDRP": {},
+            "TEDF": {},
+            "TFCS": {},
+            "TFRG": {},
+            "TJBR": {},
+            "TLCL": {},
+            "TMCA": {},
+            "TMCL": {},
+            "TNCL": {},
+            "TOVR": {},
+            "TPKT": {},
+            "TQUEUE": {},
+            "TR127": {},
+            "TR1K": {},
+            "TR255": {},
+            "TR511": {},
+            "TR64": {},
+            "TRMAX": {},
+            "TRMGV": {},
+            "TSCL": {},
+            "TSEC_ID": {},
+            "TSEC_ID2": {},
+            "TSTAT": {},
+            "TUND": {},
+            "TXCF": {},
+            "TXCL": {},
+            "TXIC": {},
+            "TXPF": {},
+            "tbi_ANA": {
+                "actual_bits": 16,
+                "bits": 9,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            9,
+                            11
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            4
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "Next_Page",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "Remote_Fault",
+                        [
+                            12,
+                            13
+                        ]
+                    ],
+                    [
+                        "Pause",
+                        [
+                            7,
+                            8
+                        ]
+                    ],
+                    [
+                        "Half_Duplex",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "Full_Duplex",
+                        [
+                            5,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "tbi_ANEX": {
+                "bits": 16
+            },
+            "tbi_ANLPANP": {
+                "bits": 16
+            },
+            "tbi_ANLPBPA": {
+                "bits": 16
+            },
+            "tbi_ANNPT": {
+                "actual_bits": 16,
+                "bits": 2,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "Toggle",
+                        [
+                            11,
+                            11
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "Next_Page",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "Msg_Page",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "Ack2",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "Message_Un-formatted_Code_Field",
+                        [
+                            0,
+                            10
+                        ]
+                    ]
+                ]
+            },
+            "tbi_CR": {
+                "actual_bits": 16,
+                "bits": 10,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            10,
+                            11
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "PHY_Reset",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "Speed_0",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "AN_Enable",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "Reset_AN",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "Full_Duplex",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Speed_1",
+                        [
+                            6,
+                            6
+                        ]
+                    ]
+                ]
+            },
+            "tbi_EXST": {
+                "bits": 16
+            },
+            "tbi_JD": {
+                "actual_bits": 16,
+                "bits": 2,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            10,
+                            11
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "Jitter_Enable",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "Jitter_Select",
+                        [
+                            12,
+                            14
+                        ]
+                    ],
+                    [
+                        "Custom_Jitter_Pattern",
+                        [
+                            0,
+                            9
+                        ]
+                    ]
+                ]
+            },
+            "tbi_SR": {
+                "bits": 16
+            },
+            "tbi_TBICON": {
+                "actual_bits": 16,
+                "bits": 10,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            9,
+                            11
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "Soft_Reset",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "Disable_Rx_Dis",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "Disable_Tx_Dis",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "AN_Sense",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Clock_Select",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "MI_Mode",
+                        [
+                            4,
+                            4
+                        ]
+                    ]
+                ]
+            }
+        },
+        "unused_registers": {
+            "FIFOCFG": {},
+            "FIFO_RX_ALARM": {},
+            "FIFO_RX_ALARM_SHUTOFF": {},
+            "FIFO_RX_PAUSE": {},
+            "FIFO_RX_PAUSE_SHUTOFF": {},
+            "RFBPTR": {
+                "count": [
+                    8
+                ]
+            },
+            "RQFCR": {},
+            "RQFPR": {},
+            "RQPRM": {
+                "count": [
+                    8
+                ]
+            },
+            "RREJ": {},
+            "RXIC": {
+                "unused_fields": [
+                    [
+                        "ICCS"
+                    ],
+                    [
+                        "ICEN"
+                    ]
+                ]
+            },
+            "TMR_ACC": {},
+            "TMR_ADD": {},
+            "TMR_ALARM1_H": {},
+            "TMR_ALARM1_L": {},
+            "TMR_ALARM2_H": {},
+            "TMR_ALARM2_L": {},
+            "TMR_CNT_H": {},
+            "TMR_CNT_L": {},
+            "TMR_CTRL": {},
+            "TMR_ETTS1_H": {},
+            "TMR_ETTS1_L": {},
+            "TMR_ETTS2_H": {},
+            "TMR_ETTS2_L": {},
+            "TMR_FIPER1": {},
+            "TMR_FIPER2": {},
+            "TMR_FIPER3": {},
+            "TMR_OFF_H": {},
+            "TMR_OFF_L": {},
+            "TMR_PEMASK": {},
+            "TMR_PEVENT": {},
+            "TMR_PRSC": {},
+            "TMR_RXTS_H": {},
+            "TMR_RXTS_L": {},
+            "TMR_STAT": {},
+            "TMR_TEMASK": {},
+            "TMR_TEVENT": {},
+            "TMR_TXTS1_H": {},
+            "TMR_TXTS1_ID": {},
+            "TMR_TXTS1_L": {},
+            "TMR_TXTS2_H": {},
+            "TMR_TXTS2_ID": {},
+            "TMR_TXTS2_L": {},
+            "TR03WT": {},
+            "TR47WT": {}
+        }
+    },
+    "GPIO": {
+        "OBJECT": "soc.gpio",
+        "registers": {
+            "GPDAT": {},
+            "GPDIR": {},
+            "GPICR": {},
+            "GPIER": {},
+            "GPIMR": {},
+            "GPODR": {}
+        }
+    },
+    "GPR": {
+        "OBJECT": "soc.cpu",
+        "count": 2,
+        "registers": {
+            "gprs": {
+                "bits": 64,
+                "count": [
+                    32
+                ]
+            }
+        }
+    },
+    "GU": {
+        "OBJECT": "soc.gu",
+        "registers": {
+            "AUTORSTSR": {},
+            "CLKOCR": {},
+            "GPPORCR": {},
+            "MCPSUMR": {},
+            "PMUXCR": {},
+            "PORBMSR": {},
+            "PORDBGMSR": {},
+            "PORDEVSR": {},
+            "PORPLLSR": {},
+            "POWMGTCSR": {},
+            "PVR": {},
+            "RSTCR": {},
+            "SVR": {}
+        },
+        "unused_registers": {
+            "DDRCLKDR": {},
+            "DEVDISR": {},
+            "ECMCR": {},
+            "ECTRSTCR": {},
+            "IOVSELCR": {},
+            "PMCDR": {},
+            "PORDEVSR2": {},
+            "RSTRSCR": {},
+            "SRDSCR": {
+                "count": [
+                    2
+                ]
+            }
+        }
+    },
+    "I2C": {
+        "OBJECT": "soc.i2c",
+        "count": 2,
+        "limitations": "Slave mode not supported Arbitration lost not supported/detectable",
+        "registers": {
+            "I2CADR": {},
+            "I2CCR": {},
+            "I2CDFSRR": {},
+            "I2CDR": {},
+            "I2CFDR": {},
+            "I2CSR": {}
+        }
+    },
+    "L2SRAM": {
+        "OBJECT": "soc.l2sram",
+        "registers": {
+            "L2CTL": {
+                "fields": [
+                    [
+                        "L2E",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "L2I",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "L2SIZ",
+                        [
+                            28,
+                            29
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            27
+                        ]
+                    ],
+                    [
+                        "L2DO",
+                        [
+                            22,
+                            22
+                        ]
+                    ],
+                    [
+                        "L2IO",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            20,
+                            20
+                        ]
+                    ],
+                    [
+                        "L2INTDIS",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "L2SRAM",
+                        [
+                            16,
+                            18
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            14,
+                            15
+                        ]
+                    ],
+                    [
+                        "L2LO",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "L2LSC",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "L2LFR",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "L2LFRID",
+                        [
+                            8,
+                            9
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            4,
+                            7
+                        ]
+                    ],
+                    [
+                        "L2STASHDIS",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "L2STASHCTL",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "L2SRBAR": {
+                "count": [
+                    2
+                ]
+            },
+            "L2SRBAREA": {
+                "count": [
+                    2
+                ]
+            }
+        },
+        "unused_registers": {
+            "L2CAPTDATAHI": {},
+            "L2CAPTDATALO": {},
+            "L2CAPTECC": {},
+            "L2CEWAR": {
+                "count": [
+                    4
+                ]
+            },
+            "L2CEWAREA": {
+                "count": [
+                    4
+                ]
+            },
+            "L2CEWCR": {
+                "count": [
+                    4
+                ]
+            },
+            "L2ERRADDR": {},
+            "L2ERRATTR": {},
+            "L2ERRCTL": {},
+            "L2ERRDET": {},
+            "L2ERRDIS": {},
+            "L2ERRINJCTL": {},
+            "L2ERRINJHI": {},
+            "L2ERRINJLO": {},
+            "L2ERRINTEN": {}
+        }
+    },
+    "MC": {
+        "OBJECT": "soc.mc",
+        "registers": {
+            "CAPTURE_ADDRESS": {},
+            "CAPTURE_ATTRIBUTES": {},
+            "CAPTURE_DATA_HI": {},
+            "CAPTURE_DATA_LO": {},
+            "CAPTURE_ECC": {},
+            "CS_BNDS": {
+                "count": [
+                    4
+                ],
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            28,
+                            31
+                        ]
+                    ],
+                    [
+                        "SAn",
+                        [
+                            16,
+                            27
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            12,
+                            15
+                        ]
+                    ],
+                    [
+                        "EAn",
+                        [
+                            0,
+                            11
+                        ]
+                    ]
+                ]
+            },
+            "CS_CONFIG": {
+                "count": [
+                    4
+                ],
+                "fields": [
+                    [
+                        "CS_EN",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            30
+                        ]
+                    ],
+                    [
+                        "AP_EN",
+                        [
+                            23,
+                            23
+                        ]
+                    ],
+                    [
+                        "ODT_RD_CFG",
+                        [
+                            20,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "ODT_WR_CFG",
+                        [
+                            16,
+                            18
+                        ]
+                    ],
+                    [
+                        "BA_BITS_CS",
+                        [
+                            14,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            13
+                        ]
+                    ],
+                    [
+                        "ROW_BITS_CS",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            7
+                        ]
+                    ],
+                    [
+                        "COL_BITS_CS",
+                        [
+                            0,
+                            2
+                        ]
+                    ]
+                ]
+            },
+            "CS_CONFIG_2": {
+                "count": [
+                    4
+                ],
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            27,
+                            31
+                        ]
+                    ],
+                    [
+                        "PASR_CFG",
+                        [
+                            24,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            23
+                        ]
+                    ]
+                ]
+            },
+            "DATA_ERR_INJECT_HI": {},
+            "DATA_ERR_INJECT_LO": {},
+            "DDR_IP_REV1": {},
+            "DDR_IP_REV2": {},
+            "DDR_SDRAM_CFG": {
+                "actual_bits": 32,
+                "bits": 31,
+                "fields": [
+                    [
+                        "MEM_EN",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "SREN",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "ECC_EN",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "RD_EN",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "SDRAM_TYPE",
+                        [
+                            24,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            22,
+                            23
+                        ]
+                    ],
+                    [
+                        "DYN_PWR",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "DBW",
+                        [
+                            19,
+                            20
+                        ]
+                    ],
+                    [
+                        "8_BE",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "3T_EN",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "2T_EN",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "BA_INTLV_CTL",
+                        [
+                            8,
+                            14
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "x32_EN",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "PCHB8",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "HSE",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "MEM_HALT",
+                        [
+                            1,
+                            1
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "BI",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "DDR_SDRAM_CFG_2": {
+                "actual_bits": 32,
+                "bits": 31,
+                "fields": [
+                    [
+                        "FRC_SR",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "SR_IE",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "DLL_RST_DIS",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "DQS_CFG",
+                        [
+                            26,
+                            27
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            25
+                        ]
+                    ],
+                    [
+                        "ODT_CFG",
+                        [
+                            21,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            20
+                        ]
+                    ],
+                    [
+                        "NUM_PR",
+                        [
+                            12,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            7,
+                            11
+                        ]
+                    ],
+                    [
+                        "OBC_CFG",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "AP_EN",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "RCW_EN",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "MD_EN",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "D_INIT",
+                        [
+                            4,
+                            4
+                        ]
+                    ]
+                ]
+            },
+            "DDR_SDRAM_CLK_CNTRL": {},
+            "DDR_SDRAM_INTERVAL": {},
+            "DDR_SDRAM_MD_CNTL": {},
+            "DDR_SDRAM_MODE": {},
+            "DDR_SDRAM_MODE_2": {},
+            "DDR_SR_CNTR": {},
+            "DDR_WRLVL_CNTL": {},
+            "DDR_WRLVL_CNTL_2": {},
+            "DDR_WRLVL_CNTL_3": {},
+            "DDR_ZQ_CNTL": {},
+            "ERR_DETECT": {},
+            "ERR_DISABLE": {},
+            "ERR_INT_EN": {},
+            "ERR_SBE": {},
+            "TIMING_CFG_0": {},
+            "TIMING_CFG_1": {},
+            "TIMING_CFG_2": {},
+            "TIMING_CFG_3": {},
+            "TIMING_CFG_4": {},
+            "TIMING_CFG_5": {}
+        },
+        "unused_registers": {
+            "CAPTURE_EXT_ADDRESS": {},
+            "DDRCDR_1": {},
+            "DDRCDR_2": {},
+            "DDRDSR_1": {},
+            "DDRDSR_2": {},
+            "DDR_INIT_ADDRESS": {},
+            "DDR_INIT_EXT_ADDRESS": {},
+            "DDR_SDRAM_INIT": {},
+            "DDR_SDRAM_RCW": {}
+        }
+    },
+    "PCIE": {
+        "OBJECT": "soc.pcie_bridge",
+        "count": 3,
+        "limitations": "PCI capabilities (i.e. the standard PCI capabilities defined in a linked list in PCI configuration space) are typically only dummy registers, as PCI capabilities are usually too low-level for Simics. Error management registers only have dummy implementation.",
+        "registers": {
+            "PEX_CONFIG": {
+                "actual_bits": 32,
+                "bits": 29,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            5,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            2,
+                            3
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "SAC",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "SP",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "SCC",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "PEX_CONFIG_ADDR": {},
+            "PEX_CONFIG_RTY_TOR": {},
+            "PEX_IP_BLK_REV1": {},
+            "PEX_IP_BLK_REV2": {},
+            "PEX_OTB_CPL_TOR": {},
+            "PEX_PME_MES_DISR": {},
+            "PEX_PME_MES_DR": {},
+            "PEX_PME_MES_IER": {},
+            "PEX_inbound_ITAR": {
+                "count": [
+                    3
+                ]
+            },
+            "PEX_inbound_IWAR": {
+                "count": [
+                    3
+                ],
+                "fields": [
+                    [
+                        "EN",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "PF",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            28
+                        ]
+                    ],
+                    [
+                        "TRGT",
+                        [
+                            20,
+                            23
+                        ]
+                    ],
+                    [
+                        "RTT",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "WTT",
+                        [
+                            12,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            11
+                        ]
+                    ],
+                    [
+                        "IWS",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "PEX_inbound_IWBAR": {
+                "count": [
+                    3
+                ]
+            },
+            "PEX_inbound_IWBEAR": {
+                "count": [
+                    3
+                ]
+            },
+            "PEX_outbound_OTAR": {
+                "count": [
+                    5
+                ]
+            },
+            "PEX_outbound_OTEAR": {
+                "count": [
+                    5
+                ]
+            },
+            "PEX_outbound_OTWBAR": {
+                "count": [
+                    5
+                ]
+            },
+            "PEX_outbound_OWAR": {
+                "actual_bits": 32,
+                "bits": 27,
+                "count": [
+                    5
+                ],
+                "fields": [
+                    [
+                        "EN",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            29,
+                            30
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            20,
+                            20
+                        ]
+                    ],
+                    [
+                        "RTT",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "WTT",
+                        [
+                            12,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            11
+                        ]
+                    ],
+                    [
+                        "OWS",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "ROE",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "NS",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "TC",
+                        [
+                            21,
+                            23
+                        ]
+                    ]
+                ]
+            }
+        },
+        "unused_registers": {
+            "PEX_ERR_CAP_R": {
+                "count": [
+                    4
+                ]
+            },
+            "PEX_ERR_CAP_STAT": {},
+            "PEX_ERR_DISR": {},
+            "PEX_ERR_DR": {},
+            "PEX_ERR_EN": {},
+            "PEX_LTSSM_STAT": {},
+            "PEX_PDB_STAT": {}
+        }
+    },
+    "PIC": {
+        "OBJECT": "soc.pic",
+        "limitations": "The priority between interrupts with the same xVPR[PRIORITY] values are not guaranteed. Edge triggered interrupts are not supported.",
+        "registers": {
+            "BRR1": {},
+            "BRR2": {},
+            "EIDR": {
+                "count": [
+                    12
+                ]
+            },
+            "EIVPR": {
+                "count": [
+                    12
+                ]
+            },
+            "FRR": {},
+            "GCR": {},
+            "GT_GTBCR": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "GT_GTCCR": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "GT_GTDR": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "GT_GTVPR": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "GT_TCR": {
+                "count": [
+                    2
+                ]
+            },
+            "GT_TFRR": {
+                "count": [
+                    2
+                ]
+            },
+            "IIDR": {
+                "count": [
+                    64
+                ]
+            },
+            "IIVPR": {
+                "count": [
+                    64
+                ]
+            },
+            "IPIVPR": {
+                "count": [
+                    4
+                ]
+            },
+            "MSG_MER": {
+                "count": [
+                    2
+                ]
+            },
+            "MSG_MIDR": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "MSG_MIVPR": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "MSG_MSGR": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "MSI_MSIDR": {
+                "count": [
+                    1,
+                    8
+                ]
+            },
+            "MSI_MSIR": {
+                "count": [
+                    1,
+                    8
+                ]
+            },
+            "MSI_MSISR": {
+                "count": [
+                    1
+                ]
+            },
+            "MSI_MSIVPR": {
+                "count": [
+                    1,
+                    8
+                ]
+            },
+            "PIR": {},
+            "PM_MR": {
+                "count": [
+                    4,
+                    3
+                ]
+            },
+            "P_CTPR": {
+                "count": [
+                    8
+                ]
+            },
+            "P_IPIDR": {
+                "count": [
+                    8,
+                    4
+                ]
+            },
+            "SVR": {},
+            "VIR": {}
+        },
+        "unused_registers": {
+            "CISR": {
+                "count": [
+                    3
+                ]
+            },
+            "ERQSR": {},
+            "IRQSR": {
+                "count": [
+                    3
+                ]
+            },
+            "MSG_MSR": {
+                "count": [
+                    2
+                ]
+            }
+        }
+    },
+    "RAPIDIO": {
+        "OBJECT": "soc.rapidio",
+        "limitations": "These parts of the RapidIO controller are implemented: Maintenance operations: read/write of configuration registers. Outgoing doorbell messages. Outgoing memory operations. Outgoing messages from both mailboxes. Incoming doorbell messages. Incoming messages into both mailboxes. Incoming memory operations. These parts are not implemented: Operations crossing outbound window borders. Operations crossing inbound window borders. Incoming packet filtering based on target ID.",
+        "registers": {
+            "regs_DMIRIR": {},
+            "regs_DMR": {},
+            "regs_DQDPAR": {},
+            "regs_DQEPAR": {},
+            "regs_DSR": {},
+            "regs_EDQDPAR": {},
+            "regs_EDQEPAR": {},
+            "regs_EPWISR": {},
+            "regs_EPWQBAR": {},
+            "regs_IPBRR1": {},
+            "regs_IPBRR2": {},
+            "regs_LLCR": {},
+            "regs_LRETCR": {},
+            "regs_M_EIFQDPAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_EIFQEPAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_EODQDPAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_EODQEPAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_EOSAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_IFQDPAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_IFQEPAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_IMIRIR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_IMR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_ISR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_ODATR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_ODCR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_ODPR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_ODQDPAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_ODQEPAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_OMGR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_OMLR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_OMR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_ORETCR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_OSAR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_M_OSR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_ODDATR": {},
+            "regs_ODDPR": {},
+            "regs_ODMR": {},
+            "regs_ODRETCR": {},
+            "regs_ODRS": {},
+            "regs_PRTOCCSR": {},
+            "regs_PWMR": {},
+            "regs_PWQBAR": {},
+            "regs_PWSR": {},
+            "regs_assembly_id": {},
+            "regs_assembly_info": {},
+            "regs_base1_status": {},
+            "regs_base1_status_hi": {},
+            "regs_base_device_id": {},
+            "regs_component_tag": {},
+            "regs_conf_dest_id": {},
+            "regs_conf_output_port": {},
+            "regs_default_output_port": {},
+            "regs_device_id": {},
+            "regs_device_info": {},
+            "regs_dst_operations": {},
+            "regs_error_block_header": {},
+            "regs_host_base_device_id": {},
+            "regs_layer_error_detect": {},
+            "regs_layer_error_enable": {},
+            "regs_packet_ttl": {},
+            "regs_pe_features": {},
+            "regs_pe_ll_status": {},
+            "regs_port_AACR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_LOPTTLCR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_RIWAR0": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_RIWARn": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "regs_port_RIWBARn": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "regs_port_RIWTAR0": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_RIWTARn": {
+                "count": [
+                    2,
+                    4
+                ]
+            },
+            "regs_port_ROWAR0": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_ROWARn": {
+                "count": [
+                    2,
+                    8
+                ]
+            },
+            "regs_port_ROWBARn": {
+                "count": [
+                    2,
+                    8
+                ]
+            },
+            "regs_port_ROWS1R": {
+                "count": [
+                    2,
+                    8
+                ]
+            },
+            "regs_port_ROWS2R": {
+                "count": [
+                    2,
+                    8
+                ]
+            },
+            "regs_port_ROWS3R": {
+                "count": [
+                    2,
+                    8
+                ]
+            },
+            "regs_port_ROWTAR0": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_ROWTARn": {
+                "count": [
+                    2,
+                    8
+                ]
+            },
+            "regs_port_ROWTEAR": {
+                "count": [
+                    2,
+                    8
+                ]
+            },
+            "regs_port_ROWTEAR0": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_SLCSR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_block_header": {},
+            "regs_port_general_control": {},
+            "regs_port_link_timeout": {},
+            "regs_port_port_control": {
+                "actual_bits": 32,
+                "bits": 28,
+                "count": [
+                    2
+                ],
+                "fields": [
+                    [
+                        "PW",
+                        [
+                            30,
+                            31
+                        ]
+                    ],
+                    [
+                        "IPW",
+                        [
+                            27,
+                            29
+                        ]
+                    ],
+                    [
+                        "PWO",
+                        [
+                            24,
+                            26
+                        ]
+                    ],
+                    [
+                        "ECD",
+                        [
+                            20,
+                            20
+                        ]
+                    ],
+                    [
+                        "MEP",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            4,
+                            18
+                        ]
+                    ],
+                    [
+                        "SPF",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "DPE",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "PT",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_registers": [
+                    [
+                        "PD",
+                        [
+                            23,
+                            23
+                        ]
+                    ],
+                    [
+                        "OPE",
+                        [
+                            22,
+                            22
+                        ]
+                    ],
+                    [
+                        "IPE",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "PL",
+                        [
+                            1,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "regs_port_port_error_and_status": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_portwrite_target_id": {},
+            "regs_src_operations": {},
+            "regs_switch_info": {},
+            "regs_write_port_status": {}
+        },
+        "unused_registers": {
+            "regs_PRETCR": {},
+            "regs_layer_capture_address": {},
+            "regs_layer_capture_address_hi": {},
+            "regs_layer_capture_control": {},
+            "regs_layer_capture_device_id": {},
+            "regs_port_ADIDCSR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_IECSR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_PCR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_SLEICR": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_capture_attributes": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_capture_packet_1": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_capture_packet_2": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_capture_packet_3": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_capture_symbol": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_link_maintenance_request": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_link_maintenance_response": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_port_error_detect": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_port_error_rate": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_port_error_rate_enable": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_port_error_rate_threshold": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_port_port_local_ackid_status": {
+                "count": [
+                    2
+                ]
+            }
+        }
+    },
+    "TLB": {
+        "OBJECT": "soc.cpu",
+        "count": 2,
+        "registers": {
+            "tlb0": {
+                "actual_bits": 32,
+                "bits": 77,
+                "count": [
+                    128,
+                    4,
+                    5
+                ],
+                "fields": {
+                    "E": {
+                        "bit_indicies": [
+                            0,
+                            0
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "EPN": {
+                        "bit_indicies": [
+                            12,
+                            31
+                        ],
+                        "bits": 20,
+                        "index": 2
+                    },
+                    "G": {
+                        "bit_indicies": [
+                            1,
+                            1
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "I": {
+                        "bit_indicies": [
+                            3,
+                            3
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "M": {
+                        "bit_indicies": [
+                            2,
+                            2
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "NV": {
+                        "bit_indicies": [
+                            0,
+                            1
+                        ],
+                        "bits": 2,
+                        "index": 0
+                    },
+                    "RPN": {
+                        "bit_indicies_h": [
+                            0,
+                            3
+                        ],
+                        "bit_indicies_l": [
+                            12,
+                            31
+                        ],
+                        "bits": 24,
+                        "bits_h": 4,
+                        "bits_l": 20,
+                        "index_h": 4,
+                        "index_l": 3,
+                        "split": true
+                    },
+                    "SIZE": {
+                        "bit_indicies": [
+                            8,
+                            11
+                        ],
+                        "bits": 4,
+                        "index": 1
+                    },
+                    "SR": {
+                        "bit_indicies": [
+                            0,
+                            0
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "SW": {
+                        "bit_indicies": [
+                            2,
+                            2
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "SX": {
+                        "bit_indicies": [
+                            4,
+                            4
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "TID": {
+                        "bit_indicies": [
+                            16,
+                            23
+                        ],
+                        "bits": 8,
+                        "index": 1
+                    },
+                    "TS": {
+                        "bit_indicies": [
+                            12,
+                            12
+                        ],
+                        "bits": 1,
+                        "index": 1
+                    },
+                    "U": {
+                        "bit_indicies": [
+                            6,
+                            9
+                        ],
+                        "bits": 4,
+                        "index": 3
+                    },
+                    "UR": {
+                        "bit_indicies": [
+                            1,
+                            1
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "UW": {
+                        "bit_indicies": [
+                            3,
+                            3
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "UX": {
+                        "bit_indicies": [
+                            5,
+                            5
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "V": {
+                        "bit_indicies": [
+                            31,
+                            31
+                        ],
+                        "bits": 1,
+                        "index": 1
+                    },
+                    "W": {
+                        "bit_indicies": [
+                            4,
+                            4
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "X": {
+                        "bit_indicies": [
+                            5,
+                            6
+                        ],
+                        "bits": 2,
+                        "index": 2
+                    }
+                },
+                "is_tlb": true
+            },
+            "tlb1": {
+                "actual_bits": 32,
+                "bits": 76,
+                "count": [
+                    16,
+                    5
+                ],
+                "fields": {
+                    "E": {
+                        "bit_indicies": [
+                            0,
+                            0
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "EPN": {
+                        "bit_indicies": [
+                            12,
+                            31
+                        ],
+                        "bits": 20,
+                        "index": 2
+                    },
+                    "G": {
+                        "bit_indicies": [
+                            1,
+                            1
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "I": {
+                        "bit_indicies": [
+                            3,
+                            3
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "IPROT": {
+                        "bit_indicies": [
+                            30,
+                            30
+                        ],
+                        "bits": 1,
+                        "index": 1
+                    },
+                    "M": {
+                        "bit_indicies": [
+                            2,
+                            2
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "RPN": {
+                        "bit_indicies_h": [
+                            0,
+                            3
+                        ],
+                        "bit_indicies_l": [
+                            12,
+                            31
+                        ],
+                        "bits": 24,
+                        "bits_h": 4,
+                        "bits_l": 20,
+                        "index_h": 4,
+                        "index_l": 3,
+                        "split": true
+                    },
+                    "SIZE": {
+                        "bit_indicies": [
+                            8,
+                            11
+                        ],
+                        "bits": 4,
+                        "index": 1
+                    },
+                    "SR": {
+                        "bit_indicies": [
+                            0,
+                            0
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "SW": {
+                        "bit_indicies": [
+                            2,
+                            2
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "SX": {
+                        "bit_indicies": [
+                            4,
+                            4
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "TID": {
+                        "bit_indicies": [
+                            16,
+                            23
+                        ],
+                        "bits": 8,
+                        "index": 1
+                    },
+                    "TS": {
+                        "bit_indicies": [
+                            12,
+                            12
+                        ],
+                        "bits": 1,
+                        "index": 1
+                    },
+                    "U": {
+                        "bit_indicies": [
+                            6,
+                            9
+                        ],
+                        "bits": 4,
+                        "index": 3
+                    },
+                    "UR": {
+                        "bit_indicies": [
+                            1,
+                            1
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "UW": {
+                        "bit_indicies": [
+                            3,
+                            3
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "UX": {
+                        "bit_indicies": [
+                            5,
+                            5
+                        ],
+                        "bits": 1,
+                        "index": 3
+                    },
+                    "V": {
+                        "bit_indicies": [
+                            31,
+                            31
+                        ],
+                        "bits": 1,
+                        "index": 1
+                    },
+                    "W": {
+                        "bit_indicies": [
+                            4,
+                            4
+                        ],
+                        "bits": 1,
+                        "index": 2
+                    },
+                    "X": {
+                        "bit_indicies": [
+                            5,
+                            6
+                        ],
+                        "bits": 2,
+                        "index": 2
+                    }
+                },
+                "is_tlb": true
+            }
+        }
+    },
+    "USB": {
+        "OBJECT": "soc.usb",
+        "limitations": "Device mode not implemented. Interrupt and Isochronous transfers not supported Cannot handle when USB devices send NAK or STALL status during Control and Bulk transfers Cannot handle USB devices with a latency (submit_transfer must return USB_Transfer_ Completed) Bulk and Control transfers will only be initiated while the attribute async_list_polling_enabled is set. Asynchronous schedule park capability not implemented. Extensions to EHCI not implemented.",
+        "registers": {
+            "regs_BURSTSIZE": {},
+            "regs_DCCPARAMS": {},
+            "regs_DCIVERSION": {
+                "bits": 16
+            },
+            "regs_DEVICEADDR": {},
+            "regs_ENDPOINTLISTADDR": {},
+            "regs_USBMODE": {
+                "actual_bits": 32,
+                "bits": 30,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            5,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "CM",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "SDIS",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "SLOM",
+                        [
+                            3,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "usb_regs_caplength": {
+                "bits": 8
+            },
+            "usb_regs_configflag": {},
+            "usb_regs_ctrldssegment": {},
+            "usb_regs_frindex": {},
+            "usb_regs_hccparams": {},
+            "usb_regs_hciversion": {
+                "bits": 16
+            },
+            "usb_regs_hcsp_portroute": {},
+            "usb_regs_hcsparams": {},
+            "usb_regs_periodiclistbase": {},
+            "usb_regs_prtsc": {
+                "actual_bits": 32,
+                "bits": 26,
+                "count": [
+                    1
+                ],
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            28,
+                            29
+                        ]
+                    ],
+                    [
+                        "PSPD",
+                        [
+                            26,
+                            27
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            25,
+                            25
+                        ]
+                    ],
+                    [
+                        "PHCD",
+                        [
+                            23,
+                            23
+                        ]
+                    ],
+                    [
+                        "PTC",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "PIC",
+                        [
+                            14,
+                            15
+                        ]
+                    ],
+                    [
+                        "PO",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "PP",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "LS",
+                        [
+                            10,
+                            11
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "PR",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "SUSP",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "FPR",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "OCC",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "OCA",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "PEC",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "PE",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "CSC",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "CCS",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "PTS",
+                        [
+                            30,
+                            31
+                        ]
+                    ],
+                    [
+                        "PFSC",
+                        [
+                            24,
+                            24
+                        ]
+                    ],
+                    [
+                        "WKOC",
+                        [
+                            22,
+                            22
+                        ]
+                    ],
+                    [
+                        "WKDS",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "WKCN",
+                        [
+                            20,
+                            20
+                        ]
+                    ]
+                ]
+            },
+            "usb_regs_reserved": {},
+            "usb_regs_usbcmd": {
+                "actual_bits": 32,
+                "bits": 21,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            31
+                        ]
+                    ],
+                    [
+                        "FS2",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "ATDTW",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "SUTW",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "LR",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "IAA",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "ASE",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "PSE",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "FS",
+                        [
+                            2,
+                            3
+                        ]
+                    ],
+                    [
+                        "RST",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "RS",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "ITC",
+                        [
+                            16,
+                            23
+                        ]
+                    ],
+                    [
+                        "ASPE",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "ASP",
+                        [
+                            8,
+                            9
+                        ]
+                    ]
+                ]
+            },
+            "usb_regs_usbintr": {
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            31
+                        ]
+                    ],
+                    [
+                        "ULPIE",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "SLE",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "SRE",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "URE",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "AAE",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "SEE",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "FRE",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "PCE",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "UEE",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "UE",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "usb_regs_usbsts": {
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            31
+                        ]
+                    ],
+                    [
+                        "AS",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "PS",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "RCL",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "HCH",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "ULPII",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "SLI",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "SRI",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "URI",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "AAI",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "SEI",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "FRI",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "PCI",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "UEI",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "UI",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            }
+        },
+        "unused_registers": {
+            "regs_AGE_CNT_THRESH": {},
+            "regs_CONTROL": {},
+            "regs_ENDPOINTPRIME": {},
+            "regs_ENDPTCOMPLETE": {},
+            "regs_ENDPTCTRL": {
+                "count": [
+                    3
+                ]
+            },
+            "regs_ENDPTFLUSH": {},
+            "regs_ENDPTSETUPSTAT": {},
+            "regs_ENDPTSTATUS": {},
+            "regs_PRI_CTRL": {},
+            "regs_SI_CTRL": {},
+            "regs_SNOOP": {
+                "count": [
+                    2
+                ]
+            },
+            "regs_TXFILLTUNING": {},
+            "regs_ULPI_VIEWPORT": {}
+        }
+    }
+}

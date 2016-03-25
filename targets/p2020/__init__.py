@@ -9,11 +9,8 @@ with open(join(directory, 'jtag.json'), 'r') as json_file:
     jtag_targets = load(json_file)
 calculate_target_bits(jtag_targets)
 
-# with open(join(directory, 'simics.json'), 'r') as json_file:
-#     simics_targets = load(json_file)
-# calculate_target_bits(simics_targets)
-
-from targets.p2020.simics import targets as simics_targets
+with open(join(directory, 'simics.json'), 'r') as json_file:
+    simics_targets = load(json_file)
 calculate_target_bits(simics_targets)
 
 # TODO: add ETSEC_TBI and Security targets
