@@ -5,6 +5,7 @@ from getpass import getpass
 
 import utilities
 
+# TODO: add P2020 IVOR descriptions (pg 2-19, e500corerm)
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages

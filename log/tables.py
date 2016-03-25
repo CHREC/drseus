@@ -232,8 +232,8 @@ class hw_injection(Table):
 
     class Meta:
         fields = ('timestamp', 'time', 'target', 'target_index', 'register',
-                  'register_index', 'bit', 'field', 'gold_value',
-                  'injected_value', 'success_')
+                  'register_index', 'bit', 'field', 'register_access',
+                  'gold_value', 'injected_value', 'success_')
         model = models.injection
         order_by = 'time'
         template = 'django_tables2/bootstrap.html'
