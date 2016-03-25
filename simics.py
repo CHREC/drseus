@@ -306,7 +306,7 @@ class simics(object):
                     print(colored(char, 'yellow'), end='')
                     stdout.flush()
                 buff += char
-                if buff[-len('simics> '):] == 'simics> ':
+                if buff.endswith('simics> '):
                     break
             if self.options.debug:
                 print()

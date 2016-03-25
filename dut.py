@@ -365,27 +365,27 @@ class dut(object):
                 if flush:
                     stdout.flush()
             buff += char
-            if not continuous and buff[-len(string):] == string:
+            if not continuous and buff.endswith(string):
                 returned = True
                 break
-            elif buff[-len('autoboot: '):] == 'autoboot: ' and \
-                    self.uboot_command:
+            elif buff.endswith('autoboot: ') and self.uboot_command:
                 self.write('\n')
                 self.write(self.uboot_command+'\n')
                 with self.db as db:
                     db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX', 'Command',
                                  self.uboot_command)
-            elif buff[-len('login: '):] == 'login: ':
+            elif buff.endswith('login: '):
                 self.write(self.username+'\n')
                 with self.db as db:
                     db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX', 'Logged in',
                                  self.username)
-            elif buff[-len('Password: '):] == 'Password: ':
+                if not boot:
+                    errors += 1
+            elif buff.endswith('Password: '):
                 self.write(self.password+'\n')
-            elif buff[-len('can\'t get kernel image'):] == \
-                    'can\'t get kernel image':
+            elif buff.endswith('can\'t get kernel image'):
                 self.write('reset\n')
                 with self.db as db:
                     db.log_event('Information',
@@ -393,7 +393,7 @@ class dut(object):
                                  'reset')
                 errors += 1
             for message, category in self.error_messages:
-                if buff[-len(message):] == message:
+                if buff.endswith(message):
                     if boot:
                         if category in ('Reboot', 'Missing file'):
                             continue

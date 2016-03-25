@@ -382,8 +382,7 @@ class fault_injector(object):
             buff = ''
             while True:
                 buff += self.capture_process.stderr.read(1)
-                if buff[-len('Capturing on \'eth1\''):] == \
-                        'Capturing on \'eth1\'':
+                if buff.endswith('Capturing on \'eth1\''):
                     break
 
         def end_packet_capture():
