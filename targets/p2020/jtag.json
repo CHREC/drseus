@@ -126,97 +126,4437 @@
     "CPU": {
         "count": 2,
         "registers": {
-            "bbear": {},
-            "bbtar": {},
-            "bucsr": {},
-            "csrr0": {},
-            "csrr1": {},
-            "ctr": {},
-            "dac1": {},
-            "dac2": {},
-            "dbcr0": {},
-            "dbcr1": {},
-            "dbcr2": {},
-            "dbsr": {},
-            "dear": {},
-            "dec": {},
-            "decar": {},
-            "esr": {},
-            "hid0": {},
-            "hid1": {},
-            "iac1": {},
-            "iac2": {},
-            "ivor0": {},
-            "ivor1": {},
-            "ivor10": {},
-            "ivor11": {},
-            "ivor12": {},
-            "ivor13": {},
-            "ivor14": {},
-            "ivor15": {},
-            "ivor2": {},
-            "ivor3": {},
-            "ivor32": {},
-            "ivor33": {},
-            "ivor34": {},
-            "ivor35": {},
-            "ivor4": {},
-            "ivor5": {},
-            "ivor6": {},
-            "ivor7": {},
-            "ivor8": {},
-            "ivor9": {},
-            "ivpr": {},
-            "l1cfg0": {},
-            "l1cfg1": {},
-            "l1csr0": {},
-            "l1csr1": {},
-            "lr": {},
-            "mas0": {},
-            "mas1": {},
-            "mas2": {},
-            "mas3": {},
-            "mas4": {},
-            "mas6": {},
-            "mas7": {},
-            "mcsr": {},
-            "mcsrr0": {},
-            "mcsrr1": {},
-            "mmucfg": {},
-            "mmucsr0": {},
-            "pid": {},
-            "pid0": {},
-            "pid1": {},
-            "pid2": {},
-            "pir": {},
-            "pvr": {},
-            "spefscr": {},
-            "sprg0": {},
-            "sprg1": {},
-            "sprg2": {},
-            "sprg3": {},
-            "sprg3_ro": {},
-            "sprg4": {},
-            "sprg4_ro": {},
-            "sprg5": {},
-            "sprg5_ro": {},
-            "sprg6": {},
-            "sprg6_ro": {},
-            "sprg7": {},
-            "sprg7_ro": {},
-            "srr0": {},
-            "srr1": {},
-            "svr": {},
-            "tbl": {},
-            "tbl_ro": {},
-            "tbu": {},
-            "tbu_ro": {},
-            "tcr": {},
-            "tlb0cfg": {},
-            "tlb1cfg": {},
-            "tsr": {},
-            "usprg0": {},
-            "xer": {}
+            "ATBL": {
+                "SPR": 526,
+                "access": "r",
+                "fields": [
+                    [
+                        "ATBCL",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "ATBU": {
+                "SPR": 527,
+                "access": "r",
+                "fields": [
+                    [
+                        "ATBCU",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "BBEAR": {
+                "SPR": 513,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Branch_buffer_entry_address",
+                        [
+                            2,
+                            31
+                        ]
+                    ],
+                    [
+                        "IAB[0-1]",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "BBTAR": {
+                "SPR": 514,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Branch_buffer_target_address",
+                        [
+                            2,
+                            31
+                        ]
+                    ],
+                    [
+                        "IAB[2]",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "BDIRPR",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "BUCSR": {
+                "SPR": 1013,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            10,
+                            31
+                        ]
+                    ],
+                    [
+                        "BBFI",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "BBLO",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "BBUL",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "BBLFC",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            1,
+                            5
+                        ]
+                    ],
+                    [
+                        "BPEN",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "CSRR0": {
+                "SPR": 58,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Instruction_address",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "CSRR1": {
+                "SPR": 59,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            27,
+                            31
+                        ]
+                    ],
+                    [
+                        "UCLE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "SPE",
+                        [
+                            25,
+                            25
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            19,
+                            24
+                        ]
+                    ],
+                    [
+                        "WE",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "EE",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "PR",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "FP",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "ME",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "FE0",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "UBLE",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "DE",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "FE1",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "IS",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "DS",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "PMM",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "CTR": {
+                "SPR": 9,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Counter",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "DAC1": {
+                "SPR": 316,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Address",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "DAC2": {
+                "SPR": 317,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Address",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "DBCR0": {
+                "SPR": 308,
+                "access": "rw",
+                "fields": [
+                    [
+                        "EDM",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "RST",
+                        [
+                            28,
+                            29
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            27
+                        ]
+                    ]
+                ]
+            },
+            "DBCR1": {
+                "SPR": 309,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            30,
+                            31
+                        ]
+                    ],
+                    [
+                        "IAC1ER",
+                        [
+                            28,
+                            29
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            26,
+                            27
+                        ]
+                    ],
+                    [
+                        "IAC2ER",
+                        [
+                            24,
+                            25
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            23
+                        ]
+                    ]
+                ]
+            },
+            "DBCR2": {
+                "SPR": 310,
+                "access": "rw",
+                "fields": [
+                    [
+                        "DAC1US",
+                        [
+                            30,
+                            31
+                        ]
+                    ],
+                    [
+                        "DAC1ER",
+                        [
+                            28,
+                            29
+                        ]
+                    ],
+                    [
+                        "DAC2US",
+                        [
+                            26,
+                            27
+                        ]
+                    ],
+                    [
+                        "DAC2ER",
+                        [
+                            24,
+                            25
+                        ]
+                    ],
+                    [
+                        "DAC12M",
+                        [
+                            22,
+                            23
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            21
+                        ]
+                    ]
+                ]
+            },
+            "DBSR": {
+                "SPR": 304,
+                "access": "w1c",
+                "fields": [
+                    [
+                        "IDE",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "UDE",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "MRR",
+                        [
+                            28,
+                            29
+                        ]
+                    ],
+                    [
+                        "ICMP",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "BRT",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "IRPT",
+                        [
+                            25,
+                            25
+                        ]
+                    ],
+                    [
+                        "TRAP",
+                        [
+                            24,
+                            24
+                        ]
+                    ],
+                    [
+                        "IAC1",
+                        [
+                            23,
+                            23
+                        ]
+                    ],
+                    [
+                        "IAC2",
+                        [
+                            22,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            20,
+                            21
+                        ]
+                    ],
+                    [
+                        "DAC1R",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "DAC1W",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "DAC2R",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "DAC2W",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "RET",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            14
+                        ]
+                    ]
+                ]
+            },
+            "DEAR": {
+                "SPR": 61,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Address",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "DEC": {
+                "SPR": 22,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Counter",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "DECAR": {
+                "SPR": 54,
+                "access": "w",
+                "fields": [
+                    [
+                        "Auto-reload_value",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "ESR": {
+                "SPR": 62,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            28,
+                            31
+                        ]
+                    ],
+                    [
+                        "PIL",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "PPR",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "PTR",
+                        [
+                            25,
+                            25
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            24
+                        ]
+                    ],
+                    [
+                        "ST",
+                        [
+                            23,
+                            23
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            22,
+                            22
+                        ]
+                    ],
+                    [
+                        "DLK",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "ILK",
+                        [
+                            20,
+                            20
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "BO",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            15
+                        ]
+                    ],
+                    [
+                        "SPE",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            6
+                        ]
+                    ]
+                ]
+            },
+            "HID0": {
+                "SPR": 1008,
+                "access": "rw",
+                "fields": [
+                    [
+                        "EMCP",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            30
+                        ]
+                    ],
+                    [
+                        "DOZE",
+                        [
+                            23,
+                            23
+                        ]
+                    ],
+                    [
+                        "NAP",
+                        [
+                            22,
+                            22
+                        ]
+                    ],
+                    [
+                        "SLEEP",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            15,
+                            20
+                        ]
+                    ],
+                    [
+                        "TBEN",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "SEL_TBCLK",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            12
+                        ]
+                    ],
+                    [
+                        "EN_MAS7_UPDATE",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "DCFA",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            1,
+                            5
+                        ]
+                    ],
+                    [
+                        "NOPTI",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "HID1": {
+                "SPR": 1009,
+                "access": "rw",
+                "fields": [
+                    [
+                        "PLL_CFG",
+                        [
+                            24,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            18,
+                            23
+                        ]
+                    ],
+                    [
+                        "RFXE",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "R1DPE",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "R2DPE",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "ASTME",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "ABE",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "MPXTT",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            9
+                        ]
+                    ],
+                    [
+                        "ATS",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            4,
+                            6
+                        ]
+                    ],
+                    [
+                        "MID",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IAC1": {
+                "SPR": 312,
+                "fields": [
+                    [
+                        "IACn",
+                        [
+                            2,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "IAC2": {
+                "SPR": 313,
+                "fields": [
+                    [
+                        "IACn",
+                        [
+                            2,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "IVOR0": {
+                "SPR": 400,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Critical_input",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR1": {
+                "SPR": 401,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Machine_check_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR10": {
+                "SPR": 410,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Decrementer_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR11": {
+                "SPR": 411,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Fixed-interval_timer_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR12": {
+                "SPR": 412,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Watchdog_timer_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR13": {
+                "SPR": 413,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Data_TLB_error_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR14": {
+                "SPR": 414,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Instruction_TLB_error_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR15": {
+                "SPR": 415,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Debug_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR2": {
+                "SPR": 402,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Data_storage_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR3": {
+                "SPR": 403,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Instruction_storage_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR32": {
+                "SPR": 528,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "SPE/embedded_floating-point_APU_unavailable_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR33": {
+                "SPR": 529,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Embedded_floating-point_data_exception_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR34": {
+                "SPR": 530,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Embedded_floating-point_round_exception_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR35": {
+                "SPR": 531,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Performance_monitor",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR4": {
+                "SPR": 404,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "External_input_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR5": {
+                "SPR": 405,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Alignment_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR6": {
+                "SPR": 406,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Program_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR7": {
+                "SPR": 407,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Interrupt_vector_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR8": {
+                "SPR": 408,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "System_call_interrupt_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVOR9": {
+                "SPR": 409,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "Interrupt_vector_offset",
+                        [
+                            4,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "IVPR": {
+                "SPR": 63,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Interrupt_vector_base",
+                        [
+                            16,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "L1CFG0": {
+                "SPR": 515,
+                "access": "r",
+                "fields": [
+                    [
+                        "CARCH",
+                        [
+                            30,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            25,
+                            29
+                        ]
+                    ],
+                    [
+                        "CBSIZE",
+                        [
+                            23,
+                            24
+                        ]
+                    ],
+                    [
+                        "CREPL",
+                        [
+                            21,
+                            22
+                        ]
+                    ],
+                    [
+                        "CLA",
+                        [
+                            20,
+                            20
+                        ]
+                    ],
+                    [
+                        "CPA",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            14,
+                            18
+                        ]
+                    ],
+                    [
+                        "CNWAY",
+                        [
+                            11,
+                            13
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "CSIZE",
+                        [
+                            0,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            "L1CFG1": {
+                "SPR": 516,
+                "access": "r",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            25,
+                            31
+                        ]
+                    ],
+                    [
+                        "ICBSIZ",
+                        [
+                            23,
+                            24
+                        ]
+                    ],
+                    [
+                        "ICREPL",
+                        [
+                            21,
+                            22
+                        ]
+                    ],
+                    [
+                        "ICLA",
+                        [
+                            20,
+                            20
+                        ]
+                    ],
+                    [
+                        "ICPA",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "ICNWAY",
+                        [
+                            11,
+                            18
+                        ]
+                    ],
+                    [
+                        "ICSIZE",
+                        [
+                            0,
+                            10
+                        ]
+                    ]
+                ]
+            },
+            "L1CSR0": {
+                "SPR": 1010,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "CPE",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "CPI",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            12,
+                            14
+                        ]
+                    ],
+                    [
+                        "CSLC",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "CUL",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "CLO",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "CLFR",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            2,
+                            7
+                        ]
+                    ],
+                    [
+                        "CFI",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "L1CSR1": {
+                "SPR": 1011,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            17,
+                            31
+                        ]
+                    ],
+                    [
+                        "ICPE",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "ICPI",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            12,
+                            14
+                        ]
+                    ],
+                    [
+                        "ICSLC",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "ICUL",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "ICLO",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "ICLFR",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            2,
+                            7
+                        ]
+                    ],
+                    [
+                        "ICFI",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "ICE",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "LR": {
+                "SPR": 8,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Address",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "MAS0": {
+                "SPR": 624,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            29,
+                            31
+                        ]
+                    ],
+                    [
+                        "TLBSE",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            20,
+                            27
+                        ]
+                    ],
+                    [
+                        "ESEL",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            2,
+                            15
+                        ]
+                    ],
+                    [
+                        "NV",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "MAS1": {
+                "SPR": 625,
+                "access": "rw",
+                "fields": [
+                    [
+                        "V",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "IPROT",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            29
+                        ]
+                    ],
+                    [
+                        "TID",
+                        [
+                            16,
+                            23
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            13,
+                            15
+                        ]
+                    ],
+                    [
+                        "TS",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "TSIZE",
+                        [
+                            8,
+                            11
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            "MAS2": {
+                "SPR": 626,
+                "access": "rw",
+                "fields": [
+                    [
+                        "EPN",
+                        [
+                            12,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            7,
+                            11
+                        ]
+                    ],
+                    [
+                        "X0",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "X1",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "W",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "I",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "M",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "G",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "E",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "MAS3": {
+                "SPR": 627,
+                "access": "rw",
+                "fields": [
+                    [
+                        "RPN[19:0]",
+                        [
+                            12,
+                            31
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            10,
+                            11
+                        ]
+                    ],
+                    [
+                        "U",
+                        [
+                            6,
+                            9
+                        ]
+                    ],
+                    [
+                        "PERMIS",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "MAS4": {
+                "SPR": 628,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            30,
+                            31
+                        ]
+                    ],
+                    [
+                        "TLBSELD",
+                        [
+                            28,
+                            29
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            18,
+                            27
+                        ]
+                    ],
+                    [
+                        "TIDSELD",
+                        [
+                            16,
+                            17
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            12,
+                            15
+                        ]
+                    ],
+                    [
+                        "TSIZED",
+                        [
+                            8,
+                            11
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "X0D",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "X1D",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "WD",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "ID",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "MD",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "GD",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "ED",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "MAS6": {
+                "SPR": 630,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            24,
+                            31
+                        ]
+                    ],
+                    [
+                        "SPID0",
+                        [
+                            16,
+                            23
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            1,
+                            15
+                        ]
+                    ],
+                    [
+                        "SAS",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "MAS7": {
+                "SPR": 944,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            4,
+                            31
+                        ]
+                    ],
+                    [
+                        "RPN[23:20]",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "MCAR": {
+                "SPR": 573,
+                "access": "r",
+                "fields": [
+                    [
+                        "Machine_check_address[31:0]",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "MCARU": {
+                "SPR": 569,
+                "access": "r",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            4,
+                            31
+                        ]
+                    ],
+                    [
+                        "Machine_check_address[35-32]",
+                        [
+                            0,
+                            3
+                        ]
+                    ]
+                ]
+            },
+            "MCSR": {
+                "SPR": 572,
+                "access": "rw",
+                "fields": [
+                    [
+                        "MCP",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "ICPERR",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "DCP_PERR",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "DCPERR",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            27
+                        ]
+                    ],
+                    [
+                        "BUS_IAERR",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "BUS_RAERR",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "BUS_WAERR",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "BUS_IBERR",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "BUS_RBERR",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "BUS_WBERR",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "BUS_IPERR",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "BUS_RPERR",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "MCSRR0": {
+                "SPR": 570,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Next_instruction_address",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "MCSRR1": {
+                "SPR": 571,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            27,
+                            31
+                        ]
+                    ],
+                    [
+                        "UCLE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "SPE",
+                        [
+                            25,
+                            25
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            19,
+                            24
+                        ]
+                    ],
+                    [
+                        "WE",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "EE",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "PR",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "FP",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "ME",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "FE0",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "UBLE",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "DE",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "FE1",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "IS",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "DS",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "PMM",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "MMUCFG": {
+                "SPR": 1015,
+                "access": "r",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            15,
+                            31
+                        ]
+                    ],
+                    [
+                        "NPIDS",
+                        [
+                            11,
+                            14
+                        ]
+                    ],
+                    [
+                        "PIDSIZE",
+                        [
+                            6,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            4,
+                            5
+                        ]
+                    ],
+                    [
+                        "NTLBS",
+                        [
+                            2,
+                            3
+                        ]
+                    ],
+                    [
+                        "MAVN",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "MMUCSR0": {
+                "SPR": 1012,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            31
+                        ]
+                    ],
+                    [
+                        "L2TLB0_FI",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "L2TLB1_FI",
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            0
+                        ]
+                    ]
+                ]
+            },
+            "PID0": {
+                "SPR": 48,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            31
+                        ]
+                    ],
+                    [
+                        "Process_ID",
+                        [
+                            0,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            "PID1": {
+                "SPR": 633,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            31
+                        ]
+                    ],
+                    [
+                        "Process_ID",
+                        [
+                            0,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            "PID2": {
+                "SPR": 634,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            8,
+                            31
+                        ]
+                    ],
+                    [
+                        "Process_ID",
+                        [
+                            0,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            "PIR": {
+                "SPR": 286,
+                "access": "r",
+                "fields": [
+                    [
+                        "Processor_ID",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "PMC0": {
+                "PMR": 16,
+                "fields": [
+                    [
+                        "OV",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Counter_value",
+                        [
+                            0,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            "PMC1": {
+                "PMR": 17,
+                "fields": [
+                    [
+                        "OV",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Counter_value",
+                        [
+                            0,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            "PMC2": {
+                "PMR": 18,
+                "fields": [
+                    [
+                        "OV",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Counter_value",
+                        [
+                            0,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            "PMC3": {
+                "PMR": 19,
+                "fields": [
+                    [
+                        "OV",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Counter_value",
+                        [
+                            0,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            "PMGC0": {
+                "PMR": 400,
+                "fields": [
+                    [
+                        "FAC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "PMIE",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCECE",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            13,
+                            28
+                        ]
+                    ],
+                    [
+                        "TBSEL",
+                        [
+                            11,
+                            12
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            9,
+                            10
+                        ]
+                    ],
+                    [
+                        "TBEE",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            "PMLCa0": {
+                "PMR": 144,
+                "fields": [
+                    [
+                        "FC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "FCS",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCU",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "FCM1",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "FCM0",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            25
+                        ]
+                    ],
+                    [
+                        "EVENT",
+                        [
+                            16,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "PMLCa1": {
+                "PMR": 145,
+                "fields": [
+                    [
+                        "FC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "FCS",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCU",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "FCM1",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "FCM0",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            25
+                        ]
+                    ],
+                    [
+                        "EVENT",
+                        [
+                            16,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "PMLCa2": {
+                "PMR": 146,
+                "fields": [
+                    [
+                        "FC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "FCS",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCU",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "FCM1",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "FCM0",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            25
+                        ]
+                    ],
+                    [
+                        "EVENT",
+                        [
+                            16,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "PMLCa3": {
+                "PMR": 147,
+                "fields": [
+                    [
+                        "FC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "FCS",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCU",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "FCM1",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "FCM0",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            25
+                        ]
+                    ],
+                    [
+                        "EVENT",
+                        [
+                            16,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "PMLCb0": {
+                "PMR": 272,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            31
+                        ]
+                    ],
+                    [
+                        "THRESHMUL",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "THRESHOLD",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "PMLCb1": {
+                "PMR": 273,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            31
+                        ]
+                    ],
+                    [
+                        "THRESHMUL",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "THRESHOLD",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "PMLCb2": {
+                "PMR": 274,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            31
+                        ]
+                    ],
+                    [
+                        "THRESHMUL",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "THRESHOLD",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "PMLCb3": {
+                "PMR": 275,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            31
+                        ]
+                    ],
+                    [
+                        "THRESHMUL",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "THRESHOLD",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "PVR": {
+                "SPR": 287,
+                "access": "r",
+                "fields": [
+                    [
+                        "Version",
+                        [
+                            16,
+                            31
+                        ]
+                    ],
+                    [
+                        "Revision",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "SPEFSCR": {
+                "SPR": 512,
+                "access": "rw",
+                "fields": [
+                    [
+                        "SOVH",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "OVH",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FGH",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "FXH",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "FINVH",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "FDBZH",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "FUNFH",
+                        [
+                            25,
+                            25
+                        ]
+                    ],
+                    [
+                        "FOVFH",
+                        [
+                            24,
+                            24
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            22,
+                            23
+                        ]
+                    ],
+                    [
+                        "FINXS",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "FINVS",
+                        [
+                            20,
+                            20
+                        ]
+                    ],
+                    [
+                        "FDBZS",
+                        [
+                            19,
+                            19
+                        ]
+                    ],
+                    [
+                        "FUNFS",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "FOVFS",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "MODE",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "SOV",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "OV",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "FG",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "FX",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "FINV",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "FDBZ",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "FUNF",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "FOVF",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            7,
+                            7
+                        ]
+                    ],
+                    [
+                        "FINXE",
+                        [
+                            6,
+                            6
+                        ]
+                    ],
+                    [
+                        "FINVE",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "FDBZE",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "FUNFE",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "FOVFE",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "FRMC",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "SPRG0": {
+                "SPR": 272,
+                "access": "rw"
+            },
+            "SPRG1": {
+                "SPR": 273,
+                "access": "rw"
+            },
+            "SPRG2": {
+                "SPR": 274,
+                "access": "rw"
+            },
+            "SPRG3": {
+                "SPR": 275,
+                "access": "rw"
+            },
+            "SPRG3_RO": {
+                "SPR": 259,
+                "access": "r"
+            },
+            "SPRG4": {
+                "SPR": 276,
+                "access": "rw"
+            },
+            "SPRG4_RO": {
+                "SPR": 260,
+                "access": "r"
+            },
+            "SPRG5": {
+                "SPR": 277,
+                "access": "rw"
+            },
+            "SPRG5_RO": {
+                "SPR": 261,
+                "access": "r"
+            },
+            "SPRG6": {
+                "SPR": 278,
+                "access": "rw"
+            },
+            "SPRG6_RO": {
+                "SPR": 262,
+                "access": "r"
+            },
+            "SPRG7": {
+                "SPR": 279,
+                "access": "rw"
+            },
+            "SPRG7_RO": {
+                "SPR": 263,
+                "access": "r"
+            },
+            "SRR0": {
+                "SPR": 26,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Instruction_address",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "SRR1": {
+                "SPR": 27,
+                "access": "rw",
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            27,
+                            31
+                        ]
+                    ],
+                    [
+                        "UCLE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "SPE",
+                        [
+                            25,
+                            25
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            19,
+                            24
+                        ]
+                    ],
+                    [
+                        "WE",
+                        [
+                            18,
+                            18
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            17,
+                            17
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            16
+                        ]
+                    ],
+                    [
+                        "EE",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "PR",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "FP",
+                        [
+                            13,
+                            13
+                        ]
+                    ],
+                    [
+                        "ME",
+                        [
+                            12,
+                            12
+                        ]
+                    ],
+                    [
+                        "FE0",
+                        [
+                            11,
+                            11
+                        ]
+                    ],
+                    [
+                        "UBLE",
+                        [
+                            10,
+                            10
+                        ]
+                    ],
+                    [
+                        "DE",
+                        [
+                            9,
+                            9
+                        ]
+                    ],
+                    [
+                        "FE1",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "IS",
+                        [
+                            5,
+                            5
+                        ]
+                    ],
+                    [
+                        "DS",
+                        [
+                            4,
+                            4
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    [
+                        "PMM",
+                        [
+                            2,
+                            2
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            1
+                        ]
+                    ]
+                ]
+            },
+            "SVR": {
+                "SPR": 1023,
+                "access": "r",
+                "fields": [
+                    [
+                        "System_version",
+                        [
+                            0,
+                            31
+                        ]
+                    ]
+                ]
+            },
+            "TBL_RO": {
+                "SPR": 268,
+                "access": "r"
+            },
+            "TBL_WO": {
+                "SPR": 284,
+                "access": "w"
+            },
+            "TBU_RO": {
+                "SPR": 269,
+                "access": "r"
+            },
+            "TBU_WO": {
+                "SPR": 285,
+                "access": "w"
+            },
+            "TCR": {
+                "SPR": 340,
+                "access": "rw",
+                "fields": [
+                    [
+                        "WP",
+                        [
+                            30,
+                            31
+                        ]
+                    ],
+                    [
+                        "WRC",
+                        [
+                            28,
+                            29
+                        ]
+                    ],
+                    [
+                        "WIE",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "DIE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "FP",
+                        [
+                            24,
+                            25
+                        ]
+                    ],
+                    [
+                        "FIE",
+                        [
+                            23,
+                            23
+                        ]
+                    ],
+                    [
+                        "ARE",
+                        [
+                            22,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            21,
+                            21
+                        ]
+                    ],
+                    [
+                        "WPEXT",
+                        [
+                            17,
+                            20
+                        ]
+                    ],
+                    [
+                        "FPEXT",
+                        [
+                            13,
+                            16
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            12
+                        ]
+                    ]
+                ]
+            },
+            "TLB0CFG": {
+                "SPR": 688,
+                "access": "r",
+                "fields": [
+                    [
+                        "ASSOC",
+                        [
+                            24,
+                            31
+                        ]
+                    ],
+                    [
+                        "MINSIZE",
+                        [
+                            20,
+                            23
+                        ]
+                    ],
+                    [
+                        "MAXSIZE",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "IPROT",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "AVAIL",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            12,
+                            13
+                        ]
+                    ],
+                    [
+                        "NENTRY",
+                        [
+                            0,
+                            11
+                        ]
+                    ]
+                ]
+            },
+            "TLB1CFG": {
+                "SPR": 689,
+                "access": "r",
+                "fields": [
+                    [
+                        "ASSOC",
+                        [
+                            24,
+                            31
+                        ]
+                    ],
+                    [
+                        "MINSIZE",
+                        [
+                            20,
+                            23
+                        ]
+                    ],
+                    [
+                        "MAXSIZE",
+                        [
+                            16,
+                            19
+                        ]
+                    ],
+                    [
+                        "IPROT",
+                        [
+                            15,
+                            15
+                        ]
+                    ],
+                    [
+                        "AVAIL",
+                        [
+                            14,
+                            14
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            12,
+                            13
+                        ]
+                    ],
+                    [
+                        "NENTRY",
+                        [
+                            0,
+                            11
+                        ]
+                    ]
+                ]
+            },
+            "TSR": {
+                "SPR": 336,
+                "access": "w1c"
+            },
+            "UPMC0": {
+                "PMR": 0,
+                "fields": [
+                    [
+                        "OV",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Counter_value",
+                        [
+                            0,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            "UPMC1": {
+                "PMR": 1,
+                "fields": [
+                    [
+                        "OV",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Counter_value",
+                        [
+                            0,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            "UPMC2": {
+                "PMR": 2,
+                "fields": [
+                    [
+                        "OV",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Counter_value",
+                        [
+                            0,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            "UPMC3": {
+                "PMR": 3,
+                "fields": [
+                    [
+                        "OV",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "Counter_value",
+                        [
+                            0,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            "UPMGC0": {
+                "PMR": 384,
+                "fields": [
+                    [
+                        "FAC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "PMIE",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCECE",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            13,
+                            28
+                        ]
+                    ],
+                    [
+                        "TBSEL",
+                        [
+                            11,
+                            12
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            9,
+                            10
+                        ]
+                    ],
+                    [
+                        "TBEE",
+                        [
+                            8,
+                            8
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            "UPMLCa0": {
+                "PMR": 128,
+                "fields": [
+                    [
+                        "FC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "FCS",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCU",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "FCM1",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "FCM0",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            25
+                        ]
+                    ],
+                    [
+                        "EVENT",
+                        [
+                            16,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "UPMLCa1": {
+                "PMR": 129,
+                "fields": [
+                    [
+                        "FC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "FCS",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCU",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "FCM1",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "FCM0",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            25
+                        ]
+                    ],
+                    [
+                        "EVENT",
+                        [
+                            16,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "UPMLCa2": {
+                "PMR": 130,
+                "fields": [
+                    [
+                        "FC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "FCS",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCU",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "FCM1",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "FCM0",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            25
+                        ]
+                    ],
+                    [
+                        "EVENT",
+                        [
+                            16,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "UPMLCa3": {
+                "PMR": 131,
+                "fields": [
+                    [
+                        "FC",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "FCS",
+                        [
+                            30,
+                            30
+                        ]
+                    ],
+                    [
+                        "FCU",
+                        [
+                            29,
+                            29
+                        ]
+                    ],
+                    [
+                        "FCM1",
+                        [
+                            28,
+                            28
+                        ]
+                    ],
+                    [
+                        "FCM0",
+                        [
+                            27,
+                            27
+                        ]
+                    ],
+                    [
+                        "CE",
+                        [
+                            26,
+                            26
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            23,
+                            25
+                        ]
+                    ],
+                    [
+                        "EVENT",
+                        [
+                            16,
+                            22
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ]
+            },
+            "UPMLCb0": {
+                "PMR": 256,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            31
+                        ]
+                    ],
+                    [
+                        "THRESHMUL",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "THRESHOLD",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "UPMLCb1": {
+                "PMR": 257,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            31
+                        ]
+                    ],
+                    [
+                        "THRESHMUL",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "THRESHOLD",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "UPMLCb2": {
+                "PMR": 258,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            31
+                        ]
+                    ],
+                    [
+                        "THRESHMUL",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "THRESHOLD",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "UPMLCb3": {
+                "PMR": 259,
+                "fields": [
+                    [
+                        "Reserved",
+                        [
+                            11,
+                            31
+                        ]
+                    ],
+                    [
+                        "THRESHMUL",
+                        [
+                            8,
+                            10
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        "THRESHOLD",
+                        [
+                            0,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            "USPRG0": {
+                "SPR": 256,
+                "access": "rw"
+            },
+            "XER": {
+                "SPR": 1,
+                "access": "rw"
+            }
         }
     },
     "DDR": {

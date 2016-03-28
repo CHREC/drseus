@@ -412,6 +412,16 @@ class bdi(jtag):
                 self.targets[target]['registers'][register]['offset']
             buff = self.command(command+' '+hex(address)+' 1', [':'],
                                 'Error getting register value')
+        elif 'SPR' in self.targets[target]['registers'][register]:
+            buff = self.command(
+                'rdspr ' +
+                str(self.targets[target]['registers'][register]['SPR']),
+                [':'], 'Error getting register value')
+        elif 'PMR' in self.targets[target]['registers'][register]:
+            buff = self.command(
+                'rdpmr ' +
+                str(self.targets[target]['registers'][register]['PMR']),
+                [':'], 'Error getting register value')
         else:
             buff = self.command('rd '+register, [':'],
                                 'Error getting register value')
@@ -433,6 +443,18 @@ class bdi(jtag):
                 self.targets[target]['registers'][register]['offset']
             self.command(command+' '+hex(address)+' '+value+' 1',
                          error_message='Error getting register value')
+        elif 'SPR' in self.targets[target]['registers'][register]:
+            self.command(
+                'rmspr ' +
+                str(self.targets[target]['registers'][register]['SPR']) +
+                ' '+value,
+                error_message='Error setting register value')
+        elif 'PMR' in self.targets[target]['registers'][register]:
+            self.command(
+                'rmpmr ' +
+                str(self.targets[target]['registers'][register]['PMR']) +
+                ' '+value,
+                error_message='Error setting register value')
         else:
             self.command('rm '+register+' '+value,
                          error_message='Error setting register value')
