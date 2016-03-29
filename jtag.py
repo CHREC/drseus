@@ -164,7 +164,6 @@ class jtag(object):
                 self.continue_dut()
             sleep(injection_time)
             self.halt_dut()
-            mode = self.get_mode()
             target, target_index = \
                 choose_target(self.options.selected_targets, self.targets)
             register, register_index, register_alias = \
@@ -174,7 +173,6 @@ class jtag(object):
                                     register_index, target, self.targets)
             injection = {'bit': bit,
                          'field': field,
-                         'processor_mode': mode,
                          'register': register,
                          'register_alias': register_alias,
                          'register_index': register_index,
@@ -188,6 +186,7 @@ class jtag(object):
                 ('CP' in self.targets[target] and
                     self.targets[target]['CP']):
                 self.select_core(target_index)
+            injection['processor_mode'] = self.get_mode()
             if 'access' in self.targets[target]['registers'][register]:
                 injection['register_access'] = \
                     self.targets[target]['registers'][register]['access']
@@ -383,13 +382,20 @@ class bdi(jtag):
                      'Error selecting core')
 
     def get_mode(self):
-        pass
+        msr = int(self.get_register_value('MSR', 'CPU', None), base=16)
+        supervisor = not bool(msr & (1 << 14))
+        return 'supervisor' if supervisor else 'user'
 
     def set_mode(self, mode='supervisor'):
-        pass
-        # with self.db as db:
-        #     db.log_event('Information', 'Debugger', 'Set processor mode',
-        #                   mode, success=True)
+        msr = bin(int(self.get_register_value('MSR', 'CPU', None), base=16))
+        if mode == 'supervisor':
+            msr[-15] = '0'
+        else:
+            msr[-15] = '1'
+        self.set_register_value('MSR', 'CPU', None, hex(int(msr, base=2)))
+        with self.db as db:
+            db.log_event('Information', 'Debugger', 'Set processor mode',
+                         mode, success=True)
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
