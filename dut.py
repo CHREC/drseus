@@ -1,4 +1,5 @@
 from io import StringIO
+from os import listdir, makedirs
 from os.path import exists, isdir
 from paramiko import AutoAddPolicy, RSAKey, SSHClient
 from re import compile as regex
@@ -6,6 +7,7 @@ from re import DOTALL, escape
 from scp import SCPClient
 from serial import Serial
 from serial.serialutil import SerialException
+from shutil import copy
 from sys import stdout
 from termcolor import colored
 from time import perf_counter, sleep
@@ -201,7 +203,27 @@ class dut(object):
         else:
             raise DrSEUsError(error_type)
 
-    def send_files(self, files, attempts=10):
+    def send_files(self, files=None, attempts=10):
+        if not files:
+            files = []
+            location = 'campaign-data/'+str(self.db.campaign['id'])
+            if self.aux:
+                location += '/aux-files/'
+            else:
+                location += '/dut-files/'
+            if exists(location):
+                for item in listdir(location):
+                    files.append(location+item)
+            else:
+                files.append(self.options.directory+'/' +
+                             (self.options.aux_application if self.aux
+                              else self.options.application))
+                if self.options.files:
+                    for file_ in self.options.files:
+                        files.append(self.options.directory+'/'+file_)
+                makedirs(location)
+                for file_ in files:
+                    copy(file_, location)
         if self.options.debug:
             print(colored('sending file(s)...', 'blue'), end='')
             stdout.flush()

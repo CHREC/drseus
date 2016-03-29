@@ -5,9 +5,7 @@ from getpass import getpass
 
 import utilities
 
-# TODO: add P2020 IVOR descriptions (pg 2-19, e500corerm)
 # TODO: use regular expressions in telnet expect in jtag
-# TODO: add unique id to campaign and add capability to merge campaign results
 # TODO: add options for custom error messages
 # TODO: use formatting strings
 # TODO: add mode to redo injection iteration
@@ -390,10 +388,10 @@ supervise = subparsers.add_parser(
     'supervise', aliases=['s'],
     help='run interactive supervisor',
     description='run interactive supervisor')
-supervise.add_argument(
-    '-c', '--capture',
-    action='store_true',
-    help='run remote packet capture')
+# supervise.add_argument(
+#     '-c', '--capture',
+#     action='store_true',
+#     help='run remote packet capture')
 supervise.set_defaults(func=utilities.launch_supervisor)
 
 log_viewer = subparsers.add_parser(

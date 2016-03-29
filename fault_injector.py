@@ -1,7 +1,6 @@
 from difflib import SequenceMatcher
 from os import listdir, makedirs
-from shutil import copy, rmtree
-from subprocess import check_call, PIPE, Popen
+from shutil import rmtree
 from threading import Thread
 
 from database import database
@@ -25,7 +24,7 @@ class fault_injector(object):
             self.debugger.aux.serial.write('\x03')
             self.debugger.aux.do_login()
             if options.command != 'new':
-                self.send_dut_files(aux=True)
+                self.debugger.aux.send_files()
 
     def __str__(self):
         string = ('DrSEUs Attributes:\n\tDebugger: '+str(self.debugger) +
@@ -61,7 +60,7 @@ class fault_injector(object):
                     result_items):
                 self.db.result.update({
                     'outcome_category': 'DrSEUs',
-                    'outcome': 'Closed DrSEUs'})
+                    'outcome': 'Exited'})
                 with self.db as db:
                     db.log_result(False)
             else:
@@ -69,32 +68,14 @@ class fault_injector(object):
                     db.delete_result()
 
     def setup_campaign(self):
-
-        def send_dut_files(aux=False):
-            files = []
-            files.append(self.options.directory+'/' +
-                         (self.options.aux_application if aux
-                          else self.options.application))
-            if self.options.files:
-                for file_ in self.options.files:
-                    files.append(self.options.directory+'/'+file_)
-            makedirs('campaign-data/'+str(self.db.campaign['id']) +
-                     ('/aux-files/' if aux else '/dut-files'))
-            for file_ in files:
-                copy(file_, 'campaign-data/'+str(self.db.campaign['id']) +
-                            ('/aux-files/' if aux else '/dut-files'))
-            if aux:
-                self.debugger.aux.send_files(files)
-            else:
-                self.debugger.dut.send_files(files)
-
-    # def setup_campaign(self):
+        if self.db.campaign['simics']:
+            self.debugger.launch_simics()
         if self.db.campaign['aux']:
-            aux_process = Thread(target=send_dut_files, args=[True])
+            aux_process = Thread(target=self.debugger.aux.send_files)
             aux_process.start()
         if not self.db.campaign['simics']:
             self.debugger.reset_dut()
-        send_dut_files()
+        self.debugger.dut.send_files()
         if self.db.campaign['aux']:
             aux_process.join()
         self.debugger.time_application()
@@ -116,20 +97,6 @@ class fault_injector(object):
         with self.db as db:
             db.update('campaign')
         self.close()
-
-    def send_dut_files(self, aux=False):
-        location = 'campaign-data/'+str(self.db.campaign['id'])
-        if aux:
-            location += '/aux-files/'
-        else:
-            location += '/dut-files/'
-        files = []
-        for item in listdir(location):
-            files.append(location+item)
-        if aux:
-            self.debugger.aux.send_files(files)
-        else:
-            self.debugger.dut.send_files(files)
 
     def __monitor_execution(self, latent_faults=0, persistent_faults=False,
                             log_time=False):
@@ -259,7 +226,7 @@ class fault_injector(object):
                     db.log_result()
                 return False
             try:
-                self.send_dut_files()
+                self.debugger.dut.send_files()
             except DrSEUsError as error:
                 self.db.result.update({
                     'outcome_category': str(error),
@@ -367,59 +334,5 @@ class fault_injector(object):
                     self.debugger.aux.flush()
             with self.db as db:
                 db.log_result()
-        self.close()
-
-    def supervise(self, iteration_counter, packet_capture):
-
-        def start_packet_capture():
-            data_dir = ('campaign-data/'+str(self.db.campaign['id']) +
-                        '/results/'+str(self.db.result['id']))
-            makedirs(data_dir)
-            self.capture_file = open(data_dir+'/capture.pcap', 'w')
-            self.capture_process = Popen(
-                ['ssh', 'p2020', 'tshark -F pcap -i eth1 -w -'],
-                stderr=PIPE, stdout=self.capture_file)
-            buff = ''
-            while True:
-                buff += self.capture_process.stderr.read(1)
-                if buff.endswith('Capturing on \'eth1\''):
-                    break
-
-        def end_packet_capture():
-            check_call(['ssh', 'p2020', 'killall tshark'])
-            self.capture_process.wait()
-            self.capture_file.close()
-
-    # def supervise(self, iteration_counter, packet_capture):
-        interrupted = False
-        while not interrupted:
-            with iteration_counter.get_lock():
-                iteration = iteration_counter.value
-                if iteration:
-                    iteration_counter.value -= 1
-                else:
-                    break
-            if packet_capture:
-                start_packet_capture()
-            if self.db.campaign['aux']:
-                self.debugger.aux.write('./'+self.db.campaign['aux_command'] +
-                                        '\n')
-            self.debugger.dut.write('./'+self.db.campaign['command']+'\n')
-            try:
-                self.__monitor_execution()
-            except KeyboardInterrupt:
-                if self.db.campaign['simics']:
-                    self.debugger.continue_dut()
-                self.debugger.dut.serial.write('\x03')
-                self.debugger.dut.read_until()
-                if self.db.campaign['aux']:
-                    self.debugger.aux.serial.write('\x03')
-                    self.debugger.aux.read_until()
-                self.db.result.update({
-                    'outcome_category': 'Incomplete',
-                    'outcome': 'Interrupted'})
-                interrupted = True
-            with self.db as db:
-                db.log_result()
-            if packet_capture:
-                end_packet_capture()
+        if self.options.command == 'inject':
+            self.close()

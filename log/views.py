@@ -206,8 +206,7 @@ def results_page(request, campaign_id=None):
         if (('view_output' in request.GET or
                 'view_output_image' in request.GET) and
                 'select_box' in request.GET):
-            result_ids = sorted(map(int, dict(request.GET)['select_box']),
-                                reverse=True)
+            result_ids = map(int, dict(request.GET)['select_box'])
             results = models.result.objects.filter(
                 id__in=result_ids).order_by('-id')
             image = 'view_output_image' in request.GET
@@ -239,8 +238,10 @@ def results_page(request, campaign_id=None):
                         'campaign-data/'+str(result.campaign_id)+'/results/' +
                             str(result.id)+'/'+result.campaign.output_file):
                         result_ids.append(result.id)
-                results = models.result.objects.filter(
-                    id__in=result_ids).order_by('-id')
+            else:
+                result_ids = results.values_list('id', flat=True)
+            results = models.result.objects.filter(
+                id__in=result_ids).order_by('-id')
             if results.count():
                 return render(request, 'output.html', {
                     'campaign': campaign,

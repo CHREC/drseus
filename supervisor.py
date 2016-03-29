@@ -14,10 +14,19 @@ from fault_injector import fault_injector
 class supervisor(Cmd):
     def __init__(self, campaign, options):
         options.debug = True
+        options.injections = 0
+        options.latent_iterations = 0
+        options.compare_all = False
+        options.extract_blocks = False
         self.drseus = fault_injector(campaign, options)
-        if not campaign['simics']:
+        if campaign['simics']:
+            self.drseus.debugger.launch_simics(
+                'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
+                str(self.drseus.db.campaign['checkpoints'])+'_merged')
+            self.drseus.debugger.continue_dut()
+        else:
             self.drseus.debugger.reset_dut()
-            self.drseus.send_dut_files()
+            self.drseus.debugger.dut.send_files()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
         if campaign['aux']:
@@ -94,13 +103,10 @@ class supervisor(Cmd):
 
     def do_send_dut_file(self, arg, aux=False):
         """Send file to DUT, defaults to sending campaign files"""
-        if arg:
-            if aux:
-                self.drseus.debugger.aux.send_files(arg, attempts=1)
-            else:
-                self.drseus.debugger.dut.send_files(arg, attempts=1)
+        if aux:
+            self.drseus.debugger.aux.send_files(arg, attempts=1)
         else:
-            self.drseus.send_dut_files(aux)
+            self.drseus.debugger.dut.send_files(arg, attempts=1)
 
     def do_get_dut_file(self, arg, aux=False):
         """Retrieve file from DUT device"""
@@ -132,12 +138,19 @@ class supervisor(Cmd):
                 return
         print('Performing '+str(supervise_iterations)+' iteration(s)...\n')
         iteration_counter = Value('L', supervise_iterations)
+        if self.drseus.db.campaign['simics']:
+            self.drseus.debugger.close()
         self.drseus.db.result.update({
-            'outcome_category': 'Supervisor',
-            'outcome': 'Pre supervise'})
+            'outcome_category': 'DrSEUs',
+            'outcome': 'Pre-supervise'})
         with self.drseus.db as db:
             db.log_result()
-        self.drseus.supervise(iteration_counter, self.capture)
+        self.drseus.inject_campaign(iteration_counter)
+        if self.drseus.db.campaign['simics']:
+            self.drseus.debugger.launch_simics(
+                'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
+                str(self.drseus.db.campaign['checkpoints'])+'_merged')
+            self.drseus.debugger.continue_dut()
 
     def do_debug(self, arg=None):
         """Start PDB"""

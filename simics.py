@@ -43,19 +43,12 @@ class simics(object):
             for target in options.selected_targets:
                 if target not in self.targets:
                     raise Exception('invalid injection target: '+target)
-        if options.command == 'new':
-            self.__launch_simics()
-        elif options.command == 'supervise':
-            self.__launch_simics(
-                'gold-checkpoints/'+str(database.campaign['id'])+'/' +
-                str(database.campaign['checkpoints'])+'_merged')
-            self.continue_dut()
 
     def __str__(self):
         string = 'Simics simulation of '+self.board
         return string
 
-    def __launch_simics(self, checkpoint=None):
+    def launch_simics(self, checkpoint=None):
         attempts = 10
         for attempt in range(attempts):
             self.simics = Popen([getcwd()+'/simics-workspace/simics',
@@ -489,22 +482,31 @@ class simics(object):
             checkpoints_to_inject.append(checkpoint_num)
         checkpoints_to_inject = sorted(checkpoints_to_inject)
         latent_faults = 0
-        for injection_number, checkpoint in \
-                enumerate(checkpoints_to_inject, start=1):
-            injected_checkpoint = self.__inject_checkpoint(injection_number,
-                                                           checkpoint)
-            self.__launch_simics(injected_checkpoint)
-            injections_remaining = injection_number < len(checkpoints_to_inject)
-            if injections_remaining:
-                next_checkpoint = checkpoints_to_inject[injection_number]
-            else:
-                next_checkpoint = self.db.campaign['checkpoints']
-            errors = self.__compare_checkpoints(
-                checkpoint, next_checkpoint)
-            if errors > latent_faults:
-                latent_faults = errors
-            if injections_remaining:
-                self.close()
+        if checkpoints_to_inject:
+            for injection_number, checkpoint in \
+                    enumerate(checkpoints_to_inject, start=1):
+                injected_checkpoint = self.__inject_checkpoint(injection_number,
+                                                               checkpoint)
+                self.launch_simics(injected_checkpoint)
+                injections_remaining = \
+                    injection_number < len(checkpoints_to_inject)
+                if injections_remaining:
+                    next_checkpoint = checkpoints_to_inject[injection_number]
+                else:
+                    next_checkpoint = self.db.campaign['checkpoints']
+                errors = self.__compare_checkpoints(checkpoint, next_checkpoint)
+                if errors > latent_faults:
+                    latent_faults = errors
+                if injections_remaining:
+                    self.close()
+        else:
+            self.close()
+            makedirs('simics-workspace/injected-checkpoints/' +
+                     str(self.db.campaign['id'])+'/'+str(self.db.result['id']))
+            self.launch_simics('gold-checkpoints/' +
+                               str(self.db.campaign['id'])+'/1')
+            latent_faults = \
+                self.__compare_checkpoints(1, self.db.campaign['checkpoints'])
         return latent_faults, (latent_faults and persistent_faults())
 
     def regenerate_checkpoints(self, injections):
@@ -513,7 +515,7 @@ class simics(object):
             injected_checkpoint = self.__inject_checkpoint(
                 injection_number, injection['checkpoint'], injection)
             if injection_number < len(injections):
-                self.__launch_simics(checkpoint=injected_checkpoint)
+                self.launch_simics(checkpoint=injected_checkpoint)
                 for j in range(injection['checkpoint'],
                                injections[injection_number]['checkpoint']):
                     self.__command('run-cycles ' +
@@ -853,9 +855,16 @@ class simics(object):
     # def __compare_checkpoints(self, checkpoint, last_checkpoint):
         reg_errors = 0
         mem_errors = 0
-        for checkpoint in range(checkpoint+1, last_checkpoint+1):
-            self.__command('run-cycles ' +
-                           str(self.db.campaign['cycles_between']), time=300)
+        if self.options.compare_all:
+            checkpoints = range(checkpoint+1, last_checkpoint+1)
+            cycles_between = self.db.campaign['cycles_between']
+        else:
+            checkpoints = [last_checkpoint]
+            cycles_between = self.db.campaign['cycles_between'] * \
+                (last_checkpoint-checkpoint)
+        for checkpoint in checkpoints:
+            self.__command('run-cycles '+str(cycles_between),
+                           time=300 if self.options.compare_all else 600)
             incremental_checkpoint = (
                 'injected-checkpoints/'+str(self.db.campaign['id'])+'/' +
                 str(self.db.result['id'])+'/'+str(checkpoint))
