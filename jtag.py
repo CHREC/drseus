@@ -387,11 +387,13 @@ class bdi(jtag):
         return 'supervisor' if supervisor else 'user'
 
     def set_mode(self, mode='supervisor'):
-        msr = bin(int(self.get_register_value('MSR', 'CPU', None), base=16))
+        msr = list(bin(int(self.get_register_value('MSR', 'CPU', None),
+                           base=16)))
         if mode == 'supervisor':
             msr[-15] = '0'
         else:
             msr[-15] = '1'
+        msr = ''.join(msr)
         self.set_register_value('MSR', 'CPU', None, hex(int(msr, base=2)))
         with self.db as db:
             db.log_event('Information', 'Debugger', 'Set processor mode',
