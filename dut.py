@@ -36,6 +36,7 @@ class dut(object):
         ('Illegal instruction', 'Illegal instruction'),
         ('Call Trace:', 'Kernel error'),
         ('detected stalls on CPU', 'Stall detected'),
+        ('detected stall on CPU', 'Stall detected'),
         ('malloc(), memory corruption', 'Kernel error'),
         ('malloc(): memory corruption', 'Kernel error'),
         ('Bad swap file entry', 'Kernel error'),
