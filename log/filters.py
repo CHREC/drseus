@@ -1,9 +1,9 @@
 from django.forms import NumberInput, Select, SelectMultiple, Textarea
 from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             MultipleChoiceFilter, NumberFilter)
+from threading import Thread
 
 from log import fix_sort_list, models
-
 
 max_select_box_size = 20
 
@@ -12,24 +12,40 @@ class event(FilterSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queryset = kwargs['queryset']
-        type_choices = self.choices(self.queryset, 'type')
-        self.filters['type'].extra.update(choices=type_choices)
-        self.filters['type'].widget.attrs['size'] = min(
-            len(type_choices), max_select_box_size)
-        level_choices = self.choices(self.queryset, 'level')
-        self.filters['level'].extra.update(choices=level_choices)
-        self.filters['level'].widget.attrs['size'] = min(
-            len(level_choices), max_select_box_size)
-        source_choices = self.choices(self.queryset, 'source')
-        self.filters['source'].extra.update(choices=source_choices)
-        self.filters['source'].widget.attrs['size'] = min(
-            len(source_choices), max_select_box_size)
+
+        def type_choices():
+            type_choices = self.choices(self.queryset, 'type')
+            self.filters['type'].extra.update(choices=type_choices)
+            self.filters['type'].widget.attrs['size'] = min(
+                len(type_choices), max_select_box_size)
+
+        def level_choices():
+            level_choices = self.choices(self.queryset, 'level')
+            self.filters['level'].extra.update(choices=level_choices)
+            self.filters['level'].widget.attrs['size'] = min(
+                len(level_choices), max_select_box_size)
+
+        def source_choices():
+            source_choices = self.choices(self.queryset, 'source')
+            self.filters['source'].extra.update(choices=source_choices)
+            self.filters['source'].widget.attrs['size'] = min(
+                len(source_choices), max_select_box_size)
+
+        type_thread = Thread(target=type_choices)
+        type_thread.start()
+        level_thread = Thread(target=level_choices)
+        level_thread.start()
+        source_thread = Thread(target=source_choices)
+        source_thread.start()
+        type_thread.join()
+        level_thread.join()
+        source_thread.join()
 
     def choices(self, events, attribute):
-        choices = []
-        for item in events.values_list(attribute, flat=True).distinct():
-            if item is not None:
-                choices.append((item, item))
+        exclude_kwargs = {attribute+'__isnull': True}
+        items = events.exclude(**exclude_kwargs).values_list(
+            attribute, flat=True).distinct()
+        choices = zip(items, items)
         return sorted(choices, key=fix_sort_list)
 
     description = CharFilter(
@@ -106,13 +122,14 @@ class injection(FilterSet):
 
     def choices(self, injections, attribute):
         choices = []
-        for item in injections.values_list(attribute, flat=True).distinct():
-            if item is not None:
-                if isinstance(item, list):
-                    choices.append(('{'+','.join(map(str, item))+'}',
-                                    ':'.join(map(str, item))))
-                else:
-                    choices.append((item, item))
+        exclude_kwargs = {attribute+'__isnull': True}
+        for item in injections.exclude(**exclude_kwargs).values_list(
+                attribute, flat=True).distinct():
+            if isinstance(item, list):
+                choices.append(('{'+','.join(map(str, item))+'}',
+                                ':'.join(map(str, item))))
+            else:
+                choices.append((item, item))
         return sorted(choices, key=fix_sort_list)
 
     bit = MultipleChoiceFilter(
@@ -170,6 +187,32 @@ class result(FilterSet):
             result_id__in=self.queryset.values('id'))
         injections = models.injection.objects.filter(
             result_id__in=self.queryset.values('id'))
+
+        def event_type_choices():
+            type_choices = event.choices(None, events, 'type')
+            self.filters['event__type'].extra.update(choices=type_choices)
+            self.filters['event__type'].widget.attrs['size'] = min(
+                len(type_choices), max_select_box_size)
+
+        def event_level_choices():
+            level_choices = event.choices(None, events, 'level')
+            self.filters['event__level'].extra.update(choices=level_choices)
+            self.filters['event__level'].widget.attrs['size'] = min(
+                len(level_choices), max_select_box_size)
+
+        def event_source_choices():
+            source_choices = event.choices(None, events, 'source')
+            self.filters['event__source'].extra.update(choices=source_choices)
+            self.filters['event__source'].widget.attrs['size'] = min(
+                len(source_choices), max_select_box_size)
+
+        event_type_thread = Thread(target=event_type_choices)
+        event_type_thread.start()
+        event_level_thread = Thread(target=event_level_choices)
+        event_level_thread.start()
+        event_source_thread = Thread(target=event_source_choices)
+        event_source_thread.start()
+
         campaign_id_choices = self.choices(self.queryset, 'campaign_id')
         self.filters['campaign_id'].extra.update(choices=campaign_id_choices)
         self.filters['campaign_id'].widget.attrs['size'] = min(
@@ -179,18 +222,6 @@ class result(FilterSet):
             choices=dut_serial_port_choices)
         self.filters['dut_serial_port'].widget.attrs['size'] = min(
             len(dut_serial_port_choices), max_select_box_size)
-        type_choices = event.choices(None, events, 'type')
-        self.filters['event__type'].extra.update(choices=type_choices)
-        self.filters['event__type'].widget.attrs['size'] = min(
-            len(type_choices), max_select_box_size)
-        level_choices = event.choices(None, events, 'level')
-        self.filters['event__level'].extra.update(choices=level_choices)
-        self.filters['event__level'].widget.attrs['size'] = min(
-            len(level_choices), max_select_box_size)
-        source_choices = event.choices(None, events, 'source')
-        self.filters['event__source'].extra.update(choices=source_choices)
-        self.filters['event__source'].widget.attrs['size'] = min(
-            len(source_choices), max_select_box_size)
         bit_choices = injection.choices(None, injections, 'bit')
         self.filters['injection__bit'].extra.update(choices=bit_choices)
         self.filters['injection__bit'].widget.attrs['size'] = min(
@@ -259,11 +290,15 @@ class result(FilterSet):
         self.filters['outcome_category'].widget.attrs['size'] = min(
             len(outcome_category_choices), max_select_box_size)
 
+        event_type_thread.join()
+        event_level_thread.join()
+        event_source_thread.join()
+
     def choices(self, results, attribute):
-        choices = []
-        for item in results.values_list(attribute, flat=True).distinct():
-            if item is not None:
-                choices.append((item, item))
+        exclude_kwargs = {attribute+'__isnull': True}
+        items = results.exclude(**exclude_kwargs).values_list(
+            attribute, flat=True).distinct()
+        choices = zip(items, items)
         return sorted(choices, key=fix_sort_list)
 
     aux_output = CharFilter(
@@ -387,10 +422,10 @@ class simics_register_diff(FilterSet):
             len(register_choices), max_select_box_size)
 
     def choices(self, simics_register_diffs, attribute):
-        choices = []
-        for item in simics_register_diffs.values_list(
-                attribute, flat=True).distinct():
-            choices.append((item, item))
+        exclude_kwargs = {attribute+'__isnull': True}
+        items = simics_register_diffs.exclude(**exclude_kwargs).values_list(
+            attribute, flat=True).distinct()
+        choices = zip(items, items)
         return sorted(choices, key=fix_sort_list)
 
     checkpoint = MultipleChoiceFilter(

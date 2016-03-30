@@ -78,7 +78,7 @@ def charts_page(request, campaign_id=None, group_categories=False):
     result_filter = filters.result(request.GET, queryset=results)
     error_title = None
     error_message = None
-    if results.count() and not result_filter.qs.count():
+    if not result_filter.qs.count() and results.count():
         error_title = 'Filter Error'
         error_message = 'Filter did not return any results and was ignored.'
         result_filter = filters.result(None, queryset=results)
@@ -115,7 +115,7 @@ def events_page(request, campaign_id=None):
     event_filter = filters.event(request.GET, queryset=events)
     error_title = None
     error_message = None
-    if events.count() and not event_filter.qs.count():
+    if not event_filter.qs.count() and events.count():
         error_title = 'Filter Error'
         error_message = 'Filter did not return any events and was ignored.'
         event_filter = filters.event(None, queryset=events)
@@ -148,7 +148,7 @@ def injections_page(request, campaign_id=None):
     injection_filter = filters.injection(request.GET, queryset=injections)
     error_title = None
     error_message = None
-    if injections.count() and not injection_filter.qs.count():
+    if not injection_filter.qs.count() and injections.count():
         error_title = 'Filter Error'
         error_message = 'Filter did not return any injections and was ignored.'
         injection_filter = filters.injection(None, queryset=injections)
@@ -196,7 +196,7 @@ def results_page(request, campaign_id=None):
     result_filter = filters.result(request.GET, queryset=results)
     error_title = None
     error_message = None
-    if results.count() and not result_filter.qs.count():
+    if not result_filter.qs.count() and results.count():
         error_title = 'Filter Error'
         error_message = 'Filter did not return any results and was ignored.'
         result_filter = filters.result(None, queryset=results)

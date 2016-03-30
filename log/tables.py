@@ -83,8 +83,7 @@ class results(Table):
         return '{:,}'.format(record.cycles)
 
     def render_data_diff(self, record):
-        return '{0:.2f}%'.format(
-            models.result.objects.get(id=record.id).data_diff*100)
+        return '{0:.2f}%'.format(record.data_diff*100)
 
     def render_execution_time(self, record):
         return '{0:.4f}'.format(record.execution_time)
@@ -93,9 +92,9 @@ class results(Table):
         if record is not None:
             registers = [injection.register_alias if injection.register_alias
                          else injection.register for injection
-                         in models.injection.objects.filter(result=record.id)]
+                         in record.injection_set.all()]
         else:
-            registers = []
+            return '-'
         for index in range(len(registers)):
             if registers[index] is None:
                 registers[index] = '-'
@@ -106,10 +105,10 @@ class results(Table):
 
     def render_targets(self, record):
         if record is not None:
-            targets = [injection.target for injection
-                       in models.injection.objects.filter(result=record.id)]
+            targets = list(record.injection_set.values_list('target',
+                                                            flat=True))
         else:
-            targets = []
+            return '-'
         for index in range(len(targets)):
             if targets[index] is None:
                 targets[index] = '-'
@@ -138,8 +137,7 @@ class result(Table):
         return '{:,}'.format(record.cycles)
 
     def render_data_diff(self, record):
-        return '{0:.2f}%'.format(
-            models.result.objects.get(id=record.id).data_diff*100)
+        return '{0:.2f}%'.format(record.data_diff*100)
 
     def render_execution_time(self, record):
         return '{0:.4f}'.format(record.execution_time)
@@ -228,7 +226,7 @@ class hw_injection(Table):
     timestamp = DateTimeColumn(format=datetime_format)
 
     def render_time(self, record):
-        return '{0:.6f}'.format(models.injection.objects.get(id=record.id).time)
+        return '{0:.6f}'.format(record.time)
 
     class Meta:
         fields = ('timestamp', 'time', 'target', 'target_index', 'register',

@@ -24,9 +24,13 @@ td .console {
         max-width: 60ex;
     }
 }
+.control-sidebar-heading {
+    margin: 0 auto;
+    padding-left: 10px;
+}
 .filter-field {
     margin: 0 auto;
-    width: 90%;
+    width: 80%;
 }
 .output-image {
     text-align: center;
@@ -52,7 +56,6 @@ td .console {
     position: fixed;
     max-height: 100%;
     overflow: auto;
-    padding-bottom: 50px;
 }
 .main-header,
 .main-sidebar,

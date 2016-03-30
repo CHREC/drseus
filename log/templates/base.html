@@ -197,6 +197,34 @@
         <script>
             // $(".content-wrapper, .right-side").css('min-height', window-height - $('.main-footer').outerHeight());
 
+            function filter_scroll() {
+                {% if filter %}
+                    $(".control-sidebar .tab-content").slimScroll({destroy: true}).height("auto");
+                    $(".control-sidebar .tab-content").slimscroll({
+                        height: ($(window).height() - $(".main-header").height() - $(".control-sidebar-tabs").height()) - 15 + "px",
+                        alwaysVisible: true
+                    });
+                {% endif %}
+            }
+            $(document).ready(filter_scroll);
+            $(window).resize(filter_scroll);
+
+            function sidebar_scroll() {
+                if ($("body").hasClass("sidebar-collapse")) {
+                    $(".sidebar-menu").slimScroll({destroy: true}).height("auto");
+                    $(".sidebar-menu").attr('style', '')
+                } else {
+                    $(".sidebar-menu").slimScroll({destroy: true}).height("auto");
+                    $(".sidebar-menu").slimscroll({
+                        height: ($(window).height() - $(".main-header").height()) + "px",
+                        alwaysVisible: true
+                    });
+                }
+            }
+            $('.sidebar-toggle').on('click', function() {
+                setTimeout(sidebar_scroll, 250);
+            });
+
             {% if error_title and error_message %}
                 $('#error-modal').modal('show')
             {% endif %}
