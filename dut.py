@@ -13,7 +13,7 @@ from termcolor import colored
 from time import perf_counter, sleep
 
 from error import DrSEUsError
-from timeout import timeout
+from timeout import timeout, TimeoutException
 
 
 class dut(object):
@@ -358,23 +358,27 @@ class dut(object):
         returned = False
         while True:
             try:
-                char = self.serial.read().decode('utf-8', 'replace')
+                with timeout(self.options.timeout+5):
+                    char = self.serial.read().decode('utf-8', 'replace')
             except SerialException:
-                char = ''
                 errors += 1
                 with self.db as db:
                     db.log_event('Error', 'DUT' if not self.aux else 'AUX',
                                  'Read error', db.log_exception)
                 self.close()
                 self.open()
-            else:
-                if not char:
-                    hanging = True
-                    with self.db as db:
-                        db.log_event('Error', 'DUT' if not self.aux else 'AUX',
-                                     'Read timeout', db.log_trace)
-                    if not continuous:
-                        break
+                continue
+            except TimeoutException:
+                char = ''
+            if not char:
+                hanging = True
+                with self.db as db:
+                    db.log_event('Error', 'DUT' if not self.aux else 'AUX',
+                                 'Read timeout', db.log_trace)
+                if continuous:
+                    continue
+                else:
+                    break
             if self.db.result:
                 self.db.result['dut_output' if not self.aux
                                else 'aux_output'] += char
