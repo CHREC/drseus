@@ -570,7 +570,7 @@ class dut(object):
                         raise DrSEUsError('Error finding device ip address')
                 if self.ip_address is not None:
                     break
-        # self.send_files()
+        self.send_files()
 
     def local_diff(self):
         command = ('diff '+self.db.campaign['output_file']+' gold_' +

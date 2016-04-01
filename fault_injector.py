@@ -15,7 +15,7 @@ class fault_injector(object):
         self.options = options
         self.db = database(options, campaign, options.command != 'new')
         if not options.jtag:
-            self.debugger = dummy(self.db, options)
+            self.debugger = dummy(self.db, options, power_switch)
         elif campaign['simics']:
             self.debugger = simics(self.db, options)
         elif campaign['architecture'] == 'p2020':

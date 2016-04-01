@@ -400,6 +400,12 @@ supervise.add_argument(
     '-l', '--local_diff',
     action='store_true',
     help='perform output file diff on device and do not retrieve output file')
+supervise.add_argument(
+    '-p', '--power_outlet',
+    type=int,
+    metavar='OUTLET',
+    dest='power_switch_outlet',
+    help='web power switch outlet used to power cycle device')
 # supervise.add_argument(
 #     '-c', '--capture',
 #     action='store_true',

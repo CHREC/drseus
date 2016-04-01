@@ -1,3 +1,4 @@
+from bdb import BdbQuit
 from cmd import Cmd
 from multiprocessing import Value
 from os import makedirs, system
@@ -8,6 +9,7 @@ from threading import Thread
 from traceback import print_exc
 
 from fault_injector import fault_injector
+from power_switch import power_switch
 
 
 # TODO: add background read thread and interact command
@@ -19,7 +21,12 @@ class supervisor(Cmd):
         options.latent_iterations = 0
         options.compare_all = False
         options.extract_blocks = False
-        self.drseus = fault_injector(campaign, options)
+        if options.power_switch_outlet is not None:
+            switch = power_switch(options)
+        else:
+            switch = None
+            del self.do_power_cycle
+        self.drseus = fault_injector(campaign, options, switch)
         if campaign['simics']:
             self.drseus.debugger.launch_simics(
                 'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
@@ -79,11 +86,6 @@ class supervisor(Cmd):
             else:
                 self.drseus.debugger.dut.write('\x03')
             read_thread.join()
-        self.drseus.db.result.update({
-            'outcome_category': ('AUX' if aux else 'DUT')+' command',
-            'outcome': arg})
-        with self.drseus.db as db:
-            db.log_result()
 
     def do_read_dut(self, arg=None, aux=False):
         """Read from DUT, interrupt with ctrl-c"""
@@ -95,11 +97,6 @@ class supervisor(Cmd):
         except KeyboardInterrupt:
             if self.drseus.db.campaign['simics']:
                 self.drseus.debugger.continue_dut()
-        self.drseus.db.result.update({
-            'outcome_category': 'Read '+('AUX' if aux else 'DUT'),
-            'outcome': 'Read '+('AUX' if aux else 'DUT')})
-        with self.drseus.db as db:
-            db.log_result()
 
     def do_send_dut_file(self, arg, aux=False):
         """Send file to DUT, defaults to sending campaign files"""
@@ -160,7 +157,7 @@ class supervisor(Cmd):
             with self.drseus.db as db:
                 db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
             self.drseus.db.result.update({'outcome_category': 'Incomplete',
-                                     'outcome': 'Uncaught exception'})
+                                          'outcome': 'Uncaught exception'})
             with self.drseus.db as db:
                 db.log_result()
         if self.drseus.db.campaign['simics']:
@@ -169,9 +166,16 @@ class supervisor(Cmd):
                 str(self.drseus.db.campaign['checkpoints'])+'_merged')
             self.drseus.debugger.continue_dut()
 
+    def do_power_cycle(self, arg=None):
+        """Power cycle device using web power switch"""
+        self.drseus.debugger.power_cycle_dut()
+
     def do_debug(self, arg=None):
         """Start PDB"""
-        set_trace()
+        try:
+            set_trace()
+        except BdbQuit:
+            pass
 
     def do_shell(self, arg):
         """Pass command to a system shell when line begins with \"!\""""

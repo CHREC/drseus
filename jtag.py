@@ -659,9 +659,10 @@ class openocd(jtag):
 
 
 class dummy(jtag):
-    def __init__(self, database, options):
+    def __init__(self, database, options, power_switch=None):
         self.db = database
         self.options = options
+        self.power_switch = power_switch
         self.open()
 
     def __str__(self):
@@ -682,9 +683,20 @@ class dummy(jtag):
             self.aux.close()
 
     def reset_dut(self):
-        self.dut.flush()
-        self.dut.write('\x03')
-        self.dut.read_until()
+        pass
+
+    def power_cycle_dut(self):
+        with self.db as db:
+            event = db.log_event('Information', 'Debugger',
+                                 'Power cycled DUT', success=False)
+        self.close()
+        with self.power_switch as ps:
+            ps.set_outlet(self.options.power_switch_outlet, 'off')
+            ps.set_outlet(self.options.power_switch_outlet, 'on')
+        self.open()
+        print(colored('Power cycled device: '+self.dut.serial.port, 'red'))
+        with self.db as db:
+            db.log_event_success(event)
 
     def halt_dut(self):
         pass
