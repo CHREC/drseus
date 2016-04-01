@@ -2,10 +2,11 @@ from difflib import SequenceMatcher
 from os import listdir, makedirs
 from shutil import rmtree
 from threading import Thread
+from time import perf_counter
 
 from database import database
 from error import DrSEUsError
-from jtag import bdi, openocd
+from jtag import bdi, dummy, openocd
 from simics import simics
 
 
@@ -13,18 +14,17 @@ class fault_injector(object):
     def __init__(self, campaign, options, power_switch=None):
         self.options = options
         self.db = database(options, campaign, options.command != 'new')
-        if campaign['simics']:
+        if not options.jtag:
+            self.debugger = dummy(self.db, options)
+        elif campaign['simics']:
             self.debugger = simics(self.db, options)
-        else:
-            if campaign['architecture'] == 'p2020':
-                self.debugger = bdi(self.db, options)
-            elif campaign['architecture'] == 'a9':
-                self.debugger = openocd(self.db, options, power_switch)
+        elif campaign['architecture'] == 'p2020':
+            self.debugger = bdi(self.db, options)
+        elif campaign['architecture'] == 'a9':
+            self.debugger = openocd(self.db, options, power_switch)
         if campaign['aux'] and not campaign['simics']:
-            self.debugger.aux.serial.write('\x03')
+            self.debugger.aux.write('\x03')
             self.debugger.aux.do_login()
-            if options.command != 'new':
-                self.debugger.aux.send_files()
 
     def __str__(self):
         string = ('DrSEUs Attributes:\n\tDebugger: '+str(self.debugger) +
@@ -70,14 +70,7 @@ class fault_injector(object):
     def setup_campaign(self):
         if self.db.campaign['simics']:
             self.debugger.launch_simics()
-        if self.db.campaign['aux']:
-            aux_process = Thread(target=self.debugger.aux.send_files)
-            aux_process.start()
-        if not self.db.campaign['simics']:
-            self.debugger.reset_dut()
-        self.debugger.dut.send_files()
-        if self.db.campaign['aux']:
-            aux_process.join()
+        self.debugger.reset_dut()
         self.debugger.time_application()
         if self.db.campaign['output_file']:
             if self.db.campaign['aux_output_file']:
@@ -102,6 +95,8 @@ class fault_injector(object):
                             log_time=False):
 
         def check_output():
+            local_diff = \
+                hasattr(self.options, 'local_diff') and self.options.local_diff
             try:
                 if self.db.campaign['aux_output_file']:
                     directory_listing = self.debugger.aux.command('ls -l')[0]
@@ -111,40 +106,50 @@ class fault_injector(object):
                 self.db.result['outcome_category'] = 'Post execution error'
                 self.db.result['outcome'] = error.type
                 return
+            if local_diff:
+                directory_listing = directory_listing.replace(
+                    'gold_'+self.db.campaign['output_file'], '')
             if self.db.campaign['output_file'] not in directory_listing:
                 self.db.result['outcome_category'] = 'Execution error'
                 self.db.result['outcome'] = 'Missing output file'
                 return
-            result_folder = (
-                'campaign-data/'+str(self.db.campaign['id']) +
-                '/results/'+str(self.db.result['id']))
-            makedirs(result_folder)
-            output_location = \
-                result_folder+'/'+self.db.campaign['output_file']
-            gold_location = (
-                'campaign-data/'+str(self.db.campaign['id']) +
-                '/gold_'+self.db.campaign['output_file'])
-            try:
-                if self.db.campaign['aux_output_file']:
-                    self.debugger.aux.get_file(
-                        self.db.campaign['output_file'], output_location)
+            if local_diff:
+                if self.debugger.dut.local_diff():
+                    self.db.result['data_diff'] = 1.0
                 else:
-                    self.debugger.dut.get_file(
-                        self.db.campaign['output_file'], output_location)
-            except DrSEUsError as error:
-                self.db.result['outcome_category'] = 'File transfer error'
-                self.db.result['outcome'] = error.type
-                if not listdir(result_folder):
-                    rmtree(result_folder)
-                return
-            with open(gold_location, 'rb') as solution:
-                solutionContents = solution.read()
-            with open(output_location, 'rb') as result:
-                resultContents = result.read()
-            self.db.result['data_diff'] = SequenceMatcher(
-                None, solutionContents, resultContents).quick_ratio()
+                    self.db.result['data_diff'] = 0
+            else:
+                result_folder = (
+                    'campaign-data/'+str(self.db.campaign['id']) +
+                    '/results/'+str(self.db.result['id']))
+                makedirs(result_folder)
+                output_location = \
+                    result_folder+'/'+self.db.campaign['output_file']
+                gold_location = (
+                    'campaign-data/'+str(self.db.campaign['id']) +
+                    '/gold_'+self.db.campaign['output_file'])
+                try:
+                    if self.db.campaign['aux_output_file']:
+                        self.debugger.aux.get_file(
+                            self.db.campaign['output_file'], output_location)
+                    else:
+                        self.debugger.dut.get_file(
+                            self.db.campaign['output_file'], output_location)
+                except DrSEUsError as error:
+                    self.db.result['outcome_category'] = 'File transfer error'
+                    self.db.result['outcome'] = error.type
+                    if not listdir(result_folder):
+                        rmtree(result_folder)
+                    return
+                with open(gold_location, 'rb') as solution:
+                    solutionContents = solution.read()
+                with open(output_location, 'rb') as result:
+                    resultContents = result.read()
+                self.db.result['data_diff'] = SequenceMatcher(
+                    None, solutionContents, resultContents).quick_ratio()
             if self.db.result['data_diff'] == 1.0:
-                rmtree(result_folder)
+                if not local_diff:
+                    rmtree(result_folder)
                 if self.db.result['detected_errors']:
                     self.db.result['outcome_category'] = 'Data error'
                     self.db.result['outcome'] = 'Corrected data error'
@@ -172,12 +177,12 @@ class fault_injector(object):
             try:
                 self.debugger.aux.read_until()
             except DrSEUsError as error:
-                self.debugger.dut.serial.write('\x03')
+                self.debugger.dut.write('\x03')
                 self.db.result['outcome_category'] = 'AUX execution error'
                 self.db.result['outcome'] = error.type
             else:
                 if self.db.campaign['kill_dut']:
-                    self.debugger.dut.serial.write('\x03')
+                    self.debugger.dut.write('\x03')
         try:
             self.db.result['returned'] = self.debugger.dut.read_until()[1]
         except DrSEUsError as error:
@@ -213,7 +218,7 @@ class fault_injector(object):
             else:
                 self.db.result['outcome'] = 'Masked faults'
 
-    def inject_campaign(self, iteration_counter):
+    def inject_campaign(self, iteration_counter=None, timer=None):
 
         def prepare_dut():
             try:
@@ -222,15 +227,6 @@ class fault_injector(object):
                 self.db.result.update({
                     'outcome_category': 'Debugger error',
                     'outcome': str(error)})
-                with self.db as db:
-                    db.log_result()
-                return False
-            try:
-                self.debugger.dut.send_files()
-            except DrSEUsError as error:
-                self.db.result.update({
-                    'outcome_category': str(error),
-                    'outcome': 'Error sending files to DUT'})
                 with self.db as db:
                     db.log_result()
                 return False
@@ -296,7 +292,11 @@ class fault_injector(object):
                             'outcome': outcome})
 
     # def inject_campaign(self, iteration_counter):
+        if timer is not None:
+            start = perf_counter()
         while True:
+            if perf_counter()-start >= timer:
+                break
             if iteration_counter is not None:
                 with iteration_counter.get_lock():
                     iteration = iteration_counter.value

@@ -49,15 +49,13 @@ class jtag(object):
         self.dut = dut(self.db, self.options)
         if self.db.campaign['aux']:
             self.aux = dut(self.db, self.options, aux=True)
-        if self.options.jtag:
-            self.connect_telnet()
+        self.connect_telnet()
 
     def close(self):
-        if self.telnet:
-            self.telnet.close()
-            with self.db as db:
-                db.log_event('Information', 'Debugger', 'Closed telnet',
-                             success=True)
+        self.telnet.close()
+        with self.db as db:
+            db.log_event('Information', 'Debugger', 'Closed telnet',
+                         success=True)
         self.dut.close()
         if self.db.campaign['aux']:
             self.aux.close()
@@ -78,28 +76,25 @@ class jtag(object):
 
     # def reset_dut(self, expected_output, attempts):
         self.dut.flush()
-        if self.telnet:
-            self.dut.reset_ip()
-            for attempt in range(attempts):
+        self.dut.reset_ip()
+        for attempt in range(attempts):
+            try:
+                self.command('reset', expected_output,
+                             'Error resetting DUT', False)
+            except DrSEUsError as error:
+                attempt_exception(attempt, attempts, error,
+                                  'Error resetting DUT')
+            else:
                 try:
-                    self.command('reset', expected_output,
-                                 'Error resetting DUT', False)
+                    self.dut.do_login()
                 except DrSEUsError as error:
                     attempt_exception(attempt, attempts, error,
-                                      'Error resetting DUT')
+                                      'Error booting DUT')
                 else:
-                    try:
-                        self.dut.do_login()
-                    except DrSEUsError as error:
-                        attempt_exception(attempt, attempts, error,
-                                          'Error booting DUT')
-                    else:
-                        with self.db as db:
-                            db.log_event('Information', 'Debugger', 'Reset DUT',
-                                         success=True)
-                        break
-        else:
-            self.dut.serial.write('\x03')
+                    with self.db as db:
+                        db.log_event('Information', 'Debugger', 'Reset DUT',
+                                     success=True)
+                    break
 
     def halt_dut(self, halt_command, expected_output):
         with self.db as db:
@@ -140,7 +135,7 @@ class jtag(object):
             if self.db.campaign['aux']:
                 aux_process.join()
             if self.db.campaign['kill_dut']:
-                self.dut.serial.write('\x03')
+                self.dut.write('\x03')
             dut_process.join()
         self.db.campaign['execution_time'] = \
             self.dut.get_timer_value() / self.options.iterations
@@ -331,8 +326,7 @@ class bdi(jtag):
         return string
 
     def close(self):
-        if self.telnet:
-            self.telnet.write(bytes('quit\r', encoding='utf-8'))
+        self.telnet.write(bytes('quit\r', encoding='utf-8'))
         super().close()
 
     def reset_bdi(self):
@@ -510,7 +504,7 @@ class openocd(jtag):
         self.power_switch = power_switch
         if not exists('devices.json'):
             raise Exception('could not find device information file '
-                            'devices.json, try running DrSEUs command '
+                            'devices.json, try running command '
                             '"power detect"')
         with open('devices.json', 'r') as device_file:
             device_info = load(device_file)
@@ -520,8 +514,8 @@ class openocd(jtag):
                 self.device_info = device
                 break
         else:
-            raise Exception('could not find entry in devices.json for device '
-                            'at '+options.dut_serial_port)
+            raise Exception('could not find entry in devices.json for '
+                            'device at '+options.dut_serial_port)
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = a9_targets
@@ -540,22 +534,21 @@ class openocd(jtag):
         return string
 
     def open(self):
-        if self.options.jtag:
-            self.openocd = Popen(['openocd', '-c',
-                                  'gdb_port '+str(self.gdb_port)+'; '
-                                  'tcl_port 0; '
-                                  'telnet_port '+str(self.port)+'; '
-                                  'interface ftdi; '
-                                  'ftdi_serial '+self.device_info['ftdi']+';',
-                                  '-f', 'openocd_zedboard.cfg'],
-                                 stderr=(DEVNULL
-                                         if self.options.command != 'openocd'
-                                         else None))
-            if self.options.command != 'openocd':
-                with self.db as db:
-                    db.log_event('Information', 'Debugger', 'Launched openocd',
-                                 success=True)
-                sleep(1)
+        self.openocd = Popen(['openocd', '-c',
+                              'gdb_port '+str(self.gdb_port)+'; '
+                              'tcl_port 0; '
+                              'telnet_port '+str(self.port)+'; '
+                              'interface ftdi; '
+                              'ftdi_serial '+self.device_info['ftdi']+';',
+                              '-f', 'openocd_zedboard.cfg'],
+                             stderr=(DEVNULL
+                                     if self.options.command != 'openocd'
+                                     else None))
+        if self.options.command != 'openocd':
+            with self.db as db:
+                db.log_event('Information', 'Debugger', 'Launched openocd',
+                             success=True)
+            sleep(1)
         if self.options.command != 'openocd':
             super().open()
 
@@ -663,3 +656,42 @@ class openocd(jtag):
         else:
             self.command('reg '+register+' '+value,
                          error_message='Error setting register value')
+
+
+class dummy(jtag):
+    def __init__(self, database, options):
+        self.db = database
+        self.options = options
+        self.open()
+
+    def __str__(self):
+        return 'dummy debugger'
+
+    def open(self):
+        self.dut = dut(self.db, self.options)
+        self.dut.write('\x03')
+        self.dut.do_login()
+        if self.db.campaign['aux']:
+            self.aux = dut(self.db, self.options, aux=True)
+            self.aux.write('\x03')
+            self.aux.do_login()
+
+    def close(self):
+        self.dut.close()
+        if self.db.campaign['aux']:
+            self.aux.close()
+
+    def reset_dut(self):
+        self.dut.flush()
+        self.dut.write('\x03')
+        self.dut.read_until()
+
+    def halt_dut(self):
+        pass
+
+    def continue_dut(self):
+        pass
+
+    def inject_faults(self):
+        self.dut.write('./'+self.db.campaign['command']+'\n')
+        return None, None

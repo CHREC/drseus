@@ -274,6 +274,9 @@ class simics(object):
                 db.log_event('Information', 'Simics', 'Continue DUT',
                              success=True)
 
+    def reset_dut(self):
+        pass
+
     def __command(self, command=None, time=10):
 
         def read_until():
@@ -405,7 +408,7 @@ class simics(object):
             if self.db.campaign['aux']:
                 aux_process.join()
             if self.db.campaign['kill_dut']:
-                self.dut.serial.write('\x03')
+                self.dut.write('\x03')
             read_thread.join()
 
     # def time_application(self):
@@ -430,7 +433,7 @@ class simics(object):
             if self.db.campaign['aux']:
                 aux_process.join()
             if self.db.campaign['kill_dut']:
-                self.dut.serial.write('\x03')
+                self.dut.write('\x03')
             dut_process.join()
         self.halt_dut()
         end_cycles, end_time = self.get_time()

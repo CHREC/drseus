@@ -5,6 +5,7 @@ from pdb import set_trace
 from select import select
 from sys import stdin
 from threading import Thread
+from traceback import print_exc
 
 from fault_injector import fault_injector
 
@@ -26,7 +27,6 @@ class supervisor(Cmd):
             self.drseus.debugger.continue_dut()
         else:
             self.drseus.debugger.reset_dut()
-            self.drseus.debugger.dut.send_files()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
         if campaign['aux']:
@@ -75,9 +75,9 @@ class supervisor(Cmd):
             if self.drseus.db.campaign['simics']:
                 self.drseus.debugger.continue_dut()
             if aux:
-                self.drseus.debugger.aux.serial.write('\x03')
+                self.drseus.debugger.aux.write('\x03')
             else:
-                self.drseus.debugger.dut.serial.write('\x03')
+                self.drseus.debugger.dut.write('\x03')
             read_thread.join()
         self.drseus.db.result.update({
             'outcome_category': ('AUX' if aux else 'DUT')+' command',
@@ -124,28 +124,45 @@ class supervisor(Cmd):
         """Supervise for targeted runtime (in seconds) or iterations"""
         if 's' in arg:
             try:
-                run_time = int(arg.replace('s', ''))
+                timer = int(arg.replace('s', ''))
             except ValueError:
                 print('Invalid value entered')
                 return
-            supervise_iterations = max(
-                int(run_time / self.drseus.db.campaign['execution_time']), 1)
+            iteration_counter = None
         else:
             try:
                 supervise_iterations = int(arg)
             except ValueError:
                 print('Invalid value entered')
                 return
-        print('Performing '+str(supervise_iterations)+' iteration(s)...\n')
-        iteration_counter = Value('L', supervise_iterations)
+            iteration_counter = Value('L', supervise_iterations)
+            timer = None
         if self.drseus.db.campaign['simics']:
             self.drseus.debugger.close()
         self.drseus.db.result.update({
             'outcome_category': 'DrSEUs',
             'outcome': 'Pre-supervise'})
+        self.drseus.debugger.dut.flush()
         with self.drseus.db as db:
             db.log_result()
-        self.drseus.inject_campaign(iteration_counter)
+        try:
+            self.drseus.inject_campaign(iteration_counter, timer)
+        except KeyboardInterrupt:
+            with self.drseus.db as db:
+                db.log_event('Information', 'User', 'Interrupted',
+                             db.log_exception)
+            self.drseus.db.result.update({'outcome_category': 'Incomplete',
+                                          'outcome': 'Interrupted'})
+            with self.drseus.db as db:
+                db.log_result()
+        except:
+            print_exc()
+            with self.drseus.db as db:
+                db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
+            self.drseus.db.result.update({'outcome_category': 'Incomplete',
+                                     'outcome': 'Uncaught exception'})
+            with self.drseus.db as db:
+                db.log_result()
         if self.drseus.db.campaign['simics']:
             self.drseus.debugger.launch_simics(
                 'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +

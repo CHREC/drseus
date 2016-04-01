@@ -15,6 +15,7 @@ from subprocess import check_call
 from sys import argv, stdout
 from tarfile import open as open_tar
 from terminaltables import AsciiTable
+from traceback import print_exc
 
 from database import database
 from fault_injector import fault_injector
@@ -242,6 +243,7 @@ def inject_campaign(options):
             with drseus.db as db:
                 db.log_result(False)
         except:
+            print_exc()
             with drseus.db as db:
                 db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
             drseus.debugger.close()

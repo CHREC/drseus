@@ -1,11 +1,14 @@
 class DrSEUsError(Exception):
-    def __init__(self, *args):
-        if len(args) > 0:
-            self.type = args[0]
-        else:
-            self.type = None
-        if len(args) > 1:
-            self.returned = args[1]
-        else:
-            self.returned = None
-        super().__init__(*args)
+    def __init__(self, type, source=None, returned=None):
+        self.type = type
+        self.source = source
+        self.returned = returned
+
+    def __str__(self):
+        string = ''
+        if self.source:
+            string += str(source)+': '
+        string += str(self.type)
+        if self.returned:
+            string += ', returned: '+str(self.returned)
+        return string

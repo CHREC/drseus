@@ -48,19 +48,25 @@ class database(object):
 
     def __enter__(self):
         self.lock.acquire()
-        self.connection = connect(host=self.options.db_host,
-                                  port=self.options.db_port,
-                                  database=self.options.db_name,
-                                  user=self.options.db_user,
-                                  password=self.options.db_password,
-                                  cursor_factory=DictCursor)
-        self.cursor = self.connection.cursor()
+        try:
+            self.connection = connect(host=self.options.db_host,
+                                      port=self.options.db_port,
+                                      database=self.options.db_name,
+                                      user=self.options.db_user,
+                                      password=self.options.db_password,
+                                      cursor_factory=DictCursor)
+            self.cursor = self.connection.cursor()
+        except KeyboardInterrupt:
+            self.lock.release()
+            raise KeyboardInterrupt
         return self
 
     def __exit__(self, type_, value, traceback):
-        self.connection.commit()
-        self.connection.close()
-        self.lock.release()
+        try:
+            self.connection.commit()
+            self.connection.close()
+        finally:
+            self.lock.release()
         if type_ is not None or value is not None or traceback is not None:
             return False  # reraise exception
 

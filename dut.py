@@ -159,7 +159,17 @@ class dut(object):
                 self.serial.reset_input_buffer()
             else:
                 if in_bytes:
-                    buff = self.serial.read(in_bytes).decode('utf-8', 'replace')
+                    buff = ''
+                    for b in range(in_bytes):
+                        char = self.serial.read().decode('utf-8', 'replace')
+                        buff += char
+                        if self.options.debug:
+                            print(
+                                colored(char,
+                                        'green' if not self.aux else 'cyan'),
+                                end='')
+                    if self.options.debug:
+                        stdout.flush()
                     if self.db.result:
                         self.db.result['dut_output' if not self.aux
                                        else 'aux_output'] += buff
@@ -168,11 +178,6 @@ class dut(object):
                         self.db.campaign['dut_output' if not self.aux
                                          else 'aux_output'] += buff
                         self.db.update('campaign')
-                    if self.options.debug and buff:
-                        print(colored(buff,
-                                      'green' if not self.aux else 'cyan'),
-                              end='')
-                        stdout.flush()
             with self.db as db:
                 db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                              'Flushed serial buffers', buff, success=True)
@@ -225,6 +230,9 @@ class dut(object):
                 makedirs(location)
                 for file_ in files:
                     copy(file_, location)
+            if hasattr(self.options, 'local_diff') and self.options.local_diff:
+                files.append('campaign-data/'+str(self.db.campaign['id']) +
+                             '/gold_'+self.db.campaign['output_file'])
         if self.options.debug:
             print(colored('sending file(s)...', 'blue'), end='')
             stdout.flush()
@@ -233,9 +241,15 @@ class dut(object):
         for attempt in range(attempts):
             try:
                 with timeout(30):
-                    ssh.connect(self.ip_address, port=self.scp_port,
-                                username='root', pkey=self.rsakey,
-                                allow_agent=False, look_for_keys=False)
+                    if self.options.rsa:
+                        ssh.connect(self.ip_address, port=self.scp_port,
+                                    username=self.username, pkey=self.rsakey,
+                                    allow_agent=False, look_for_keys=False)
+                    else:
+                        ssh.connect(self.ip_address, port=self.scp_port,
+                                    username=self.username,
+                                    password=self.password, allow_agent=False,
+                                    look_for_keys=False)
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except Exception as error:
@@ -287,9 +301,15 @@ class dut(object):
         for attempt in range(attempts):
             try:
                 with timeout(60):
-                    ssh.connect(self.ip_address, port=self.scp_port,
-                                username='root', pkey=self.rsakey,
-                                allow_agent=False, look_for_keys=False)
+                    if self.options.rsa:
+                        ssh.connect(self.ip_address, port=self.scp_port,
+                                    username=self.username, pkey=self.rsakey,
+                                    allow_agent=False, look_for_keys=False)
+                    else:
+                        ssh.connect(self.ip_address, port=self.scp_port,
+                                    username=self.username,
+                                    password=self.password, allow_agent=False,
+                                    look_for_keys=False)
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except Exception as error:
@@ -473,9 +493,9 @@ class dut(object):
                 if not (boot and category in ('Error booting', 'Reboot',
                                               'Missing file')) and \
                         message in buff:
-                    raise DrSEUsError(category, returned)
+                    raise DrSEUsError(category, returned=returned)
         if hanging:
-            raise DrSEUsError('Hanging', returned)
+            raise DrSEUsError('Hanging', returned=returned)
         if boot:
             with self.db as db:
                 db.log_event('Information', 'DUT' if not self.aux else 'AUX',
@@ -501,10 +521,10 @@ class dut(object):
                         db.log_event('Warning',
                                      'DUT' if not self.aux else 'AUX',
                                      'Command error', buff, success=False)
-                    sleep(30)
+                    sleep(5)
                 else:
                     raise DrSEUsError(('DUT' if not self.aux else 'AUX') +
-                                      ' Command error', returned)
+                                      ' Command error', returned=returned)
             else:
                 with self.db as db:
                     db.log_event_success(event)
@@ -521,10 +541,11 @@ class dut(object):
             self.read_until()
         if self.login_command:
             self.command(self.login_command, flush=flush)
-        self.command('mkdir ~/.ssh', flush=flush)
-        self.command('touch ~/.ssh/authorized_keys', flush=flush)
-        self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
-                     '\" > ~/.ssh/authorized_keys', flush=flush)
+        if self.options.rsa:
+            self.command('mkdir ~/.ssh', flush=flush)
+            self.command('touch ~/.ssh/authorized_keys', flush=flush)
+            self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
+                         '\" > ~/.ssh/authorized_keys', flush=flush)
         if self.db.campaign['simics']:
             self.command('ip addr add '+self.ip_address+'/24 dev eth0',
                          flush=flush)
@@ -549,3 +570,15 @@ class dut(object):
                         raise DrSEUsError('Error finding device ip address')
                 if self.ip_address is not None:
                     break
+        # self.send_files()
+
+    def local_diff(self):
+        command = ('diff '+self.db.campaign['output_file']+' gold_' +
+                   self.db.campaign['output_file'])
+        buff = self.command(command)[0].replace('\r\n', '\n')
+        buff = buff.replace(command+'\n', '')
+        buff = buff.replace(self.prompt, '')
+        if buff != '':
+            return False
+        else:
+            return True

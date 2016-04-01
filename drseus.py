@@ -5,6 +5,7 @@ from getpass import getpass
 
 import utilities
 
+# TODO: only send files if needed
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add options for custom error messages
 # TODO: use formatting strings
@@ -14,8 +15,10 @@ import utilities
 parser = ArgumentParser(
     description='The Dynamic Robust Single Event Upset Simulator '
                 'was created by Ed Carlisle IV',
+    fromfile_prefix_chars='@',
     epilog='Begin by creating a new campaign with "%(prog)s new APPLICATION". '
            'Then run injections with "%(prog)s inject".')
+parser.convert_arg_line_to_args = lambda line: line.split()
 parser.add_argument(
     '-C', '--campaign',
     type=int,
@@ -38,6 +41,11 @@ parser.add_argument(
     action='store_true',
     help='forget DUT/AUX IP addresses between resets if using automatic '
          'discover')
+parser.add_argument(
+    '--no_rsa',
+    action='store_false',
+    dest='rsa',
+    help='use username/password for SCP authentication instead of RSA key')
 
 dut_settings = parser.add_argument_group('DUT settings')
 dut_settings.add_argument(
@@ -388,6 +396,10 @@ supervise = subparsers.add_parser(
     'supervise', aliases=['s'],
     help='run interactive supervisor',
     description='run interactive supervisor')
+supervise.add_argument(
+    '-l', '--local_diff',
+    action='store_true',
+    help='perform output file diff on device and do not retrieve output file')
 # supervise.add_argument(
 #     '-c', '--capture',
 #     action='store_true',
