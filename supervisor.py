@@ -25,7 +25,6 @@ class supervisor(Cmd):
             switch = power_switch(options)
         else:
             switch = None
-            del self.do_power_cycle
         self.drseus = fault_injector(campaign, options, switch)
         if campaign['simics']:
             self.drseus.debugger.launch_simics(
@@ -168,7 +167,12 @@ class supervisor(Cmd):
 
     def do_power_cycle(self, arg=None):
         """Power cycle device using web power switch"""
-        self.drseus.debugger.power_cycle_dut()
+        if hasattr(self.drseus.debugger, 'power_switch') and \
+            self.drseus.debugger.power_switch is not None and \
+                hasattr(self.drseus.debugger, 'power_cycle_dut'):
+            self.drseus.debugger.power_cycle_dut()
+        else:
+            print('Web power switch not configured, unable to power cycle')
 
     def do_debug(self, arg=None):
         """Start PDB"""
