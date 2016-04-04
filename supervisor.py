@@ -165,6 +165,14 @@ class supervisor(Cmd):
                 str(self.drseus.db.campaign['checkpoints'])+'_merged')
             self.drseus.debugger.continue_dut()
 
+    def do_log(self, arg):
+        """Log current status as a result"""
+        self.drseus.db.result.update({
+            'outcome_category': 'DrSEUs',
+            'outcome': arg if arg else 'Manual log entry'})
+        with self.drseus.db as db:
+            db.log_result()
+
     def do_power_cycle(self, arg=None):
         """Power cycle device using web power switch"""
         if hasattr(self.drseus.debugger, 'power_switch') and \

@@ -221,15 +221,16 @@ class fault_injector(object):
     def inject_campaign(self, iteration_counter=None, timer=None):
 
         def prepare_dut():
-            try:
-                self.debugger.reset_dut()
-            except DrSEUsError as error:
-                self.db.result.update({
-                    'outcome_category': 'Debugger error',
-                    'outcome': str(error)})
-                with self.db as db:
-                    db.log_result()
-                return False
+            if self.options.command == 'inject':
+                try:
+                    self.debugger.reset_dut()
+                except DrSEUsError as error:
+                    self.db.result.update({
+                        'outcome_category': 'Debugger error',
+                        'outcome': str(error)})
+                    with self.db as db:
+                        db.log_result()
+                    return False
             if self.db.campaign['aux']:
                 with self.db as db:
                     db.log_event('Information', 'AUX', 'Command',
@@ -295,7 +296,7 @@ class fault_injector(object):
         if timer is not None:
             start = perf_counter()
         while True:
-            if perf_counter()-start >= timer:
+            if timer is not None and (perf_counter()-start >= timer):
                 break
             if iteration_counter is not None:
                 with iteration_counter.get_lock():
@@ -314,7 +315,6 @@ class fault_injector(object):
                 self.debugger.dut.reset_timer()
             try:
                 latent_faults, persistent_faults = self.debugger.inject_faults()
-                self.debugger.continue_dut()
             except DrSEUsError as error:
                 self.db.result['outcome'] = str(error)
                 if self.db.campaign['simics']:

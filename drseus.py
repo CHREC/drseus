@@ -563,8 +563,8 @@ clean.set_defaults(func=utilities.clean)
 
 serials = subparsers.add_parser(
     'serials', aliases=['sn'],
-    help='print serial numbers for currently connect devices',
-    description='print serial numbers for currently connect devices')
+    help='print serial numbers for currently connected devices',
+    description='print serial numbers for currently connected devices')
 serials.set_defaults(func=utilities.list_serials)
 
 django = subparsers.add_parser(
@@ -582,7 +582,7 @@ django.set_defaults(func=utilities.run_django_command)
 options = parser.parse_args()
 
 if options.command is None:
-    parser.error('no command specified, run with -h for help')
+    parser.error('no command specified, run with "-h" for help')
 if options.command == 'n':
     options.command = 'new'
 elif options.command == 'i':

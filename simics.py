@@ -502,6 +502,8 @@ class simics(object):
                     latent_faults = errors
                 if injections_remaining:
                     self.close()
+                else:
+                    self.continue_dut()
         else:
             self.close()
             makedirs('simics-workspace/injected-checkpoints/' +

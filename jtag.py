@@ -148,15 +148,17 @@ class jtag(object):
             injection_times.append(uniform(0,
                                            self.db.campaign['execution_time']))
         injection_times = sorted(injection_times)
-        self.dut.write('./'+self.db.campaign['command']+'\n')
-        if injection_times:
-            self.halt_dut()
+        if len(injection_times) == 0:
+            self.dut.write('./'+self.db.campaign['command']+'\n')
         for injection_number, injection_time in \
                 enumerate(injection_times, start=1):
             if self.options.debug:
                 print(colored('injection time: '+str(injection_time),
                               'magenta'))
-            self.continue_dut()
+            if injection_number == 1:
+                self.dut.write('./'+self.db.campaign['command']+'\n')
+            else:
+                self.continue_dut()
             sleep(injection_time)
             self.halt_dut()
             target, target_index = \
@@ -230,6 +232,8 @@ class jtag(object):
                         db.log_event('Error', 'Debugger', 'Injection failed',
                                      success=False)
                 self.set_mode(injection['processor_mode'])
+            if injection_number == len(injection_times):
+                self.continue_dut()
         return 0, False
 
     def command(self, command, expected_output, error_message,
