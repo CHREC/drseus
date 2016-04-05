@@ -79,10 +79,19 @@
                 "bits": 31,
                 "fields": [
                     [
-                        "addr",
+                        "address[1:31]",
                         [
                             1,
                             31
+                        ]
+                    ]
+                ],
+                "unused_fields": [
+                    [
+                        "address[0]",
+                        [
+                            0,
+                            0
                         ]
                     ]
                 ],
