@@ -24778,100 +24778,196 @@
     "GPR": {
         "count": 2,
         "registers": {
-            "egpr0": {
+            "r0": {
+                "alias": {
+                    "register": "egpr0"
+                },
                 "bits": 64
             },
-            "egpr1": {
+            "r1": {
+                "alias": {
+                    "register": "egpr1"
+                },
                 "bits": 64
             },
-            "egpr10": {
+            "r10": {
+                "alias": {
+                    "register": "egpr10"
+                },
                 "bits": 64
             },
-            "egpr11": {
+            "r11": {
+                "alias": {
+                    "register": "egpr11"
+                },
                 "bits": 64
             },
-            "egpr12": {
+            "r12": {
+                "alias": {
+                    "register": "egpr12"
+                },
                 "bits": 64
             },
-            "egpr13": {
+            "r13": {
+                "alias": {
+                    "register": "egpr13"
+                },
                 "bits": 64
             },
-            "egpr14": {
+            "r14": {
+                "alias": {
+                    "register": "egpr14"
+                },
                 "bits": 64
             },
-            "egpr15": {
+            "r15": {
+                "alias": {
+                    "register": "egpr15"
+                },
                 "bits": 64
             },
-            "egpr16": {
+            "r16": {
+                "alias": {
+                    "register": "egpr16"
+                },
                 "bits": 64
             },
-            "egpr17": {
+            "r17": {
+                "alias": {
+                    "register": "egpr17"
+                },
                 "bits": 64
             },
-            "egpr18": {
+            "r18": {
+                "alias": {
+                    "register": "egpr18"
+                },
                 "bits": 64
             },
-            "egpr19": {
+            "r19": {
+                "alias": {
+                    "register": "egpr19"
+                },
                 "bits": 64
             },
-            "egpr2": {
+            "r2": {
+                "alias": {
+                    "register": "egpr2"
+                },
                 "bits": 64
             },
-            "egpr20": {
+            "r20": {
+                "alias": {
+                    "register": "egpr20"
+                },
                 "bits": 64
             },
-            "egpr21": {
+            "r21": {
+                "alias": {
+                    "register": "egpr21"
+                },
                 "bits": 64
             },
-            "egpr22": {
+            "r22": {
+                "alias": {
+                    "register": "egpr22"
+                },
                 "bits": 64
             },
-            "egpr23": {
+            "r23": {
+                "alias": {
+                    "register": "egpr23"
+                },
                 "bits": 64
             },
-            "egpr24": {
+            "r24": {
+                "alias": {
+                    "register": "egpr24"
+                },
                 "bits": 64
             },
-            "egpr25": {
+            "r25": {
+                "alias": {
+                    "register": "egpr25"
+                },
                 "bits": 64
             },
-            "egpr26": {
+            "r26": {
+                "alias": {
+                    "register": "egpr26"
+                },
                 "bits": 64
             },
-            "egpr27": {
+            "r27": {
+                "alias": {
+                    "register": "egpr27"
+                },
                 "bits": 64
             },
-            "egpr28": {
+            "r28": {
+                "alias": {
+                    "register": "egpr28"
+                },
                 "bits": 64
             },
-            "egpr29": {
+            "r29": {
+                "alias": {
+                    "register": "egpr29"
+                },
                 "bits": 64
             },
-            "egpr3": {
+            "r3": {
+                "alias": {
+                    "register": "egpr3"
+                },
                 "bits": 64
             },
-            "egpr30": {
+            "r30": {
+                "alias": {
+                    "register": "egpr30"
+                },
                 "bits": 64
             },
-            "egpr31": {
+            "r31": {
+                "alias": {
+                    "register": "egpr31"
+                },
                 "bits": 64
             },
-            "egpr4": {
+            "r4": {
+                "alias": {
+                    "register": "egpr4"
+                },
                 "bits": 64
             },
-            "egpr5": {
+            "r5": {
+                "alias": {
+                    "register": "egpr5"
+                },
                 "bits": 64
             },
-            "egpr6": {
+            "r6": {
+                "alias": {
+                    "register": "egpr6"
+                },
                 "bits": 64
             },
-            "egpr7": {
+            "r7": {
+                "alias": {
+                    "register": "egpr7"
+                },
                 "bits": 64
             },
-            "egpr8": {
+            "r8": {
+                "alias": {
+                    "register": "egpr8"
+                },
                 "bits": 64
             },
-            "egpr9": {
+            "r9": {
+                "alias": {
+                    "register": "egpr9"
+                },
                 "bits": 64
             }
         }
