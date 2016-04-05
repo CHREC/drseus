@@ -183,7 +183,6 @@
         "count": 2,
         "registers": {
             "cpsr": {},
-            "lr": {},
             "lr_abt": {},
             "lr_fiq": {},
             "lr_irq": {},
@@ -192,7 +191,6 @@
             "lr_und": {},
             "lr_usr": {},
             "pc": {},
-            "sp": {},
             "sp_abt": {},
             "sp_fiq": {},
             "sp_irq": {},
