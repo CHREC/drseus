@@ -126,6 +126,14 @@
     "CPU": {
         "count": 2,
         "registers": {
+            "ACC": {
+                "bits": 64,
+                "alias": {
+                    "register": "acc"
+                }
+            },
+            "CR": {},
+            "PC": {},
             "ATBL": {
                 "SPR": 526,
                 "access": "r",
@@ -3076,7 +3084,7 @@
                     ]
                 ]
             },
-            "PMLCa0": {
+            "PMLCA0": {
                 "PMR": 144,
                 "fields": [
                     [
@@ -3144,7 +3152,7 @@
                     ]
                 ]
             },
-            "PMLCa1": {
+            "PMLCA1": {
                 "PMR": 145,
                 "fields": [
                     [
@@ -3212,7 +3220,7 @@
                     ]
                 ]
             },
-            "PMLCa2": {
+            "PMLCA2": {
                 "PMR": 146,
                 "fields": [
                     [
@@ -3280,7 +3288,7 @@
                     ]
                 ]
             },
-            "PMLCa3": {
+            "PMLCA3": {
                 "PMR": 147,
                 "fields": [
                     [
@@ -3348,7 +3356,7 @@
                     ]
                 ]
             },
-            "PMLCb0": {
+            "PMLCB0": {
                 "PMR": 272,
                 "fields": [
                     [
@@ -3381,7 +3389,7 @@
                     ]
                 ]
             },
-            "PMLCb1": {
+            "PMLCB1": {
                 "PMR": 273,
                 "fields": [
                     [
@@ -3414,7 +3422,7 @@
                     ]
                 ]
             },
-            "PMLCb2": {
+            "PMLCB2": {
                 "PMR": 274,
                 "fields": [
                     [
@@ -3447,7 +3455,7 @@
                     ]
                 ]
             },
-            "PMLCb3": {
+            "PMLCB3": {
                 "PMR": 275,
                 "fields": [
                     [
@@ -3947,7 +3955,7 @@
                     ]
                 ]
             },
-            "TBL_RO": {
+            "TBL": {
                 "SPR": 268,
                 "access": "r"
             },
@@ -3955,7 +3963,7 @@
                 "SPR": 284,
                 "access": "w"
             },
-            "TBU_RO": {
+            "TBU": {
                 "SPR": 269,
                 "access": "r"
             },
@@ -4297,7 +4305,7 @@
                     ]
                 ]
             },
-            "UPMLCa0": {
+            "UPMLCA0": {
                 "PMR": 128,
                 "fields": [
                     [
@@ -4365,7 +4373,7 @@
                     ]
                 ]
             },
-            "UPMLCa1": {
+            "UPMLCA1": {
                 "PMR": 129,
                 "fields": [
                     [
@@ -4433,7 +4441,7 @@
                     ]
                 ]
             },
-            "UPMLCa2": {
+            "UPMLCA2": {
                 "PMR": 130,
                 "fields": [
                     [
@@ -4501,7 +4509,7 @@
                     ]
                 ]
             },
-            "UPMLCa3": {
+            "UPMLCA3": {
                 "PMR": 131,
                 "fields": [
                     [
@@ -4569,7 +4577,7 @@
                     ]
                 ]
             },
-            "UPMLCb0": {
+            "UPMLCB0": {
                 "PMR": 256,
                 "fields": [
                     [
@@ -4602,7 +4610,7 @@
                     ]
                 ]
             },
-            "UPMLCb1": {
+            "UPMLCB1": {
                 "PMR": 257,
                 "fields": [
                     [
@@ -4635,7 +4643,7 @@
                     ]
                 ]
             },
-            "UPMLCb2": {
+            "UPMLCB2": {
                 "PMR": 258,
                 "fields": [
                     [
@@ -4668,7 +4676,7 @@
                     ]
                 ]
             },
-            "UPMLCb3": {
+            "UPMLCB3": {
                 "PMR": 259,
                 "fields": [
                     [
