@@ -2887,7 +2887,7 @@
             "RSTRSCR": {},
             "SRDSCR": {
                 "count": [
-                    2
+                    6
                 ]
             }
         }
@@ -4301,7 +4301,7 @@
                     ]
                 ],
                 "partial": true,
-                "unused_registers": [
+                "unused_fields": [
                     [
                         "PD",
                         [
