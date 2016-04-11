@@ -13309,7 +13309,7 @@
                 ],
                 "offset": 132
             },
-            "ORf0": {
+            "OR0": {
                 "access": "rw",
                 "fields": [
                     [
@@ -13334,49 +13334,49 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:CSNT, UPM:Reserved",
                         [
                             11,
                             11
                         ]
                     ],
                     [
-                        "PGS",
+                        "FCM:PGS, GPCM:ACS, UPM:Reserved",
                         [
                             10,
                             10
                         ]
                     ],
                     [
-                        "CSCT",
+                        "FCM:CSCT, GPCM:ACS, UPM:Reserved",
                         [
                             9,
                             9
                         ]
                     ],
                     [
-                        "CST",
+                        "FCM:CST, GPCM:XACS, UPM:BI",
                         [
                             8,
                             8
                         ]
                     ],
                     [
-                        "CHT",
+                        "FCM:CHT, GPCM:SCY, UPM:Reserved",
                         [
                             7,
                             7
                         ]
                     ],
                     [
-                        "SCY",
+                        "FCM:SCY, GPCM:SCY, UPM:Reserved",
                         [
                             4,
                             6
                         ]
                     ],
                     [
-                        "RST",
+                        "FCM:RST, GPCM:SETA, UPM:Reserved",
                         [
                             3,
                             3
@@ -13397,7 +13397,7 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:EAD, UPM:EAD",
                         [
                             0,
                             0
@@ -13406,7 +13406,7 @@
                 ],
                 "offset": 4
             },
-            "ORf1": {
+            "OR1": {
                 "access": "rw",
                 "fields": [
                     [
@@ -13431,49 +13431,49 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:CSNT, UPM:Reserved",
                         [
                             11,
                             11
                         ]
                     ],
                     [
-                        "PGS",
+                        "FCM:PGS, GPCM:ACS, UPM:Reserved",
                         [
                             10,
                             10
                         ]
                     ],
                     [
-                        "CSCT",
+                        "FCM:CSCT, GPCM:ACS, UPM:Reserved",
                         [
                             9,
                             9
                         ]
                     ],
                     [
-                        "CST",
+                        "FCM:CST, GPCM:XACS, UPM:BI",
                         [
                             8,
                             8
                         ]
                     ],
                     [
-                        "CHT",
+                        "FCM:CHT, GPCM:SCY, UPM:Reserved",
                         [
                             7,
                             7
                         ]
                     ],
                     [
-                        "SCY",
+                        "FCM:SCY, GPCM:SCY, UPM:Reserved",
                         [
                             4,
                             6
                         ]
                     ],
                     [
-                        "RST",
+                        "FCM:RST, GPCM:SETA, UPM:Reserved",
                         [
                             3,
                             3
@@ -13494,7 +13494,7 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:EAD, UPM:EAD",
                         [
                             0,
                             0
@@ -13503,7 +13503,7 @@
                 ],
                 "offset": 12
             },
-            "ORf2": {
+            "OR2": {
                 "access": "rw",
                 "fields": [
                     [
@@ -13528,49 +13528,49 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:CSNT, UPM:Reserved",
                         [
                             11,
                             11
                         ]
                     ],
                     [
-                        "PGS",
+                        "FCM:PGS, GPCM:ACS, UPM:Reserved",
                         [
                             10,
                             10
                         ]
                     ],
                     [
-                        "CSCT",
+                        "FCM:CSCT, GPCM:ACS, UPM:Reserved",
                         [
                             9,
                             9
                         ]
                     ],
                     [
-                        "CST",
+                        "FCM:CST, GPCM:XACS, UPM:BI",
                         [
                             8,
                             8
                         ]
                     ],
                     [
-                        "CHT",
+                        "FCM:CHT, GPCM:SCY, UPM:Reserved",
                         [
                             7,
                             7
                         ]
                     ],
                     [
-                        "SCY",
+                        "FCM:SCY, GPCM:SCY, UPM:Reserved",
                         [
                             4,
                             6
                         ]
                     ],
                     [
-                        "RST",
+                        "FCM:RST, GPCM:SETA, UPM:Reserved",
                         [
                             3,
                             3
@@ -13591,7 +13591,7 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:EAD, UPM:EAD",
                         [
                             0,
                             0
@@ -13600,7 +13600,7 @@
                 ],
                 "offset": 20
             },
-            "ORf3": {
+            "OR3": {
                 "access": "rw",
                 "fields": [
                     [
@@ -13625,49 +13625,49 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:CSNT, UPM:Reserved",
                         [
                             11,
                             11
                         ]
                     ],
                     [
-                        "PGS",
+                        "FCM:PGS, GPCM:ACS, UPM:Reserved",
                         [
                             10,
                             10
                         ]
                     ],
                     [
-                        "CSCT",
+                        "FCM:CSCT, GPCM:ACS, UPM:Reserved",
                         [
                             9,
                             9
                         ]
                     ],
                     [
-                        "CST",
+                        "FCM:CST, GPCM:XACS, UPM:BI",
                         [
                             8,
                             8
                         ]
                     ],
                     [
-                        "CHT",
+                        "FCM:CHT, GPCM:SCY, UPM:Reserved",
                         [
                             7,
                             7
                         ]
                     ],
                     [
-                        "SCY",
+                        "FCM:SCY, GPCM:SCY, UPM:Reserved",
                         [
                             4,
                             6
                         ]
                     ],
                     [
-                        "RST",
+                        "FCM:RST, GPCM:SETA, UPM:Reserved",
                         [
                             3,
                             3
@@ -13688,7 +13688,7 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:EAD, UPM:EAD",
                         [
                             0,
                             0
@@ -13697,7 +13697,7 @@
                 ],
                 "offset": 28
             },
-            "ORf4": {
+            "OR4": {
                 "access": "rw",
                 "fields": [
                     [
@@ -13722,49 +13722,49 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:CSNT, UPM:Reserved",
                         [
                             11,
                             11
                         ]
                     ],
                     [
-                        "PGS",
+                        "FCM:PGS, GPCM:ACS, UPM:Reserved",
                         [
                             10,
                             10
                         ]
                     ],
                     [
-                        "CSCT",
+                        "FCM:CSCT, GPCM:ACS, UPM:Reserved",
                         [
                             9,
                             9
                         ]
                     ],
                     [
-                        "CST",
+                        "FCM:CST, GPCM:XACS, UPM:BI",
                         [
                             8,
                             8
                         ]
                     ],
                     [
-                        "CHT",
+                        "FCM:CHT, GPCM:SCY, UPM:Reserved",
                         [
                             7,
                             7
                         ]
                     ],
                     [
-                        "SCY",
+                        "FCM:SCY, GPCM:SCY, UPM:Reserved",
                         [
                             4,
                             6
                         ]
                     ],
                     [
-                        "RST",
+                        "FCM:RST, GPCM:SETA, UPM:Reserved",
                         [
                             3,
                             3
@@ -13785,7 +13785,7 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:EAD, UPM:EAD",
                         [
                             0,
                             0
@@ -13794,7 +13794,7 @@
                 ],
                 "offset": 36
             },
-            "ORf5": {
+            "OR5": {
                 "access": "rw",
                 "fields": [
                     [
@@ -13819,49 +13819,49 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:CSNT, UPM:Reserved",
                         [
                             11,
                             11
                         ]
                     ],
                     [
-                        "PGS",
+                        "FCM:PGS, GPCM:ACS, UPM:Reserved",
                         [
                             10,
                             10
                         ]
                     ],
                     [
-                        "CSCT",
+                        "FCM:CSCT, GPCM:ACS, UPM:Reserved",
                         [
                             9,
                             9
                         ]
                     ],
                     [
-                        "CST",
+                        "FCM:CST, GPCM:XACS, UPM:BI",
                         [
                             8,
                             8
                         ]
                     ],
                     [
-                        "CHT",
+                        "FCM:CHT, GPCM:SCY, UPM:Reserved",
                         [
                             7,
                             7
                         ]
                     ],
                     [
-                        "SCY",
+                        "FCM:SCY, GPCM:SCY, UPM:Reserved",
                         [
                             4,
                             6
                         ]
                     ],
                     [
-                        "RST",
+                        "FCM:RST, GPCM:SETA, UPM:Reserved",
                         [
                             3,
                             3
@@ -13882,7 +13882,7 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:EAD, UPM:EAD",
                         [
                             0,
                             0
@@ -13891,7 +13891,7 @@
                 ],
                 "offset": 44
             },
-            "ORf6": {
+            "OR6": {
                 "access": "rw",
                 "fields": [
                     [
@@ -13916,49 +13916,49 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:CSNT, UPM:Reserved",
                         [
                             11,
                             11
                         ]
                     ],
                     [
-                        "PGS",
+                        "FCM:PGS, GPCM:ACS, UPM:Reserved",
                         [
                             10,
                             10
                         ]
                     ],
                     [
-                        "CSCT",
+                        "FCM:CSCT, GPCM:ACS, UPM:Reserved",
                         [
                             9,
                             9
                         ]
                     ],
                     [
-                        "CST",
+                        "FCM:CST, GPCM:XACS, UPM:BI",
                         [
                             8,
                             8
                         ]
                     ],
                     [
-                        "CHT",
+                        "FCM:CHT, GPCM:SCY, UPM:Reserved",
                         [
                             7,
                             7
                         ]
                     ],
                     [
-                        "SCY",
+                        "FCM:SCY, GPCM:SCY, UPM:Reserved",
                         [
                             4,
                             6
                         ]
                     ],
                     [
-                        "RST",
+                        "FCM:RST, GPCM:SETA, UPM:Reserved",
                         [
                             3,
                             3
@@ -13979,7 +13979,7 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:EAD, UPM:EAD",
                         [
                             0,
                             0
@@ -13988,7 +13988,7 @@
                 ],
                 "offset": 52
             },
-            "ORf7": {
+            "OR7": {
                 "access": "rw",
                 "fields": [
                     [
@@ -14013,49 +14013,49 @@
                         ]
                     ],
                     [
-                        "Reserved",
+                        "FCM:Reserved, GPCM:CSNT, UPM:Reserved",
                         [
                             11,
                             11
                         ]
                     ],
                     [
-                        "PGS",
+                        "FCM:PGS, GPCM:ACS, UPM:Reserved",
                         [
                             10,
                             10
                         ]
                     ],
                     [
-                        "CSCT",
+                        "FCM:CSCT, GPCM:ACS, UPM:Reserved",
                         [
                             9,
                             9
                         ]
                     ],
                     [
-                        "CST",
+                        "FCM:CST, GPCM:XACS, UPM:BI",
                         [
                             8,
                             8
                         ]
                     ],
                     [
-                        "CHT",
+                        "FCM:CHT, GPCM:SCY, UPM:Reserved",
                         [
                             7,
                             7
                         ]
                     ],
                     [
-                        "SCY",
+                        "FCM:SCY, GPCM:SCY, UPM:Reserved",
                         [
                             4,
                             6
                         ]
                     ],
                     [
-                        "RST",
+                        "FCM:RST, GPCM:SETA, UPM:Reserved",
                         [
                             3,
                             3
@@ -14076,1223 +14076,7 @@
                         ]
                     ],
                     [
-                        "Reserved",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 60
-            },
-            "ORg0": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "CSNT",
-                        [
-                            11,
-                            11
-                        ]
-                    ],
-                    [
-                        "ACS",
-                        [
-                            9,
-                            10
-                        ]
-                    ],
-                    [
-                        "XACS",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "SCY",
-                        [
-                            4,
-                            7
-                        ]
-                    ],
-                    [
-                        "SETA",
-                        [
-                            3,
-                            3
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 4
-            },
-            "ORg1": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "CSNT",
-                        [
-                            11,
-                            11
-                        ]
-                    ],
-                    [
-                        "ACS",
-                        [
-                            9,
-                            10
-                        ]
-                    ],
-                    [
-                        "XACS",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "SCY",
-                        [
-                            4,
-                            7
-                        ]
-                    ],
-                    [
-                        "SETA",
-                        [
-                            3,
-                            3
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 12
-            },
-            "ORg2": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "CSNT",
-                        [
-                            11,
-                            11
-                        ]
-                    ],
-                    [
-                        "ACS",
-                        [
-                            9,
-                            10
-                        ]
-                    ],
-                    [
-                        "XACS",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "SCY",
-                        [
-                            4,
-                            7
-                        ]
-                    ],
-                    [
-                        "SETA",
-                        [
-                            3,
-                            3
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 20
-            },
-            "ORg3": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "CSNT",
-                        [
-                            11,
-                            11
-                        ]
-                    ],
-                    [
-                        "ACS",
-                        [
-                            9,
-                            10
-                        ]
-                    ],
-                    [
-                        "XACS",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "SCY",
-                        [
-                            4,
-                            7
-                        ]
-                    ],
-                    [
-                        "SETA",
-                        [
-                            3,
-                            3
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 28
-            },
-            "ORg4": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "CSNT",
-                        [
-                            11,
-                            11
-                        ]
-                    ],
-                    [
-                        "ACS",
-                        [
-                            9,
-                            10
-                        ]
-                    ],
-                    [
-                        "XACS",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "SCY",
-                        [
-                            4,
-                            7
-                        ]
-                    ],
-                    [
-                        "SETA",
-                        [
-                            3,
-                            3
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 36
-            },
-            "ORg5": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "CSNT",
-                        [
-                            11,
-                            11
-                        ]
-                    ],
-                    [
-                        "ACS",
-                        [
-                            9,
-                            10
-                        ]
-                    ],
-                    [
-                        "XACS",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "SCY",
-                        [
-                            4,
-                            7
-                        ]
-                    ],
-                    [
-                        "SETA",
-                        [
-                            3,
-                            3
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 44
-            },
-            "ORg6": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "CSNT",
-                        [
-                            11,
-                            11
-                        ]
-                    ],
-                    [
-                        "ACS",
-                        [
-                            9,
-                            10
-                        ]
-                    ],
-                    [
-                        "XACS",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "SCY",
-                        [
-                            4,
-                            7
-                        ]
-                    ],
-                    [
-                        "SETA",
-                        [
-                            3,
-                            3
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 52
-            },
-            "ORg7": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "CSNT",
-                        [
-                            11,
-                            11
-                        ]
-                    ],
-                    [
-                        "ACS",
-                        [
-                            9,
-                            10
-                        ]
-                    ],
-                    [
-                        "XACS",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "SCY",
-                        [
-                            4,
-                            7
-                        ]
-                    ],
-                    [
-                        "SETA",
-                        [
-                            3,
-                            3
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 60
-            },
-            "ORu0": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            9,
-                            11
-                        ]
-                    ],
-                    [
-                        "BI",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            3,
-                            7
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 4
-            },
-            "ORu1": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            9,
-                            11
-                        ]
-                    ],
-                    [
-                        "BI",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            3,
-                            7
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 12
-            },
-            "ORu2": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            9,
-                            11
-                        ]
-                    ],
-                    [
-                        "BI",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            3,
-                            7
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 20
-            },
-            "ORu3": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            9,
-                            11
-                        ]
-                    ],
-                    [
-                        "BI",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            3,
-                            7
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 28
-            },
-            "ORu4": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            9,
-                            11
-                        ]
-                    ],
-                    [
-                        "BI",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            3,
-                            7
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 36
-            },
-            "ORu5": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            9,
-                            11
-                        ]
-                    ],
-                    [
-                        "BI",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            3,
-                            7
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 44
-            },
-            "ORu6": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            9,
-                            11
-                        ]
-                    ],
-                    [
-                        "BI",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            3,
-                            7
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
-                        [
-                            0,
-                            0
-                        ]
-                    ]
-                ],
-                "offset": 52
-            },
-            "ORu7": {
-                "access": "rw",
-                "fields": [
-                    [
-                        "AM",
-                        [
-                            15,
-                            31
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            13,
-                            14
-                        ]
-                    ],
-                    [
-                        "BCTLD",
-                        [
-                            12,
-                            12
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            9,
-                            11
-                        ]
-                    ],
-                    [
-                        "BI",
-                        [
-                            8,
-                            8
-                        ]
-                    ],
-                    [
-                        "Reserved",
-                        [
-                            3,
-                            7
-                        ]
-                    ],
-                    [
-                        "TRLX",
-                        [
-                            2,
-                            2
-                        ]
-                    ],
-                    [
-                        "EHTR",
-                        [
-                            1,
-                            1
-                        ]
-                    ],
-                    [
-                        "EAD",
+                        "FCM:Reserved, GPCM:EAD, UPM:EAD",
                         [
                             0,
                             0
