@@ -322,6 +322,7 @@
                 "count": [
                     4
                 ],
+                "limitations": "Field DPCI_ORDER - Dummy read/write. No side effects. Field DTFLOWLVL - Dummy read/write. No side effects. Field DTRANSINT - Dummy read/write. No side effects. Field DWRITETTYPE - Dummy read/write. No side effects.",
                 "fields": [
                     [
                         "Reserved",
@@ -374,15 +375,6 @@
                             16,
                             19
                         ]
-                    ],
-                    [
-                        "DPCI_ORDER"
-                    ],
-                    [
-                        "DTFLOWLVL"
-                    ],
-                    [
-                        "DTRANSINT"
                     ]
                 ]
             },
@@ -503,7 +495,7 @@
                         ]
                     ],
                     [
-                        "EOLINE",
+                        "EOLNIE",
                         [
                             8,
                             8
@@ -633,6 +625,7 @@
                         ]
                     ]
                 ],
+                "limitations": "Field SPCI_ORDER - Dummy read/write. No side effects. Field SREADTTYPE - Dummy read/write. No side effects. Field STFLOWLVL - Dummy read/write. No side effects. Field STRANSINT - Dummy read/write. No side effects.",
                 "partial": true,
                 "unused_fields": [
                     [
@@ -641,15 +634,6 @@
                             16,
                             19
                         ]
-                    ],
-                    [
-                        "SPCI_ORDER"
-                    ],
-                    [
-                        "STFLOWLVL"
-                    ],
-                    [
-                        "STRANSIT"
                     ]
                 ]
             },
@@ -982,14 +966,9 @@
                         ]
                     ]
                 ],
+                "limitations": "Field CDSS - Not implemented. Field CDTL - Not implemented. Field CREQ - Not implemented. Field D3CD - Not implemented. Field DTW - Not implemented (design limitation). This field is a dummy field with no side effects. Field IABG - Not implemented. Field RWCTL - Not implemented. Field SABGREQ - Not implemented. Field WECINS - Not implemented. Field WECINT - Not implemented. Field WECRM - Not implemented.",
                 "partial": true,
                 "unused_fields": [
-                    [
-                        "IABG"
-                    ],
-                    [
-                        "WECINT"
-                    ],
                     [
                         "WECRM",
                         [
@@ -1324,35 +1303,35 @@
                 ],
                 "fields": [
                     [
-                        "CI",
+                        "CIn",
                         [
                             31,
                             31
                         ]
                     ],
                     [
-                        "CP",
+                        "CPn",
                         [
                             30,
                             30
                         ]
                     ],
                     [
-                        "REV",
+                        "REVn",
                         [
                             29,
                             29
                         ]
                     ],
                     [
-                        "Reseved",
+                        "Reserved",
                         [
                             21,
                             22
                         ]
                     ],
                     [
-                        "LEN",
+                        "LENn",
                         [
                             16,
                             19
@@ -1369,49 +1348,49 @@
                 "partial": true,
                 "unused_fields": [
                     [
-                        "DIV16",
+                        "DIV16n",
                         [
                             28,
                             28
                         ]
                     ],
                     [
-                        "PM",
+                        "PMn",
                         [
                             24,
                             27
                         ]
                     ],
                     [
-                        "ODD",
+                        "ODDn",
                         [
                             23,
                             23
                         ]
                     ],
                     [
-                        "POL",
+                        "POLn",
                         [
                             20,
                             20
                         ]
                     ],
                     [
-                        "CSBEF",
+                        "CSnBEF",
                         [
                             12,
                             15
                         ]
                     ],
                     [
-                        "CSAFT",
+                        "CSnAFT",
                         [
                             8,
                             11
                         ]
                     ],
                     [
-                        "CSCG",
+                        "CSnCG",
                         [
                             3,
                             7
@@ -1691,7 +1670,11 @@
             "IEVENT": {},
             "IFSTAT": {},
             "IMASK": {},
-            "IPGIFGI": {},
+            "IPGIFG": {
+                "alias": {
+                    "register": "IPGIFGI"
+                }
+            },
             "MACCFG1": {
                 "actual_bits": 32,
                 "bits": 23,
@@ -1884,7 +1867,7 @@
                         ]
                     ],
                     [
-                        "Length_Check",
+                        "Length_check",
                         [
                             4,
                             4
@@ -1914,12 +1897,13 @@
             "MAXFRM": {},
             "MIIMADD": {},
             "MIIMCFG": {
+                "actual_bits": 32,
                 "bits": 27,
                 "fields": [
                     [
                         "Reserved",
                         [
-                            -5,
+                            5,
                             30
                         ]
                     ],
@@ -1931,6 +1915,7 @@
                         ]
                     ]
                 ],
+                "partial": true,
                 "unused_fields": [
                     [
                         "Reset_Mgmt",
@@ -2057,8 +2042,8 @@
                     [
                         "PRSDEP",
                         [
-                            0,
-                            1
+                            6,
+                            7
                         ]
                     ],
                     [
@@ -2104,11 +2089,9 @@
                         ]
                     ]
                 ],
+                "limitations": "Field CFA - Not implemented. Field LFC - Not implemented. Field TS - Not implemented.",
                 "partial": true,
                 "unused_fields": [
-                    [
-                        "CFA"
-                    ],
                     [
                         "TS",
                         [
@@ -2302,7 +2285,7 @@
                         ]
                     ],
                     [
-                        "Message_Un-formatted_Code_Field",
+                        "Message_Unformatted_Code_Field",
                         [
                             0,
                             10
@@ -2532,12 +2515,53 @@
             },
             "RREJ": {},
             "RXIC": {
-                "unused_fields": [
+                "actual_bits": 32,
+                "bits": 30,
+                "fields": [
                     [
-                        "ICCS"
+                        "Reserved",
+                        [
+                            29,
+                            29
+                        ]
                     ],
                     [
-                        "ICEN"
+                        "ICFT",
+                        [
+                            21,
+                            28
+                        ]
+                    ],
+                    [
+                        "Reserved",
+                        [
+                            16,
+                            20
+                        ]
+                    ],
+                    [
+                        "ICTT",
+                        [
+                            0,
+                            15
+                        ]
+                    ]
+                ],
+                "partial": true,
+                "unused_fields": [
+                    [
+                        "ICEN",
+                        [
+                            31,
+                            31
+                        ]
+                    ],
+                    [
+                        "ICCS",
+                        [
+                            30,
+                            30
+                        ]
                     ]
                 ]
             },
@@ -2947,7 +2971,7 @@
                         ]
                     ],
                     [
-                        "L2LSC",
+                        "L2SLC",
                         [
                             12,
                             12
@@ -3094,7 +3118,7 @@
                 ],
                 "fields": [
                     [
-                        "CS_EN",
+                        "CS_n_EN",
                         [
                             31,
                             31
@@ -3108,7 +3132,7 @@
                         ]
                     ],
                     [
-                        "AP_EN",
+                        "AP_n_EN",
                         [
                             23,
                             23
@@ -3136,7 +3160,7 @@
                         ]
                     ],
                     [
-                        "BA_BITS_CS",
+                        "BA_BITS_CS_n",
                         [
                             14,
                             15
@@ -3150,7 +3174,7 @@
                         ]
                     ],
                     [
-                        "ROW_BITS_CS",
+                        "ROW_BITS_CS_n",
                         [
                             8,
                             10
@@ -3164,7 +3188,7 @@
                         ]
                     ],
                     [
-                        "COL_BITS_CS",
+                        "COL_BITS_CS_n",
                         [
                             0,
                             2
@@ -3488,7 +3512,11 @@
                     ]
                 ]
             },
-            "DDR_SDRAM_CLK_CNTRL": {},
+            "DDR_SDRAM_CLK_CNTL": {
+                "alias": {
+                    "register": "DDR_SDRAM_CLK_CNTRL"
+                }
+            },
             "DDR_SDRAM_INTERVAL": {},
             "DDR_SDRAM_MD_CNTL": {},
             "DDR_SDRAM_MODE": {},
@@ -3571,7 +3599,11 @@
                 ]
             },
             "PEX_CONFIG_ADDR": {},
-            "PEX_CONFIG_RTY_TOR": {},
+            "PEX_CONF_RTY_TOR": {
+                "alias": {
+                    "register": "PEX_CONFIG_RTY_TOR"
+                }
+            },
             "PEX_IP_BLK_REV1": {},
             "PEX_IP_BLK_REV2": {},
             "PEX_OTB_CPL_TOR": {},
