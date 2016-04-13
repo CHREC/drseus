@@ -118,7 +118,7 @@ class fault_injector(object):
                     self.db.result['data_diff'] = 1.0
                 else:
                     self.db.result['data_diff'] = 0
-            else:
+            if not local_diff or self.db.result['data_diff'] != 1.0:
                 result_folder = (
                     'campaign-data/'+str(self.db.campaign['id']) +
                     '/results/'+str(self.db.result['id']))

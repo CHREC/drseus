@@ -1,3 +1,4 @@
+from bdb import BdbQuit
 from datetime import datetime
 from django.conf import settings as django_settings
 from django.core.management import execute_from_command_line as django_command
@@ -5,8 +6,9 @@ from io import StringIO
 from json import dump
 from multiprocessing import Process, Value
 from os import getcwd, listdir, mkdir, remove
-from os.path import exists, isdir
+from os.path import exists, isdir, join
 from paramiko import RSAKey
+from pdb import set_trace
 from progressbar import ProgressBar
 from progressbar.widgets import Bar, Percentage, SimpleProgress, Timer
 # from shutil import copy, copytree, rmtree
@@ -182,13 +184,30 @@ def delete(options):
 def create_campaign(options):
     if options.directory == 'fiapps':
         if not exists('fiapps'):
-            check_call('./setup_apps.sh')
-        check_call(['make', options.application], cwd=getcwd()+'/fiapps/')
+            check_call(['git', 'clone',
+                        'git@gitlab.hcs.ufl.edu:F4/fiapps.git'])
+        check_call(['make', options.application],
+                   cwd=join(getcwd(), 'fiapps'))
     else:
         if not exists(options.directory):
             raise Exception('cannot find directory '+options.directory)
     if options.simics and not exists('simics-workspace'):
-        check_call('./setup_simics_workspace.sh')
+        mkdir('simics-workspace')
+        dirs = listdir('/opt/simics/simics-4.8')
+        simics_dirs = []
+        for simics_dir in dirs:
+            if simics_dir.startswith('simics-4.8.'):
+                simics_dirs.append((simics_dir, int(simics_dir.split('.')[-1])))
+        simics_dirs.sort(key=lambda x:x[1])
+        check_call('/opt/simics/simics-4.8/'+simics_dirs[-1][0] +
+                   '/bin/workspace-setup',
+                   cwd=join(getcwd(), 'simics-workspace'))
+        check_call(['git', 'clone',
+                    'git@gitlab.hcs.ufl.edu:F4/simics-p2020rdb'],
+                   cwd=join(getcwd(), 'simics-workspace'))
+        check_call(['git', 'clone',
+                    'git@gitlab.hcs.ufl.edu:F4/simics-a9x2'],
+                   cwd=join(getcwd(), 'simics-workspace'))
     rsakey_file = StringIO()
     RSAKey.generate(1024).write_private_key(rsakey_file)
     rsakey = rsakey_file.getvalue()
@@ -251,6 +270,12 @@ def inject_campaign(options):
                                      'outcome': 'Uncaught exception'})
             with drseus.db as db:
                 db.log_result(False)
+            if options.processes == 1 and options.debug:
+                print('dropping into python debugger')
+                try:
+                    set_trace()
+                except BdbQuit:
+                    pass
 
 # def inject_campaign(options):
     if options.iterations is not None:

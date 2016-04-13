@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from argparse import ArgumentParser, REMAINDER
 from getpass import getpass
 
@@ -14,6 +12,7 @@ import utilities
 # TODO: add support for injection of multi-bit upsets
 
 parser = ArgumentParser(
+    prog='drseus',
     description='The Dynamic Robust Single Event Upset Simulator '
                 'was created by Ed Carlisle IV',
     fromfile_prefix_chars='@',

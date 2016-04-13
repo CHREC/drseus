@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 from subprocess import check_call, check_output
-from os import getcwd
+from os.path import abspath, dirname, join
+
+directory = dirname(dirname(abspath(__file__)))
 
 files = check_output(['git', 'status', '-s'],
-                     cwd=getcwd(),
+                     cwd=directory,
                      universal_newlines=True)
 ignored_files = []
 for file in files.split('\n'):
@@ -12,7 +14,7 @@ for file in files.split('\n'):
     if file:
         if file[0] in ('A', 'M', 'AM', 'MM'):
             check_call(['scp', file[1], 'drseus:drseus/'+file[1]],
-                       cwd=getcwd())
+                       cwd=directory)
         else:
             ignored_files.append(file[1])
 

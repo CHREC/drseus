@@ -11,9 +11,7 @@ from time import sleep
 
 from dut import dut
 from error import DrSEUsError
-from targets.a9 import jtag_targets as a9_targets
-from targets.p2020 import jtag_targets as p2020_targets
-from targets import choose_bit, choose_register, choose_target
+from targets import choose_bit, choose_register, choose_target, get_targets
 
 
 class jtag(object):
@@ -319,7 +317,7 @@ class bdi(jtag):
 
     def __init__(self, database, options):
         self.prompts = ['P2020>']
-        self.targets = p2020_targets
+        self.targets = get_targets('p2020', 'jtag')
         self.port = 23
         super().__init__(database, options)
         self.open()
@@ -522,7 +520,7 @@ class openocd(jtag):
                             'device at '+options.dut_serial_port)
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
-        self.targets = a9_targets
+        self.targets = get_targets('a9', 'jtag')
         self.port = find_open_port()
         super().__init__(database, options)
         if self.options.command == 'openocd' and self.options.gdb:

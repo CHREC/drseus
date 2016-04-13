@@ -12,6 +12,7 @@
         }
     },
     "LAW": {
+        "OBJECT": "soc.ccsr",
         "limitations": "Interleaved SDRAM mappings are instead mapped sequentially.",
         "registers": {
             "LAWAR0": {

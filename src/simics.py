@@ -13,9 +13,8 @@ from time import sleep
 from dut import dut
 from error import DrSEUsError
 from simics_config import simics_config
-from targets.a9 import simics_targets as a9_targets
-from targets.p2020 import simics_targets as p2020_targets
-from targets import choose_bit, choose_register, choose_target, get_num_bits
+from targets import (choose_bit, choose_register, choose_target, get_num_bits,
+                     get_targets)
 from timeout import timeout, TimeoutException
 
 
@@ -35,10 +34,10 @@ class simics(object):
         self.options = options
         if database.campaign['architecture'] == 'p2020':
             self.board = 'p2020rdb'
-            self.targets = p2020_targets
+            self.targets = get_targets('p2020', 'simics')
         elif database.campaign['architecture'] == 'a9':
             self.board = 'a9x2'
-            self.targets = a9_targets
+            self.targets = get_targets('a9', 'simics')
         if options.command == 'inject' and options.selected_targets is not None:
             for target in options.selected_targets:
                 if target not in self.targets:
@@ -565,6 +564,8 @@ class simics(object):
             with simics_config(injected_checkpoint) as config:
                 gold_value = config.get(injection['config_object'],
                                         injection['register'])
+                if gold_value is None:
+                    raise Exception('error getting rgister value from config')
                 if injection['register_index'] is None:
                     if 'injected_value' not in injection:
                         injected_value = flip_bit(gold_value, injection['bit'])
@@ -619,7 +620,7 @@ class simics(object):
                                     else register_alias,
                                     target, self.targets)
             config_object = ('DUT_'+self.board+'.' +
-                             self.targets[target]['OBJECT'])
+                             self.targets[target]['object'])
             if target_index is not None:
                 config_object += '['+str(target_index)+']'
             injection = {'bit': bit,
@@ -697,7 +698,7 @@ class simics(object):
                             count = 1
                         for target_index in range(count):
                             config_object = ('DUT_'+self.board+'.' +
-                                             self.targets[target]['OBJECT'])
+                                             self.targets[target]['object'])
                             if count > 1:
                                 config_object += '['+str(target_index)+']'
                             if config_object not in registers:

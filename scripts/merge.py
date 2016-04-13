@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
 # TODO: add key verification
-# TODO: replace "n" with index in field names
-# TODO: fields for simics-only registers?
 
 from collections import defaultdict
 from copy import deepcopy
+from os import chdir
+from os.path import abspath, dirname, join
+from sys import path
+
+src_dir = join(dirname(dirname(abspath(__file__))), 'src')
+chdir(src_dir)
+path.append(src_dir)
 
 from targets import load_targets, save_targets
 
@@ -39,6 +44,9 @@ for device in ['a9', 'p2020']:
             old_target = old_targets[target]
             merged_target = merged_targets['targets'][target]
 
+            if target == 'TLB':
+                merged_target['type'] = 'tlb'
+
             if target not in other_targets:
                 other_target = None
                 merged_targets[other_type]['unused_targets'].append(target)
@@ -49,8 +57,11 @@ for device in ['a9', 'p2020']:
 
             for key in [key for key in old_target.keys()
                         if key not in ['registers', 'unused_registers']]:
-                if key in ['count', 'base']:
+                if key in ['base']:
                     merged_target[key] = old_target[key]
+                if key == 'count':
+                    if old_target[key] != 1:
+                        merged_target[key] = old_target[key]
                 elif key in ['CP', 'memory_mapped']:
                     if not old_target[key]:
                         print('unexpected value for :', target+'['+key+']:',

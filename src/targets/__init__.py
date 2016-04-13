@@ -18,17 +18,20 @@
 # SBZP: Should-Be-Zero-or-Preserved
 
 from json import dump, load
+from os.path import abspath, dirname, join
 from random import randrange
+
+directory = dirname(abspath(__file__))
 
 
 def load_targets(architecture, type_):
-    with open('targets/'+architecture+'/'+type_+'.json', 'r') as json_file:
+    with open(join(directory, architecture, type_+'.json'), 'r') as json_file:
         targets = load(json_file)
     return targets
 
 
 def save_targets(architecture, type_, targets):
-    with open('targets/'+architecture+'/'+type_+'.json', 'w') as json_file:
+    with open(join(directory, architecture, type_+'.json'), 'w') as json_file:
         dump(targets, json_file, indent=4, sort_keys=True)
 
 
@@ -44,10 +47,8 @@ def calculate_target_bits(targets):
                 bits = 32
             if 'count' in targets[target]['registers'][register]:
                 count = 1
-                if 'is_tlb' in \
-                    targets[target]['registers'][register] \
-                    and (targets[target]['registers'][register]
-                                ['is_tlb']):
+                if 'type' in targets[target] and \
+                        targets[target]['type'] == 'tlb':
                     dimensions = (targets[target]['registers']
                                          [register]['count'][:-1])
                 else:
@@ -66,10 +67,8 @@ def calculate_target_bits(targets):
                 and (targets[target]['registers'][register]
                             ['partial']):
                 adjust_bit = []
-                if 'is_tlb' in \
-                    targets[target]['registers'][register] \
-                    and (targets[target]['registers'][register]
-                                ['is_tlb']):
+                if 'type' in targets[target] and \
+                        targets[target]['type'] == 'tlb':
                     for field_range in (targets[target]['registers'][register]
                                                ['fields'].values()):
                         adjust_bit.extend(range(field_range[0],
@@ -123,6 +122,12 @@ def get_targets(architecture, type_):
                             register['actual_bits'] = 32
                         register['bits'] = bits
                     register.update(register_info)
+            if 'registers' in target_info:
+                del target_info['registers']
+            if 'unused_registers' in target_info:
+                del target_info['unused_registers']
+            target.update(target_info)
+
     calculate_target_bits(targets)
     return targets
 
@@ -150,7 +155,8 @@ def choose_target(selected_targets, targets):
             break
     else:
         raise Exception('Error choosing injection target')
-    if 'count' in targets[target_to_inject]:
+    if 'count' in targets[target_to_inject] and \
+            targets[target_to_inject]['count'] > 1:
         target_index = randrange(targets[target_to_inject]['count'])
     else:
         target_index = None
@@ -172,33 +178,34 @@ def choose_register(target, targets):
         total_bits += bits
     random_bit = randrange(total_bits)
     bit_sum = 0
-    for register in register_list:
-        bit_sum += register[1]
+    for reg in register_list:
+        bit_sum += reg[1]
         if random_bit < bit_sum:
-            register_to_inject = register[0]
+            register = reg[0]
             break
     else:
         raise Exception('Error choosing register for target: '+target)
-    if 'count' in registers[register_to_inject]:
+    if 'count' in registers[register]:
         register_index = []
-        for dimension in registers[register_to_inject]['count']:
+        for dimension in registers[register]['count']:
             index = randrange(dimension)
             register_index.append(index)
     else:
         register_index = None
-    if 'alias' in registers[register_to_inject]:
-        register_alias = register_to_inject
-        register_index = \
-            registers[register_to_inject]['alias']['register_index']
-        register_to_inject = registers[register_to_inject]['alias']['register']
+    if 'alias' in registers[register]:
+        register_alias = register
+        if 'register_index' in registers[register]['alias']:
+            register_index = \
+                registers[register]['alias']['register_index']
+        register = registers[register]['alias']['register']
     else:
         register_alias = None
-    return register_to_inject, register_index, register_alias
+    return register, register_index, register_alias
 
 
 def choose_bit(register_name, register_index, target, targets):
     register = targets[target]['registers'][register_name]
-    if 'is_tlb' in register and register['is_tlb']:
+    if 'type' in targets[target] and targets[target]['type'] == 'tlb':
         fields = register['fields']
         field_to_inject = None
         fields_list = []

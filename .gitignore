@@ -1,10 +1,10 @@
 *.pyc
 backups/
 campaign-data/
-log/migrations/
+src/log/migrations/
 fiapps/
 simics-workspace/
 devices.json
-lextab.py
-parsetab.py
+src/lextab.py
+src/parsetab.py
 power_switch_log.txt
