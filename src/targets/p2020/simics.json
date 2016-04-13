@@ -2620,224 +2620,224 @@
             "r0": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 0
+                    "register_index": [0]
                 },
                 "bits": 64
             },
             "r1": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 1
+                    "register_index": [1]
                 },
                 "bits": 64
             },
             "r10": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 10
+                    "register_index": [10]
                 },
                 "bits": 64
             },
             "r11": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 11
+                    "register_index": [11]
                 },
                 "bits": 64
             },
             "r12": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 12
+                    "register_index": [12]
                 },
                 "bits": 64
             },
             "r13": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 13
+                    "register_index": [13]
                 },
                 "bits": 64
             },
             "r14": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 14
+                    "register_index": [14]
                 },
                 "bits": 64
             },
             "r15": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 15
+                    "register_index": [15]
                 },
                 "bits": 64
             },
             "r16": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 16
+                    "register_index": [16]
                 },
                 "bits": 64
             },
             "r17": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 17
+                    "register_index": [17]
                 },
                 "bits": 64
             },
             "r18": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 18
+                    "register_index": [18]
                 },
                 "bits": 64
             },
             "r19": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 19
+                    "register_index": [19]
                 },
                 "bits": 64
             },
             "r2": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 2
+                    "register_index": [2]
                 },
                 "bits": 64
             },
             "r20": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 20
+                    "register_index": [20]
                 },
                 "bits": 64
             },
             "r21": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 21
+                    "register_index": [21]
                 },
                 "bits": 64
             },
             "r22": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 22
+                    "register_index": [22]
                 },
                 "bits": 64
             },
             "r23": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 23
+                    "register_index": [23]
                 },
                 "bits": 64
             },
             "r24": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 24
+                    "register_index": [24]
                 },
                 "bits": 64
             },
             "r25": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 25
+                    "register_index": [25]
                 },
                 "bits": 64
             },
             "r26": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 26
+                    "register_index": [26]
                 },
                 "bits": 64
             },
             "r27": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 27
+                    "register_index": [27]
                 },
                 "bits": 64
             },
             "r28": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 28
+                    "register_index": [28]
                 },
                 "bits": 64
             },
             "r29": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 29
+                    "register_index": [29]
                 },
                 "bits": 64
             },
             "r3": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 3
+                    "register_index": [3]
                 },
                 "bits": 64
             },
             "r30": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 30
+                    "register_index": [30]
                 },
                 "bits": 64
             },
             "r31": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 31
+                    "register_index": [31]
                 },
                 "bits": 64
             },
             "r4": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 4
+                    "register_index": [4]
                 },
                 "bits": 64
             },
             "r5": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 5
+                    "register_index": [5]
                 },
                 "bits": 64
             },
             "r6": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 6
+                    "register_index": [6]
                 },
                 "bits": 64
             },
             "r7": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 7
+                    "register_index": [7]
                 },
                 "bits": 64
             },
             "r8": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 8
+                    "register_index": [8]
                 },
                 "bits": 64
             },
             "r9": {
                 "alias": {
                     "register": "gprs",
-                    "register_index": 9
+                    "register_index": [9]
                 },
                 "bits": 64
             }

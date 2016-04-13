@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from subprocess import check_call, check_output
-from os.path import abspath, dirname, join
+from os.path import abspath, dirname
 
 directory = dirname(dirname(abspath(__file__)))
 
