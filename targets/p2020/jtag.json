@@ -2357,7 +2357,7 @@
                     ]
                 ]
             },
-            "MCARU": {
+            "MCAR_U": {
                 "SPR": 569,
                 "access": "r",
                 "fields": [

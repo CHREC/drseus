@@ -3546,7 +3546,9 @@
             "DDR_INIT_ADDRESS": {},
             "DDR_INIT_EXT_ADDRESS": {},
             "DDR_SDRAM_INIT": {},
-            "DDR_SDRAM_RCW": {}
+            "DDR_SDRAM_RCW": {
+                "count": [2]
+            }
         }
     },
     "PCIE": {
