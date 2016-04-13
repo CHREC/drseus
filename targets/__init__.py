@@ -1,8 +1,35 @@
+# TODO: add ETSEC_TBI and Security targets to P2020
+
 # if count is not present it is assumed to be 1
 # if bits is not present it is assumbed to be 32
 
+# p2020_ccsrbar = 0xFFE00000
+
+# RAZ: Read-As-Zero
+# WI: Write-ignored
+# RAO: Read-As-One
+# RAZ/WI: Read-As-Zero, Writes Ignored
+# RAO/SBOP: Read-As-One, Should-Be-One-or-Preserved on writes.
+# RAO/WI: Read-As-One, Writes Ignored
+# RAZ/SBZP: Read-As-Zero, Should-Be-Zero-or-Preserved on writes
+# SBO: Should-Be-One
+# SBOP: Should-Be-One-or-Preserved
+# SBZ: Should-Be-Zero
+# SBZP: Should-Be-Zero-or-Preserved
+
 from json import dump, load
 from random import randrange
+
+
+def load_targets(architecture, type_):
+    with open('targets/'+architecture+'/'+type_+'.json', 'r') as json_file:
+        targets = load(json_file)
+    return targets
+
+
+def save_targets(architecture, type_, targets):
+    with open('targets/'+architecture+'/'+type_+'.json', 'w') as json_file:
+        dump(targets, json_file, indent=4, sort_keys=True)
 
 
 def calculate_target_bits(targets):
@@ -61,6 +88,43 @@ def calculate_target_bits(targets):
                     (targets[target]['registers'][register]
                             ['adjust_bit']) = sorted(adjust_bit)
         targets[target]['total_bits'] = total_bits
+
+
+def get_targets(architecture, type_):
+    targets = load_targets('', architecture)
+    targets_info = targets[type_]
+    targets = targets['targets']
+    if 'unused_targets' in targets_info:
+        for target in targets_info['unused_targets']:
+            del targets[target]
+    for target_name, target in targets.items():
+        if target_name in targets_info['targets']:
+            target_info = targets_info['targets'][target_name]
+            if 'unused_registers' in target_info:
+                for register_name in target_info['unused_registers']:
+                    del target['registers'][register_name]
+            for register_name, register in target['registers'].items():
+                if 'registers' in target_info and \
+                        register_name in target_info['registers']:
+                    register_info = target_info['registers'][register_name]
+                    if 'unused_fields' in register_info:
+                        bits = 0
+                        fields = []
+                        for field in register['fields']:
+                            if field[0] not in register_info['unused_fields']:
+                                fields.append(field)
+                                bits += (field[1][1] - field[1][0]) + 1
+                        register['fields'] = fields
+                        register['partial'] = True
+                        del register_info['unused_fields']
+                        if 'bits' in register:
+                            register['actual_bits'] = register['bits']
+                        else:
+                            register['actual_bits'] = 32
+                        register['bits'] = bits
+                    register.update(register_info)
+    calculate_target_bits(targets)
+    return targets
 
 
 def choose_target(selected_targets, targets):
@@ -208,14 +272,3 @@ def get_num_bits(register, target, targets):
     else:
         num_bits = 32
     return num_bits
-
-
-def load_targets(architecture, type_):
-    with open('targets/'+architecture+'/'+type_+'.json', 'r') as json_file:
-        targets = load(json_file)
-    return targets
-
-
-def save_targets(architecture, type_, targets):
-    with open('targets/'+architecture+'/'+type_+'.json', 'w') as json_file:
-        dump(targets, json_file, indent=4, sort_keys=True)

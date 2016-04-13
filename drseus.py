@@ -5,6 +5,7 @@ from getpass import getpass
 
 import utilities
 
+# TODO: retrive file if onboard diff reports errors
 # TODO: only send files if needed
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add options for custom error messages
