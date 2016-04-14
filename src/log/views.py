@@ -5,6 +5,7 @@ from imghdr import what
 from mimetypes import guess_type
 from os.path import exists
 from subprocess import Popen
+from sys import argv
 
 from . import filters
 from . import models
@@ -308,10 +309,7 @@ def result_page(request, result_id):
     result_table = tables.result(models.result.objects.filter(id=result_id))
     event_table = tables.event(models.event.objects.filter(result_id=result_id))
     if request.method == 'POST' and 'launch' in request.POST:
-        drseus = 'drseus.py'
-        if not exists(drseus):
-            drseus = 'drseus.sh'
-        Popen(['./'+drseus, 'regenerate', result_id])
+        Popen([argv[0], 'regenerate', result_id])
     if request.method == 'POST' and 'save' in request.POST:
         result.outcome = request.POST['outcome']
         result.outcome_category = request.POST['outcome_category']

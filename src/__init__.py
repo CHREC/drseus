@@ -3,7 +3,7 @@ from getpass import getpass
 
 from . import utilities
 
-# TODO: retrive file if onboard diff reports errors
+# TODO: replace psycopg2 with django
 # TODO: only send files if needed
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add options for custom error messages

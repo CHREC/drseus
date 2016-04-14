@@ -1,13 +1,15 @@
 from datetime import datetime
-from django.conf import settings as django_settings
 from django.core.management import execute_from_command_line as django_command
 from psycopg2 import connect, OperationalError
 from psycopg2.extras import DictCursor
 from subprocess import DEVNULL, PIPE, Popen
+from sys import argv
 from sys import stdout as sys_stdout
 from termcolor import colored
 from threading import Lock
 from traceback import format_exc, format_stack
+
+from .log import initialize_django
 
 
 class database(object):
@@ -15,7 +17,7 @@ class database(object):
     log_trace = '__LOG_TRACE__'
 
     def __init__(self, options, campaign={}, create_result=False,
-                 log_settings=None):
+                 initialize=False):
         if not campaign:
             campaign = {'id': options.campaign_id}
         self.campaign = campaign
@@ -26,7 +28,7 @@ class database(object):
             with self as db:
                 db.__create_result()
         if not self.exists():
-            if log_settings is not None:
+            if initialize:
                 commands = (
                     ('CREATE USER '+self.options.db_user +
                         ' WITH PASSWORD \''+self.options.db_password+'\';'),
@@ -40,9 +42,9 @@ class database(object):
                     ('CREATE DATABASE '+self.options.db_name +
                         ' WITH OWNER '+self.options.db_user))
                 self.psql(superuser=True, commands=commands)
-                django_settings.configure(**log_settings)
-                django_command(['drseus', 'makemigrations', 'log'])
-                django_command(['drseus', 'migrate'])
+                initialize_django(self.options)
+                django_command([argv[0], 'makemigrations', 'log'])
+                django_command([argv[0], 'migrate'])
             else:
                 raise Exception('could not connect to database')
 

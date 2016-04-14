@@ -1,6 +1,5 @@
 from bdb import BdbQuit
 from datetime import datetime
-from django.conf import settings as django_settings
 from django.core.management import execute_from_command_line as django_command
 from io import StringIO
 from json import dump
@@ -19,10 +18,10 @@ from tarfile import open as open_tar
 from terminaltables import AsciiTable
 from traceback import print_exc
 
-from . import __name__ as module_name
 from .database import database
 from .fault_injector import fault_injector
 from .jtag import openocd
+from .log import initialize_django
 from .power_switch import power_switch
 from .simics_config import simics_config
 from .supervisor import supervisor
@@ -234,7 +233,7 @@ def create_campaign(options):
         'timestamp': None}
     if options.aux_application is None:
         options.aux_application = options.application
-    with database(options, log_settings=log_settings(options)) as db:
+    with database(options, initialize=True) as db:
         db.insert('campaign', campaign)
     campaign_directory = 'campaign-data/'+str(campaign['id'])
     if exists(campaign_directory):
@@ -329,51 +328,14 @@ def regenerate(options):
            '/'+str(options.result_id))
 
 
-def log_settings(options):
-    return {
-        'DATABASES': {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': options.db_name,
-                'USER': options.db_user,
-                'PASSWORD': options.db_password,
-                'HOST': options.db_host,
-                'PORT': options.db_port,
-            }
-        },
-        'DEBUG': True,
-        'INSTALLED_APPS': (
-            'django.contrib.staticfiles',
-            'django_filters',
-            'django_tables2',
-            module_name+'.log'
-        ),
-        'ROOT_URLCONF': module_name+'.log.urls',
-        'STATIC_URL': '/static/',
-        'TEMPLATES': [
-            {
-                'BACKEND': 'django.template.backends.django.DjangoTemplates',
-                'APP_DIRS': True,
-                'OPTIONS': {
-                    'context_processors': [
-                        'django.template.context_processors.request',
-                    ],
-                },
-            },
-        ],
-        'TIME_ZONE': 'UTC'
-    }
-
-
 def view_log(options):
-    database(options, log_settings=log_settings(options))
-    django_settings.configure(**log_settings(options))
-    django_command(['drseus', 'runserver', ('0.0.0.0:' if options.external
-                                            else '')+str(options.port)])
+    initialize_django(options)
+    django_command([argv[0], 'runserver', ('0.0.0.0:' if options.external
+                                           else '')+str(options.port)])
 
 
 def run_django_command(options):
-    django_settings.configure(**log_settings(options))
+    initialize_django(options)
     command = [argv[0]+' '+options.command]
     for item in options.django_command:
         command.append(item)
@@ -532,9 +494,8 @@ def restore(options):
     for item in listdir('campaign-data'):
         if '.sql' in item:
             print('restoring database...')
-            database(
-                options, log_settings=log_settings(options)).restore_database(
-                    'campaign-data/'+item)
+            database(options, initialize=True).restore_database(
+                'campaign-data/'+item)
             print('database restored')
             break
     else:
