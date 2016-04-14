@@ -1,5 +1,5 @@
 from json import load
-from os.path import exists
+from os.path import abspath, dirname, exists
 from pyudev import Context
 from socket import AF_INET, SOCK_STREAM, socket
 from subprocess import DEVNULL, Popen
@@ -101,7 +101,9 @@ class openocd(jtag):
                               'telnet_port '+str(self.port)+'; '
                               'interface ftdi; '
                               'ftdi_serial '+self.device_info['ftdi']+';',
-                              '-f', 'openocd_zedboard.cfg'],
+                              '-f',
+                              dirname(abspath(__file__)) +
+                              '/openocd_zedboard.cfg'],
                              stderr=(DEVNULL
                                      if self.options.command != 'openocd'
                                      else None))
