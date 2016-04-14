@@ -20,7 +20,7 @@ from traceback import print_exc
 
 from .database import database
 from .fault_injector import fault_injector
-from .jtag import openocd
+from .jtag.openocd import find_ftdi_serials, find_uart_serials, openocd
 from .log import initialize_django
 from .power_switch import power_switch
 from .simics.config import simics_config
@@ -38,14 +38,14 @@ def detect_power_switch_devices(options):
     with power_switch(options) as ps:
         status = ps.get_status()
         ps.set_outlet('all', 'off', 1)
-        ftdi_serials_pre = openocd.find_ftdi_serials()
-        uart_serials_pre = openocd.find_uart_serials().values()
+        ftdi_serials_pre = find_ftdi_serials()
+        uart_serials_pre = find_uart_serials().values()
         for outlet in ps.outlets:
             ps.set_outlet(outlet, 'on', 5)
-            ftdi_serials = [serial for serial in openocd.find_ftdi_serials()
+            ftdi_serials = [serial for serial in find_ftdi_serials()
                             if serial not in ftdi_serials_pre]
             uart_serials = [serial for serial
-                            in openocd.find_uart_serials().values()
+                            in find_uart_serials().values()
                             if serial not in uart_serials_pre]
             ps.set_outlet(outlet, 'off', 1)
             if len(ftdi_serials) > 1 or len(uart_serials) > 1:
@@ -66,8 +66,8 @@ def detect_power_switch_devices(options):
 
 
 def list_serials(none=None):
-    ftdis = openocd.find_ftdi_serials()
-    uarts = openocd.find_uart_serials()
+    ftdis = find_ftdi_serials()
+    uarts = find_uart_serials()
     print('FTDI JTAG device serial numbers: ')
     for serial in ftdis:
         print('\t'+serial)
@@ -291,7 +291,7 @@ def inject_campaign(options):
                                   campaign['architecture'] == 'a9'):
         if not campaign['simics'] and \
                 campaign['architecture'] == 'a9':
-            uarts = list(openocd.find_uart_serials().keys())
+            uarts = list(find_uart_serials().keys())
         processes = []
         for i in range(options.processes):
             if not campaign['simics'] and \

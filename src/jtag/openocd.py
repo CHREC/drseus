@@ -11,6 +11,25 @@ from ..targets import get_targets
 from . import jtag
 
 
+def find_ftdi_serials():
+    debuggers = Context().list_devices(ID_VENDOR_ID='0403',
+                                       ID_MODEL_ID='6014')
+    serials = []
+    for debugger in debuggers:
+        if 'DEVLINKS' not in debugger:
+            serials.append(debugger['ID_SERIAL_SHORT'])
+    return serials
+
+
+def find_uart_serials():
+    uarts = Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
+    serials = {}
+    for uart in uarts:
+        if 'DEVLINKS' in uart:
+            serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
+    return serials
+
+
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
     modes = {'10000': 'usr',
@@ -23,23 +42,6 @@ class openocd(jtag):
              '11011': 'und',
              '11111': 'sys'}
 
-    def find_ftdi_serials(self=None):
-        debuggers = Context().list_devices(ID_VENDOR_ID='0403',
-                                           ID_MODEL_ID='6014')
-        serials = []
-        for debugger in debuggers:
-            if 'DEVLINKS' not in debugger:
-                serials.append(debugger['ID_SERIAL_SHORT'])
-        return serials
-
-    def find_uart_serials(self=None):
-        uarts = Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
-        serials = {}
-        for uart in uarts:
-            if 'DEVLINKS' in uart:
-                serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
-        return serials
-
     def __init__(self, database, options, power_switch=None):
 
         def find_open_port():
@@ -51,20 +53,30 @@ class openocd(jtag):
 
     # def __init__(self, database, options, power_switch=None):
         self.power_switch = power_switch
-        if not exists('devices.json'):
-            raise Exception('could not find device information file '
-                            'devices.json, try running command '
-                            '"power detect"')
-        with open('devices.json', 'r') as device_file:
-            device_info = load(device_file)
-        for device in device_info:
-            if device['uart'] == \
-                    self.find_uart_serials()[options.dut_serial_port]:
-                self.device_info = device
-                break
+        if exists('devices.json'):
+            with open('devices.json', 'r') as device_file:
+                device_info = load(device_file)
+            for device in device_info:
+                if device['uart'] == \
+                        find_uart_serials()[options.dut_serial_port]:
+                    self.device_info = device
+                    break
+            else:
+                raise Exception('could not find entry in "devices.json" for '
+                                'device at '+options.dut_serial_port)
         else:
-            raise Exception('could not find entry in devices.json for '
-                            'device at '+options.dut_serial_port)
+            ftdis = find_ftdi_serials()
+            if len(ftdis) == 1:
+                self.device_info = {
+                    'ftdi': ftdis[0],
+                    'uart': find_uart_serials()[options.dut_serial_port]
+                }
+            else:
+                raise Exception('multiple ZedBoards connected and could not '
+                                'find device information file "devices.json", '
+                                'try running command "power detect" or '
+                                'disconnecting extra zedboards')
+
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = get_targets('a9', 'jtag')
@@ -136,7 +148,7 @@ class openocd(jtag):
         with self.power_switch as ps:
             ps.set_outlet(self.device_info['outlet'], 'off')
             ps.set_outlet(self.device_info['outlet'], 'on')
-        for serial_port, uart_serial in self.find_uart_serials().items():
+        for serial_port, uart_serial in find_uart_serials().items():
             if uart_serial == self.device_info['uart']:
                 self.options.dut_serial_port = serial_port
                 self.db.result['dut_serial_port'] = serial_port
