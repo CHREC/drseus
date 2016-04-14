@@ -181,6 +181,8 @@ class ParseError(Exception):
 def p_error(p):
     raise ParseError(p)
 
+lex.lex(debug=0, optimize=1)
+yacc.yacc(debug=0, optimize=1)
 
 class simics_config(object):
 
@@ -206,8 +208,6 @@ class simics_config(object):
                 config_contents = config_file.read()
         except EnvironmentError as e:
             raise self.ConfigError('Error reading checkpoint: %s' % (e,))
-        lex.lex(debug=0, optimize=1)
-        yacc.yacc(debug=0, optimize=1)
         try:
             self.config = yacc.parse(config_contents)
         except RuntimeError as error:
@@ -264,7 +264,3 @@ class simics_config(object):
     def __exit__(self, type_, value, traceback):
         if type_ is not None or value is not None or traceback is not None:
             return False  # reraise exception
-
-if __name__ == '__main__':
-    lex.lex(debug=0, optimize=1)
-    yacc.yacc(debug=0, optimize=1)

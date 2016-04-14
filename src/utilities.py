@@ -444,6 +444,8 @@ def backup(options):
 # def backup(options):
     if not exists('backups'):
         mkdir('backups')
+    if not exists('campaign-data'):
+        mkdir('campaign-data')
     sql_backup = 'campaign-data/'+options.db_name+'.sql'
     print('dumping database...')
     database(options).backup_database(sql_backup)
@@ -456,7 +458,9 @@ def backup(options):
                        '-'.join([str(unit).zfill(2)
                                  for unit in datetime.now().timetuple()[3:6]]))
         num_items = 0
-        directories = ('campaign-data', 'simics-workspace/gold-checkpoints')
+        directories = ['campaign-data']
+        if exists('simics-workspace/gold-checkpoints'):
+            directories.append('simics-workspace/gold-checkpoints')
         print('discovering files to archive')
         for directory in directories:
             num_items += traverse_directory(directory)

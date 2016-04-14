@@ -200,7 +200,7 @@ database_settings.add_argument(
     metavar='USERNAME',
     dest='db_superuser',
     default='postgres',
-    help='superuser username')
+    help='superuser username [default=postgres]')
 database_settings.add_argument(
     '--db_su_pass',
     metavar='PASSWORD',
@@ -521,7 +521,7 @@ backup.add_argument(
     action='store_false',
     dest='files',
     help='dump database only')
-backup.set_defaults(func=backup)
+backup.set_defaults(func='backup')
 
 restore = subparsers.add_parser(
     'restore', aliases=['R'],
@@ -537,7 +537,7 @@ restore.add_argument(
     action='store_false',
     dest='files',
     help='restore database dump only')
-restore.set_defaults(func=restore)
+restore.set_defaults(func='restore')
 
 clean = subparsers.add_parser(
     'clean', aliases=['c'],
