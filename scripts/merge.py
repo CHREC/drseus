@@ -4,14 +4,10 @@
 
 from collections import defaultdict
 from copy import deepcopy
-from os import chdir
 from os.path import abspath, dirname, join
 from sys import path
-
 src_dir = join(dirname(dirname(abspath(__file__))), 'src')
-chdir(src_dir)
 path.append(src_dir)
-
 from targets import load_targets, save_targets
 
 

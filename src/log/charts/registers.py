@@ -3,8 +3,8 @@ from django.db.models.functions import Concat
 from json import dumps
 from time import time
 
-from log import fix_sort, fix_sort_list
-from log.charts import colors, colors_extra
+from .. import fix_sort, fix_sort_list
+from . import colors, colors_extra
 
 
 def outcomes(**kwargs):

@@ -2,10 +2,10 @@ from django.db.models import Case, IntegerField, Sum, When
 from json import dumps
 from threading import Thread
 
-from log import models
-from log.charts import (checkpoints, colors, colors_extra, other, registers,
-                        targets, times, tlbs)
-from targets import get_targets
+from ...targets import get_targets
+from .. import models
+from . import (checkpoints, colors, colors_extra, other, registers, targets,
+               times, tlbs)
 
 
 def campaigns_chart(queryset):

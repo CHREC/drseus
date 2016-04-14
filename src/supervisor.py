@@ -8,8 +8,8 @@ from sys import stdin
 from threading import Thread
 from traceback import print_exc
 
-from fault_injector import fault_injector
-from power_switch import power_switch
+from .fault_injector import fault_injector
+from .power_switch import power_switch
 
 
 # TODO: add background read thread and interact command

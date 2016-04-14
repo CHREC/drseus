@@ -6,11 +6,11 @@ from mimetypes import guess_type
 from os.path import exists
 from subprocess import Popen
 
-from log import filters
-from log import models
-from log import tables
-from log.charts.json import (campaigns_chart, injections_charts, results_charts,
-                             target_bits_chart)
+from . import filters
+from . import models
+from . import tables
+from .charts.json import (campaigns_chart, injections_charts, results_charts,
+                          target_bits_chart)
 
 navigation_items = (('All Campaigns', '/', 'campaigns', 'flag'),
                     ('All Results', '/results', 'results', 'list'),

@@ -1,7 +1,7 @@
 from argparse import ArgumentParser, REMAINDER
 from getpass import getpass
 
-import utilities
+from . import utilities
 
 # TODO: retrive file if onboard diff reports errors
 # TODO: only send files if needed
@@ -12,7 +12,6 @@ import utilities
 # TODO: add support for injection of multi-bit upsets
 
 parser = ArgumentParser(
-    prog='drseus',
     description='The Dynamic Robust Single Event Upset Simulator '
                 'was created by Ed Carlisle IV',
     fromfile_prefix_chars='@',
@@ -425,7 +424,7 @@ log_viewer.add_argument(
     '-e', '--external',
     action='store_true',
     help='allow connections from external IP addresses')
-log_viewer.set_defaults(func=utilities.view_logs)
+log_viewer.set_defaults(func=utilities.view_log)
 
 power = subparsers.add_parser(
     'power', aliases=['p'],
@@ -579,62 +578,64 @@ django.add_argument(
     help='command to run with django')
 django.set_defaults(func=utilities.run_django_command)
 
-options = parser.parse_args()
 
-if options.command is None:
-    parser.error('no command specified, run with "-h" for help')
-if options.command == 'n':
-    options.command = 'new'
-elif options.command == 'i':
-    options.command = 'inject'
-elif options.command == 's':
-    options.command = 'supervise'
-elif options.command == 'o':
-    options.command = 'openocd'
-elif options.command == 'd':
-    options.command = 'delete'
-elif options.command == 'r':
-    options.command = 'regenerate'
+def run():
+    options = parser.parse_args()
 
-if options.db_ask:
-    options.db_password = getpass(prompt='PostgreSQL password:')
-if options.db_su_ask:
-    options.db_superuser_password = \
-        getpass(prompt='PostgreSQL superuser password:')
+    if options.command is None:
+        parser.error('no command specified, run with "-h" for help')
+    if options.command == 'n':
+        options.command = 'new'
+    elif options.command == 'i':
+        options.command = 'inject'
+    elif options.command == 's':
+        options.command = 'supervise'
+    elif options.command == 'o':
+        options.command = 'openocd'
+    elif options.command == 'd':
+        options.command = 'delete'
+    elif options.command == 'r':
+        options.command = 'regenerate'
 
-if options.command == 'new':
-    if options.arguments:
-        options.arguments = ' '.join(options.arguments)
-    if options.aux_arguments:
-        options.aux_arguments = ' '.join(options.aux_arguments)
-elif options.command in ('inject', 'supervise', 'delete', 'regenerate',
-                         'openocd'):
-    if not (options.command == 'delete' and options.delete in ('a', 'all')):
-        if not options.campaign_id:
-            options.campaign_id = \
-                utilities.get_campaign(options)['id']
-        if options.command != 'regenerate':
-            options.architecture = \
-                utilities.get_campaign(options)['architecture']
+    if options.db_ask:
+        options.db_password = getpass(prompt='PostgreSQL password:')
+    if options.db_su_ask:
+        options.db_superuser_password = \
+            getpass(prompt='PostgreSQL superuser password:')
 
-if options.command in ('new', 'inject', 'supervise', 'openocd'):
-    if options.architecture == 'p2020':
-        if options.dut_serial_port is None:
-            options.dut_serial_port = '/dev/ttyUSB0'
-        if options.dut_prompt is None:
-            options.dut_prompt = 'root@p2020rdb:~#'
-        if options.aux_serial_port is None:
-            options.aux_serial_port = '/dev/ttyUSB1'
-        if options.aux_prompt is None:
-            options.aux_prompt = 'root@p2020rdb:~#'
-    elif options.architecture == 'a9':
-        if options.dut_serial_port is None:
-            options.dut_serial_port = '/dev/ttyACM0'
-        if options.dut_prompt is None:
-            options.dut_prompt = '[root@ZED]#'
-        if options.aux_serial_port is None:
-            options.aux_serial_port = '/dev/ttyACM1'
-        if options.aux_prompt is None:
-            options.aux_prompt = '[root@ZED]#'
+    if options.command == 'new':
+        if options.arguments:
+            options.arguments = ' '.join(options.arguments)
+        if options.aux_arguments:
+            options.aux_arguments = ' '.join(options.aux_arguments)
+    elif options.command in ('inject', 'supervise', 'delete', 'regenerate',
+                             'openocd'):
+        if not (options.command == 'delete' and options.delete in ('a', 'all')):
+            if not options.campaign_id:
+                options.campaign_id = \
+                    utilities.get_campaign(options)['id']
+            if options.command != 'regenerate':
+                options.architecture = \
+                    utilities.get_campaign(options)['architecture']
 
-options.func(options)
+    if options.command in ('new', 'inject', 'supervise', 'openocd'):
+        if options.architecture == 'p2020':
+            if options.dut_serial_port is None:
+                options.dut_serial_port = '/dev/ttyUSB0'
+            if options.dut_prompt is None:
+                options.dut_prompt = 'root@p2020rdb:~#'
+            if options.aux_serial_port is None:
+                options.aux_serial_port = '/dev/ttyUSB1'
+            if options.aux_prompt is None:
+                options.aux_prompt = 'root@p2020rdb:~#'
+        elif options.architecture == 'a9':
+            if options.dut_serial_port is None:
+                options.dut_serial_port = '/dev/ttyACM0'
+            if options.dut_prompt is None:
+                options.dut_prompt = '[root@ZED]#'
+            if options.aux_serial_port is None:
+                options.aux_serial_port = '/dev/ttyACM1'
+            if options.aux_prompt is None:
+                options.aux_prompt = '[root@ZED]#'
+
+    options.func(options)

@@ -12,8 +12,8 @@ from sys import stdout
 from termcolor import colored
 from time import perf_counter, sleep
 
-from error import DrSEUsError
-from timeout import timeout, TimeoutException
+from .error import DrSEUsError
+from .timeout import timeout, TimeoutException
 
 
 class dut(object):

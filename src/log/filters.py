@@ -3,7 +3,7 @@ from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             MultipleChoiceFilter, NumberFilter)
 from threading import Thread
 
-from log import fix_sort_list, models
+from . import fix_sort_list, models
 
 max_select_box_size = 20
 

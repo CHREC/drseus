@@ -19,12 +19,13 @@ from tarfile import open as open_tar
 from terminaltables import AsciiTable
 from traceback import print_exc
 
-from database import database
-from fault_injector import fault_injector
-from jtag import openocd
-from power_switch import power_switch
-from simics_config import simics_config
-from supervisor import supervisor
+from . import __name__ as module_name
+from .database import database
+from .fault_injector import fault_injector
+from .jtag import openocd
+from .power_switch import power_switch
+from .simics_config import simics_config
+from .supervisor import supervisor
 
 
 def detect_power_switch_devices(options):
@@ -198,7 +199,7 @@ def create_campaign(options):
         for simics_dir in dirs:
             if simics_dir.startswith('simics-4.8.'):
                 simics_dirs.append((simics_dir, int(simics_dir.split('.')[-1])))
-        simics_dirs.sort(key=lambda x:x[1])
+        simics_dirs.sort(key=lambda x: x[1])
         check_call('/opt/simics/simics-4.8/'+simics_dirs[-1][0] +
                    '/bin/workspace-setup',
                    cwd=join(getcwd(), 'simics-workspace'))
@@ -330,7 +331,6 @@ def regenerate(options):
 
 def log_settings(options):
     return {
-        'BASE_DIR': getcwd(),
         'DATABASES': {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
@@ -346,9 +346,9 @@ def log_settings(options):
             'django.contrib.staticfiles',
             'django_filters',
             'django_tables2',
-            'log'
+            module_name+'.log'
         ),
-        'ROOT_URLCONF': 'log.urls',
+        'ROOT_URLCONF': module_name+'.log.urls',
         'STATIC_URL': '/static/',
         'TEMPLATES': [
             {
@@ -365,7 +365,7 @@ def log_settings(options):
     }
 
 
-def view_logs(options):
+def view_log(options):
     database(options, log_settings=log_settings(options))
     django_settings.configure(**log_settings(options))
     django_command(['drseus', 'runserver', ('0.0.0.0:' if options.external

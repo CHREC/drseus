@@ -6,5 +6,5 @@ def fix_sort(string):
                     text in split('([0-9]+)', str(string))])
 
 
-def fix_sort_list(list):
-    return fix_sort(list[0])
+def fix_sort_list(list_):
+    return fix_sort(list_[0])

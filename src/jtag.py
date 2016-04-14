@@ -9,9 +9,9 @@ from termcolor import colored
 from threading import Thread
 from time import sleep
 
-from dut import dut
-from error import DrSEUsError
-from targets import choose_bit, choose_register, choose_target, get_targets
+from .dut import dut
+from .error import DrSEUsError
+from .targets import choose_bit, choose_register, choose_target, get_targets
 
 
 class jtag(object):

@@ -7,7 +7,7 @@ class DrSEUsError(Exception):
     def __str__(self):
         string = ''
         if self.source:
-            string += str(source)+': '
+            string += str(self.source)+': '
         string += str(self.type)
         if self.returned:
             string += ', returned: '+str(self.returned)

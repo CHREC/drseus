@@ -4,10 +4,10 @@ from shutil import rmtree
 from threading import Thread
 from time import perf_counter
 
-from database import database
-from error import DrSEUsError
-from jtag import bdi, dummy, openocd
-from simics import simics
+from .database import database
+from .error import DrSEUsError
+from .jtag import bdi, dummy, openocd
+from .simics import simics
 
 
 class fault_injector(object):

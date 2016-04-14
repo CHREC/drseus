@@ -4,7 +4,7 @@ from numpy import convolve, linspace, ones
 from json import dumps
 from time import time
 
-from log.charts import colors, colors_extra, count_intervals
+from . import colors, colors_extra, count_intervals
 
 
 def outcomes(**kwargs):
