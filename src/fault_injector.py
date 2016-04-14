@@ -6,7 +6,9 @@ from time import perf_counter
 
 from .database import database
 from .error import DrSEUsError
-from .jtag import bdi, dummy, openocd
+from .jtag.bdi import bdi
+from .jtag.dummy import dummy
+from .jtag.openocd import openocd
 from .simics import simics
 
 

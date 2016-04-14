@@ -23,7 +23,7 @@ from .fault_injector import fault_injector
 from .jtag import openocd
 from .log import initialize_django
 from .power_switch import power_switch
-from .simics_config import simics_config
+from .simics.config import simics_config
 from .supervisor import supervisor
 
 

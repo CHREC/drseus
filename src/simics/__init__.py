@@ -10,12 +10,12 @@ from termcolor import colored
 from threading import Thread
 from time import sleep
 
-from .dut import dut
-from .error import DrSEUsError
-from .simics_config import simics_config
-from .targets import (choose_bit, choose_register, choose_target, get_num_bits,
-                      get_targets)
-from .timeout import timeout, TimeoutException
+from ..dut import dut
+from ..error import DrSEUsError
+from ..targets import (choose_bit, choose_register, choose_target, get_num_bits,
+                       get_targets)
+from ..timeout import timeout, TimeoutException
+from .config import simics_config
 
 
 class simics(object):
