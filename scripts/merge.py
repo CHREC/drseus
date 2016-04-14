@@ -4,11 +4,14 @@
 
 from collections import defaultdict
 from copy import deepcopy
-from os.path import abspath, dirname, join
+from importlib import import_module
+from os.path import abspath, dirname
 from sys import path
-src_dir = join(dirname(dirname(abspath(__file__))), 'src')
-path.append(src_dir)
-from targets import load_targets, save_targets
+
+path.append(dirname(dirname(abspath(__file__))))
+targets = import_module('src.targets')
+load_targets = targets.load_targets
+save_targets = targets.save_targets
 
 
 def tree():
