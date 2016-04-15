@@ -172,6 +172,8 @@ class jtag(object):
                          'target_index': target_index,
                          'time': injection_time,
                          'timestamp': None}
+            with self.db as db:
+                db.insert('injection', injection)
             if target in ('CPU', 'GPR', 'TLB') or \
                 ('CP' in self.targets[target] and
                     self.targets[target]['CP']):
@@ -185,7 +187,7 @@ class jtag(object):
             injection['injected_value'] = hex(
                 int(injection['gold_value'], base=16) ^ (1 << bit))
             with self.db as db:
-                db.insert('injection', injection)
+                db.update('injection', injection)
             if self.options.debug:
                 print(colored('target: '+target, 'magenta'))
                 if 'target_index' in injection:
