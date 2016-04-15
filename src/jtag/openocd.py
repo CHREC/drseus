@@ -187,7 +187,8 @@ class openocd(jtag):
                          success=True)
 
     def get_register_value(self, register, target, target_index):
-        if 'CP' in self.targets[target] and self.targets[target]['CP']:
+        if 'type' in self.targets[target] and \
+                self.targets[target]['type'] == 'CP':
             buff = self.command(
                 ' '.join([
                     'arm', 'mrc',
@@ -205,7 +206,8 @@ class openocd(jtag):
                 buff.split('\n')[1].split(':')[1].split()[0]
 
     def set_register_value(self, register, target, target_index, value):
-        if 'CP' in self.targets[target] and self.targets[target]['CP']:
+        if 'type' in self.targets[target] and \
+                self.targets[target]['type'] == 'CP':
             self.command(
                 ' '.join([
                     'arm', 'mrc',

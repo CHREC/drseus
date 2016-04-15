@@ -96,8 +96,8 @@ class bdi(jtag):
                                log_event, '\r\n', False)
 
     def get_register_value(self, register, target, target_index):
-        if 'memory_mapped' in self.targets[target] and \
-                self.targets[target]['memory_mapped']:
+        if 'type' in self.targets[target] and \
+                self.targets[target]['type'] == 'memory_mapped':
             command = 'md'
             if 'bits' in self.targets[target]['registers'][register]:
                 bits = self.targets[target]['registers'][register]['bits']
@@ -127,8 +127,8 @@ class bdi(jtag):
         return buff.split('\r')[0].split(':')[1].split()[0]
 
     def set_register_value(self, register, target, target_index, value):
-        if 'memory_mapped' in self.targets[target] and \
-                self.targets[target]['memory_mapped']:
+        if 'type' in self.targets[target] and \
+                self.targets[target]['type'] == 'memory_mapped':
             command = 'mm'
             if 'bits' in self.targets[target]['registers'][register]:
                 bits = self.targets[target]['registers'][register]['bits']
