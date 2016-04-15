@@ -1,4 +1,8 @@
-from getpass import getpass
+from getpass import getuser, getpass
+from platform import system
+from signal import SIGINT
+from subprocess import check_output, Popen
+from time import sleep
 
 from .arguments import get_options, parser
 from . import utilities
@@ -13,6 +17,17 @@ from . import utilities
 
 def run():
     options = get_options()
+
+    postgresql = None
+    if system() == 'Darwin':
+        if options.db_superuser == 'postgres':
+            options.db_superuser = getuser()
+        for line in check_output(['ps'], universal_newlines=True).split('\n'):
+            if line and line.split()[3] == 'postgres':
+                break
+        else:
+            postgresql = Popen(['postgres', '-D', '/usr/local/var/postgres'])
+            sleep(0.1)
 
     if options.command is None:
         parser.error('no command specified, run with "-h" for help')
@@ -71,3 +86,7 @@ def run():
                 options.aux_prompt = '[root@ZED]#'
 
     getattr(utilities, options.func)(options)
+
+    if postgresql is not None:
+        postgresql.send_signal(SIGINT)
+        postgresql.wait(timeout=30)
