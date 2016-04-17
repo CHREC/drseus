@@ -68,7 +68,7 @@ class openocd(jtag):
             self.device_info = None
             print('could not find device information file, unpredictable '
                   'behavior if multiple ZedBoards are connected')
-            if options.processes > 1:
+            if options.command == 'inject' and options.processes > 1:
                 raise Exception('could not find device information file '
                                 '"devices.json", which is required when using'
                                 'multiple ZedBoards. try running command '
