@@ -38,6 +38,7 @@ parser.add_argument(
     '-E', '--error_msg',
     nargs='+',
     dest='error_messages',
+    default=[],
     help='error messages to check for in device console output')
 
 dut_settings = parser.add_argument_group('DUT settings')
