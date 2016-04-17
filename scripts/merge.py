@@ -610,13 +610,13 @@ for device in ['a9', 'p2020']:
                     old_register = old_target['registers'][register]
 
                 other_register = None
-                if other_target is not None and \
-                        register in other_target['registers']:
-                    other_register = other_target['registers'][register]
-                elif other_target is not None and \
-                        'unused_registers' in other_target and \
-                        register in other_target['unused_registers']:
-                    other_register = other_target['unused_registers'][register]
+                if other_target is not None:
+                    if register in other_target['registers']:
+                        other_register = other_target['registers'][register]
+                    elif 'unused_registers' in other_target and \
+                            register in other_target['unused_registers']:
+                        other_register = \
+                            other_target['unused_registers'][register]
 
                 merged_register = merged_target['registers'][register]
                 if unused_register:
@@ -624,6 +624,9 @@ for device in ['a9', 'p2020']:
                                    ['targets'][target]
                                    ['unused_registers'][register])
                     if other_target is not None and other_register is None:
+                        (merged_targets[other_type]
+                                       ['targets'][target]
+                                       ['unused_registers'][register])
                         missing.append(register)
                         missing_total += 1
                 elif other_target is not None and other_register is None:
