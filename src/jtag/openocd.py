@@ -189,10 +189,10 @@ class openocd(jtag):
 
     def get_register_value(self, register_info):
         target = register_info['target']
-        if register_info['register_alias'] is None:
-            register = register_info['register']
-        else:
+        if 'register_alias' in register_info:
             register = register_info['register_alias']
+        else:
+            register = register_info['register']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'CP':
             buff = self.command(
@@ -213,10 +213,10 @@ class openocd(jtag):
 
     def set_register_value(self, register_info, value=None):
         target = register_info['target']
-        if register_info['register_alias'] is None:
-            register = register_info['register']
-        else:
+        if 'register_alias' in register_info:
             register = register_info['register_alias']
+        else:
+            register = register_info['register']
         if value is None:
             value = register_info['injected_value']
         if 'type' in self.targets[target] and \

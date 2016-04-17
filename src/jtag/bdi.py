@@ -102,11 +102,14 @@ class bdi(jtag):
 
     def get_register_value(self, register_info):
         target = register_info['target']
-        target_index = register_info['target_index']
-        if register_info['register_alias'] is None:
-            register = register_info['register']
+        if 'target_index' in register_info:
+            target_index = register_info['target_index']
         else:
+            target_index = 0
+        if 'register_alias' in register_info:
             register = register_info['register_alias']
+        else:
+            register = register_info['register']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'memory_mapped':
             command = 'md'
@@ -139,11 +142,14 @@ class bdi(jtag):
 
     def set_register_value(self, register_info, value=None):
         target = register_info['target']
-        target_index = register_info['target_index']
-        if register_info['register_alias'] is None:
-            register = register_info['register']
+        if 'target_index' in register_info:
+            target_index = register_info['target_index']
         else:
+            target_index = 0
+        if 'register_alias' in register_info:
             register = register_info['register_alias']
+        else:
+            register = register_info['register']
         if value is None:
             value = register_info['injected_value']
         if 'type' in self.targets[target] and \
