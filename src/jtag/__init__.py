@@ -160,7 +160,7 @@ class jtag(object):
             if 'access' in (self.targets[injection['target']]
                                         ['registers'][injection['register']]):
                 injection['register_access'] = \
-                    self.targets([injection['target']]
+                    (self.targets[injection['target']]
                                  ['registers'][injection['register']]['access'])
             injection['gold_value'] = \
                 self.get_register_value(injection)
