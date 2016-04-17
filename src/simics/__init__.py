@@ -617,7 +617,7 @@ class simics(object):
                                          self.options.selected_target_indices)
             config_object = ('DUT_'+self.board+'.' +
                              self.targets[injection['target']]['object'])
-            if injection['target_index'] is not None:
+            if 'target_index' in injection:
                 config_object += '['+str(injection['target_index'])+']'
             injection.update({'checkpoint': checkpoint,
                               'config_object': config_object,
