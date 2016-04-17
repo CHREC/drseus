@@ -615,9 +615,8 @@ class simics(object):
                 choose_target(self.options.selected_targets, self.targets)
             register, register_index, register_alias = \
                 choose_register(target, self.targets)
-            bit, field = choose_bit(register if register_alias is None
-                                    else register_alias,
-                                    register_index, target, self.targets)
+            bit, field = choose_bit(register, register_index, target,
+                                    self.targets)
             num_bits = get_num_bits(register, target, self.targets)
             config_object = ('DUT_'+self.board+'.' +
                              self.targets[target]['object'])
