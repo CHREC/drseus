@@ -22,12 +22,12 @@
                             <div class="box-tools pull-right">
                                 {% if chart.smooth or chart.percent or chart.log %}
                                     <div class="btn-group" id="raw-data" data-toggle="btn-toggle">
-                                        <button type="button" class="btn btn-default btn-xs active" data-toggle="raw">Raw</button>
+                                        <button type="button" class="btn btn-default btn-xs active" data-toggle="raw">{% if chart.smooth %}Raw{% else %}Magnitude{% endif %}</button>
                                         {% if chart.smooth %}
                                             <button type="button" class="btn btn-default btn-xs" data-toggle="smooth">Smoothed</button>
                                         {% endif %}
                                         {% if chart.percent %}
-                                            <button type="button" class="btn btn-default btn-xs" data-toggle="percent">Percent</button>
+                                            <button type="button" class="btn btn-default btn-xs" data-toggle="percent">Percentage</button>
                                         {% endif %}
                                         {% if chart.log %}
                                             <button type="button" class="btn btn-default btn-xs" data-toggle="log">Log</button>

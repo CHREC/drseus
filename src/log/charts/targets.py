@@ -87,7 +87,7 @@ def outcomes(**kwargs):
             'format': '{value}%'
         },
         'title': {
-            'text': 'Percent of Injections'
+            'text': 'Injections'
         }
     }
     chart_percent = dumps(chart_percent, indent=4)
@@ -255,7 +255,7 @@ def indices(**kwargs):
             'format': '{value}%'
         },
         'title': {
-            'text': 'Percent of Injections'
+            'text': 'Injections'
         }
     }
     chart_percent = dumps(chart_percent, indent=4)

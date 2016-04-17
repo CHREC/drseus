@@ -183,7 +183,7 @@ def num_injections(**kwargs):
     chart_percent['chart']['renderTo'] = 'counts_chart_percent'
     chart_percent['plotOptions']['series']['stacking'] = 'percent'
     chart_percent['yAxis']['labels'] = {'format': '{value}%'}
-    chart_percent['yAxis']['title']['text'] = 'Percent of Results'
+    chart_percent['yAxis']['title']['text'] = 'Results'
     chart_data.append(dumps(chart_percent, indent=4))
     chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
     function(event) {
