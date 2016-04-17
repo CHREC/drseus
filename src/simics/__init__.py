@@ -562,28 +562,30 @@ class simics(object):
 
         # def inject_config(injected_checkpoint, injection, num_bits):
             with simics_config(injected_checkpoint) as config:
-                gold_value = config.get(injection['config_object'],
-                                        injection['register'])
+                config_object = injection['config_object']
+                if injection['register_alias'] is None:
+                    register = injection['register']
+                else:
+                    register = injection['register_alias']
+                register_index = injection['register_index']
+                gold_value = config.get(config_object, register)
                 if gold_value is None:
                     raise Exception('error getting rgister value from config')
-                if injection['register_index'] is None:
+                if register_index is None:
                     if 'injected_value' not in injection:
                         injected_value = flip_bit(gold_value, injection['bit'])
-                    config.set(injection['config_object'],
-                               injection['register'], injected_value)
+                    config.set(config_object, register, injected_value)
                 else:
                     register_list_ = register_list = gold_value
                     if 'injected_value' not in injection:
-                        for index in injection['register_index']:
+                        for index in register_index:
                             gold_value = gold_value[index]
                         injected_value = flip_bit(gold_value, injection['bit'])
-                    for index in range(len(injection['register_index'])-1):
+                    for index in range(len(register_index)-1):
                         register_list_ = \
-                            register_list_[injection['register_index'][index]]
-                    register_list_[injection['register_index'][-1]] = \
-                        injected_value
-                    config.set(injection['config_object'],
-                               injection['register'], register_list)
+                            register_list_[register_index[index]]
+                    register_list_[register_index[-1]] = injected_value
+                    config.set(config_object, register, register_list)
                 config.save()
             return gold_value, injected_value
 
@@ -616,9 +618,7 @@ class simics(object):
             bit, field = choose_bit(register if register_alias is None
                                     else register_alias,
                                     register_index, target, self.targets)
-            num_bits = get_num_bits(register if register_alias is None
-                                    else register_alias,
-                                    target, self.targets)
+            num_bits = get_num_bits(register, target, self.targets)
             config_object = ('DUT_'+self.board+'.' +
                              self.targets[target]['object'])
             if target_index is not None:
@@ -667,10 +667,7 @@ class simics(object):
                 print(colored('injected value: ' +
                               injection['injected_value'], 'magenta'))
         else:
-            num_bits = get_num_bits(injection['register'] if
-                                    injection['register_alias'] is None
-                                    else injection['register_alias'],
-                                    target, self.targets)
+            num_bits = get_num_bits(injection['register'], target, self.targets)
             inject_config(injected_checkpoint, injection, num_bits)
         return injected_checkpoint.replace('simics-workspace/', '')
 

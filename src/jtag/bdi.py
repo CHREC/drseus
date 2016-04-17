@@ -95,7 +95,13 @@ class bdi(jtag):
         return super().command(command, expected_output, error_message,
                                log_event, '\r\n', False)
 
-    def get_register_value(self, register, target, target_index):
+    def get_register_value(self, injection):
+        target = injection['target']
+        target_index = injection['target_index']
+        if injection['register_alias'] is None:
+            register = injection['register']
+        else:
+            register = injection['register_alias']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'memory_mapped':
             command = 'md'
@@ -126,7 +132,14 @@ class bdi(jtag):
                                 'Error getting register value')
         return buff.split('\r')[0].split(':')[1].split()[0]
 
-    def set_register_value(self, register, target, target_index, value):
+    def set_register_value(self, injection):
+        target = injection['target']
+        target_index = injection['target_index']
+        if injection['register_alias'] is None:
+            register = injection['register']
+        else:
+            register = injection['register_alias']
+        value = injection['injected_value']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'memory_mapped':
             command = 'mm'

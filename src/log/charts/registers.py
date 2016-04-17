@@ -1,5 +1,4 @@
-from django.db.models import Case, F, IntegerField, Sum, TextField, Value, When
-from django.db.models.functions import Concat
+from django.db.models import Case, IntegerField, Sum, When
 from json import dumps
 from time import time
 
@@ -17,17 +16,9 @@ def outcomes(**kwargs):
     success = kwargs['success']
 
     start = time()
-    injections = injections.exclude(target='TLB').annotate(register_name=Case(
-        When(register_alias__isnull=True,
-             then=Case(When(register_index__isnull=True, then=F('register')),
-                       default=Concat('register', Value(':'), 'register_index',
-                                      output_field=TextField()))),
-        default=F('register_alias')))
-    registers = injections.values_list('register_name', flat=True).distinct(
-    ).order_by('register_name')
-    alias_list = list(injections.exclude(
-        register_alias__isnull=True).values_list(
-            'register_alias', flat=True).distinct().order_by('register_alias'))
+    injections = injections.exclude(target='TLB')
+    registers = injections.values_list(
+        'register', flat=True).distinct().order_by('register')
     if len(registers) < 1:
         return
     registers = sorted(registers, key=fix_sort)
@@ -90,11 +81,11 @@ def outcomes(**kwargs):
         else:
             when_kwargs['result__outcome_category' if group_categories
                         else 'result__outcome'] = outcome
-        data = injections.values_list('register_name').distinct().order_by(
-            'register_name').annotate(
+        data = injections.values_list('register').distinct().order_by(
+            'register').annotate(
                 count=Sum(Case(When(**when_kwargs),
                                default=0, output_field=IntegerField()))
-            ).values_list('register_name', 'count')
+            ).values_list('register', 'count')
         data = sorted(data, key=fix_sort_list)
         chart['series'].append({'data': list(zip(*data))[1],
                                 'name': str(outcome)})
@@ -102,7 +93,6 @@ def outcomes(**kwargs):
     if not success:
         chart = chart.replace('\"__click_function__\"', """
         function(event) {
-            var aliases = __alias_list__;
             var reg = this.category.split(':');
             var register = reg[0];
             var index = reg[1];
@@ -112,20 +102,10 @@ def outcomes(**kwargs):
             } else {
                 filter = '';
             }
-            if (aliases.indexOf(this.category) > -1) {
-                window.open('results?outcome='+this.series.name+
-                            '&injection__register_alias='+this.category+filter);
-            } else if (index) {
-                window.open('results?outcome='+this.series.name+
-                            '&injection__register='+register+
-                            '&injection__register_index='+index+filter);
-            } else {
-                window.open('results?outcome='+this.series.name+
-                            '&injection__register='+register+filter);
-            }
+            window.open('results?outcome='+this.series.name+
+                        '&injection__register='+register+filter);
         }
-        """.replace('\n    ', '\n                        ')).replace(
-            '__alias_list__', str(alias_list))
+        """.replace('\n    ', '\n                        '))
         if group_categories:
             chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)

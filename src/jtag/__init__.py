@@ -168,16 +168,18 @@ class jtag(object):
             if target in ('CPU', 'GPR', 'TLB') or \
                 ('CP' in self.targets[target] and
                     self.targets[target]['CP']):
-                self.select_core(target_index)
+                self.select_core(injection['target_index'])
             sleep(injection['time']-previous_injection_time)
             self.halt_dut()
             previous_injection_time = injection['time']
             injection['processor_mode'] = self.get_mode()
-            if 'access' in self.targets[target]['registers'][register]:
+            if 'access' in (self.targets[target]
+                                        ['registers'][injection['register']]):
                 injection['register_access'] = \
-                    self.targets[target]['registers'][register]['access']
+                    self.targets([target]
+                                 ['registers'][injection['register']]['access'])
             injection['gold_value'] = \
-                self.get_register_value(register, target, target_index)
+                self.get_register_value(injection)
             injection['injected_value'] = hex(
                 int(injection['gold_value'], base=16) ^ (1 << bit))
             with self.db as db:
@@ -187,19 +189,17 @@ class jtag(object):
                               'magenta'))
                 print(colored('target: '+target, 'magenta'))
                 if 'target_index' in injection:
-                    print(colored('target_index: '+str(target_index),
-                                  'magenta'))
-                print(colored('register: '+register, 'magenta'))
+                    print(colored('target_index: ' +
+                                  str(injection['target_index']), 'magenta'))
+                print(colored('register: '+injection['register'], 'magenta'))
                 print(colored('bit: '+str(injection['bit']), 'magenta'))
                 print(colored('gold value: '+injection['gold_value'],
                               'magenta'))
                 print(colored('injected value: ' +
                               injection['injected_value'], 'magenta'))
-            self.set_register_value(
-                register, target, target_index, injection['injected_value'])
+            self.set_register_value(injection)
             if int(injection['injected_value'], base=16) == \
-                int(self.get_register_value(register, target, target_index),
-                    base=16):
+                    int(self.get_register_value(injection), base=16):
                 injection['success'] = True
                 with self.db as db:
                     db.update('injection', injection)
@@ -207,11 +207,9 @@ class jtag(object):
                                  success=True)
             else:
                 self.set_mode()
-                self.set_register_value(
-                    register, target, target_index, injection['injected_value'])
+                self.set_register_value(injection)
                 if int(injection['injected_value'], base=16) == \
-                    int(self.get_register_value(register, target, target_index),
-                        base=16):
+                        int(self.get_register_value(injection), base=16):
                     injection['success'] = True
                     with self.db as db:
                         db.update('injection', injection)

@@ -193,11 +193,10 @@ def choose_register(target, targets):
     else:
         register_index = None
     if 'alias' in registers[register]:
-        register_alias = register
+        register_alias = registers[register]['alias']['register']
         if 'register_index' in registers[register]['alias']:
             register_index = \
                 registers[register]['alias']['register_index']
-        register = registers[register]['alias']['register']
     else:
         register_alias = None
     return register, register_index, register_alias

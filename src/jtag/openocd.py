@@ -182,7 +182,12 @@ class openocd(jtag):
             db.log_event('Information', 'Debugger', 'Set processor mode', mode,
                          success=True)
 
-    def get_register_value(self, register, target, target_index):
+    def get_register_value(self, injection):
+        target = injection['target']
+        if injection['register_alias'] is None:
+            register = injection['register']
+        else:
+            register = injection['register_alias']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'CP':
             buff = self.command(
@@ -201,7 +206,13 @@ class openocd(jtag):
             return \
                 buff.split('\n')[1].split(':')[1].split()[0]
 
-    def set_register_value(self, register, target, target_index, value):
+    def set_register_value(self, injection):
+        target = injection['target']
+        if injection['register_alias'] is None:
+            register = injection['register']
+        else:
+            register = injection['register_alias']
+        value = injection['injected_value']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'CP':
             self.command(
