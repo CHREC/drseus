@@ -4,12 +4,11 @@ from signal import SIGINT
 from subprocess import check_output, Popen
 from time import sleep
 
-from .arguments import get_options, parser
+from .arguments import get_options
 from . import utilities
 
 # TODO: only send files if needed
 # TODO: use regular expressions in telnet expect in jtag
-# TODO: add options for custom error messages
 # TODO: use formatting strings
 # TODO: add mode to redo injection iteration
 # TODO: add support for injection of multi-bit upsets
@@ -28,21 +27,6 @@ def run():
         else:
             postgresql = Popen(['postgres', '-D', '/usr/local/var/postgres'])
             sleep(0.1)
-
-    if options.command is None:
-        parser.error('no command specified, run with "-h" for help')
-    if options.command == 'n':
-        options.command = 'new'
-    elif options.command == 'i':
-        options.command = 'inject'
-    elif options.command == 's':
-        options.command = 'supervise'
-    elif options.command == 'o':
-        options.command = 'openocd'
-    elif options.command == 'd':
-        options.command = 'delete'
-    elif options.command == 'r':
-        options.command = 'regenerate'
 
     if options.db_ask:
         options.db_password = getpass(prompt='PostgreSQL password:')

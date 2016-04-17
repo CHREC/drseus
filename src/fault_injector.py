@@ -16,10 +16,10 @@ class fault_injector(object):
     def __init__(self, campaign, options, power_switch=None):
         self.options = options
         self.db = database(options, campaign, options.command != 'new')
-        if not options.jtag:
-            self.debugger = dummy(self.db, options, power_switch)
-        elif campaign['simics']:
+        if campaign['simics']:
             self.debugger = simics(self.db, options)
+        elif not options.jtag:
+            self.debugger = dummy(self.db, options, power_switch)
         elif campaign['architecture'] == 'p2020':
             self.debugger = bdi(self.db, options)
         elif campaign['architecture'] == 'a9':

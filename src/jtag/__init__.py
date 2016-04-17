@@ -140,20 +140,8 @@ class jtag(object):
         for i in range(self.options.injections):
             injection_times.append(uniform(0,
                                            self.db.campaign['execution_time']))
-        injection_times = sorted(injection_times)
-        if len(injection_times) == 0:
-            self.dut.write('./'+self.db.campaign['command']+'\n')
-        for injection_number, injection_time in \
-                enumerate(injection_times, start=1):
-            if self.options.debug:
-                print(colored('injection time: '+str(injection_time),
-                              'magenta'))
-            if injection_number == 1:
-                self.dut.write('./'+self.db.campaign['command']+'\n')
-            else:
-                self.continue_dut()
-            sleep(injection_time)
-            self.halt_dut()
+        injections = []
+        for injection_time in sorted(injection_times):
             target, target_index = \
                 choose_target(self.options.selected_targets, self.targets)
             register, register_index, register_alias = \
@@ -174,10 +162,16 @@ class jtag(object):
                          'timestamp': None}
             with self.db as db:
                 db.insert('injection', injection)
+        self.dut.write('./'+self.db.campaign['command']+'\n')
+        previous_injection_time = 0
+        for injection in injections:
             if target in ('CPU', 'GPR', 'TLB') or \
                 ('CP' in self.targets[target] and
                     self.targets[target]['CP']):
                 self.select_core(target_index)
+            sleep(injection['time']-previous_injection_time)
+            self.halt_dut()
+            previous_injection_time = injection['time']
             injection['processor_mode'] = self.get_mode()
             if 'access' in self.targets[target]['registers'][register]:
                 injection['register_access'] = \
@@ -189,6 +183,8 @@ class jtag(object):
             with self.db as db:
                 db.update('injection', injection)
             if self.options.debug:
+                print(colored('injection time: '+str(injection['time']),
+                              'magenta'))
                 print(colored('target: '+target, 'magenta'))
                 if 'target_index' in injection:
                     print(colored('target_index: '+str(target_index),
@@ -227,8 +223,7 @@ class jtag(object):
                         db.log_event('Error', 'Debugger', 'Injection failed',
                                      success=False)
                 self.set_mode(injection['processor_mode'])
-            if injection_number == len(injection_times):
-                self.continue_dut()
+            self.continue_dut()
         return 0, False
 
     def command(self, command, expected_output, error_message,

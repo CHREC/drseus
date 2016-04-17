@@ -42,7 +42,7 @@ class openocd(jtag):
              '11011': 'und',
              '11111': 'sys'}
 
-    def __init__(self, database, options, power_switch=None):
+    def __init__(self, database, options, power_switch):
 
         def find_open_port():
             sock = socket(AF_INET, SOCK_STREAM)
@@ -65,18 +65,15 @@ class openocd(jtag):
                 raise Exception('could not find entry in "devices.json" for '
                                 'device at '+options.dut_serial_port)
         else:
-            ftdis = find_ftdi_serials()
-            if len(ftdis) == 1:
-                self.device_info = {
-                    'ftdi': ftdis[0],
-                    'uart': find_uart_serials()[options.dut_serial_port]
-                }
-            else:
-                raise Exception('multiple ZedBoards connected and could not '
-                                'find device information file "devices.json", '
-                                'try running command "power detect" or '
-                                'disconnecting extra zedboards')
-
+            self.device_info = None
+            print('could not find device information file, unpredictable '
+                  'behavior if multiple ZedBoards are connected')
+            if self.options.processes > 1:
+                raise Exception('could not find device information file '
+                                '"devices.json", which is required when using'
+                                'multiple ZedBoards. try running command '
+                                '"detect" (or "power detect" if using a web '
+                                'power switch')
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.targets = get_targets('a9', 'jtag')
@@ -95,18 +92,17 @@ class openocd(jtag):
         return string
 
     def open(self):
-        self.openocd = Popen(['openocd', '-c',
-                              'gdb_port '+str(self.gdb_port)+'; '
-                              'tcl_port 0; '
-                              'telnet_port '+str(self.port)+'; '
-                              'interface ftdi; '
-                              'ftdi_serial '+self.device_info['ftdi']+';',
-                              '-f',
-                              dirname(abspath(__file__)) +
-                              '/openocd_zedboard.cfg'],
-                             stderr=(DEVNULL
-                                     if self.options.command != 'openocd'
-                                     else None))
+        self.openocd = Popen(
+            ['openocd', '-c',
+             'gdb_port '+str(self.gdb_port)+'; '
+             'tcl_port 0; '
+             'telnet_port '+str(self.port)+'; '
+             'interface ftdi; ' +
+             (('ftdi_serial '+self.device_info['ftdi']+';')
+              if self.device_info is not None else ''),
+             '-f', dirname(abspath(__file__))+'/openocd_zedboard_' +
+             ('smp' if self.options.smp else 'amp')+'.cfg'],
+            stderr=(DEVNULL if self.options.command != 'openocd' else None))
         if self.options.command != 'openocd':
             with self.db as db:
                 db.log_event('Information', 'Debugger', 'Launched openocd',

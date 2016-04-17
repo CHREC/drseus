@@ -2,7 +2,7 @@ from bdb import BdbQuit
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
 from io import StringIO
-from json import dump
+from json import dump, load
 from multiprocessing import Process, Value
 from os import getcwd, listdir, mkdir, remove
 from os.path import exists, isdir, join
@@ -29,12 +29,11 @@ from .supervisor import supervisor
 
 def detect_power_switch_devices(options):
     if exists('devices.json'):
-        if input('continue and overwrite devices.json? [Y/n]') \
-                not in ('N', 'n'):
-            remove('devices.json')
-        else:
-            return
-    devices = []
+        with open('devices.json', 'r') as device_file:
+            devices = load(device_file)
+    else:
+        devices = []
+    uarts = [device['uart'] for device in devices]
     with power_switch(options) as ps:
         status = ps.get_status()
         ps.set_outlet('all', 'off', 1)
@@ -55,14 +54,47 @@ def detect_power_switch_devices(options):
                 print('no devices detected on outlet', outlet)
                 continue
             print('found zedboard on outlet', outlet)
-            devices.append({'outlet': outlet,
-                            'ftdi': ftdi_serials[0],
-                            'uart': uart_serials[0]})
+            if uart_serials[0] in uarts:
+                print('device already in "devices.json"')
+            else:
+                devices.append({'outlet': outlet,
+                                'ftdi': ftdi_serials[0],
+                                'uart': uart_serials[0]})
         for outlet in status:
             ps.set_outlet(outlet['outlet'], outlet['status'], 1)
     with open('devices.json', 'w') as device_file:
         dump(devices, device_file, indent=4)
-    print('saved device information to devices.json')
+    print('saved device information to "devices.json"')
+
+
+def detect_devices(options):
+    if exists('devices.json'):
+        with open('devices.json', 'r') as device_file:
+            devices = load(device_file)
+    else:
+        devices = []
+    uarts = [device['uart'] for device in devices]
+    while True:
+        ftdi_serials = find_ftdi_serials()
+        uart_serials = find_uart_serials().values()
+        if len(ftdi_serials) > 1 or len(uart_serials) > 1:
+            print('too many devices detected, disconnect all but one device')
+        elif not len(ftdi_serials) or not len(uart_serials):
+            print('no devices detected')
+        else:
+            print('found zedboard')
+            if uart_serials[0] in uarts:
+                print('device already in "devices.json"')
+            else:
+                devices.append({'ftdi': ftdi_serials[0],
+                                'uart': uart_serials[0]})
+        if input('continue detecting devices? [Y/n]') in ('N', 'n'):
+            break
+        else:
+            input('press enter after connecting next device')
+    with open('devices.json', 'w') as device_file:
+        dump(devices, device_file, indent=4)
+    print('saved device information to "devices.json"')
 
 
 def list_serials(none=None):

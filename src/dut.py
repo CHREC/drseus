@@ -51,7 +51,6 @@ class dut(object):
         ('can\'t get kernel image', 'Error booting')]
 
     def __init__(self, database, options, aux=False):
-
         self.db = database
         self.options = options
         self.aux = aux
@@ -74,6 +73,8 @@ class dut(object):
             else options.aux_uboot
         self.login_command = options.dut_login if not aux \
             else options.aux_login
+        for message in reversed(options.error_messages):
+            self.error_messages.inset(0, (message, message))
         self.open()
 
     def __str__(self):

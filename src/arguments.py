@@ -28,12 +28,17 @@ parser.add_argument(
     '--reset_ip',
     action='store_true',
     help='forget DUT/AUX IP addresses between resets if using automatic '
-         'discover')
+         'discovery')
 parser.add_argument(
     '--no_rsa',
     action='store_false',
     dest='rsa',
     help='use username/password for SCP authentication instead of RSA key')
+parser.add_argument(
+    '-E', '--error_msg',
+    nargs='+',
+    dest='error_messages',
+    help='error messages to check for in device console output')
 
 dut_settings = parser.add_argument_group('DUT settings')
 dut_settings.add_argument(
@@ -162,6 +167,11 @@ debugger_settings.add_argument(
     action='store_false',
     dest='jtag',
     help='do not connect to jtag debugger (ignored by Simics)')
+debugger_settings.add_argument(
+    '--no_smp',
+    action='store_false',
+    dest='smp',
+    help='do not use SMP mode in openocd (only supported for ZedBoards')
 
 database_settings = parser.add_argument_group('PostgreSQL settings')
 database_settings.add_argument(
@@ -415,6 +425,12 @@ log_viewer.add_argument(
     help='allow connections from external IP addresses')
 log_viewer.set_defaults(func='view_log')
 
+detect_devices = subparsers.add_parser(
+    'detect', aliases=['d'],
+    help='detect devices attached to web power switch',
+    description='detect devices attached to web power switch')
+detect_devices.set_defaults(func='detect_devices')
+
 power = subparsers.add_parser(
     'power', aliases=['p'],
     help='control web power switch',
@@ -424,11 +440,11 @@ power_subparsers = power.add_subparsers(
     description='Run "%(prog)s COMMAND -h" to get additional help for '
                 'each command',
     metavar='COMMAND', dest='power_command')
-detect_devices = power_subparsers.add_parser(
-    'detect', aliases=['d', 'D'],
+power_detect_devices = power_subparsers.add_parser(
+    'detect', aliases=['d'],
     help='detect devices attached to web power switch',
     description='detect devices attached to web power switch')
-detect_devices.set_defaults(func='detect_power_switch_devices')
+power_detect_devices.set_defaults(func='detect_power_switch_devices')
 power_set = power_subparsers.add_parser(
     'set', aliases=['s'],
     help='set outlet status',
@@ -444,7 +460,7 @@ power_set.add_argument(
     help='state to set outlet to (on/off)')
 power_set.set_defaults(func='set_outlet')
 power_list = power_subparsers.add_parser(
-    'list', aliases=['l', 'ls'],
+    'list', aliases=['ls'],
     help='list outlet statuses',
     description='list outlet statuses')
 power_list.set_defaults(func='list_outlets')
@@ -456,7 +472,7 @@ list_campaigns = subparsers.add_parser(
 list_campaigns.set_defaults(func='list_campaigns')
 
 delete = subparsers.add_parser(
-    'delete', aliases=['d'],
+    'delete', aliases=['del'],
     description='delete results and campaigns',
     help='delete results and campaigns')
 delete.add_argument(
@@ -569,4 +585,19 @@ django.set_defaults(func='run_django_command')
 
 
 def get_options():
-    return parser.parse_args()
+    options = parser.parse_args()
+    if options.command is None:
+        parser.error('no command specified, run with "-h" for help')
+    if options.command == 'n':
+        options.command = 'new'
+    elif options.command == 'i':
+        options.command = 'inject'
+    elif options.command == 's':
+        options.command = 'supervise'
+    elif options.command == 'o':
+        options.command = 'openocd'
+    elif options.command == 'del':
+        options.command = 'delete'
+    elif options.command == 'r':
+        options.command = 'regenerate'
+    return options
