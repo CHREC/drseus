@@ -187,7 +187,6 @@ def get_targets(architecture, type_, selected_targets, selected_registers):
     for target in empty_targets:
         del targets[target]
     calculate_target_bits(targets)
-    print(targets)
     return targets
 
 
