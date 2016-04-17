@@ -143,6 +143,7 @@ class jtag(object):
                               'success': False,
                               'time': injection_time,
                               'timestamp': None})
+            injections.append(injection)
             with self.db as db:
                 db.insert('injection', injection)
         self.dut.write('./'+self.db.campaign['command']+'\n')
