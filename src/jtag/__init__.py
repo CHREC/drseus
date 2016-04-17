@@ -146,7 +146,8 @@ class jtag(object):
                 choose_target(self.options.selected_targets, self.targets)
             register, register_index, register_alias = \
                 choose_register(target, self.targets)
-            bit, field = choose_bit(register, target, self.targets)
+            bit, field = choose_bit(register, register_index, target,
+                                    self.targets)
             injection = {'bit': bit,
                          'field': field,
                          'register': register,
