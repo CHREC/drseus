@@ -188,49 +188,40 @@ class openocd(jtag):
                          success=True)
 
     def get_register_value(self, register_info):
-        target = register_info['target']
+        target = self.targets[register_info['target']]
         if 'register_alias' in register_info:
-            register = register_info['register_alias']
+            register_name = register_info['register_alias']
         else:
-            register = register_info['register']
-        if 'type' in self.targets[target] and \
-                self.targets[target]['type'] == 'CP':
-            buff = self.command(
-                ' '.join([
-                    'arm', 'mrc',
-                    str(self.targets[target]['registers'][register]['CP']),
-                    str(self.targets[target]['registers'][register]['Op1']),
-                    str(self.targets[target]['registers'][register]['CRn']),
-                    str(self.targets[target]['registers'][register]['CRm']),
-                    str(self.targets[target]['registers'][register]['Op2'])]),
+            register_name = register_info['register']
+        register = target['registers'][register_info['register']]
+        if 'type' in target and target['type'] == 'CP':
+            buff = self.command(' '.join([
+                'arm', 'mrc', str(register['CP']), str(register['Op1']),
+                str(register['CRn']), str(register['CRm']),
+                str(register['Op2'])]),
                 error_message='Error getting register value')
             return hex(int(buff.split('\n')[1].strip()))
         else:
-            buff = self.command('reg '+register, [':'],
+            buff = self.command('reg '+register_name, [':'],
                                 'Error getting register value')
             return \
                 buff.split('\n')[1].split(':')[1].split()[0]
 
     def set_register_value(self, register_info, value=None):
-        target = register_info['target']
+        target = self.targets[register_info['target']]
         if 'register_alias' in register_info:
-            register = register_info['register_alias']
+            register_name = register_info['register_alias']
         else:
-            register = register_info['register']
+            register_name = register_info['register']
+        register = target['registers'][register_info['register']]
         if value is None:
             value = register_info['injected_value']
-        if 'type' in self.targets[target] and \
-                self.targets[target]['type'] == 'CP':
-            self.command(
-                ' '.join([
-                    'arm', 'mrc',
-                    str(self.targets[target]['registers'][register]['CP']),
-                    str(self.targets[target]['registers'][register]['Op1']),
-                    str(self.targets[target]['registers'][register]['CRn']),
-                    str(self.targets[target]['registers'][register]['CRm']),
-                    str(self.targets[target]['registers'][register]['Op2']),
-                    value]),
+        if 'type' in target and target['type'] == 'CP':
+            self.command(' '.join([
+                'arm', 'mrc', str(register['CP']), str(register['Op1']),
+                str(register['CRn']), str(register['CRm']),
+                str(register['Op2']), value]),
                 error_message='Error setting register value')
         else:
-            self.command('reg '+register+' '+value,
+            self.command('reg '+register_name+' '+value,
                          error_message='Error setting register value')

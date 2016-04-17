@@ -100,84 +100,72 @@ class bdi(jtag):
                                log_event, '\r\n', False)
 
     def get_register_value(self, register_info):
-        target = register_info['target']
+        target = self.targets[register_info['target']]
         if 'target_index' in register_info:
             target_index = register_info['target_index']
         else:
             target_index = 0
         if 'register_alias' in register_info:
-            register = register_info['register_alias']
+            register_name = register_info['register_alias']
         else:
-            register = register_info['register']
-        if 'type' in self.targets[target] and \
-                self.targets[target]['type'] == 'memory_mapped':
+            register_name = register_info['register']
+        register = target['registers'][register_info['register']]
+        if 'type' in target and target['type'] == 'memory_mapped':
             command = 'md'
-            if 'bits' in self.targets[target]['registers'][register]:
-                bits = self.targets[target]['registers'][register]['bits']
+            if 'bits' in register:
+                bits = register['bits']
                 if bits == 8:
                     command += 'b'
                 elif bits == 16:
                     command += 'h'
                 elif bits == 64:
                     command += 'd'
-            address = self.targets[target]['base'][target_index] + \
-                self.targets[target]['registers'][register]['offset']
+            address = target['base'][target_index] + register['offset']
             buff = self.command(command+' '+hex(address)+' 1', [':'],
                                 'Error getting register value')
-        elif 'SPR' in self.targets[target]['registers'][register]:
-            buff = self.command(
-                'rdspr ' +
-                str(self.targets[target]['registers'][register]['SPR']),
-                [':'], 'Error getting register value')
-        elif 'PMR' in self.targets[target]['registers'][register]:
-            buff = self.command(
-                'rdpmr ' +
-                str(self.targets[target]['registers'][register]['PMR']),
-                [':'], 'Error getting register value')
+        elif 'SPR' in register:
+            buff = self.command('rdspr ' + str(register['SPR']), [':'],
+                                'Error getting register value')
+        elif 'PMR' in register:
+            buff = self.command('rdpmr ' + str(register['PMR']), [':'],
+                                'Error getting register value')
         else:
-            buff = self.command('rd '+register, [':'],
+            buff = self.command('rd '+register_name, [':'],
                                 'Error getting register value')
         return buff.split('\r')[0].split(':')[1].split()[0]
 
     def set_register_value(self, register_info, value=None):
-        target = register_info['target']
+        target = self.targets[register_info['target']]
         if 'target_index' in register_info:
             target_index = register_info['target_index']
         else:
             target_index = 0
         if 'register_alias' in register_info:
-            register = register_info['register_alias']
+            register_name = register_info['register_alias']
         else:
-            register = register_info['register']
+            register_name = register_info['register']
+        register = target['registers'][register_info['register']]
         if value is None:
             value = register_info['injected_value']
-        if 'type' in self.targets[target] and \
-                self.targets[target]['type'] == 'memory_mapped':
+        if 'type' in target and target['type'] == 'memory_mapped':
             command = 'mm'
-            if 'bits' in self.targets[target]['registers'][register]:
-                bits = self.targets[target]['registers'][register]['bits']
+            if 'bits' in register:
+                bits = register['bits']
                 if bits == 8:
                     command += 'b'
                 elif bits == 16:
                     command += 'h'
                 elif bits == 64:
                     command += 'd'
-            address = self.targets[target]['base'][target_index] + \
-                self.targets[target]['registers'][register]['offset']
+            address = target['base'][target_index] + register['offset']
             self.command(command+' '+hex(address)+' '+value+' 1',
                          error_message='Error getting register value')
-        elif 'SPR' in self.targets[target]['registers'][register]:
-            self.command(
-                'rmspr ' +
-                str(self.targets[target]['registers'][register]['SPR']) +
-                ' '+value,
-                error_message='Error setting register value')
-        elif 'PMR' in self.targets[target]['registers'][register]:
-            self.command(
-                'rmpmr ' +
-                str(self.targets[target]['registers'][register]['PMR']) +
-                ' '+value,
-                error_message='Error setting register value')
+        elif 'SPR' in register:
+            self.command('rmspr '+str(register['SPR'])+' '+value,
+                         error_message='Error setting register value')
+        elif 'PMR' in register:
+            self.command('rmpmr '+str(register['PMR'])+' '+value,
+                         error_message='Error setting register value')
         else:
-            self.command('rm '+register+' '+value,
+            self.command('rm '+register_name+' '+value,
                          error_message='Error setting register value')

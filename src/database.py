@@ -1,5 +1,6 @@
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
+from getpass import getuser
 from psycopg2 import connect, OperationalError
 from psycopg2.extras import DictCursor
 from subprocess import DEVNULL, PIPE, Popen
@@ -78,7 +79,8 @@ class database(object):
             print('cannot simultaneously send commands and redirect stdin, '
                   'ignoring stdin redirect')
         popen_command = []
-        if superuser and self.options.db_superuser_password is None:
+        if superuser and self.options.db_superuser != getuser() and \
+                self.options.db_superuser_password is None:
             print('running "'+executable+'" with sudo, '
                   'password may be required')
             popen_command.extend(['sudo', '-u', self.options.db_superuser])

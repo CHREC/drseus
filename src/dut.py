@@ -174,11 +174,13 @@ class dut(object):
                     if self.db.result:
                         self.db.result['dut_output' if not self.aux
                                        else 'aux_output'] += buff
-                        self.db.update('result')
+                        with self.db as db:
+                            db.update('result')
                     else:
                         self.db.campaign['dut_output' if not self.aux
                                          else 'aux_output'] += buff
-                        self.db.update('campaign')
+                        with self.db as db:
+                            db.update('campaign')
             with self.db as db:
                 db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                              'Flushed serial buffers', buff, success=True)

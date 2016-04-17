@@ -535,30 +535,20 @@ class simics(object):
         return injected_checkpoint
 
     def __inject_checkpoint(self, injection_number, checkpoint, injection=None):
-        """
-        Create a new injected checkpoint and return its path.
-        """
 
         def inject_config(injected_checkpoint, injection):
 
-            def flip_bit(value_to_inject, bit_to_inject):
-                """
-                Flip the bit_to_inject of the binary representation of
-                value_to_inject and return the new value.
-                """
+            def flip_bit(value, bit):
                 num_bits = get_num_bits(
                     injection['register'], injection['target'], self.targets)
-                if bit_to_inject >= num_bits or bit_to_inject < 0:
-                    raise Exception('invalid bit_to_inject: ' +
-                                    str(bit_to_inject)+' for num_bits: ' +
+                if bit >= num_bits or bit < 0:
+                    raise Exception('invalid bit: '+str(bit)+' for num_bits: ' +
                                     str(num_bits))
-                value_to_inject = int(value_to_inject, base=0)
-                binary_list = list(
-                    str(bin(value_to_inject))[2:].zfill(num_bits))
-                binary_list[num_bits-1-bit_to_inject] = (
-                    '1'
-                    if binary_list[num_bits-1-bit_to_inject] == '0'
-                    else '0')
+                if isinstance(value, str):
+                    value = int(value, base=0)
+                binary_list = list(bin(value)[2:].zfill(num_bits))
+                binary_list[num_bits-1-bit] = (
+                    '1' if binary_list[num_bits-1-bit] == '0' else '0')
                 injected_value = int(''.join(binary_list), 2)
                 injected_value = hex(injected_value).rstrip('L')
                 return injected_value
@@ -566,29 +556,29 @@ class simics(object):
         # def inject_config(injected_checkpoint, injection):
             with simics_config(injected_checkpoint) as config:
                 config_object = injection['config_object']
-                if injection['register_alias'] is None:
-                    register = injection['register']
-                else:
+                if 'register_alias' in injection:
                     register = injection['register_alias']
-                register_index = injection['register_index']
+                else:
+                    register = injection['register']
                 gold_value = config.get(config_object, register)
                 if gold_value is None:
-                    raise Exception('error getting rgister value from config')
-                if register_index is None:
+                    raise Exception('error getting register value from config')
+                if 'register_index' in injection:
+                    register_list_ = register_list = gold_value
+                    if 'injected_value' not in injection:
+                        for index in injection['register_index']:
+                            gold_value = gold_value[index]
+                        injected_value = flip_bit(gold_value, injection['bit'])
+                    for index in range(len(injection['register_index'])-1):
+                        register_list_ = \
+                            register_list_[injection['register_index'][index]]
+                    register_list_[injection['register_index'][-1]] = \
+                        injected_value
+                    config.set(config_object, register, register_list)
+                else:
                     if 'injected_value' not in injection:
                         injected_value = flip_bit(gold_value, injection['bit'])
                     config.set(config_object, register, injected_value)
-                else:
-                    register_list_ = register_list = gold_value
-                    if 'injected_value' not in injection:
-                        for index in register_index:
-                            gold_value = gold_value[index]
-                        injected_value = flip_bit(gold_value, injection['bit'])
-                    for index in range(len(register_index)-1):
-                        register_list_ = \
-                            register_list_[register_index[index]]
-                    register_list_[register_index[-1]] = injected_value
-                    config.set(config_object, register, register_list)
                 config.save()
             return gold_value, injected_value
 

@@ -1,5 +1,5 @@
 .box-body .resize {
-    max-height: 1000px;
+    max-height: 500px;
     overflow-y: auto;
 }
 .box-body .resize td .console{

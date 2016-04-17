@@ -94,6 +94,13 @@ for device in ['a9', 'p2020']:
                     else:
                         count = []
 
+                    if register == 'fpgprs':
+                        for i in range(old_register['count'][0]):
+                            old_target['registers']['fpr'+str(i)] = {'alias': {
+                                'register': register, 'register_index': [i]}}
+                        del old_target['registers'][register]
+                        continue
+
                     if other_target is not None and \
                             register not in other_target['registers']:
                         matches = []
@@ -483,9 +490,9 @@ for device in ['a9', 'p2020']:
                                         # print(register, count, match)
                                         break
                                     if reg[-1] == 'ADDRESS' and \
-                                            other_register == \
-                                                register.replace('ADDRESS',
-                                                                 'ADDR'):
+                                        other_register == \
+                                            register.replace('ADDRESS',
+                                                             'ADDR'):
                                         match = (register.replace('ADDRESS',
                                                                   'ADDR'),
                                                  None)
