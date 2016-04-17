@@ -75,21 +75,18 @@ class bdi(jtag):
                      'Error selecting core')
 
     def get_mode(self):
-        msr = int(self.get_register_value({'register': 'MSR',
-                                           'target': 'CPU',
-                                           'target_index': None}), base=16)
+        msr = int(self.get_register_value('msr'), base=16)
         supervisor = not bool(msr & (1 << 14))
         return 'supervisor' if supervisor else 'user'
 
     def set_mode(self, mode='supervisor'):
-        msr = {'register': 'MSR', 'target': 'CPU', 'target_index': None}
-        value = list(bin(int(self.get_register_value(msr), base=16)))
+        msr = list(bin(int(self.get_register_value('msr'), base=16)))
         if mode == 'supervisor':
-            value[-15] = '0'
+            msr[-15] = '0'
         else:
-            value[-15] = '1'
-        value = hex(int(''.join(value), base=2))
-        self.set_register_value(msr, value)
+            msr[-15] = '1'
+        msr = hex(int(''.join(msr), base=2))
+        self.set_register_value('msr', msr)
         with self.db as db:
             db.log_event('Information', 'Debugger', 'Set processor mode',
                          mode, success=True)
@@ -100,6 +97,10 @@ class bdi(jtag):
                                log_event, '\r\n', False)
 
     def get_register_value(self, register_info):
+        if register_info == 'msr':
+            return self.command(
+                'rd msr', [':'], 'Error getting register value'
+            ).split('\r')[0].split(':')[1].split()[0]
         target = self.targets[register_info['target']]
         if 'target_index' in register_info:
             target_index = register_info['target_index']
@@ -135,6 +136,10 @@ class bdi(jtag):
         return buff.split('\r')[0].split(':')[1].split()[0]
 
     def set_register_value(self, register_info, value=None):
+        if register_info == 'msr':
+            self.command('rm msr '+value,
+                         error_message='Error setting register value')
+            return
         target = self.targets[register_info['target']]
         if 'target_index' in register_info:
             target_index = register_info['target_index']

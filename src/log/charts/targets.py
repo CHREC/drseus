@@ -25,7 +25,7 @@ def outcomes(**kwargs):
         'chart': {
             'renderTo': 'targets_chart',
             'type': 'column',
-            'zoomType': 'y'
+            'zoomType': 'xy'
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
@@ -186,7 +186,7 @@ def propagation(**kwargs):
         'chart': {
             'renderTo': 'propagation_chart',
             'type': 'column',
-            'zoomType': 'y'
+            'zoomType': 'xy'
         },
         'colors': ('#77bfc7', '#a74ac7'),
         'credits': {

@@ -18,145 +18,145 @@
             "LAWAR0": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 0
+                    "register_index": [0]
                 }
             },
             "LAWAR1": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 1
+                    "register_index": [1]
                 }
             },
             "LAWAR10": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 10
+                    "register_index": [10]
                 }
             },
             "LAWAR11": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 11
+                    "register_index": [11]
                 }
             },
             "LAWAR2": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 2
+                    "register_index": [2]
                 }
             },
             "LAWAR3": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 3
+                    "register_index": [3]
                 }
             },
             "LAWAR4": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 4
+                    "register_index": [4]
                 }
             },
             "LAWAR5": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 5
+                    "register_index": [5]
                 }
             },
             "LAWAR6": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 6
+                    "register_index": [6]
                 }
             },
             "LAWAR7": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 7
+                    "register_index": [7]
                 }
             },
             "LAWAR8": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 8
+                    "register_index": [8]
                 }
             },
             "LAWAR9": {
                 "alias": {
                     "register": "LAWAR",
-                    "reigster_index": 9
+                    "register_index": [9]
                 }
             },
             "LAWBAR0": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 0
+                    "register_index": [0]
                 }
             },
             "LAWBAR1": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 1
+                    "register_index": [1]
                 }
             },
             "LAWBAR10": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 10
+                    "register_index": [10]
                 }
             },
             "LAWBAR11": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 11
+                    "register_index": [11]
                 }
             },
             "LAWBAR2": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 2
+                    "register_index": [2]
                 }
             },
             "LAWBAR3": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 3
+                    "register_index": [3]
                 }
             },
             "LAWBAR4": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 4
+                    "register_index": [4]
                 }
             },
             "LAWBAR5": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 5
+                    "register_index": [5]
                 }
             },
             "LAWBAR6": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 6
+                    "register_index": [6]
                 }
             },
             "LAWBAR7": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 7
+                    "register_index": [7]
                 }
             },
             "LAWBAR8": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 8
+                    "register_index": [8]
                 }
             },
             "LAWBAR9": {
                 "alias": {
                     "register": "LAWBAR",
-                    "reigster_index": 9
+                    "register_index": [9]
                 }
             }
         }

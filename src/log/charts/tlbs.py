@@ -137,7 +137,7 @@ def fields(**kwargs):
         'chart': {
             'renderTo': 'tlb_fields_chart',
             'type': 'column',
-            'zoomType': 'y'
+            'zoomType': 'xy'
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],

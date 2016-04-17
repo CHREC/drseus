@@ -249,7 +249,7 @@ def bits(**kwargs):
         'chart': {
             'renderTo': 'register_bits_chart',
             'type': 'column',
-            'zoomType': 'y'
+            'zoomType': 'xy'
         },
         'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
                    for outcome in outcomes],
