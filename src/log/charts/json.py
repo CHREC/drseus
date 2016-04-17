@@ -144,12 +144,12 @@ def target_bits_chart(campaign):
 
 
 def results_charts(results, group_categories):
-    charts = (other.overview, targets.outcomes, targets.propagation,
-              targets.execution_time, targets.data_diff, registers.outcomes,
-              registers.fields, registers.bits, registers.access, tlbs.outcomes,
-              tlbs.fields, times.execution_times, times.outcomes,
-              times.data_diff, checkpoints.outcomes, checkpoints.data_diff,
-              other.num_injections)
+    charts = (other.overview, targets.outcomes, targets.indices,
+              targets.propagation, targets.execution_time, targets.data_diff,
+              registers.outcomes, registers.fields, registers.bits,
+              registers.access, tlbs.outcomes, tlbs.fields,
+              times.execution_times, times.outcomes, times.data_diff,
+              checkpoints.outcomes, checkpoints.data_diff, other.num_injections)
     injections = models.injection.objects.filter(
         result_id__in=results.values('id'))
     if group_categories:
@@ -189,8 +189,9 @@ def results_charts(results, group_categories):
 
 
 def injections_charts(injections):
-    charts = (other.overview, targets.outcomes, registers.outcomes,
-              registers.fields, registers.bits, registers.access)
+    charts = (other.overview, targets.outcomes, targets.indices,
+              registers.outcomes, registers.fields, registers.bits,
+              registers.access)
     results = models.result.objects.filter(
         id__in=injections.values('result_id'))
     outcomes = list(injections.values_list(

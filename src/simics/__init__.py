@@ -544,8 +544,7 @@ class simics(object):
                 if bit >= num_bits or bit < 0:
                     raise Exception('invalid bit: '+str(bit)+' for num_bits: ' +
                                     str(num_bits))
-                if isinstance(value, str):
-                    value = int(value, base=0)
+                value = int(value, base=0)
                 binary_list = list(bin(value)[2:].zfill(num_bits))
                 binary_list[num_bits-1-bit] = (
                     '1' if binary_list[num_bits-1-bit] == '0' else '0')

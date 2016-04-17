@@ -670,7 +670,7 @@ for device in ['a9', 'p2020']:
                             print('* partial register:', register,
                                   'in target:', target)
                     elif key == 'count' and old_type == 'simics' and \
-                            other_target is None:
+                            other_register is None:
                         merged_register[key] = old_register[key]
                     elif key == 'is_tlb':
                         pass
