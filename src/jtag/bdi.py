@@ -71,8 +71,7 @@ class bdi(jtag):
         super().continue_dut('go 0 1')
 
     def select_core(self, core):
-        self.command('select '+str(core), ['Target CPU', 'Core state',
-                                           'Debug entry cause'],
+        self.command('select '+str(core), ['Target CPU', 'Core state'],
                      'Error selecting core')
 
     def get_mode(self):
