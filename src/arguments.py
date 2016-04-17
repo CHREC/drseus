@@ -6,7 +6,7 @@ parser = ArgumentParser(
     fromfile_prefix_chars='@',
     epilog='Begin by creating a new campaign with "%(prog)s new APPLICATION". '
            'Then run injections with "%(prog)s inject".')
-parser.convert_arg_line_to_args = lambda line: line.split()
+# parser.convert_arg_line_to_args = lambda line: line.split()
 parser.add_argument(
     '-C', '--campaign',
     type=int,
