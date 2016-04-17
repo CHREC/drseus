@@ -12,8 +12,7 @@ from time import sleep
 
 from ..dut import dut
 from ..error import DrSEUsError
-from ..targets import (choose_bit, choose_register, choose_target, get_num_bits,
-                       get_targets)
+from ..targets import choose_injection, get_num_bits, get_targets
 from ..timeout import timeout, TimeoutException
 from .config import simics_config
 
@@ -34,14 +33,16 @@ class simics(object):
         self.options = options
         if database.campaign['architecture'] == 'p2020':
             self.board = 'p2020rdb'
-            self.targets = get_targets('p2020', 'simics')
+            if options.command == 'inject':
+                self.targets = get_targets('p2020', 'simics',
+                                           options.selected_targets,
+                                           options.selected_registers)
         elif database.campaign['architecture'] == 'a9':
             self.board = 'a9x2'
-            self.targets = get_targets('a9', 'simics')
-        if options.command == 'inject' and options.selected_targets is not None:
-            for target in options.selected_targets:
-                if target not in self.targets:
-                    raise Exception('invalid injection target: '+target)
+            if options.command == 'inject':
+                self.targets = get_targets('a9', 'simics',
+                                           options.selected_targets,
+                                           options.selected_registers)
 
     def __str__(self):
         string = 'Simics simulation of '+self.board
@@ -538,13 +539,15 @@ class simics(object):
         Create a new injected checkpoint and return its path.
         """
 
-        def inject_config(injected_checkpoint, injection, num_bits):
+        def inject_config(injected_checkpoint, injection):
 
             def flip_bit(value_to_inject, bit_to_inject):
                 """
                 Flip the bit_to_inject of the binary representation of
                 value_to_inject and return the new value.
                 """
+                num_bits = get_num_bits(
+                    injection['register'], injection['target'], self.targets)
                 if bit_to_inject >= num_bits or bit_to_inject < 0:
                     raise Exception('invalid bit_to_inject: ' +
                                     str(bit_to_inject)+' for num_bits: ' +
@@ -560,7 +563,7 @@ class simics(object):
                 injected_value = hex(injected_value).rstrip('L')
                 return injected_value
 
-        # def inject_config(injected_checkpoint, injection, num_bits):
+        # def inject_config(injected_checkpoint, injection):
             with simics_config(injected_checkpoint) as config:
                 config_object = injection['config_object']
                 if injection['register_alias'] is None:
@@ -605,41 +608,27 @@ class simics(object):
                                str(self.db.result['id'])+'/' +
                                str(checkpoint)+'_injected')
         makedirs(injected_checkpoint)
-        # copy gold checkpoint files
         checkpoint_files = listdir(gold_checkpoint)
         for checkpoint_file in checkpoint_files:
             copyfile(gold_checkpoint+'/'+checkpoint_file,
                      injected_checkpoint+'/'+checkpoint_file)
         if injection is None:
-            target, target_index = \
-                choose_target(self.options.selected_targets, self.targets)
-            register, register_index, register_alias = \
-                choose_register(target, self.targets)
-            bit, field = choose_bit(register, register_index, target,
-                                    self.targets)
-            num_bits = get_num_bits(register, target, self.targets)
+            injection = choose_injection(self.targets,
+                                         self.options.selected_target_indices)
             config_object = ('DUT_'+self.board+'.' +
-                             self.targets[target]['object'])
-            if target_index is not None:
-                config_object += '['+str(target_index)+']'
-            injection = {'bit': bit,
-                         'checkpoint': checkpoint,
-                         'config_object': config_object,
-                         'field': field,
-                         'register': register,
-                         'register_alias': register_alias,
-                         'register_index': register_index,
-                         'result_id': self.db.result['id'],
-                         'success': False,
-                         'target': target,
-                         'target_index': target_index,
-                         'timestamp': None}
+                             self.targets[injection['target']]['object'])
+            if injection['target_index'] is not None:
+                config_object += '['+str(injection['target_index'])+']'
+            injection.update({'checkpoint': checkpoint,
+                              'config_object': config_object,
+                              'result_id': self.db.result['id'],
+                              'success': False,
+                              'timestamp': None})
             with self.db as db:
                 db.insert('injection', injection)
             try:
-                # perform fault injection
                 injection['gold_value'], injection['injected_value'] = \
-                    inject_config(injected_checkpoint, injection, num_bits)
+                    inject_config(injected_checkpoint, injection)
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except:
@@ -666,8 +655,7 @@ class simics(object):
                 print(colored('injected value: ' +
                               injection['injected_value'], 'magenta'))
         else:
-            num_bits = get_num_bits(injection['register'], target, self.targets)
-            inject_config(injected_checkpoint, injection, num_bits)
+            inject_config(injected_checkpoint, injection)
         return injected_checkpoint.replace('simics-workspace/', '')
 
     def __compare_checkpoints(self, checkpoint, last_checkpoint):

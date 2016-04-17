@@ -19,7 +19,7 @@
 
 from json import dump, load
 from os.path import abspath, dirname, join
-from random import randrange
+from random import choice, randrange
 
 directory = dirname(abspath(__file__))
 
@@ -89,13 +89,68 @@ def calculate_target_bits(targets):
         targets[target]['total_bits'] = total_bits
 
 
-def get_targets(architecture, type_):
+def get_targets(architecture, type_, selected_targets, selected_registers):
     targets = load_targets('', architecture)
     targets_info = targets[type_]
     targets = targets['targets']
+    if selected_targets is not None:
+        temp = selected_targets
+        selected_targets = []
+        for target in temp:
+            selected_targets.append(target.lower())
+        invalid_targets = []
+        for selected_target in selected_targets:
+            for target in targets:
+                if target.lower() == selected_target:
+                    break
+            else:
+                invalid_targets.append(selected_target)
+        if invalid_targets:
+            raise Exception('invalid selected targets: ' +
+                            ', '.join(invalid_targets))
+        if 'unused_targets' not in targets_info:
+            targets_info['unused_targets'] = []
+        for target in targets:
+            if target not in targets_info['unused_targets'] and \
+                    target.lower() not in selected_targets:
+                targets_info['unused_targets'].append(target)
     if 'unused_targets' in targets_info:
         for target in targets_info['unused_targets']:
             del targets[target]
+            if target in targets_info['targets']:
+                del targets_info['targets'][target]
+    if selected_registers is not None:
+        temp = selected_registers
+        selected_registers = []
+        for register in temp:
+            selected_registers.append(register.lower())
+        invalid_registers = []
+        for selected_register in selected_registers:
+            for target in targets:
+                found = False
+                for register in targets[target]['registers']:
+                    if register.lower() == selected_register:
+                        found = True
+                        break
+                if found:
+                    break
+            else:
+                invalid_registers.append(selected_register)
+        if invalid_registers:
+            raise Exception('invalid selected registers: ' +
+                            ', '.join(invalid_registers))
+        if 'unused_targets' not in targets_info:
+            targets_info['unused_targets'] = []
+        for target in targets:
+            if target not in targets_info['targets']:
+                targets_info['targets'][target] = {}
+            if 'unused_registers' not in targets_info['targets'][target]:
+                targets_info['targets'][target]['unused_registers'] = {}
+            for register in targets[target]['registers']:
+                if register.lower() not in selected_registers:
+                    (targets_info['targets'][target]
+                                 ['unused_registers'][register]) = {}
+    empty_targets = []
     for target_name, target in targets.items():
         if target_name in targets_info['targets']:
             target_info = targets_info['targets'][target_name]
@@ -127,90 +182,83 @@ def get_targets(architecture, type_):
             if 'unused_registers' in target_info:
                 del target_info['unused_registers']
             target.update(target_info)
-
+        if len(target['registers']) == 0:
+            empty_targets.append(target_name)
+    for target in empty_targets:
+        del targets[target]
     calculate_target_bits(targets)
+    print(targets)
     return targets
 
 
-def choose_target(selected_targets, targets):
-    """
-    Given a list of targets, randomly choose one and return it.
-    If no list of targets is given, choose from all available targets.
-    Random selection takes into account the number of bits each target contains.
-    """
-    target_to_inject = None
+def choose_injection(targets, selected_target_indices):
+    injection = {}
     target_list = []
     total_bits = 0
     for target in targets:
-        if selected_targets is None or target in selected_targets:
-            bits = targets[target]['total_bits']
-            target_list.append((target, bits))
-            total_bits += bits
+        bits = targets[target]['total_bits']
+        target_list.append((target, bits))
+        total_bits += bits
     random_bit = randrange(total_bits)
     bit_sum = 0
     for target in target_list:
         bit_sum += target[1]
         if random_bit < bit_sum:
-            target_to_inject = target[0]
+            injection['target'] = target[0]
+            target = targets[target[0]]
             break
     else:
         raise Exception('Error choosing injection target')
-    if 'count' in targets[target_to_inject] and \
-            targets[target_to_inject]['count'] > 1:
-        target_index = randrange(targets[target_to_inject]['count'])
+    if 'count' in target and target['count'] > 1:
+        if selected_target_indices is None:
+            injection['target_index'] = randrange(target['count'])
+        else:
+            indices = []
+            for index in range(target['count']):
+                if index in selected_target_indices:
+                    indices.append(index)
+            if indices:
+                injection['target_index'] = choice(indices)
+            else:
+                raise Exception('invalid selected target indices')
     else:
-        target_index = None
-    return target_to_inject, target_index
-
-
-def choose_register(target, targets):
-    """
-    Randomly choose a register from the target and return it.
-    Random selection takes into account the number of bits each register
-    contains.
-    """
-    registers = targets[target]['registers']
+        injection['target_index'] = None
     register_list = []
     total_bits = 0
-    for register in registers:
-        bits = registers[register]['total_bits']
+    for register in target['registers']:
+        bits = target['registers'][register]['total_bits']
         register_list.append((register, bits))
         total_bits += bits
     random_bit = randrange(total_bits)
     bit_sum = 0
-    for reg in register_list:
-        bit_sum += reg[1]
+    for register in register_list:
+        bit_sum += register[1]
         if random_bit < bit_sum:
-            register = reg[0]
+            injection['register'] = register[0]
+            register = target['registers'][register[0]]
             break
     else:
-        raise Exception('Error choosing register for target: '+target)
-    if 'count' in registers[register]:
-        register_index = []
-        for dimension in registers[register]['count']:
+        raise Exception('Error choosing register for target: ' +
+                        injection['target'])
+    if 'count' in register:
+        injection['register_index'] = []
+        for dimension in register['count']:
             index = randrange(dimension)
-            register_index.append(index)
+            injection['register_index'].append(index)
     else:
-        register_index = None
-    if 'alias' in registers[register]:
-        register_alias = registers[register]['alias']['register']
-        if 'register_index' in registers[register]['alias']:
-            register_index = \
-                registers[register]['alias']['register_index']
+        injection['register_index'] = None
+    if 'alias' in register:
+        injection['register_alias'] = register['alias']['register']
+        if 'register_index' in register['alias']:
+            injection['register_index'] = register['alias']['register_index']
     else:
-        register_alias = None
-    return register, register_index, register_alias
-
-
-def choose_bit(register_name, register_index, target, targets):
-    register = targets[target]['registers'][register_name]
-    if 'type' in targets[target] and targets[target]['type'] == 'tlb':
-        fields = register['fields']
-        field_to_inject = None
+        injection['register_alias'] = None
+    if 'type' in target and target['type'] == 'tlb':
+        injection['field'] = None
         fields_list = []
         total_bits = 0
-        for field in fields:
-            bits = fields[field]['bits']
+        for field in register['fields']:
+            bits = register['fields'][field]['bits']
             fields_list.append((field, bits))
             total_bits += bits
         random_bit = randrange(total_bits)
@@ -218,55 +266,47 @@ def choose_bit(register_name, register_index, target, targets):
         for field in fields_list:
             bit_sum += field[1]
             if random_bit < bit_sum:
-                field_to_inject = field[0]
+                injection['field'] = field[0]
+                field = register['fields'][field[0]]
                 break
         else:
             raise Exception('Error choosing TLB field to inject')
-        if 'split' in fields[field_to_inject] and \
-                fields[field_to_inject]['split']:
-            total_bits = (fields[field_to_inject]['bits_h'] +
-                          fields[field_to_inject]['bits_l'])
+        if 'split' in field and field['split']:
+            total_bits = field['bits_h'] + field['bits_l']
             random_bit = randrange(total_bits)
-            if random_bit < fields[field_to_inject]['bits_l']:
-                register_index[-1] = \
-                    fields[field_to_inject]['index_l']
-                start_bit_index = \
-                    fields[field_to_inject]['bit_indicies_l'][0]
-                end_bit_index = \
-                    fields[field_to_inject]['bit_indicies_l'][1]
+            if random_bit < field['bits_l']:
+                injection['register_index'][-1] = field['index_l']
+                start_bit_index = field['bit_indicies_l'][0]
+                end_bit_index = field['bit_indicies_l'][1]
             else:
-                register_index[-1] = \
-                    fields[field_to_inject]['index_h']
-                start_bit_index = \
-                    fields[field_to_inject]['bit_indicies_h'][0]
-                end_bit_index = \
-                    fields[field_to_inject]['bit_indicies_h'][1]
+                injection['register_index'][-1] = field['index_h']
+                start_bit_index = field['bit_indicies_h'][0]
+                end_bit_index = field['bit_indicies_h'][1]
         else:
-            register_index[-1] = fields[field_to_inject]['index']
-            start_bit_index = \
-                fields[field_to_inject]['bit_indicies'][0]
-            end_bit_index = \
-                fields[field_to_inject]['bit_indicies'][1]
-        bit_to_inject = randrange(start_bit_index, end_bit_index+1)
+            injection['register_index'][-1] = field['index']
+            start_bit_index = field['bit_indicies'][0]
+            end_bit_index = field['bit_indicies'][1]
+        injection['bit'] = randrange(start_bit_index, end_bit_index+1)
     else:
         if 'bits' in register:
-            bit_to_inject = randrange(register['bits'])
+            injection['bit'] = randrange(register['bits'])
         else:
-            bit_to_inject = randrange(32)
+            injection['bit'] = randrange(32)
         if 'adjust_bit' in register:
-            bit_to_inject = register['adjust_bit'][bit_to_inject]
+            injection['bit'] = register['adjust_bit'][injection['bit']]
         if 'fields' in register:
             for field in register['fields']:
-                if bit_to_inject in range(field[1][0], field[1][1]+1):
-                    field_to_inject = field[0]
+                if injection['bit'] in range(field[1][0], field[1][1]+1):
+                    injection['field'] = field[0]
                     break
             else:
                 raise Exception('Error finding register field name for '
-                                'target: '+target+', register: '+register_name +
-                                ', bit: '+str(bit_to_inject))
+                                'target: '+injection['target'] +
+                                ', register: '+injection['register'] +
+                                ', bit: '+str(injection['bit']))
         else:
-            field_to_inject = None
-    return bit_to_inject, field_to_inject
+            injection['field'] = None
+    return injection
 
 
 def get_num_bits(register, target, targets):

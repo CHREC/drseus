@@ -90,8 +90,7 @@ class results(Table):
 
     def render_registers(self, record):
         if record is not None:
-            registers = [injection.register_alias if injection.register_alias
-                         else injection.register for injection
+            registers = [injection.register for injection
                          in record.injection_set.all()]
         else:
             return '-'

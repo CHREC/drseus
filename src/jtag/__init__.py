@@ -6,7 +6,7 @@ from time import sleep
 
 from ..dut import dut
 from ..error import DrSEUsError
-from ..targets import choose_bit, choose_register, choose_target
+from ..targets import choose_injection
 
 
 class jtag(object):
@@ -16,11 +16,6 @@ class jtag(object):
         self.timeout = 30
         self.prompts = [bytes(prompt, encoding='utf-8')
                         for prompt in self.prompts]
-        if self.options.command == 'inject' and \
-                self.options.selected_targets is not None:
-            for target in self.options.selected_targets:
-                if target not in self.targets:
-                    raise Exception('invalid injection target: '+target)
 
     def __str__(self):
         string = 'JTAG Debugger at '+self.options.debugger_ip_address
@@ -142,51 +137,40 @@ class jtag(object):
                                            self.db.campaign['execution_time']))
         injections = []
         for injection_time in sorted(injection_times):
-            target, target_index = \
-                choose_target(self.options.selected_targets, self.targets)
-            register, register_index, register_alias = \
-                choose_register(target, self.targets)
-            bit, field = choose_bit(register, register_index, target,
-                                    self.targets)
-            injection = {'bit': bit,
-                         'field': field,
-                         'register': register,
-                         'register_alias': register_alias,
-                         'register_index': register_index,
-                         'result_id': self.db.result['id'],
-                         'success': False,
-                         'target': target,
-                         'target_index': target_index,
-                         'time': injection_time,
-                         'timestamp': None}
+            injection = choose_injection(self.targets,
+                                         self.options.selected_target_indices)
+            injection.update({'result_id': self.db.result['id'],
+                              'success': False,
+                              'time': injection_time,
+                              'timestamp': None})
             with self.db as db:
                 db.insert('injection', injection)
         self.dut.write('./'+self.db.campaign['command']+'\n')
         previous_injection_time = 0
         for injection in injections:
-            if target in ('CPU', 'GPR', 'TLB') or \
-                ('CP' in self.targets[target] and
-                    self.targets[target]['CP']):
+            if injection['target'] in ('CPU', 'GPR', 'TLB') or \
+                ('CP' in self.targets[injection['target']] and
+                    self.targets[injection['target']]['CP']):
                 self.select_core(injection['target_index'])
             sleep(injection['time']-previous_injection_time)
             self.halt_dut()
             previous_injection_time = injection['time']
             injection['processor_mode'] = self.get_mode()
-            if 'access' in (self.targets[target]
+            if 'access' in (self.targets[injection['target']]
                                         ['registers'][injection['register']]):
                 injection['register_access'] = \
-                    self.targets([target]
+                    self.targets([injection['target']]
                                  ['registers'][injection['register']]['access'])
             injection['gold_value'] = \
                 self.get_register_value(injection)
             injection['injected_value'] = hex(
-                int(injection['gold_value'], base=16) ^ (1 << bit))
+                int(injection['gold_value'], base=16) ^ (1 << injection['bit']))
             with self.db as db:
                 db.update('injection', injection)
             if self.options.debug:
                 print(colored('injection time: '+str(injection['time']),
                               'magenta'))
-                print(colored('target: '+target, 'magenta'))
+                print(colored('target: '+injection['target'], 'magenta'))
                 if 'target_index' in injection:
                     print(colored('target_index: ' +
                                   str(injection['target_index']), 'magenta'))

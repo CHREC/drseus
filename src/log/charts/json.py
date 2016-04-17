@@ -85,7 +85,8 @@ def campaigns_chart(queryset):
 
 def target_bits_chart(campaign):
     injection_targets = get_targets(campaign.architecture,
-                                    'simics' if campaign.simics else 'jtag')
+                                    'simics' if campaign.simics else 'jtag',
+                                    None, None)
     target_list = sorted(injection_targets.keys())
     chart = {
         'chart': {

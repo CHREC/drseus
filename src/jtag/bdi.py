@@ -12,7 +12,10 @@ class bdi(jtag):
 
     def __init__(self, database, options):
         self.prompts = ['P2020>']
-        self.targets = get_targets('p2020', 'jtag')
+        if options.command == 'inject':
+            self.targets = get_targets('p2020', 'jtag',
+                                       options.selected_targets,
+                                       options.selected_registers)
         self.port = 23
         super().__init__(database, options)
         self.open()

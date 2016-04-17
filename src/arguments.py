@@ -361,7 +361,20 @@ inject.add_argument(
     nargs='+',
     metavar='TARGET',
     dest='selected_targets',
-    help='list of targets for injection')
+    help='selected targets for injection (case insensitive)')
+inject.add_argument(
+    '-I', '--indices',
+    type=int,
+    nargs='+',
+    metavar='INDEX',
+    dest='selected_target_indices',
+    help='selected target indices/cores for injection')
+inject.add_argument(
+    '-r', '--registers',
+    nargs='+',
+    metavar='REGISTER',
+    dest='selected_registers',
+    help='selected registers for injection (case insensitive)')
 inject.add_argument(
     '-l', '--latent',
     metavar='ITERATIONS',
