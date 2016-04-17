@@ -70,22 +70,31 @@ def overview(**kwargs):
             str(outcome), results.filter(**filter_kwargs).count()))
     outcome_list = dumps(outcomes)
     chart = dumps(chart, indent=4)
-    if not success:
-        chart = chart.replace('\"__click_function__\"', """
-        function(event) {
-            var outcomes = __outcome_list__;
-            var filter;
-            if (window.location.href.indexOf('?') > -1) {
-                filter = window.location.href.replace(/.*\?/g, '&');
-            } else {
-                filter = '';
-            }
-            window.open('results?outcome='+outcomes[this.x]+filter);
+    chart = chart.replace('\"__click_function__\"', """
+    function(event) {
+        var outcomes = __outcome_list__;
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
         }
-        """.replace('\n    ', '\n                        ').replace(
-            '__outcome_list__', outcome_list))
-        if group_categories:
-            chart = chart.replace('?outcome=', '?outcome_category=')
+        var outcome;
+        if (this.series.name == 'True') {
+            outcome = '1';
+        } else if (this.series.name == 'False') {
+            outcome = '0';
+        } else {
+            outcome = outcomes[this.x];
+        }
+        window.open('results?outcome='+outcome+filter);
+    }
+    """.replace('\n    ', '\n                        ').replace(
+        '__outcome_list__', outcome_list))
+    if success:
+        chart = chart.replace('?outcome=', '?injection__success=')
+    elif group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart = chart.replace('\"__format_function__\"', """
     function() {
         var outcomes = __outcome_list__;

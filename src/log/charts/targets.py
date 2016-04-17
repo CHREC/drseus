@@ -89,22 +89,31 @@ def outcomes(**kwargs):
         }
     }
     chart_percent = dumps(chart_percent, indent=4)
-    if not success:
-        chart_percent = chart_percent.replace('\"__click_function__\"', """
-        function(event) {
-            var filter;
-            if (window.location.href.indexOf('?') > -1) {
-                filter = window.location.href.replace(/.*\?/g, '&');
-            } else {
-                filter = '';
-            }
-            window.open('results?outcome='+this.series.name+
-                        '&injection__target='+this.category+filter);
+    chart_percent = chart_percent.replace('\"__click_function__\"', """
+    function(event) {
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
         }
-        """.replace('\n    ', '\n                        '))
-        if group_categories:
-            chart_percent = chart_percent.replace('?outcome=',
-                                                  '?outcome_category=')
+        var outcome;
+        if (this.series.name == 'True') {
+            outcome = '1';
+        } else if (this.series.name == 'False') {
+            outcome = '0';
+        } else {
+            outcome = this.series.name;
+        }
+        window.open('results?outcome='+outcome+
+                    '&injection__target='+this.category+filter);
+    }
+    """.replace('\n    ', '\n                        '))
+    if success:
+        chart_percent = chart_percent.replace('?outcome=',
+                                              '?injection__success=')
+    elif group_categories:
+        chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart_percent)
     if len(outcomes) == 1 and not success:
         chart_log = deepcopy(chart)
@@ -127,21 +136,30 @@ def outcomes(**kwargs):
             chart_log = chart_log.replace('?outcome=', '?outcome_category=')
         chart_data.append(chart_log)
     chart = dumps(chart, indent=4)
-    if not success:
-        chart = chart.replace('\"__click_function__\"', """
-        function(event) {
-            var filter;
-            if (window.location.href.indexOf('?') > -1) {
-                filter = window.location.href.replace(/.*\?/g, '&');
-            } else {
-                filter = '';
-            }
-            window.open('results?outcome='+this.series.name+
-                        '&injection__target='+this.category+filter);
+    chart = chart.replace('\"__click_function__\"', """
+    function(event) {
+        var filter;
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '&');
+        } else {
+            filter = '';
         }
-        """.replace('\n    ', '\n                        '))
-        if group_categories:
-            chart = chart.replace('?outcome=', '?outcome_category=')
+        var outcome;
+        if (this.series.name == 'True') {
+            outcome = '1';
+        } else if (this.series.name == 'False') {
+            outcome = '0';
+        } else {
+            outcome = this.series.name;
+        }
+        window.open('results?outcome='+outcome+
+                    '&injection__target='+this.category+filter);
+    }
+    """.replace('\n    ', '\n                        '))
+    if success:
+        chart = chart.replace('?outcome=', '?injection__success=')
+    elif group_categories:
+        chart = chart.replace('?outcome=', '?outcome_category=')
     chart_data.append(chart)
     chart_list.append({
         'id': 'targets_chart',
