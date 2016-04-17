@@ -171,25 +171,28 @@ class openocd(jtag):
                      error_message='Error selecting core')
 
     def get_mode(self):
-        cpsr = int(self.get_register_value('cpsr', 'CPU', None), base=16)
+        cpsr = int(self.get_register_value({'register': 'cpsr',
+                                            'target': 'CPU',
+                                            'target_index': None}), base=16)
         return self.modes[str(bin(cpsr))[-5:]]
 
     def set_mode(self, mode='svc'):
         modes = {value: key for key, value in self.modes.items()}
         mask = modes[mode]
-        cpsr = int(self.get_register_value('cpsr', 'CPU', None), base=16)
-        self.set_register_value('cpsr', 'CPU', None,
-                                hex(int(str(bin(cpsr))[:-5]+mask, base=2)))
+        cpsr = {'register': 'cpsr', 'target': 'CPU', 'target_index': None}
+        value = self.get_register_value(cpsr)
+        value = hex(int(str(bin(int(value, base=16)))[:-5]+mask, base=2))
+        self.set_register_value(cpsr, value)
         with self.db as db:
             db.log_event('Information', 'Debugger', 'Set processor mode', mode,
                          success=True)
 
-    def get_register_value(self, injection):
-        target = injection['target']
-        if injection['register_alias'] is None:
-            register = injection['register']
+    def get_register_value(self, register_info):
+        target = register_info['target']
+        if register_info['register_alias'] is None:
+            register = register_info['register']
         else:
-            register = injection['register_alias']
+            register = register_info['register_alias']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'CP':
             buff = self.command(
@@ -208,13 +211,14 @@ class openocd(jtag):
             return \
                 buff.split('\n')[1].split(':')[1].split()[0]
 
-    def set_register_value(self, injection):
-        target = injection['target']
-        if injection['register_alias'] is None:
-            register = injection['register']
+    def set_register_value(self, register_info, value=None):
+        target = register_info['target']
+        if register_info['register_alias'] is None:
+            register = register_info['register']
         else:
-            register = injection['register_alias']
-        value = injection['injected_value']
+            register = register_info['register_alias']
+        if value is None:
+            value = register_info['injected_value']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'CP':
             self.command(

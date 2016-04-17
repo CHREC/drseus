@@ -76,19 +76,21 @@ class bdi(jtag):
                      'Error selecting core')
 
     def get_mode(self):
-        msr = int(self.get_register_value('MSR', 'CPU', None), base=16)
+        msr = int(self.get_register_value({'register': 'MSR',
+                                           'target': 'CPU',
+                                           'target_index': None}), base=16)
         supervisor = not bool(msr & (1 << 14))
         return 'supervisor' if supervisor else 'user'
 
     def set_mode(self, mode='supervisor'):
-        msr = list(bin(int(self.get_register_value('MSR', 'CPU', None),
-                           base=16)))
+        msr = {'register': 'MSR', 'target': 'CPU', 'target_index': None}
+        value = list(bin(int(self.get_register_value(msr), base=16)))
         if mode == 'supervisor':
-            msr[-15] = '0'
+            value[-15] = '0'
         else:
-            msr[-15] = '1'
-        msr = ''.join(msr)
-        self.set_register_value('MSR', 'CPU', None, hex(int(msr, base=2)))
+            value[-15] = '1'
+        value = hex(int(''.join(value), base=2))
+        self.set_register_value(msr, value)
         with self.db as db:
             db.log_event('Information', 'Debugger', 'Set processor mode',
                          mode, success=True)
@@ -98,13 +100,13 @@ class bdi(jtag):
         return super().command(command, expected_output, error_message,
                                log_event, '\r\n', False)
 
-    def get_register_value(self, injection):
-        target = injection['target']
-        target_index = injection['target_index']
-        if injection['register_alias'] is None:
-            register = injection['register']
+    def get_register_value(self, register_info):
+        target = register_info['target']
+        target_index = register_info['target_index']
+        if register_info['register_alias'] is None:
+            register = register_info['register']
         else:
-            register = injection['register_alias']
+            register = register_info['register_alias']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'memory_mapped':
             command = 'md'
@@ -135,14 +137,15 @@ class bdi(jtag):
                                 'Error getting register value')
         return buff.split('\r')[0].split(':')[1].split()[0]
 
-    def set_register_value(self, injection):
-        target = injection['target']
-        target_index = injection['target_index']
-        if injection['register_alias'] is None:
-            register = injection['register']
+    def set_register_value(self, register_info, value=None):
+        target = register_info['target']
+        target_index = register_info['target_index']
+        if register_info['register_alias'] is None:
+            register = register_info['register']
         else:
-            register = injection['register_alias']
-        value = injection['injected_value']
+            register = register_info['register_alias']
+        if value is None:
+            value = register_info['injected_value']
         if 'type' in self.targets[target] and \
                 self.targets[target]['type'] == 'memory_mapped':
             command = 'mm'
