@@ -612,6 +612,8 @@ def get_options():
         options.command = 'delete'
     elif options.command == 'r':
         options.command = 'regenerate'
+    elif options.command == 'p':
+        options.command = 'power'
     if system() == 'Darwin' and options.db_superuser == 'postgres':
         options.db_superuser = getuser()
     if options.db_ask:
