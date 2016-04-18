@@ -1,10 +1,4 @@
-from getpass import getuser, getpass
-from platform import system
-from signal import SIGINT
-from subprocess import check_output, Popen
-from time import sleep
-
-from .arguments import get_options
+from .arguments import get_options, parser
 from . import utilities
 
 # TODO: add runtime seconds to inject command
@@ -19,61 +13,36 @@ from . import utilities
 
 def run():
     options = get_options()
-
-    postgresql = None
-    if system() == 'Darwin':
-        if options.db_superuser == 'postgres':
-            options.db_superuser = getuser()
-        for line in check_output(['ps'], universal_newlines=True).split('\n'):
-            if line and line.split()[3] == 'postgres':
-                break
+    missing_args = []
+    campaign = None
+    if options.command in ('inject', 'supervise', 'delete', 'regenerate') and \
+            not (options.command == 'delete' and
+                 options.delete in ('a', 'all')):
+        if not options.campaign_id:
+            campaign = utilities.get_campaign(options)
+            options.campaign_id = campaign['id']
         else:
-            postgresql = Popen(['postgres', '-D', '/usr/local/var/postgres'])
-            sleep(0.1)
-
-    if options.db_ask:
-        options.db_password = getpass(prompt='PostgreSQL password:')
-    if options.db_su_ask:
-        options.db_superuser_password = \
-            getpass(prompt='PostgreSQL superuser password:')
-
-    if options.command == 'new':
-        if options.arguments:
-            options.arguments = ' '.join(options.arguments)
-        if options.aux_arguments:
-            options.aux_arguments = ' '.join(options.aux_arguments)
-    elif options.command in ('inject', 'supervise', 'delete', 'regenerate',
-                             'openocd'):
-        if not (options.command == 'delete' and options.delete in ('a', 'all')):
-            if not options.campaign_id:
-                options.campaign_id = \
-                    utilities.get_campaign(options)['id']
-            if options.command != 'regenerate':
-                options.architecture = \
-                    utilities.get_campaign(options)['architecture']
-
-    if options.command in ('new', 'inject', 'supervise', 'openocd'):
-        if options.architecture == 'p2020':
-            if options.dut_serial_port is None:
-                options.dut_serial_port = '/dev/ttyUSB0'
-            if options.dut_prompt is None:
-                options.dut_prompt = 'root@p2020rdb:~#'
-            if options.aux_serial_port is None:
-                options.aux_serial_port = '/dev/ttyUSB1'
-            if options.aux_prompt is None:
-                options.aux_prompt = 'root@p2020rdb:~#'
-        elif options.architecture == 'a9':
-            if options.dut_serial_port is None:
-                options.dut_serial_port = '/dev/ttyACM0'
-            if options.dut_prompt is None:
-                options.dut_prompt = '[root@ZED]#'
-            if options.aux_serial_port is None:
-                options.aux_serial_port = '/dev/ttyACM1'
-            if options.aux_prompt is None:
-                options.aux_prompt = '[root@ZED]#'
-
+            campaign = utilities.get_campaign(options)
+        if options.command != 'regenerate':
+            options.architecture = campaign['architecture']
+    if options.command in ('new', 'inject', 'supervise'):
+        if (hasattr(options, 'simics') and not options.simics) or \
+                (campaign and not campaign['simics']):
+            # not using simics
+            if not options.dut_serial_port:
+                missing_args.append('--serial')
+            if not options.dut_prompt:
+                missing_args.append('--prompt')
+            if not options.jtag_ip_address and \
+                    (hasattr(options, 'architecture') and
+                        options.architecture == 'p2020') or \
+                    (campaign and campaign['architecture'] == 'p2020'):
+                # using p2020 (not using simics)
+                missing_args.append('--jtag_ip')
+        if options.command == 'supervise' and \
+                options.power_switch_outlet is None:
+            missing_args.append('--power_ip')
+    if missing_args:
+        parser.error('the following arguments are required: ' +
+                     ', '.join(missing_args))
     getattr(utilities, options.func)(options)
-
-    if postgresql is not None:
-        postgresql.send_signal(SIGINT)
-        postgresql.wait(timeout=30)

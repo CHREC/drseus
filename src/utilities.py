@@ -218,8 +218,13 @@ def create_campaign(options):
         if not exists('fiapps'):
             check_call(['git', 'clone',
                         'git@gitlab.hcs.ufl.edu:F4/fiapps.git'])
-        check_call(['make', options.application],
-                   cwd=join(getcwd(), 'fiapps'))
+        if options.application_file:
+            try:
+                check_call(['make', options.application],
+                           cwd=join(getcwd(), 'fiapps'))
+            except Exception as error:
+                if not exists(options.application):
+                    raise error
     else:
         if not exists(options.directory):
             raise Exception('cannot find directory '+options.directory)
@@ -247,14 +252,17 @@ def create_campaign(options):
     campaign = {
         'architecture': options.architecture,
         'aux': options.aux,
-        'aux_command': ((options.aux_application if options.aux_application
-                         else options.application) +
-                        ((' '+options.aux_arguments) if options.aux_arguments
-                         else '')) if options.aux else None,
+        'aux_command': None if not options.aux else (
+            ('./' if options.application_file else '') +
+            (options.aux_application if options.aux_application
+                else options.application) +
+            ((' '+' '.join(options.aux_arguments)) if options.aux_arguments
+                else '')),
         'aux_output': '',
         'aux_output_file': options.aux and options.aux_output_file,
-        'command': options.application+((' '+options.arguments)
-                                        if options.arguments else ''),
+        'command': (
+            ('./' if options.application_file else '') + options.application +
+            ((' '+' '.join(options.arguments)) if options.arguments else '')),
         'debugger_output': '',
         'description': options.description,
         'dut_output': '',
@@ -271,7 +279,6 @@ def create_campaign(options):
     if exists(campaign_directory):
         raise Exception('directory already exists: '
                         'campaign-data/'+str(campaign['id']))
-    options.debug = True
     drseus = fault_injector(campaign, options)
     drseus.setup_campaign()
     print('campaign created')
@@ -315,7 +322,7 @@ def inject_campaign(options):
     else:
         iteration_counter = None
     if not campaign['simics'] and campaign['architecture'] == 'a9' \
-            and options.power:
+            and options.power_switch_ip_address:
         switch = power_switch(options)
     else:
         switch = None
@@ -397,47 +404,6 @@ def update_dependencies(none=None):
         for campaign in listdir('simics-workspace/gold-checkpoints'):
             __update_checkpoint_dependencies(campaign)
         print('done')
-
-
-# def merge_campaigns(options):
-#     with database() as db, database(campaign={'id': '*'},
-#                                     database_file=options.directory +
-#                                     '/campaign-data/db.sqlite3') as db_new:
-#         for new_campaign in db_new.get_campaign():
-#             print('merging campaign: \"'+options.directory+'/' +
-#                   new_campaign['command']+'\"')
-#             db_new.campaign['id'] = new_campaign['id']
-#             db.insert('campaign', new_campaign)
-#             if exists(options.directory+'/campaign-data/' +
-#                       str(db_new.campaign['id'])):
-#                 print('\tcopying campaign data...', end='')
-#                 copytree(options.directory+'/campaign-data/' +
-#                          str(db_new.campaign['id']),
-#                          'campaign-data/'+str(new_campaign['id']))
-#                 print('done')
-#             if exists(options.directory +
-#                       '/simics-workspace/gold-checkpoints/' +
-#                       str(db_new.campaign['id'])):
-#                 print('\tcopying gold checkpoints...', end='')
-#                 copytree(options.directory+'/simics-workspace/'
-#                          'gold-checkpoints/'+str(db_new.campaign['id']),
-#                          'simics-workspace/gold-checkpoints/' +
-#                          str(new_campaign['id']))
-#                 print('done')
-#                 print('\tupdating checkpoint dependency paths...', end='')
-#                 stdout.flush()
-#                 __update_checkpoint_dependencies(new_campaign['id'])
-#                 print('done')
-#             print('\tcopying results...', end='')
-#             for new_result in db_new.get_result():
-#                 db_new.result['id'] = new_result['id']
-#                 db.insert('result', new_result)
-#                 for table in ['injection', 'simics_register_diff',
-#                               'simics_memory_diff']:
-#                     for new_item in db_new.get_item(table):
-#                         new_item['result_id'] = new_result['id']
-#                         db.insert(table, new_item)
-#             print('done')
 
 
 def launch_openocd(options):

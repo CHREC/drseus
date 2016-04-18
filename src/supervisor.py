@@ -22,7 +22,6 @@ from .simics import simics
 #       (remove dut read and dut command)
 class supervisor(Cmd):
     def __init__(self, campaign, options):
-        options.debug = True
         options.injections = 0
         options.latent_iterations = 0
         options.compare_all = False

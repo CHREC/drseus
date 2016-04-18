@@ -1,0 +1,11 @@
+@conf/p2020
+new
+ppc_fi_2d_conv_fft_omp
+--args
+lena.bmp out.bmp
+--files
+lena.bmp
+--output
+out.bmp
+--arch
+p2020

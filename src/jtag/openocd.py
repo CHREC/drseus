@@ -12,22 +12,19 @@ from . import jtag
 
 
 def find_ftdi_serials():
-    debuggers = Context().list_devices(ID_VENDOR_ID='0403',
-                                       ID_MODEL_ID='6014')
-    serials = []
-    for debugger in debuggers:
-        if 'DEVLINKS' not in debugger:
-            serials.append(debugger['ID_SERIAL_SHORT'])
-    return serials
+    return list(
+        {dev['ID_SERIAL_SHORT']
+         for dev in Context().list_devices(ID_VENDOR_ID='0403')
+         if 'DEVLINKS' not in dev} &
+        {dev['ID_SERIAL_SHORT']
+         for dev in Context().list_devices(ID_MODEL_ID='6014')
+         if 'DEVLINKS' not in dev})
 
 
 def find_uart_serials():
-    uarts = Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
-    serials = {}
-    for uart in uarts:
-        if 'DEVLINKS' in uart:
-            serials[uart['DEVNAME']] = uart['ID_SERIAL_SHORT']
-    return serials
+    return {dev['DEVNAME']: dev['ID_SERIAL_SHORT'] for dev in
+            Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
+            if 'DEVLINKS' in dev}
 
 
 class openocd(jtag):

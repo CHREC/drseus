@@ -1,25 +1,25 @@
 from argparse import ArgumentParser, REMAINDER
+from getpass import getuser, getpass
+from platform import system
 
 parser = ArgumentParser(
     description='The Dynamic Robust Single Event Upset Simulator '
                 'was created by Ed Carlisle IV',
     fromfile_prefix_chars='@',
-    epilog='Begin by creating a new campaign with "%(prog)s new APPLICATION". '
-           'Then run injections with "%(prog)s inject".')
+    epilog='Create a new campaign with sample configuration: '
+           '"%(prog)s @conf/new/p2020". '
+           'Then run injections with sample configuration: '
+           '"%(prog)s @conf/p2020 inject".')
 # parser.convert_arg_line_to_args = lambda line: line.split()
 parser.add_argument(
-    '-C', '--campaign',
+    '-c', '--campaign',
     type=int,
     metavar='ID',
     dest='campaign_id',
     default=0,
     help='campaign to use, defaults to last campaign created')
 parser.add_argument(
-    '-D', '--debug',
-    action='store_true',
-    help='display device output when performing injections')
-parser.add_argument(
-    '-T', '--timeout',
+    '--timeout',
     type=int,
     metavar='SECONDS',
     default=300,
@@ -35,9 +35,10 @@ parser.add_argument(
     dest='rsa',
     help='use username/password for SCP authentication instead of RSA key')
 parser.add_argument(
-    '-E', '--error_msg',
+    '--error_msg',
     nargs='+',
     dest='error_messages',
+    metavar='MSG',
     default=[],
     help='error messages to check for in device console output')
 
@@ -46,8 +47,7 @@ dut_settings.add_argument(
     '--serial',
     metavar='PORT',
     dest='dut_serial_port',
-    help='DUT serial port [p2020 default=/dev/ttyUSB0] '
-         '[a9 default=/dev/ttyACM0] (overridden by Simics)')
+    help='DUT serial port (overridden by Simics)')
 dut_settings.add_argument(
     '--baud',
     type=int,
@@ -71,8 +71,7 @@ dut_settings.add_argument(
     '--prompt',
     metavar='PROMPT',
     dest='dut_prompt',
-    help='DUT console prompt [p2020 default=root@p2020rdb:~#] '
-         '[a9 default=[root@ZED]#] (overridden by Simics)')
+    help='DUT console prompt (overridden by Simics)')
 dut_settings.add_argument(
     '--user',
     metavar='USERNAME',
@@ -103,8 +102,7 @@ aux_settings.add_argument(
     '--aux_serial',
     metavar='PORT',
     dest='aux_serial_port',
-    help='AUX serial port [p2020 default=/dev/ttyUSB1] '
-         '[a9 default=/dev/ttyACM0] (overridden by Simics)')
+    help='AUX serial port (overridden by Simics)')
 aux_settings.add_argument(
     '--aux_baud',
     type=int,
@@ -128,8 +126,7 @@ aux_settings.add_argument(
     '--aux_prompt',
     metavar='PROMPT',
     dest='aux_prompt',
-    help='AUX console prompt [p2020 default=root@p2020rdb:~#] '
-         '[a9 default=[root@ZED]#] (overridden by Simics)')
+    help='AUX console prompt (overridden by Simics)')
 aux_settings.add_argument(
     '--aux_user',
     metavar='USERNAME',
@@ -160,9 +157,7 @@ debugger_settings.add_argument(
     '--jtag_ip',
     metavar='ADDRESS',
     dest='debugger_ip_address',
-    default='10.42.0.50',
-    help='debugger ip address [default=10.42.0.50] '
-         '(ignored by Simics and ZedBoards)')
+    help='debugger ip address (ignored by Simics and ZedBoards)')
 debugger_settings.add_argument(
     '--no_jtag',
     action='store_false',
@@ -227,8 +222,7 @@ power_settings.add_argument(
     '--power_ip',
     metavar='ADDRESS',
     dest='power_switch_ip_address',
-    default='10.42.0.60',
-    help='IP address for web power switch [default=10.42.0.60]')
+    help='IP address for web power switch')
 power_settings.add_argument(
     '--power_user',
     metavar='USER',
@@ -241,11 +235,6 @@ power_settings.add_argument(
     dest='power_switch_password',
     default='chrec',
     help='password for web power switch [default=chrec]')
-power_settings.add_argument(
-    '--no_power',
-    action='store_false',
-    dest='power',
-    help='do not use web power switch to power cycle devices')
 
 subparsers = parser.add_subparsers(
     title='commands',
@@ -262,17 +251,21 @@ new_campaign.add_argument(
     metavar='APPLICATION',
     help='application to run on device')
 new_campaign.add_argument(
+    '--no_app_file',
+    action='store_false',
+    dest='application_file',
+    help='do not send application file')
+new_campaign.add_argument(
     '-D', '--descr',
     metavar='DESCRIPTION',
     dest='description',
     help='campaign description')
 new_campaign.add_argument(
-    '-A', '--arch',
+    '-r', '--arch',
     metavar='ARCHITECTURE',
-    choices=['a9', 'p2020'],
     dest='architecture',
-    default='p2020',
-    help='target architecture [default=p2020]')
+    required=True,
+    help='target architecture')
 new_campaign.add_argument(
     '-t', '--timing',
     type=int,
@@ -280,7 +273,7 @@ new_campaign.add_argument(
     default=5,
     help='number of timing iterations to run [default=5]')
 new_campaign.add_argument(
-    '-a', '--args',
+    '-A', '--args',
     nargs='+',
     metavar='ARGUMENT',
     dest='arguments',
@@ -298,8 +291,8 @@ new_campaign.add_argument(
 new_campaign.add_argument(
     '-o', '--output',
     dest='output_file',
-    default='result.dat',
-    help='target application output file [default=result.dat]')
+    default='',
+    help='target application output file')
 new_campaign.add_argument(
     '-x', '--aux',
     action='store_true',
@@ -329,17 +322,21 @@ new_campaign.add_argument(
     '-k', '--kill_dut',
     action='store_true',
     help='send ctrl-c to DUT after auxiliary device completes execution')
-new_campaign.add_argument('-s', '--simics', action='store_true',
-                          dest='simics', help='use Simics simulator')
+new_campaign.add_argument(
+    '-s', '--simics',
+    action='store_true',
+    dest='simics',
+    help='use Simics simulation')
 new_simics_campaign = new_campaign.add_argument_group(
-    'Simics campaigns', 'Additional options for Simics campaigns only')
+    'Simics campaigns',
+    'Additional options for Simics campaigns only')
 new_simics_campaign.add_argument(
     '-c', '--checkpoints',
     type=int,
     metavar='CHECKPOINTS',
-    default=50,
+    default=1000,
     help='number of gold checkpoints to target for creation '
-         '(actual number of checkpoints may be different) [default=50]')
+         '(actual number of checkpoints may be different) [default=1000]')
 new_campaign.set_defaults(func='create_campaign')
 
 inject = subparsers.add_parser(
@@ -347,6 +344,10 @@ inject = subparsers.add_parser(
     help='perform fault injections on a campaign',
     description='perform fault injections on a campaign '
                 '(interrupt with ctrl-c)')
+inject.add_argument(
+    '-d', '--debug',
+    action='store_true',
+    help='display device output and injection information')
 inject.add_argument(
     '-n', '--iterations',
     type=int,
@@ -391,7 +392,8 @@ inject.add_argument(
     help='number of injections to perform in parallel '
          '(only supported for ZedBoards and Simics)')
 inject_simics = inject.add_argument_group(
-    'Simics campaigns', 'Additional options for Simics campaigns only')
+    'Simics campaigns',
+    'Additional options for Simics campaigns only')
 inject_simics.add_argument(
     '-a', '--compare_all',
     action='store_true',
@@ -426,10 +428,6 @@ supervise.add_argument(
     dest='history_length',
     default=1000,
     help='maximum length for the history file [default=1000]')
-# supervise.add_argument(
-#     '-c', '--capture',
-#     action='store_true',
-#     help='run remote packet capture')
 supervise.set_defaults(func='launch_supervisor')
 
 log_viewer = subparsers.add_parser(
@@ -504,21 +502,11 @@ delete.add_argument(
          'delete selected {campaign, c} and its results, '
          'or delete {all, a} campaigns and results')
 delete.add_argument(
-    '-U', '--no_del_user',
+    '-u', '--no_del_user',
     action='store_false',
     dest='delete_user',
     help='do not delete database user (drseus) when deleting {all, a}')
 delete.set_defaults(func='delete')
-
-# merge = subparsers.add_parser(
-#     'merge', aliases=['m'],
-#     help='merge campaigns',
-#     description='merge campaigns')
-# merge.add_argument(
-#     'directory',
-#     metavar='DIRECTORY',
-#     help='merge campaigns from external DIRECTORY into the local directory')
-# merge.set_defaults(func='merge_campaigns')
 
 openocd = subparsers.add_parser(
     'openocd', aliases=['o'],
@@ -608,6 +596,8 @@ django.set_defaults(func='run_django_command')
 
 def get_options():
     options = parser.parse_args()
+    if not hasattr(options, 'debug'):
+        options.debug = True
     if options.command is None:
         parser.error('no command specified, run with "-h" for help')
     if options.command == 'n':
@@ -622,4 +612,11 @@ def get_options():
         options.command = 'delete'
     elif options.command == 'r':
         options.command = 'regenerate'
+    if system() == 'Darwin' and options.db_superuser == 'postgres':
+        options.db_superuser = getuser()
+    if options.db_ask:
+        options.db_password = getpass(prompt='PostgreSQL password:')
+    if options.db_su_ask:
+        options.db_superuser_password = \
+            getpass(prompt='PostgreSQL superuser password:')
     return options

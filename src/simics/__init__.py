@@ -376,13 +376,13 @@ class simics(object):
                                  self.db.campaign['aux_command'])
                 aux_process = Thread(
                     target=self.aux.command,
-                    kwargs={'command': './'+self.db.campaign['aux_command'],
+                    kwargs={'command': self.db.campaign['aux_command'],
                             'flush': False})
                 aux_process.start()
             with self.db as db:
                 db.log_event('Information', 'DUT', 'Command',
                              self.db.campaign['command'])
-            self.dut.write('./'+self.db.campaign['command']+'\n')
+            self.dut.write(self.db.campaign['command']+'\n')
             read_thread = Thread(target=self.dut.read_until,
                                  kwargs={'flush': False})
             read_thread.start()
@@ -426,12 +426,12 @@ class simics(object):
             if self.db.campaign['aux']:
                 aux_process = Thread(
                     target=self.aux.command,
-                    kwargs={'command': './'+self.db.campaign['aux_command'],
+                    kwargs={'command': self.db.campaign['aux_command'],
                             'flush': False})
                 aux_process.start()
             dut_process = Thread(
                 target=self.dut.command,
-                kwargs={'command': './'+self.db.campaign['command'],
+                kwargs={'command': self.db.campaign['command'],
                         'flush': False})
             dut_process.start()
             if self.db.campaign['aux']:

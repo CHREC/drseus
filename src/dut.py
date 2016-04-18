@@ -60,7 +60,8 @@ class dut(object):
             else options.aux_ip_address
         self.scp_port = options.dut_scp_port if not aux \
             else options.aux_scp_port
-        self.prompt = options.dut_prompt if not aux else options.aux_prompt
+        self.prompt = (options.dut_prompt if not aux or not options.aux_prompt
+                       else options.aux_prompt)
         self.prompt += ' '
         self.username = options.dut_username if not aux \
             else options.aux_username
@@ -74,7 +75,7 @@ class dut(object):
         self.login_command = options.dut_login if not aux \
             else options.aux_login
         for message in reversed(options.error_messages):
-            self.error_messages.inset(0, (message, message))
+            self.error_messages.insert(0, (message, message))
         self.open()
 
     def __str__(self):
@@ -224,18 +225,22 @@ class dut(object):
                 for item in listdir(location):
                     files.append(location+item)
             else:
-                files.append(self.options.directory+'/' +
-                             (self.options.aux_application if self.aux
-                              else self.options.application))
+                if self.options.application_file:
+                    files.append(self.options.directory+'/' +
+                                 (self.options.aux_application if self.aux
+                                  else self.options.application))
                 if self.options.files:
                     for file_ in self.options.files:
                         files.append(self.options.directory+'/'+file_)
                 makedirs(location)
                 for file_ in files:
                     copy(file_, location)
-            if hasattr(self.options, 'local_diff') and self.options.local_diff:
+            if hasattr(self.options, 'local_diff') and \
+                    self.options.local_diff and self.db.campaign['output_file']:
                 files.append('campaign-data/'+str(self.db.campaign['id']) +
                              '/gold_'+self.db.campaign['output_file'])
+        if not files:
+            return
         if self.options.debug:
             print(colored('sending file(s)...', 'blue'), end='')
             stdout.flush()

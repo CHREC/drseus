@@ -112,12 +112,12 @@ class jtag(object):
             if self.db.campaign['aux']:
                 aux_process = Thread(
                     target=self.aux.command,
-                    kwargs={'command': './'+self.db.campaign['aux_command'],
+                    kwargs={'command': self.db.campaign['aux_command'],
                             'flush': False})
                 aux_process.start()
             dut_process = Thread(
                 target=self.dut.command,
-                kwargs={'command': './'+self.db.campaign['command'],
+                kwargs={'command': self.db.campaign['command'],
                         'flush': False})
             dut_process.start()
             if self.db.campaign['aux']:
@@ -146,7 +146,7 @@ class jtag(object):
             injections.append(injection)
             with self.db as db:
                 db.insert('injection', injection)
-        self.dut.write('./'+self.db.campaign['command']+'\n')
+        self.dut.write(self.db.campaign['command']+'\n')
         previous_injection_time = 0
         for injection in injections:
             if injection['target'] in ('CPU', 'GPR', 'TLB') or \

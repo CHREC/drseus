@@ -12,7 +12,7 @@ def campaigns_chart(queryset):
     campaigns = list(queryset.values_list('campaign_id', flat=True).distinct(
         ).order_by('campaign_id'))
     if len(campaigns) < 1:
-        return '[]'
+        return None
     outcomes = list(queryset.values_list(
         'outcome_category', flat=True).distinct().order_by('outcome_category'))
     if 'No error' in outcomes:
@@ -84,6 +84,8 @@ def campaigns_chart(queryset):
 
 
 def target_bits_chart(campaign):
+    if campaign.architecture not in ['a9', 'p2020']:
+        return None
     injection_targets = get_targets(campaign.architecture,
                                     'simics' if campaign.simics else 'jtag',
                                     None, None)

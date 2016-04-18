@@ -1,0 +1,5 @@
+@conf/tegra
+new
+--arch
+tegra
+--no_app_file

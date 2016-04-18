@@ -51,5 +51,5 @@ class dummy(jtag):
         pass
 
     def inject_faults(self):
-        self.dut.write('./'+self.db.campaign['command']+'\n')
+        self.dut.write(self.db.campaign['command']+'\n')
         return None, None

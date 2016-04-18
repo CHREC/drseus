@@ -16,14 +16,14 @@ class fault_injector(object):
     def __init__(self, campaign, options, power_switch=None):
         self.options = options
         self.db = database(options, campaign, options.command != 'new')
-        if campaign['simics']:
+        if campaign['simics'] and campaign['architecture'] in ['a9', 'p2020']:
             self.debugger = simics(self.db, options)
-        elif not options.jtag:
-            self.debugger = dummy(self.db, options, power_switch)
-        elif campaign['architecture'] == 'p2020':
-            self.debugger = bdi(self.db, options)
-        elif campaign['architecture'] == 'a9':
+        elif options.jtag and campaign['architecture'] == 'a9':
             self.debugger = openocd(self.db, options, power_switch)
+        elif options.jtag and campaign['architecture'] == 'p2020':
+            self.debugger = bdi(self.db, options)
+        else:
+            self.debugger = dummy(self.db, options, power_switch)
         if campaign['aux'] and not campaign['simics']:
             self.debugger.aux.write('\x03')
             self.debugger.aux.do_login()
@@ -237,8 +237,7 @@ class fault_injector(object):
                 with self.db as db:
                     db.log_event('Information', 'AUX', 'Command',
                                  self.db.campaign['aux_command'])
-                self.debugger.aux.write(
-                    './'+self.db.campaign['aux_command']+'\n')
+                self.debugger.aux.write(self.db.campaign['aux_command']+'\n')
             return True
 
         def continue_dut():
@@ -280,9 +279,9 @@ class fault_injector(object):
                                      self.db.campaign['command'])
                     if self.db.campaign['aux']:
                         self.debugger.aux.write(
-                            './'+self.db.campaign['aux_command']+'\n')
+                            self.db.campaign['aux_command']+'\n')
                     self.debugger.dut.write(
-                        './'+self.db.campaign['command']+'\n')
+                        self.db.campaign['command']+'\n')
                     outcome_category = self.db.result['outcome_category']
                     outcome = self.db.result['outcome']
                     self.__monitor_execution()

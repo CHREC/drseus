@@ -1,0 +1,10 @@
+--serial
+/dev/ttyUSB0
+--prompt
+ubuntu@tegra-ubuntu:~$
+--user
+ubuntu
+--pass
+ubuntu
+--no_rsa
+--no_jtag

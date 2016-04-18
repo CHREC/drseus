@@ -1,0 +1,8 @@
+--serial
+/dev/ttyACM0
+--prompt
+[root@ZED]#
+--aux_serial
+/dev/ttyACM1
+--power_ip
+10.42.0.60
