@@ -33,7 +33,7 @@ def run():
                 missing_args.append('--serial')
             if not options.dut_prompt:
                 missing_args.append('--prompt')
-            if not options.jtag_ip_address and \
+            if not options.debugger_ip_address and \
                     (hasattr(options, 'architecture') and
                         options.architecture == 'p2020') or \
                     (campaign and campaign['architecture'] == 'p2020'):
