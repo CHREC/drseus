@@ -345,7 +345,8 @@ new_campaign.set_defaults(func='create_campaign')
 inject = subparsers.add_parser(
     'inject', aliases=['i'],
     help='perform fault injections on a campaign',
-    description='perform fault injections on a campaign')
+    description='perform fault injections on a campaign '
+                '(interrupt with ctrl-c)')
 inject.add_argument(
     '-n', '--iterations',
     type=int,
@@ -363,7 +364,7 @@ inject.add_argument(
     dest='selected_targets',
     help='selected targets for injection (case insensitive)')
 inject.add_argument(
-    '-I', '--indices',
+    '-T', '--target_index',
     type=int,
     nargs='+',
     metavar='INDEX',

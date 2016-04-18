@@ -188,58 +188,64 @@ class supervisor(Cmd):
         if not isinstance(self.drseus.debugger, jtag) and \
                 not isinstance(self.drseus.debugger, simics):
             print('injections not supported without debugger')
-        else:
+            return
+        if '-h' in arg.split() or '--help' in arg.split():
+            return self.help_inject()
+        try:
             options = inject.parse_args(arg.split())
-            self.drseus.options.iterations = options.iterations
-            self.drseus.options.injections = options.injections
-            self.drseus.options.selected_targets = options.selected_targets
-            self.drseus.options.selected_target_indices = \
-                options.selected_target_indices
-            self.drseus.options.selected_registers = options.selected_registers
-            self.drseus.options.latent_iterations = options.latent_iterations
-            self.drseus.options.processes = options.processes
-            self.drseus.options.compare_all = options.compare_all
-            self.drseus.options.extract_blocks = options.extract_blocks
-            if options.iterations is None:
-                iteration_counter = None
-            else:
-                iteration_counter = Value('L', options.iterations)
-            if self.drseus.db.campaign['simics']:
-                self.drseus.debugger.close()
-            else:
-                self.drseus.debugger.dut.flush()
-            self.drseus.db.result.update({'outcome_category': 'DrSEUs',
-                                          'outcome': 'Pre-inject'})
+        except:
+            return
+        self.drseus.options.iterations = options.iterations
+        self.drseus.options.injections = options.injections
+        self.drseus.options.selected_targets = options.selected_targets
+        self.drseus.options.selected_target_indices = \
+            options.selected_target_indices
+        self.drseus.options.selected_registers = options.selected_registers
+        self.drseus.options.latent_iterations = options.latent_iterations
+        self.drseus.options.processes = options.processes
+        self.drseus.options.compare_all = options.compare_all
+        self.drseus.options.extract_blocks = options.extract_blocks
+        if options.iterations is None:
+            iteration_counter = None
+        else:
+            iteration_counter = Value('L', options.iterations)
+        if self.drseus.db.campaign['simics']:
+            self.drseus.debugger.close()
+        else:
+            self.drseus.debugger.dut.flush()
+        self.drseus.db.result.update({'outcome_category': 'DrSEUs',
+                                      'outcome': 'Pre-inject'})
+        with self.drseus.db as db:
+            db.log_result()
+        try:
+            self.drseus.inject_campaign(iteration_counter)
+        except KeyboardInterrupt:
+            with self.drseus.db as db:
+                db.log_event('Information', 'User', 'Interrupted',
+                             db.log_exception)
+            self.drseus.debugger.close()
+            self.drseus.db.result.update({'outcome_category': 'Incomplete',
+                                          'outcome': 'Interrupted'})
             with self.drseus.db as db:
                 db.log_result()
-            try:
-                self.drseus.inject_campaign(iteration_counter)
-            except KeyboardInterrupt:
-                with self.drseus.db as db:
-                    db.log_event('Information', 'User', 'Interrupted',
-                                 db.log_exception)
-                self.drseus.debugger.close()
-                self.drseus.db.result.update({'outcome_category': 'Incomplete',
-                                              'outcome': 'Interrupted'})
-                with self.drseus.db as db:
-                    db.log_result()
-            except:
-                print_exc()
-                with self.drseus.db as db:
-                    db.log_event('Error', 'DrSEUs', 'Exception',
-                                 db.log_exception)
-                self.drseus.debugger.close()
-                self.drseus.db.result.update({'outcome_category': 'Incomplete',
-                                              'outcome': 'Uncaught exception'})
-                with self.drseus.db as db:
-                    db.log_result()
-            if self.drseus.db.campaign['simics']:
-                self.drseus.debugger.launch_simics(
-                    'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
-                    str(self.drseus.db.campaign['checkpoints'])+'_merged')
-                self.drseus.debugger.continue_dut()
+        except:
+            print_exc()
+            with self.drseus.db as db:
+                db.log_event('Error', 'DrSEUs', 'Exception',
+                             db.log_exception)
+            self.drseus.debugger.close()
+            self.drseus.db.result.update({'outcome_category': 'Incomplete',
+                                          'outcome': 'Uncaught exception'})
+            with self.drseus.db as db:
+                db.log_result()
+        if self.drseus.db.campaign['simics']:
+            self.drseus.debugger.launch_simics(
+                'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
+                str(self.drseus.db.campaign['checkpoints'])+'_merged')
+            self.drseus.debugger.continue_dut()
 
     def help_inject(self):
+        inject.prog = 'inject'
         inject.print_help()
 
     def do_log(self, arg):
