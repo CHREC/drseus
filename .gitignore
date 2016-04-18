@@ -9,3 +9,4 @@ migrations
 parsetab.py
 power_switch_log.txt
 simics-workspace
+supervisor_history

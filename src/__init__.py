@@ -7,6 +7,7 @@ from time import sleep
 from .arguments import get_options
 from . import utilities
 
+# TODO: add runtime seconds to inject command
 # TODO: consider generating event filter choices only once at startup
 # TODO: update chart colors
 # TODO: only send files if needed

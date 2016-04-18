@@ -76,9 +76,16 @@ class openocd(jtag):
                                 'power switch')
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
-        if options.command == 'inject':
-            self.targets = get_targets('a9', 'jtag', options.selected_targets,
-                                       options.selected_registers)
+        if hasattr(options, 'selected_targets'):
+            selected_targets = options.selected_targets
+        else:
+            selected_targets = None
+        if hasattr(options, 'selected_registers'):
+            selected_registers = options.selected_registers
+        else:
+            selected_registers = None
+        self.targets = get_targets('a9', 'jtag', selected_targets,
+                                   selected_registers)
         self.port = find_open_port()
         super().__init__(database, options)
         if self.options.command == 'openocd' and self.options.gdb:

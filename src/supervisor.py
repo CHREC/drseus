@@ -1,15 +1,21 @@
 from bdb import BdbQuit
 from cmd import Cmd
 from multiprocessing import Value
-from os import makedirs, system
+from os import makedirs
+from os.path import exists
 from pdb import set_trace
+from readline import read_history_file, set_history_length, write_history_file
 from select import select
+from subprocess import CalledProcessError, check_output
 from sys import stdin
 from threading import Thread
 from traceback import print_exc
 
+from .arguments import inject
 from .fault_injector import fault_injector
+from .jtag import jtag
 from .power_switch import power_switch
+from .simics import simics
 
 
 # TODO: add background read thread and interact command
@@ -35,6 +41,9 @@ class supervisor(Cmd):
             self.drseus.debugger.reset_dut()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
+        if exists('supervisor_history'):
+            read_history_file('supervisor_history')
+        set_history_length(options.history_length)
         if campaign['aux']:
             self.__class__ = aux_supervisor
 
@@ -42,7 +51,17 @@ class supervisor(Cmd):
         print('Welcome to DrSEUs!\n')
         self.do_info()
         self.do_help(None)
-        Cmd.preloop(self)
+
+    def precmd(self, line):
+        write_history_file('supervisor_history')
+        return line
+
+    def complete(self, text, state):
+        ret = Cmd.complete(self, text, state)
+        if ret:
+            return ret+' '
+        else:
+            return ret
 
     def do_info(self, arg=None):
         """Print information about the current campaign"""
@@ -97,14 +116,14 @@ class supervisor(Cmd):
             if self.drseus.db.campaign['simics']:
                 self.drseus.debugger.continue_dut()
 
-    def do_send_dut_file(self, arg, aux=False):
+    def do_send_file_dut(self, arg, aux=False):
         """Send file to DUT, defaults to sending campaign files"""
         if aux:
             self.drseus.debugger.aux.send_files(arg, attempts=1)
         else:
             self.drseus.debugger.dut.send_files(arg, attempts=1)
 
-    def do_get_dut_file(self, arg, aux=False):
+    def do_get_file_dut(self, arg, aux=False):
         """Retrieve file from DUT device"""
         output = ('campaign-data/'+str(self.drseus.db.campaign['id']) +
                   '/results/'+str(self.drseus.result['id'])+'/')
@@ -135,10 +154,10 @@ class supervisor(Cmd):
             timer = None
         if self.drseus.db.campaign['simics']:
             self.drseus.debugger.close()
-        self.drseus.db.result.update({
-            'outcome_category': 'DrSEUs',
-            'outcome': 'Pre-supervise'})
-        self.drseus.debugger.dut.flush()
+        else:
+            self.drseus.debugger.dut.flush()
+        self.drseus.db.result.update({'outcome_category': 'DrSEUs',
+                                      'outcome': 'Pre-supervise'})
         with self.drseus.db as db:
             db.log_result()
         try:
@@ -165,13 +184,79 @@ class supervisor(Cmd):
                 str(self.drseus.db.campaign['checkpoints'])+'_merged')
             self.drseus.debugger.continue_dut()
 
+    def do_inject(self, arg):
+        if not isinstance(self.drseus.debugger, jtag) and \
+                not isinstance(self.drseus.debugger, simics):
+            print('injections not supported without debugger')
+        else:
+            options = inject.parse_args(arg.split())
+            self.drseus.options.iterations = options.iterations
+            self.drseus.options.injections = options.injections
+            self.drseus.options.selected_targets = options.selected_targets
+            self.drseus.options.selected_target_indices = \
+                options.selected_target_indices
+            self.drseus.options.selected_registers = options.selected_registers
+            self.drseus.options.latent_iterations = options.latent_iterations
+            self.drseus.options.processes = options.processes
+            self.drseus.options.compare_all = options.compare_all
+            self.drseus.options.extract_blocks = options.extract_blocks
+            if options.iterations is None:
+                iteration_counter = None
+            else:
+                iteration_counter = Value('L', options.iterations)
+            if self.drseus.db.campaign['simics']:
+                self.drseus.debugger.close()
+            else:
+                self.drseus.debugger.dut.flush()
+            self.drseus.db.result.update({'outcome_category': 'DrSEUs',
+                                          'outcome': 'Pre-inject'})
+            with self.drseus.db as db:
+                db.log_result()
+            try:
+                self.drseus.inject_campaign(iteration_counter)
+            except KeyboardInterrupt:
+                with self.drseus.db as db:
+                    db.log_event('Information', 'User', 'Interrupted',
+                                 db.log_exception)
+                self.drseus.debugger.close()
+                self.drseus.db.result.update({'outcome_category': 'Incomplete',
+                                              'outcome': 'Interrupted'})
+                with self.drseus.db as db:
+                    db.log_result()
+            except:
+                print_exc()
+                with self.drseus.db as db:
+                    db.log_event('Error', 'DrSEUs', 'Exception',
+                                 db.log_exception)
+                self.drseus.debugger.close()
+                self.drseus.db.result.update({'outcome_category': 'Incomplete',
+                                              'outcome': 'Uncaught exception'})
+                with self.drseus.db as db:
+                    db.log_result()
+            if self.drseus.db.campaign['simics']:
+                self.drseus.debugger.launch_simics(
+                    'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
+                    str(self.drseus.db.campaign['checkpoints'])+'_merged')
+                self.drseus.debugger.continue_dut()
+
+    def help_inject(self):
+        inject.print_help()
+
     def do_log(self, arg):
         """Log current status as a result"""
         self.drseus.db.result.update({
             'outcome_category': 'DrSEUs',
-            'outcome': arg if arg else 'Manual log entry'})
+            'outcome': arg if arg else 'Manual entry'})
         with self.drseus.db as db:
             db.log_result()
+
+    def do_event(self, arg):
+        """Log an event"""
+        if not arg:
+            arg = input('Event type: ')
+        description = input('Event description: ')
+        with self.drseus.db as db:
+            db.log_event('Information', 'User', arg, description)
 
     def do_power_cycle(self, arg=None):
         """Power cycle device using web power switch"""
@@ -191,7 +276,19 @@ class supervisor(Cmd):
 
     def do_shell(self, arg):
         """Pass command to a system shell when line begins with \"!\""""
-        system(arg)
+        with self.drseus.db as db:
+            event = db.log_event('Information', 'Shell', arg, success=False)
+        try:
+            output = check_output(arg, shell=True, universal_newlines=True)
+            print(output, end='')
+            event['description'] = output
+            with self.drseus.db as db:
+                db.log_event_success(event)
+        except CalledProcessError as error:
+            print(error.output, end='')
+            event['description'] = error.output
+            with self.drseus.db as db:
+                db.update('event', event)
 
     def do_exit(self, arg=None):
         """Exit DrSEUs"""
@@ -214,10 +311,10 @@ class aux_supervisor(supervisor):
         """Read from AUX, interrupt with ctrl-c"""
         self.do_read_dut(arg, aux=True)
 
-    def send_aux_files(self, arg):
+    def do_send_file_aux(self, arg):
         """Send (comma-seperated) files to AUX, defaults to campaign files"""
         self.do_send_dut_files(arg, aux=True)
 
-    def do_get_aux_file(self, arg):
+    def do_get_file_aux(self, arg):
         """Retrieve file from AUX device"""
         self.do_get_dut_file(arg, aux=True)

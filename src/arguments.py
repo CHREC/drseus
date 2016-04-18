@@ -418,6 +418,13 @@ supervise.add_argument(
     metavar='OUTLET',
     dest='power_switch_outlet',
     help='web power switch outlet used to power cycle device')
+supervise.add_argument(
+    '--hist',
+    type=int,
+    metavar='LINES',
+    dest='history_length',
+    default=1000,
+    help='maximum length for the history file [default=1000]')
 # supervise.add_argument(
 #     '-c', '--capture',
 #     action='store_true',

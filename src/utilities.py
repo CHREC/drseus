@@ -450,7 +450,18 @@ def launch_openocd(options):
 
 
 def launch_supervisor(options):
-    supervisor(get_campaign(options), options).cmdloop()
+    drseus = supervisor(get_campaign(options), options)
+    try:
+        drseus.cmdloop()
+    except:
+        print_exc()
+        with drseus.drseus.db as db:
+            db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
+        drseus.drseus.debugger.close()
+        drseus.drseus.db.result.update({'outcome_category': 'Incomplete',
+                                        'outcome': 'Uncaught exception'})
+        with drseus.drseus.db as db:
+            db.log_result(False)
 
 
 def backup(options):

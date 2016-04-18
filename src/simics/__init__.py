@@ -31,18 +31,22 @@ class simics(object):
         self.running = False
         self.db = database
         self.options = options
+        if hasattr(options, 'selected_targets'):
+            selected_targets = options.selected_targets
+        else:
+            selected_targets = None
+        if hasattr(options, 'selected_registers'):
+            selected_registers = options.selected_registers
+        else:
+            selected_registers = None
         if database.campaign['architecture'] == 'p2020':
             self.board = 'p2020rdb'
-            if options.command == 'inject':
-                self.targets = get_targets('p2020', 'simics',
-                                           options.selected_targets,
-                                           options.selected_registers)
+            self.targets = get_targets('p2020', 'simics', selected_targets,
+                                       selected_registers)
         elif database.campaign['architecture'] == 'a9':
             self.board = 'a9x2'
-            if options.command == 'inject':
-                self.targets = get_targets('a9', 'simics',
-                                           options.selected_targets,
-                                           options.selected_registers)
+            self.targets = get_targets('a9', 'simics', selected_targets,
+                                       selected_registers)
 
     def __str__(self):
         string = 'Simics simulation of '+self.board
