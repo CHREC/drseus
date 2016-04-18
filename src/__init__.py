@@ -33,10 +33,10 @@ def run():
                 missing_args.append('--serial')
             if not options.dut_prompt:
                 missing_args.append('--prompt')
-            if not options.debugger_ip_address and \
+            if not options.debugger_ip_address and (
                     (hasattr(options, 'architecture') and
-                        options.architecture == 'p2020') or \
-                    (campaign and campaign['architecture'] == 'p2020'):
+                        options.architecture == 'p2020') or
+                    (campaign and campaign['architecture'] == 'p2020')):
                 # using p2020 (not using simics)
                 missing_args.append('--jtag_ip')
         if options.command == 'supervise' and \
