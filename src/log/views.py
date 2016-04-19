@@ -204,19 +204,28 @@ def results_page(request, campaign_id=None):
     else:
         results = result_filter.qs
     if request.method == 'GET':
-        if (('view_output' in request.GET or
-                'view_output_image' in request.GET) and
-                'select_box' in request.GET):
-            result_ids = map(int, dict(request.GET)['select_box'])
-            results = models.result.objects.filter(
-                id__in=result_ids).order_by('-id')
-            image = 'view_output_image' in request.GET
-            if image:
+        if 'view_output' in request.GET:
+            if 'select_box' in request.GET:
+                result_ids = map(int, dict(request.GET)['select_box'])
+                results = models.result.objects.filter(
+                    id__in=result_ids).order_by('-id')
+            if 'view_output_raw' in request.GET:
+                dut_output = '\n'.join([
+                    '\n'.join([
+                        '', '********* Result '+str(result.id)+' *********',
+                        '\n', result.dut_output])
+                    for result in reversed(results)])
+                response = HttpResponse(dut_output,
+                                        content_type='text/plain')
+                response['Content-Disposition'] = \
+                    'attachment; filename="dut_output.txt"'
+                return response
+            if 'view_output_image' in request.GET:
                 result_ids = []
                 for result in results:
-                    if exists(
-                        'campaign-data/'+str(result.campaign_id)+'/results/' +
-                            str(result.id)+'/'+result.campaign.output_file):
+                    if exists('campaign-data/'+str(result.campaign_id) +
+                              '/results/'+str(result.id)+'/' +
+                              result.campaign.output_file):
                         result_ids.append(result.id)
                 results = models.result.objects.filter(
                     id__in=result_ids).order_by('-id')
@@ -224,30 +233,7 @@ def results_page(request, campaign_id=None):
                 return render(request, 'output.html', {
                     'campaign': campaign,
                     'campaign_items': campaign_items if campaign else None,
-                    'image': image,
-                    'navigation_items': navigation_items,
-                    'results': results})
-            else:
-                results = result_filter.qs
-        elif ('view_output_all' in request.GET or
-              'view_output_image_all' in request.GET):
-            image = 'view_output_image_all' in request.GET
-            if image:
-                result_ids = []
-                for result in results:
-                    if exists(
-                        'campaign-data/'+str(result.campaign_id)+'/results/' +
-                            str(result.id)+'/'+result.campaign.output_file):
-                        result_ids.append(result.id)
-            else:
-                result_ids = results.values_list('id', flat=True)
-            results = models.result.objects.filter(
-                id__in=result_ids).order_by('-id')
-            if results.count():
-                return render(request, 'output.html', {
-                    'campaign': campaign,
-                    'campaign_items': campaign_items if campaign else None,
-                    'image': image,
+                    'image': 'view_output_image' in request.GET,
                     'navigation_items': navigation_items,
                     'results': results})
             else:

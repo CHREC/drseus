@@ -10,9 +10,8 @@ from paramiko import RSAKey
 from pdb import set_trace
 from progressbar import ProgressBar
 from progressbar.widgets import Bar, Percentage, SimpleProgress, Timer
-# from shutil import copy, copytree, rmtree
 from shutil import rmtree
-from subprocess import check_call
+from subprocess import call, check_call
 from sys import argv, stdout
 from tarfile import open as open_tar
 from terminaltables import AsciiTable
@@ -516,11 +515,28 @@ def restore(options):
 
 
 def clean(options):
-    if exists('backups'):
-        rmtree('backups')
-        print('deleted database backup(s)')
     if exists('simics-workspace/injected-checkpoints'):
         rmtree('simics-workspace/injected-checkpoints')
         print('deleted injected checkpoints')
-    if options.power_log and exists('power_switch_log.txt'):
+    if exists('backups') and (options.all or options.backups):
+        rmtree('backups')
+        print('deleted backups')
+    if exists('src/log/migrations') and (options.all or options.migrations):
+        rmtree('src/log/migrations')
+        print('deleted django migrations')
+    if exists('power_switch_log.txt') and (options.all or options.power_log):
         remove('power_switch_log.txt')
+
+
+def launch_minicom(options):
+    options.debug = False
+    campaign = get_campaign(options)
+    drseus = fault_injector(campaign, options)
+    if campaign['simics']:
+        drseus.debugger.launch_simics(
+            'gold-checkpoints/'+str(drseus.db.campaign['id'])+'/' +
+            str(drseus.db.campaign['checkpoints'])+'_merged')
+        drseus.debugger.continue_dut()
+    drseus.debugger.dut.close()
+    call(['minicom', '-D', options.dut_serial_port])
+    drseus.close(log=False)

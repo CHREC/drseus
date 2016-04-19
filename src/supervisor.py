@@ -1,12 +1,12 @@
 from bdb import BdbQuit
 from cmd import Cmd
 from multiprocessing import Value
-from os import makedirs
+from os import makedirs, remove
 from os.path import exists
 from pdb import set_trace
 from readline import read_history_file, set_history_length, write_history_file
 from select import select
-from subprocess import CalledProcessError, check_output
+from subprocess import CalledProcessError, call, check_output
 from sys import stdin
 from threading import Thread
 from traceback import print_exc
@@ -40,8 +40,8 @@ class supervisor(Cmd):
             self.drseus.debugger.reset_dut()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
-        if exists('supervisor_history'):
-            read_history_file('supervisor_history')
+        if exists('.supervisor_history'):
+            read_history_file('.supervisor_history')
         set_history_length(options.history_length)
         if campaign['aux']:
             self.__class__ = aux_supervisor
@@ -52,7 +52,7 @@ class supervisor(Cmd):
         self.do_help(None)
 
     def precmd(self, line):
-        write_history_file('supervisor_history')
+        write_history_file('.supervisor_history')
         return line
 
     def complete(self, text, state):
@@ -242,6 +242,18 @@ class supervisor(Cmd):
                 'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
                 str(self.drseus.db.campaign['checkpoints'])+'_merged')
             self.drseus.debugger.continue_dut()
+
+    def do_minicom(self, arg=None):
+        self.drseus.debugger.dut.close()
+        call(['minicom', '-D', self.drseus.options.dut_serial_port,
+              '--capturefile=.minicom_capture'])
+        self.drseus.debugger.dut.open()
+        if exists('.minicom_capture'):
+            with open('.minicom_capture', 'r') as capture_file:
+                self.drseus.db.result['dut_output'] += capture_file.read()
+                with self.drseus.db as db:
+                    db.update('result')
+            remove('.minicom_capture')
 
     def help_inject(self):
         inject.prog = 'inject'

@@ -48,18 +48,18 @@ class fault_injector(object):
                        ' cycles\n')
         return string
 
-    def close(self):
+    def close(self, log=True):
         self.debugger.close()
-        if self.db.result:
+        if log and self.db.result:
             with self.db as db:
                 result_items = db.get_count('event')
                 result_items += db.get_count('injection')
                 result_items += db.get_count('simics_memory_diff')
                 result_items += db.get_count('simics_register_diff')
-            if (self.db.result['dut_output'] or
-                    self.db.result['aux_output'] or
-                    self.db.result['debugger_output'] or
-                    result_items):
+            if log and (self.db.result['dut_output'] or
+                        self.db.result['aux_output'] or
+                        self.db.result['debugger_output'] or
+                        result_items):
                 self.db.result.update({
                     'outcome_category': 'DrSEUs',
                     'outcome': 'Exited'})

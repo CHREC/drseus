@@ -41,7 +41,7 @@ def run():
                     (campaign and campaign['architecture'] == 'p2020')):
                 # using p2020 (not using simics)
                 missing_args.append('--jtag_ip')
-        if options.command == 'supervise' and \
+        if options.command == 'supervise' and not campaign['simics'] and \
                 options.power_switch_outlet is None:
             missing_args.append('--power_ip')
     if missing_args:

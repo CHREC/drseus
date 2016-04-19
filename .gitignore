@@ -1,5 +1,6 @@
 *.pyc
 .DS_Store
+.supervisor_history
 backups
 campaign-data
 devices.json
@@ -9,4 +10,3 @@ migrations
 parsetab.py
 power_switch_log.txt
 simics-workspace
-supervisor_history

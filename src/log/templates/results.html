@@ -54,15 +54,27 @@
         </a>
         <ul class="treeview-menu">
             <li>
-                <a href="javascript:{}" onclick="view_output(false, false)">
+                <a href="javascript:{}" onclick="view_output(false, false, false)">
                     <i class="fa fa-circle-o"></i>
                     <span>View Selected</span>
                 </a>
             </li>
             <li>
-                <a href="javascript:{}" onclick="view_output(false, true)">
+                <a href="javascript:{}" onclick="view_output(false, false, true)">
                     <i class="fa fa-circle-o"></i>
-                    <span>View All (Filtered)</span>
+                    <span>View Filtered</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:{}" onclick="view_output(false, true, false)">
+                    <i class="fa fa-circle-o"></i>
+                    <span>Download Selected</span>
+                </a>
+            </li>
+            <li>
+                <a href="javascript:{}" onclick="view_output(false, true, true)">
+                    <i class="fa fa-circle-o"></i>
+                    <span>Download Filtered</span>
                 </a>
             </li>
         </ul>
@@ -77,13 +89,13 @@
             </a>
             <ul class="treeview-menu">
                 <li>
-                    <a href="javascript:{}" onclick="view_output(true, false)">
+                    <a href="javascript:{}" onclick="view_output(true, false, false)">
                         <i class="fa fa-circle-o"></i>
                         <span>View Selected</span>
                     </a>
                 </li>
                 <li>
-                    <a href="javascript:{}" onclick="view_output(true, true)">
+                    <a href="javascript:{}" onclick="view_output(true, false, true)">
                         <i class="fa fa-circle-o"></i>
                         <span>View All (Filtered)</span>
                     </a>
@@ -161,16 +173,18 @@
             }
         }
 
-        function view_output(image, all) {
+        function view_output(image, raw, all) {
             var newdiv = document.createElement('div');
-            input = "<input type='hidden' name='view_output";
+            input = "<input type='hidden' name='view_output'>";
             if (image) {
-                input += "_image";
+                input += "\n<input type='hidden' name='view_output_image'>";
             }
             if (all) {
-                input += "_all";
+                input += "\n<input type='hidden' name='view_output_all'>";
             }
-            input += "'>";
+            if (raw) {
+                input += "\n<input type='hidden' name='view_output_raw'>";
+            }
             newdiv.innerHTML = input;
             document.getElementById('get_form').appendChild(newdiv);
             document.getElementById('get_form').submit();

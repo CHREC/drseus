@@ -247,8 +247,10 @@ new_campaign = subparsers.add_parser(
     help='create a new campaign',
     description='create a new campaign')
 new_campaign.add_argument(
-    'application',
+    '-a', '--app',
     metavar='APPLICATION',
+    dest='application',
+    default='',
     help='application to run on device')
 new_campaign.add_argument(
     '--no_app_file',
@@ -567,12 +569,24 @@ restore.set_defaults(func='restore')
 
 clean = subparsers.add_parser(
     'clean', aliases=['c'],
-    help='delete database backups and injected checkpoints',
-    description='delete database backups and injected checkpoints')
+    help='clean workspace',
+    description='clean workspace')
+clean.add_argument(
+    '-b', '--backups',
+    action='store_true',
+    help='delete backups')
+clean.add_argument(
+    '-m', '--migrations',
+    action='store_true',
+    help='delete django migrations')
 clean.add_argument(
     '-p', '--power_log',
     action='store_true',
     help='delete power switch log')
+clean.add_argument(
+    '-a', '--all',
+    action='store_true',
+    help='delete all')
 clean.set_defaults(func='clean')
 
 serials = subparsers.add_parser(
@@ -593,11 +607,21 @@ django.add_argument(
     help='command to run with django')
 django.set_defaults(func='run_django_command')
 
+minicom = subparsers.add_parser(
+    'minicom',
+    aliases=['m'],
+    help='launch DUT in minicom',
+    description='launch DUT in minicom')
+minicom.set_defaults(func='launch_minicom')
+
 
 def get_options():
     options = parser.parse_args()
     if not hasattr(options, 'debug'):
         options.debug = True
+    if hasattr(options, 'application') and not options.application:
+        options.application_file = False
+        options.checkpoints = 1
     if options.command is None:
         parser.error('no command specified, run with "-h" for help')
     if options.command == 'n':
