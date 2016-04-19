@@ -31,26 +31,31 @@ class simics(object):
         self.running = False
         self.db = database
         self.options = options
-        if hasattr(options, 'selected_targets'):
-            selected_targets = options.selected_targets
-        else:
-            selected_targets = None
-        if hasattr(options, 'selected_registers'):
-            selected_registers = options.selected_registers
-        else:
-            selected_registers = None
         if database.campaign['architecture'] == 'p2020':
             self.board = 'p2020rdb'
-            self.targets = get_targets('p2020', 'simics', selected_targets,
-                                       selected_registers)
         elif database.campaign['architecture'] == 'a9':
             self.board = 'a9x2'
-            self.targets = get_targets('a9', 'simics', selected_targets,
-                                       selected_registers)
+        self.set_targets()
 
     def __str__(self):
         string = 'Simics simulation of '+self.board
         return string
+
+    def set_targets(self):
+        if hasattr(self.options, 'selected_targets'):
+            selected_targets = self.options.selected_targets
+        else:
+            selected_targets = None
+        if hasattr(self.options, 'selected_registers'):
+            selected_registers = self.options.selected_registers
+        else:
+            selected_registers = None
+        if self.db.campaign['architecture'] == 'p2020':
+            self.targets = get_targets('p2020', 'simics', selected_targets,
+                                       selected_registers)
+        elif self.db.campaign['architecture'] == 'a9':
+            self.targets = get_targets('a9', 'simics', selected_targets,
+                                       selected_registers)
 
     def launch_simics(self, checkpoint=None):
         attempts = 10
@@ -368,87 +373,95 @@ class simics(object):
                                      campaign=True)
             makedirs('simics-workspace/gold-checkpoints/' +
                      str(self.db.campaign['id']))
-            self.db.campaign['cycles_between'] = \
-                int(self.db.campaign['cycles'] / self.options.checkpoints)
-            if self.db.campaign['aux']:
+            if self.db.campaign['command']:
+                self.db.campaign['cycles_between'] = \
+                    int(self.db.campaign['cycles'] / self.options.checkpoints)
+                if self.db.campaign['aux']:
+                    with self.db as db:
+                        db.log_event('Information', 'AUX', 'Command',
+                                     self.db.campaign['aux_command'])
+                    aux_process = Thread(
+                        target=self.aux.command,
+                        kwargs={'command': self.db.campaign['aux_command'],
+                                'flush': False})
+                    aux_process.start()
                 with self.db as db:
-                    db.log_event('Information', 'AUX', 'Command',
-                                 self.db.campaign['aux_command'])
-                aux_process = Thread(
-                    target=self.aux.command,
-                    kwargs={'command': self.db.campaign['aux_command'],
-                            'flush': False})
-                aux_process.start()
-            with self.db as db:
-                db.log_event('Information', 'DUT', 'Command',
-                             self.db.campaign['command'])
-            self.dut.write(self.db.campaign['command']+'\n')
-            read_thread = Thread(target=self.dut.read_until,
-                                 kwargs={'flush': False})
-            read_thread.start()
-            checkpoint = 0
-            while True:
-                checkpoint += 1
-                self.__command('run-cycles ' +
-                               str(self.db.campaign['cycles_between']),
-                               time=300)
-                self.db.campaign['dut_output'] += \
-                    '\n***drseus_checkpoint: '+str(checkpoint)+'***\n'
-                incremental_checkpoint = ('gold-checkpoints/' +
-                                          str(self.db.campaign['id'])+'/' +
-                                          str(checkpoint))
-                self.__command('write-configuration '+incremental_checkpoint,
-                               time=300)
-                if not read_thread.is_alive() or \
-                    (self.db.campaign['aux'] and
-                        self.db.campaign['kill_dut'] and
-                        not aux_process.is_alive()):
-                    self.__merge_checkpoint(incremental_checkpoint)
-                    break
-            self.db.campaign['checkpoints'] = checkpoint
-            with self.db as db:
-                db.log_event_success(event, update_timestamp=True)
-            self.continue_dut()
-            if self.db.campaign['aux']:
-                aux_process.join()
-            if self.db.campaign['kill_dut']:
-                self.dut.write('\x03')
-            read_thread.join()
+                    db.log_event('Information', 'DUT', 'Command',
+                                 self.db.campaign['command'])
+                self.dut.write(self.db.campaign['command']+'\n')
+                read_thread = Thread(target=self.dut.read_until,
+                                     kwargs={'flush': False})
+                read_thread.start()
+                checkpoint = 0
+                while True:
+                    checkpoint += 1
+                    self.__command('run-cycles ' +
+                                   str(self.db.campaign['cycles_between']),
+                                   time=300)
+                    self.db.campaign['dut_output'] += \
+                        '\n***drseus_checkpoint: '+str(checkpoint)+'***\n'
+                    incremental_checkpoint = ('gold-checkpoints/' +
+                                              str(self.db.campaign['id'])+'/' +
+                                              str(checkpoint))
+                    self.__command('write-configuration '+incremental_checkpoint,
+                                   time=300)
+                    if not read_thread.is_alive() or \
+                        (self.db.campaign['aux'] and
+                            self.db.campaign['kill_dut'] and
+                            not aux_process.is_alive()):
+                        self.__merge_checkpoint(incremental_checkpoint)
+                        break
+                self.db.campaign['checkpoints'] = checkpoint
+                with self.db as db:
+                    db.log_event_success(event, update_timestamp=True)
+                self.continue_dut()
+                if self.db.campaign['aux']:
+                    aux_process.join()
+                if self.db.campaign['kill_dut']:
+                    self.dut.write('\x03')
+                read_thread.join()
+            else:
+                self.db.campaign['checkpoints'] = 1
+                self.halt_dut()
+                self.__command('write-configuration gold-checkpoints/' +
+                               str(self.db.campaign['id'])+'/1', time=300)
 
     # def time_application(self):
-        with self.db as db:
-            event = db.log_event('Information', 'Simics', 'Timed application',
-                                 success=False, campaign=True)
-        self.halt_dut()
-        start_cycles, start_time = self.get_time()
-        self.continue_dut()
-        for i in range(self.options.iterations):
-            if self.db.campaign['aux']:
-                aux_process = Thread(
-                    target=self.aux.command,
-                    kwargs={'command': self.db.campaign['aux_command'],
+        if self.db.campaign['command']:
+            with self.db as db:
+                event = db.log_event('Information', 'Simics',
+                                     'Timed application', success=False,
+                                     campaign=True)
+            self.halt_dut()
+            start_cycles, start_time = self.get_time()
+            self.continue_dut()
+            for i in range(self.options.iterations):
+                if self.db.campaign['aux']:
+                    aux_process = Thread(
+                        target=self.aux.command,
+                        kwargs={'command': self.db.campaign['aux_command'],
+                                'flush': False})
+                    aux_process.start()
+                dut_process = Thread(
+                    target=self.dut.command,
+                    kwargs={'command': self.db.campaign['command'],
                             'flush': False})
-                aux_process.start()
-            dut_process = Thread(
-                target=self.dut.command,
-                kwargs={'command': self.db.campaign['command'],
-                        'flush': False})
-            dut_process.start()
-            if self.db.campaign['aux']:
-                aux_process.join()
-            if self.db.campaign['kill_dut']:
-                self.dut.write('\x03')
-            dut_process.join()
-        self.halt_dut()
-        end_cycles, end_time = self.get_time()
-        self.db.campaign['start_cycle'] = end_cycles
-        self.db.campaign['start_time'] = end_time
-        self.db.campaign['cycles'] = \
-            int((end_cycles - start_cycles) / self.options.iterations)
-        self.db.campaign['execution_time'] = \
-            (end_time - start_time) / self.options.iterations
-        with self.db as db:
-            db.log_event_success(event, update_timestamp=True)
+                dut_process.start()
+                if self.db.campaign['aux']:
+                    aux_process.join()
+                if self.db.campaign['kill_dut']:
+                    self.dut.write('\x03')
+                dut_process.join()
+            self.halt_dut()
+            end_cycles, end_time = self.get_time()
+            self.db.campaign['start_cycle'] = end_cycles
+            self.db.campaign['start_time'] = end_time
+            self.db.campaign['cycles'] = \
+                int((end_cycles - start_cycles) / self.options.iterations)
+            self.db.campaign['execution_time'] = \
+                (end_time - start_time) / self.options.iterations
+            with self.db as db:
+                db.log_event_success(event, update_timestamp=True)
         create_checkpoints()
 
     def inject_faults(self):

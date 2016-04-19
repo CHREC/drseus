@@ -621,7 +621,6 @@ def get_options():
         options.debug = True
     if hasattr(options, 'application') and not options.application:
         options.application_file = False
-        options.checkpoints = 1
     if options.command is None:
         parser.error('no command specified, run with "-h" for help')
     if options.command == 'n':

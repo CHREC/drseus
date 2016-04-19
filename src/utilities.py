@@ -4,8 +4,8 @@ from django.core.management import execute_from_command_line as django_command
 from io import StringIO
 from json import dump, load
 from multiprocessing import Process, Value
-from os import getcwd, listdir, mkdir, remove
-from os.path import exists, isdir, join
+from os import getcwd, listdir, mkdir, remove, walk
+from os.path import abspath, dirname, exists, isdir, join
 from paramiko import RSAKey
 from pdb import set_trace
 from progressbar import ProgressBar
@@ -160,7 +160,10 @@ def delete(options):
     except:
         db = None
     if options.delete in ('results', 'r'):
-        print('deleting results for campaign', options.campaign_id)
+        if input('are you sure you want to delete all results for campaign {}?'
+                 ' [y/N]: '.format(options.campaign_id)) not in \
+                ['y', 'Y', 'yes']:
+            return
         if exists('campaign-data/'+str(options.campaign_id)+'/results'):
             rmtree('campaign-data/'+str(options.campaign_id)+'/results')
             print('deleted results')
@@ -174,7 +177,9 @@ def delete(options):
                 db.delete_results()
             print('flushed database')
     elif options.delete in ('campaign', 'c'):
-        print('deleting campaign', options.campaign_id)
+        if input('are you sure you want to delete campaign {}? [y/N]: '.format(
+                options.campaign_id)) not in ['y', 'Y', 'yes']:
+            return
         if exists('campaign-data/'+str(options.campaign_id)):
             rmtree('campaign-data/'+str(options.campaign_id))
             print('deleted campaign data')
@@ -194,7 +199,9 @@ def delete(options):
                 print('deleted campaign '+str(options.campaign_id) +
                       ' from database')
     elif options.delete in ('all', 'a'):
-        print('deleting all campaigns, files, and database')
+        if input('are you sure you want to delete all campaigns, files, and '
+                 'database? [y/N]: ') not in ['y', 'Y', 'yes']:
+            return
         if exists('simics-workspace/gold-checkpoints'):
             rmtree('simics-workspace/gold-checkpoints')
             print('deleted gold checkpoints')
@@ -298,7 +305,7 @@ def inject_campaign(options):
             drseus.db.result.update({'outcome_category': 'Incomplete',
                                      'outcome': 'Interrupted'})
             with drseus.db as db:
-                db.log_result(False)
+                db.log_result(exit=True)
         except:
             print_exc()
             with drseus.db as db:
@@ -307,7 +314,7 @@ def inject_campaign(options):
             drseus.db.result.update({'outcome_category': 'Incomplete',
                                      'outcome': 'Uncaught exception'})
             with drseus.db as db:
-                db.log_result(False)
+                db.log_result(exit=True)
             if options.processes == 1 and options.debug:
                 print('dropping into python debugger')
                 try:
@@ -426,7 +433,7 @@ def launch_supervisor(options):
         drseus.drseus.db.result.update({'outcome_category': 'Incomplete',
                                         'outcome': 'Uncaught exception'})
         with drseus.drseus.db as db:
-            db.log_result(False)
+            db.log_result(exit=True)
 
 
 def backup(options):
@@ -515,27 +522,46 @@ def restore(options):
 
 
 def clean(options):
+    found_cache = False
+    for root, dirs, files in walk(dirname(abspath(__file__))):
+        for dir_ in dirs:
+            if dir_ == '__pycache__':
+                rmtree(join(root, dir_))
+                found_cache = True
+            elif dir_ == 'migrations' and (options.all or options.migrations):
+                rmtree(join(root, dir_))
+                print('deleted django migrations')
+        for file_ in files:
+            if file_ == 'lextab.py':
+                remove(join(root, file_))
+                print('deleted lextab.py')
+            elif file_ == 'parsetab.py':
+                remove(join(root, file_))
+                print('deleted parsetab.py')
+    if found_cache:
+        print('deleted __pycache__ directories')
     if exists('simics-workspace/injected-checkpoints'):
         rmtree('simics-workspace/injected-checkpoints')
         print('deleted injected checkpoints')
     if exists('backups') and (options.all or options.backups):
         rmtree('backups')
         print('deleted backups')
-    if exists('src/log/migrations') and (options.all or options.migrations):
-        rmtree('src/log/migrations')
-        print('deleted django migrations')
     if exists('power_switch_log.txt') and (options.all or options.power_log):
         remove('power_switch_log.txt')
 
 
 def launch_minicom(options):
     options.debug = False
+    options.jtag = False
     campaign = get_campaign(options)
     drseus = fault_injector(campaign, options)
     if campaign['simics']:
-        drseus.debugger.launch_simics(
-            'gold-checkpoints/'+str(drseus.db.campaign['id'])+'/' +
-            str(drseus.db.campaign['checkpoints'])+'_merged')
+        checkpoint = ('gold-checkpoints/'+str(drseus.db.campaign['id'])+'/' +
+                      str(drseus.db.campaign['checkpoints']))
+        if exists('simics-workspace/'+checkpoint+'_merged'):
+            drseus.debugger.launch_simics(checkpoint+'_merged')
+        else:
+            drseus.debugger.launch_simics(checkpoint)
         drseus.debugger.continue_dut()
     drseus.debugger.dut.close()
     call(['minicom', '-D', options.dut_serial_port])

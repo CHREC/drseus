@@ -1,0 +1,9 @@
+@conf/new/a9
+--app
+arm_fi_2d_conv_fft_omp
+--args
+lena.bmp out.bmp
+--files
+lena.bmp
+--output
+out.bmp

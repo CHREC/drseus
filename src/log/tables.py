@@ -172,7 +172,7 @@ class events(Table):
         fields = ('select_box', 'result_id', 'timestamp', 'level', 'source',
                   'type', 'success_', 'description')
         model = models.event
-        order_by = ('result_id', 'timestamp')
+        order_by = '-timestamp'
         template = 'django_tables2/bootstrap.html'
 
 

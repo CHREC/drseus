@@ -1,7 +1,6 @@
 from time import sleep
 
 from ..error import DrSEUsError
-from ..targets import get_targets
 from . import jtag
 
 
@@ -12,24 +11,18 @@ class bdi(jtag):
 
     def __init__(self, database, options):
         self.prompts = ['P2020>']
-        if hasattr(options, 'selected_targets'):
-            selected_targets = options.selected_targets
-        else:
-            selected_targets = None
-        if hasattr(options, 'selected_registers'):
-            selected_registers = options.selected_registers
-        else:
-            selected_registers = None
-        self.targets = get_targets('p2020', 'jtag', selected_targets,
-                                   selected_registers)
         self.port = 23
         super().__init__(database, options)
+        self.set_targets()
         self.open()
 
     def __str__(self):
         string = ('BDI3000 at '+self.options.debugger_ip_address +
                   ' port '+str(self.port))
         return string
+
+    def set_targets(self):
+        super().set_targets('p2020')
 
     def close(self):
         self.telnet.write(bytes('quit\r', encoding='utf-8'))

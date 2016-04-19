@@ -7,7 +7,6 @@ from termcolor import colored
 from time import sleep
 
 from ..error import DrSEUsError
-from ..targets import get_targets
 from . import jtag
 
 
@@ -27,6 +26,14 @@ def find_uart_serials():
             if 'DEVLINKS' in dev}
 
 
+def find_open_port():
+            sock = socket(AF_INET, SOCK_STREAM)
+            sock.bind(('', 0))
+            port = sock.getsockname()[1]
+            sock.close()
+            return port
+
+
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
     modes = {'10000': 'usr',
@@ -40,15 +47,6 @@ class openocd(jtag):
              '11111': 'sys'}
 
     def __init__(self, database, options, power_switch):
-
-        def find_open_port():
-            sock = socket(AF_INET, SOCK_STREAM)
-            sock.bind(('', 0))
-            port = sock.getsockname()[1]
-            sock.close()
-            return port
-
-    # def __init__(self, database, options, power_switch=None):
         self.power_switch = power_switch
         if exists('devices.json'):
             with open('devices.json', 'r') as device_file:
@@ -73,18 +71,9 @@ class openocd(jtag):
                                 'power switch')
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
-        if hasattr(options, 'selected_targets'):
-            selected_targets = options.selected_targets
-        else:
-            selected_targets = None
-        if hasattr(options, 'selected_registers'):
-            selected_registers = options.selected_registers
-        else:
-            selected_registers = None
-        self.targets = get_targets('a9', 'jtag', selected_targets,
-                                   selected_registers)
         self.port = find_open_port()
         super().__init__(database, options)
+        self.set_targets()
         if self.options.command == 'openocd' and self.options.gdb:
             self.gdb_port = find_open_port()
         else:
@@ -96,6 +85,9 @@ class openocd(jtag):
         if hasattr(self, 'gdb_port') and self.gdb_port:
             string += ' (GDB port '+str(self.gdb_port)+')'
         return string
+
+    def set_targets(self):
+        super().set_targets('a9')
 
     def open(self):
         self.openocd = Popen(

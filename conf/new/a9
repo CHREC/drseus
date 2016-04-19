@@ -1,11 +1,4 @@
 @conf/a9
 new
-arm_fi_2d_conv_fft_omp
---args
-lena.bmp out.bmp
---files
-lena.bmp
---output
-out.bmp
 --arch
 a9

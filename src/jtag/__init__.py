@@ -6,7 +6,7 @@ from time import sleep
 
 from ..dut import dut
 from ..error import DrSEUsError
-from ..targets import choose_injection
+from ..targets import choose_injection, get_targets
 
 
 class jtag(object):
@@ -47,6 +47,18 @@ class jtag(object):
         self.dut.close()
         if self.db.campaign['aux']:
             self.aux.close()
+
+    def set_targets(self, architecture):
+        if hasattr(self.options, 'selected_targets'):
+            selected_targets = self.options.selected_targets
+        else:
+            selected_targets = None
+        if hasattr(self.options, 'selected_registers'):
+            selected_registers = self.options.selected_registers
+        else:
+            selected_registers = None
+        self.targets = get_targets(architecture, 'jtag', selected_targets,
+                                   selected_registers)
 
     def reset_dut(self, expected_output, attempts):
 

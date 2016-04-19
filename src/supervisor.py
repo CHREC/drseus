@@ -1,5 +1,6 @@
 from bdb import BdbQuit
 from cmd import Cmd
+from datetime import datetime
 from multiprocessing import Value
 from os import makedirs, remove
 from os.path import exists
@@ -13,7 +14,8 @@ from traceback import print_exc
 
 from .arguments import inject
 from .fault_injector import fault_injector
-from .jtag import jtag
+from .jtag.bdi import bdi
+from .jtag.openocd import openocd
 from .power_switch import power_switch
 from .simics import simics
 
@@ -32,9 +34,13 @@ class supervisor(Cmd):
             switch = None
         self.drseus = fault_injector(campaign, options, switch)
         if campaign['simics']:
-            self.drseus.debugger.launch_simics(
-                'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
-                str(self.drseus.db.campaign['checkpoints'])+'_merged')
+            checkpoint = ('gold-checkpoints/' +
+                          str(self.drseus.db.campaign['id'])+'/' +
+                          str(self.drseus.db.campaign['checkpoints']))
+            if exists('simics-workspace/'+checkpoint+'_merged'):
+                self.drseus.debugger.launch_simics(checkpoint+'_merged')
+            else:
+                self.drseus.debugger.launch_simics(checkpoint)
             self.drseus.debugger.continue_dut()
         else:
             self.drseus.debugger.reset_dut()
@@ -162,6 +168,9 @@ class supervisor(Cmd):
         try:
             self.drseus.inject_campaign(iteration_counter, timer)
         except KeyboardInterrupt:
+            self.drseus.debugger.dut.write('\x03')
+            if self.drseus.db.campaign['aux']:
+                self.drseus.debugger.aux.write('\x03')
             with self.drseus.db as db:
                 db.log_event('Information', 'User', 'Interrupted',
                              db.log_exception)
@@ -184,8 +193,9 @@ class supervisor(Cmd):
             self.drseus.debugger.continue_dut()
 
     def do_inject(self, arg):
-        if not isinstance(self.drseus.debugger, jtag) and \
-                not isinstance(self.drseus.debugger, simics):
+        if not (isinstance(self.drseus.debugger, bdi) or
+                isinstance(self.drseus.debugger, openocd) or
+                isinstance(self.drseus.debugger, simics)):
             print('injections not supported without debugger')
             return
         if '-h' in arg.split() or '--help' in arg.split():
@@ -204,6 +214,7 @@ class supervisor(Cmd):
         self.drseus.options.processes = options.processes
         self.drseus.options.compare_all = options.compare_all
         self.drseus.options.extract_blocks = options.extract_blocks
+        self.drseus.debugger.set_targets()
         if options.iterations is None:
             iteration_counter = None
         else:
@@ -219,6 +230,10 @@ class supervisor(Cmd):
         try:
             self.drseus.inject_campaign(iteration_counter)
         except KeyboardInterrupt:
+            if self.drseus.debugger.dut:
+                self.drseus.debugger.dut.write('\x03')
+            if self.drseus.db.campaign['aux'] and self.drseus.debugger.aux:
+                self.drseus.debugger.aux.write('\x03')
             with self.drseus.db as db:
                 db.log_event('Information', 'User', 'Interrupted',
                              db.log_exception)
@@ -244,16 +259,23 @@ class supervisor(Cmd):
             self.drseus.debugger.continue_dut()
 
     def do_minicom(self, arg=None):
+        """Launch minicom connected to DUT and includes session in log"""
+        timestamp = ('-'.join([str(unit).zfill(2)
+                               for unit in datetime.now().timetuple()[:3]]) +
+                     '_' +
+                     '-'.join([str(unit).zfill(2)
+                               for unit in datetime.now().timetuple()[3:6]]))
+        capture = 'minicom_capture.'+timestamp
         self.drseus.debugger.dut.close()
         call(['minicom', '-D', self.drseus.options.dut_serial_port,
-              '--capturefile=.minicom_capture'])
+              '--capturefile='+capture])
         self.drseus.debugger.dut.open()
-        if exists('.minicom_capture'):
-            with open('.minicom_capture', 'r') as capture_file:
+        if exists(capture):
+            with open(capture, 'r') as capture_file:
                 self.drseus.db.result['dut_output'] += capture_file.read()
                 with self.drseus.db as db:
                     db.update('result')
-            remove('.minicom_capture')
+            remove(capture)
 
     def help_inject(self):
         inject.prog = 'inject'
