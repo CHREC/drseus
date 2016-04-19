@@ -309,7 +309,10 @@ def result_page(request, result_id):
         return redirect('/campaign/'+str(result.campaign_id)+'/results')
     injections = models.injection.objects.filter(result_id=result_id)
     if result.campaign.simics:
-        injection_table = tables.simics_injection(injections)
+        if injections.count():
+            injection_table = tables.simics_injection(injections)
+        else:
+            injection_table = None
         register_diffs = models.simics_register_diff.objects.filter(
             result_id=result_id)
         register_filter = filters.simics_register_diff(
@@ -328,10 +331,14 @@ def result_page(request, result_id):
         register_filter = None
         memory_table = None
         register_table = None
-        injection_table = tables.hw_injection(injections)
+        if injections.count():
+            injection_table = tables.hw_injection(injections)
+        else:
+            injection_table = None
     RequestConfig(request, paginate=False).configure(result_table)
     RequestConfig(request, paginate=False).configure(event_table)
-    RequestConfig(request, paginate=False).configure(injection_table)
+    if injection_table:
+        RequestConfig(request, paginate=False).configure(injection_table)
     return render(request, 'result.html', {
         'campaign_items': campaign_items_,
         'event_table': event_table,

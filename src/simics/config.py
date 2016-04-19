@@ -47,7 +47,7 @@ t_ignore = ' \t\r'
 
 
 def t_error(t):
-    print('Illegal character "%s"' % (t.value[0],))
+    print('Illegal character "{}"'.format(t.value[0]))
     t.skip(1)
 
 
@@ -184,6 +184,7 @@ def p_error(p):
 lex.lex(debug=0, optimize=1)
 yacc.yacc(debug=0, optimize=1)
 
+
 class simics_config(object):
 
     class SimicsConfigError(Exception):
@@ -194,8 +195,8 @@ class simics_config(object):
         def __str__(self):
             string = 'SimicsConfigError:'
             if self.error:
-                string += '\n%s' % (self.error,)
-            string += '\n%s' % (self.reason,)
+                string += '\n{}'.format(self.error)
+            string += '\n{}'.format(self.reason)
             return string
 
 # class simics_config(object):
@@ -216,10 +217,11 @@ class simics_config(object):
         except ParseError as error:
             if error.args and error.args[0]:
                 raise self.ConfigError(
-                    'Syntax error in %s:%d' % (self.checkpoint,
-                                               error.args[0].lineno), error)
+                    'Syntax error in {}:{}'.format(
+                        self.checkpoint, error.args[0].lineno),
+                    error)
             raise self.ConfigError(
-                'Unknown parse error in %s' % self.checkpoint, error)
+                'Unknown parse error in {}'.format(self.checkpoint), error)
         return self
 
     def save(self):
@@ -242,11 +244,11 @@ class simics_config(object):
             config_file.write('#SIMICS-CONF-1\n')
             for object_ in self.config:
                 (type_, attirbutes) = self.config[object_]
-                config_file.write('OBJECT %s TYPE %s {\n' % (object_, type_))
+                config_file.write(
+                    'OBJECT {} TYPE {} {}\n'.format(object_, type_, '{'))
                 for attribute in attirbutes:
-                    config_file.write('\t%s: %s\n' %
-                                      (attribute,
-                                       attribute_string(attirbutes[attribute])))
+                    config_file.write('\t{}: {}\n'.format(
+                        attribute, attribute_string(attirbutes[attribute])))
                 config_file.write('}\n')
 
     def get(self, object_, attribute):

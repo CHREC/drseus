@@ -62,11 +62,15 @@ class fault_injector(object):
                         self.db.result['aux_output'] or
                         self.db.result['debugger_output'] or
                         result_items):
-                self.db.result.update({
-                    'outcome_category': 'DrSEUs',
-                    'outcome': 'Exited'})
+                self.db.result['outcome_category'] = 'DrSEUs'
+                if self.options.command == 'supervise':
+                    self.db.result['outcome'] = 'Supervisor'
+                else:
+                    self.db.result['outcome'] = 'Exited'
                 with self.db as db:
-                    db.log_result(exit=True)
+                    db.log_result(
+                        supervisor=self.options.command == 'supervise',
+                        exit=True)
             else:
                 with self.db as db:
                     db.delete_result()
@@ -319,7 +323,8 @@ class fault_injector(object):
                                      self.db.campaign['command'])
                     self.debugger.dut.reset_timer()
                 try:
-                    latent_faults, persistent_faults = self.debugger.inject_faults()
+                    latent_faults, persistent_faults = \
+                        self.debugger.inject_faults()
                 except DrSEUsError as error:
                     self.db.result['outcome'] = str(error)
                     if self.db.campaign['simics']:

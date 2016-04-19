@@ -30,22 +30,24 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="box">
-                    <div class="box-header">
-                        <h3 class="box-title">Injection Data</h3>
-                        <div class="box-tools pull-right">
-                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+        {% if injection_table %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="box">
+                        <div class="box-header">
+                            <h3 class="box-title">Injection Data</h3>
+                            <div class="box-tools pull-right">
+                                <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                                <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="box-body">
-                        {% render_table injection_table %}
+                        <div class="box-body">
+                            {% render_table injection_table %}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        {% endif %}
 
         <div class="row">
             <div class="col-lg-12">
@@ -122,24 +124,26 @@
                 </div>
             {% endif %}
 
-            {% if result.campaign.aux %}
-            <div class="col-lg-2">
-            {% else %}
-            <div class="col-lg-6">
-            {% endif %}
-                <div class="box">
-                    <div class="box-header">
-                        <h3 class="box-title">Debugger Output</h3>
-                        <div class="box-tools pull-right">
-                            <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-                            <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+            {% if result.debugger_output %}
+                {% if result.campaign.aux %}
+                <div class="col-lg-2">
+                {% else %}
+                <div class="col-lg-6">
+                {% endif %}
+                    <div class="box">
+                        <div class="box-header">
+                            <h3 class="box-title">Debugger Output</h3>
+                            <div class="box-tools pull-right">
+                                <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                                <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="box-body">
+                            <code class="console">{{ result.debugger_output }}</code>
                         </div>
                     </div>
-                    <div class="box-body">
-                        <code class="console">{{ result.debugger_output }}</code>
-                    </div>
                 </div>
-            </div>
+            {% endif %}
         </div>
 
         {% if result.campaign.simics %}
@@ -180,7 +184,7 @@
 
 {% block sidebar_block %}
     <li class="header">OPTIONS</li>
-    {% if result.campaign.simics %}
+    {% if result.campaign.simics and injection_table %}
         <li>
             <a href="javascript:{}" onclick="launch_simics()">
                 <i class="fa fa-desktop"></i>

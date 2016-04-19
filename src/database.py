@@ -27,7 +27,7 @@ class database(object):
         self.lock = Lock()
         if create_result:
             with self as db:
-                db.__create_result()
+                db.__create_result(supervisor=options.command == 'supervise')
         if not self.exists():
             if initialize:
                 commands = (
@@ -169,7 +169,7 @@ class database(object):
              isinstance(value, tuple) else value
              for value in dictionary.values()])
 
-    def __create_result(self):
+    def __create_result(self, supervisor=False):
         self.result.update({'aux_output': '',
                             'campaign_id': self.campaign['id'],
                             'cycles': None,
@@ -179,14 +179,16 @@ class database(object):
                             'dut_output': '',
                             'execution_time': None,
                             'num_injections': None,
-                            'outcome_category': 'Incomplete',
-                            'outcome': 'In progress',
+                            'outcome_category': ('DrSEUs' if supervisor
+                                                 else 'Incomplete'),
+                            'outcome': ('Supervisor' if supervisor
+                                        else 'In progress'),
                             'returned': None,
                             'timestamp': None})
         self.insert('result')
 
-    def log_result(self, exit=False):
-        if not exit:
+    def log_result(self, supervisor=False, exit=False):
+        if self.result['outcome_category'] != 'DrSEUs':
             if 'dut_serial_port' in self.result:
                 out = self.result['dut_serial_port']+', '
             else:
@@ -201,7 +203,7 @@ class database(object):
             print(colored(out, 'blue'))
         self.update('result')
         if not exit:
-            self.__create_result()
+            self.__create_result(supervisor)
 
     def log_event(self, level, source, type_, description=None,
                   success=None, campaign=False):

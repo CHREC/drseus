@@ -161,12 +161,14 @@ class supervisor(Cmd):
             self.drseus.debugger.close()
         else:
             self.drseus.debugger.dut.flush()
-        self.drseus.db.result.update({'outcome_category': 'DrSEUs',
-                                      'outcome': 'Pre-supervise'})
         with self.drseus.db as db:
             db.log_result()
         try:
             self.drseus.inject_campaign(iteration_counter, timer)
+            self.drseus.db.result.update({'outcome_category': 'DrSEUs',
+                                          'outcome': 'Supervisor'})
+            with self.drseus.db as db:
+                db.update('result')
         except KeyboardInterrupt:
             self.drseus.debugger.dut.write('\x03')
             if self.drseus.db.campaign['aux']:
@@ -177,7 +179,7 @@ class supervisor(Cmd):
             self.drseus.db.result.update({'outcome_category': 'Incomplete',
                                           'outcome': 'Interrupted'})
             with self.drseus.db as db:
-                db.log_result()
+                db.log_result(supervisor=True)
         except:
             print_exc()
             with self.drseus.db as db:
@@ -185,7 +187,7 @@ class supervisor(Cmd):
             self.drseus.db.result.update({'outcome_category': 'Incomplete',
                                           'outcome': 'Uncaught exception'})
             with self.drseus.db as db:
-                db.log_result()
+                db.log_result(supervisor=True)
         if self.drseus.db.campaign['simics']:
             self.drseus.debugger.launch_simics(
                 'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
@@ -223,12 +225,14 @@ class supervisor(Cmd):
             self.drseus.debugger.close()
         else:
             self.drseus.debugger.dut.flush()
-        self.drseus.db.result.update({'outcome_category': 'DrSEUs',
-                                      'outcome': 'Pre-inject'})
         with self.drseus.db as db:
             db.log_result()
         try:
             self.drseus.inject_campaign(iteration_counter)
+            self.drseus.db.result.update({'outcome_category': 'DrSEUs',
+                                          'outcome': 'Supervisor'})
+            with self.drseus.db as db:
+                db.update('result')
         except KeyboardInterrupt:
             if self.drseus.debugger.dut:
                 self.drseus.debugger.dut.write('\x03')
@@ -241,7 +245,7 @@ class supervisor(Cmd):
             self.drseus.db.result.update({'outcome_category': 'Incomplete',
                                           'outcome': 'Interrupted'})
             with self.drseus.db as db:
-                db.log_result()
+                db.log_result(supervisor=True)
         except:
             print_exc()
             with self.drseus.db as db:
@@ -251,7 +255,7 @@ class supervisor(Cmd):
             self.drseus.db.result.update({'outcome_category': 'Incomplete',
                                           'outcome': 'Uncaught exception'})
             with self.drseus.db as db:
-                db.log_result()
+                db.log_result(supervisor=True)
         if self.drseus.db.campaign['simics']:
             self.drseus.debugger.launch_simics(
                 'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
@@ -285,9 +289,9 @@ class supervisor(Cmd):
         """Log current status as a result"""
         self.drseus.db.result.update({
             'outcome_category': 'DrSEUs',
-            'outcome': arg if arg else 'Manual entry'})
+            'outcome': arg if arg else 'User'})
         with self.drseus.db as db:
-            db.log_result()
+            db.log_result(supervisor=True)
 
     def do_event(self, arg):
         """Log an event"""
