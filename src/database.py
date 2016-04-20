@@ -164,7 +164,7 @@ class database(object):
             'UPDATE log_{} SET {}=%s WHERE id={}'.format(
                 table,
                 '=%s, '.join(dictionary.keys()),
-                str(dictionary['id'])),
+                dictionary['id']),
             [('{'+','.join(map(str, value))+'}') if isinstance(value, list) or
              isinstance(value, tuple) else value
              for value in dictionary.values()])
@@ -190,12 +190,12 @@ class database(object):
     def log_result(self, supervisor=False, exit=False):
         if self.result['outcome_category'] != 'DrSEUs':
             if 'dut_serial_port' in self.result:
-                out = self.result['dut_serial_port']+', '
+                out = '{}, '.format(self.result['dut_serial_port'])
             else:
                 out = ''
-            out += (str(self.result['id'])+': ' +
-                    self.result['outcome_category']+' - ' +
-                    self.result['outcome'])
+            out += '{}: {} - {}'.format(self.result['id'],
+                                        self.result['outcome_category'],
+                                        self.result['outcome'])
             if self.result['data_diff'] is not None and \
                     self.result['data_diff'] < 1.0:
                 out += ' {0:.2f}%'.format(min(self.result['data_diff']*100,

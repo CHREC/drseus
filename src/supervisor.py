@@ -34,14 +34,7 @@ class supervisor(Cmd):
             switch = None
         self.drseus = fault_injector(campaign, options, switch)
         if campaign['simics']:
-            checkpoint = ('gold-checkpoints/' +
-                          str(self.drseus.db.campaign['id'])+'/' +
-                          str(self.drseus.db.campaign['checkpoints']))
-            if exists('simics-workspace/'+checkpoint+'_merged'):
-                self.drseus.debugger.launch_simics(checkpoint+'_merged')
-            else:
-                self.drseus.debugger.launch_simics(checkpoint)
-            self.drseus.debugger.continue_dut()
+            self.launch_simics()
         else:
             self.drseus.debugger.reset_dut()
         self.prompt = 'DrSEUs> '
@@ -51,6 +44,16 @@ class supervisor(Cmd):
         set_history_length(options.history_length)
         if campaign['aux']:
             self.__class__ = aux_supervisor
+
+    def launch_simics(self):
+        checkpoint = 'gold-checkpoints/{}/{}'.format(
+            self.drseus.db.campaign['id'],
+            self.drseus.db.campaign['checkpoints'])
+        if exists('simics-workspace/{}_merged'.format(checkpoint)):
+            self.drseus.debugger.launch_simics('{}_merged'.format(checkpoint))
+        else:
+            self.drseus.debugger.launch_simics(checkpoint)
+        self.drseus.debugger.continue_dut()
 
     def preloop(self):
         print('Welcome to DrSEUs!\n')
@@ -70,7 +73,7 @@ class supervisor(Cmd):
 
     def do_info(self, arg=None):
         """Print information about the current campaign"""
-        print(str(self.drseus))
+        print(self.drseus)
 
     def do_update_dut_timeout(self, arg, aux=False):
         """Update DUT serial timeout (in seconds)"""
@@ -130,10 +133,10 @@ class supervisor(Cmd):
 
     def do_get_file_dut(self, arg, aux=False):
         """Retrieve file from DUT device"""
-        output = ('campaign-data/'+str(self.drseus.db.campaign['id']) +
-                  '/results/'+str(self.drseus.result['id'])+'/')
+        output = 'campaign-data/{}/results/{}/'.format(
+            self.drseus.db.campaign['id'], self.drseus.result['id'])
         makedirs(output)
-        output += '/'+arg
+        output += arg
         if aux:
             self.drseus.debugger.aux.get_file(arg, output, attempts=1)
         else:
@@ -170,9 +173,14 @@ class supervisor(Cmd):
             with self.drseus.db as db:
                 db.update('result')
         except KeyboardInterrupt:
-            self.drseus.debugger.dut.write('\x03')
-            if self.drseus.db.campaign['aux']:
+            if self.drseus.db.campaign['simics']:
+                self.drseus.debugger.continue_dut()
+            if self.drseus.debugger.dut:
+                self.drseus.debugger.dut.write('\x03')
+                self.drseus.debugger.dut.flush()
+            if self.drseus.db.campaign['aux'] and self.drseus.debugger.aux:
                 self.drseus.debugger.aux.write('\x03')
+                self.drseus.debugger.aux.flush()
             with self.drseus.db as db:
                 db.log_event('Information', 'User', 'Interrupted',
                              db.log_exception)
@@ -189,10 +197,8 @@ class supervisor(Cmd):
             with self.drseus.db as db:
                 db.log_result(supervisor=True)
         if self.drseus.db.campaign['simics']:
-            self.drseus.debugger.launch_simics(
-                'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
-                str(self.drseus.db.campaign['checkpoints'])+'_merged')
-            self.drseus.debugger.continue_dut()
+            self.drseus.debugger.close()
+            self.launch_simics()
 
     def do_inject(self, arg):
         if not (isinstance(self.drseus.debugger, bdi) or
@@ -234,14 +240,17 @@ class supervisor(Cmd):
             with self.drseus.db as db:
                 db.update('result')
         except KeyboardInterrupt:
+            if self.drseus.db.campaign['simics']:
+                self.drseus.debugger.continue_dut()
             if self.drseus.debugger.dut:
                 self.drseus.debugger.dut.write('\x03')
+                self.drseus.debugger.dut.flush()
             if self.drseus.db.campaign['aux'] and self.drseus.debugger.aux:
                 self.drseus.debugger.aux.write('\x03')
+                self.drseus.debugger.aux.flush()
             with self.drseus.db as db:
                 db.log_event('Information', 'User', 'Interrupted',
                              db.log_exception)
-            self.drseus.debugger.close()
             self.drseus.db.result.update({'outcome_category': 'Incomplete',
                                           'outcome': 'Interrupted'})
             with self.drseus.db as db:
@@ -251,23 +260,20 @@ class supervisor(Cmd):
             with self.drseus.db as db:
                 db.log_event('Error', 'DrSEUs', 'Exception',
                              db.log_exception)
-            self.drseus.debugger.close()
             self.drseus.db.result.update({'outcome_category': 'Incomplete',
                                           'outcome': 'Uncaught exception'})
             with self.drseus.db as db:
                 db.log_result(supervisor=True)
         if self.drseus.db.campaign['simics']:
-            self.drseus.debugger.launch_simics(
-                'gold-checkpoints/'+str(self.drseus.db.campaign['id'])+'/' +
-                str(self.drseus.db.campaign['checkpoints'])+'_merged')
-            self.drseus.debugger.continue_dut()
+            self.drseus.debugger.close()
+            self.launch_simics()
 
     def do_minicom(self, arg=None):
         """Launch minicom connected to DUT and includes session in log"""
-        timestamp = ('-'.join([str(unit).zfill(2)
+        timestamp = ('-'.join(['{:02}'.format(unit)
                                for unit in datetime.now().timetuple()[:3]]) +
                      '_' +
-                     '-'.join([str(unit).zfill(2)
+                     '-'.join(['{:02}'.format(unit)
                                for unit in datetime.now().timetuple()[3:6]]))
         capture = 'minicom_capture.'+timestamp
         self.drseus.debugger.dut.close()

@@ -150,7 +150,8 @@ def get_campaign(options):
     with database(options) as db:
         campaign = db.get_campaign()
     if campaign is None:
-        raise Exception('could not find campaign ID '+str(options.campaign_id))
+        raise Exception('could not find campaign ID {}'.format(
+            options.campaign_id))
     return campaign
 
 
@@ -164,13 +165,13 @@ def delete(options):
                  ' [y/N]: '.format(options.campaign_id)) not in \
                 ['y', 'Y', 'yes']:
             return
-        if exists('campaign-data/'+str(options.campaign_id)+'/results'):
-            rmtree('campaign-data/'+str(options.campaign_id)+'/results')
+        if exists('campaign-data/{}/results'.format(options.campaign_id)):
+            rmtree('campaign-data/{}/results'.format(options.campaign_id))
             print('deleted results')
-        if exists('simics-workspace/injected-checkpoints/' +
-                  str(options.campaign_id)):
-            rmtree('simics-workspace/injected-checkpoints/' +
-                   str(options.campaign_id))
+        if exists('simics-workspace/injected-checkpoints/{}'.format(
+                options.campaign_id)):
+            rmtree('simics-workspace/injected-checkpoints/{}'.format(
+                options.campaign_id))
             print('deleted injected checkpoints')
         if db:
             with db:
@@ -180,24 +181,24 @@ def delete(options):
         if input('are you sure you want to delete campaign {}? [y/N]: '.format(
                 options.campaign_id)) not in ['y', 'Y', 'yes']:
             return
-        if exists('campaign-data/'+str(options.campaign_id)):
-            rmtree('campaign-data/'+str(options.campaign_id))
+        if exists('campaign-data/{}'.format(options.campaign_id)):
+            rmtree('campaign-data/{}'.format(options.campaign_id))
             print('deleted campaign data')
-        if exists('simics-workspace/gold-checkpoints/' +
-                  str(options.campaign_id)):
-            rmtree('simics-workspace/gold-checkpoints/' +
-                   str(options.campaign_id))
+        if exists('simics-workspace/gold-checkpoints/{}'.format(
+                options.campaign_id)):
+            rmtree('simics-workspace/gold-checkpoints/{}'.format(
+                options.campaign_id))
             print('deleted gold checkpoints')
-        if exists('simics-workspace/injected-checkpoints/' +
-                  str(options.campaign_id)):
-            rmtree('simics-workspace/injected-checkpoints/' +
-                   str(options.campaign_id))
+        if exists('simics-workspace/injected-checkpoints/{}'.format(
+                options.campaign_id)):
+            rmtree('simics-workspace/injected-checkpoints/{}'.format(
+                options.campaign_id))
             print('deleted injected checkpoints')
         if db:
             with db:
                 db.delete_campaign()
-                print('deleted campaign '+str(options.campaign_id) +
-                      ' from database')
+                print('deleted campaign {} from database'.format(
+                    options.campaign_id))
     elif options.delete in ('all', 'a'):
         if input('are you sure you want to delete all campaigns, files, and '
                  'database? [y/N]: ') not in ['y', 'Y', 'yes']:
@@ -281,10 +282,10 @@ def create_campaign(options):
         options.aux_application = options.application
     with database(options, initialize=True) as db:
         db.insert('campaign', campaign)
-    campaign_directory = 'campaign-data/'+str(campaign['id'])
+    campaign_directory = 'campaign-data/{}'.format(campaign['id'])
     if exists(campaign_directory):
-        raise Exception('directory already exists: '
-                        'campaign-data/'+str(campaign['id']))
+        raise Exception('directory already exists: campaign-data/{}'.format(
+            campaign['id']))
     drseus = fault_injector(campaign, options)
     drseus.setup_campaign()
     print('campaign created')
@@ -369,8 +370,8 @@ def regenerate(options):
     drseus = fault_injector(campaign, options)
     checkpoint = drseus.debugger.regenerate_checkpoints(injections)
     drseus.debugger.launch_simics_gui(checkpoint)
-    rmtree('simics-workspace/injected-checkpoints/'+str(campaign['id']) +
-           '/'+str(options.result_id))
+    rmtree('simics-workspace/injected-checkpoints/{}/{}'.format(
+        campaign['id'], options.result_id))
 
 
 def view_log(options):
@@ -388,10 +389,10 @@ def run_django_command(options):
 
 
 def __update_checkpoint_dependencies(campaign_id):
-    for checkpoint in listdir('simics-workspace/gold-checkpoints/' +
-                              str(campaign_id)):
-        with simics_config('simics-workspace/gold-checkpoints/' +
-                           str(campaign_id)+'/'+checkpoint) as config:
+    for checkpoint in listdir('simics-workspace/gold-checkpoints/{}'.format(
+            campaign_id)):
+        with simics_config('simics-workspace/gold-checkpoints/{}/{}'.format(
+                campaign_id, checkpoint)) as config:
             paths = config.get(config, 'sim', 'checkpoint_path')
             new_paths = []
             for path in paths:
@@ -414,7 +415,7 @@ def update_dependencies(none=None):
 
 def launch_openocd(options):
     debugger = openocd(None, options)
-    print('Launched '+str(debugger)+'\n')
+    print('Launched {}\n'.format(debugger))
     try:
         debugger.openocd.wait()
     except KeyboardInterrupt:
@@ -466,12 +467,11 @@ def backup(options):
     database(options).backup_database(sql_backup)
     print('database dumped')
     if options.files:
-        backup_name = ('backups/' +
-                       '-'.join([str(unit).zfill(2)
-                                 for unit in datetime.now().timetuple()[:3]]) +
-                       '_' +
-                       '-'.join([str(unit).zfill(2)
-                                 for unit in datetime.now().timetuple()[3:6]]))
+        backup_name = 'backups/{}_{}'.format(
+            '-'.join(['{:02}'.format(unit)
+                      for unit in datetime.now().timetuple()[:3]]),
+            '-'.join(['{:02}'.format(unit)
+                      for unit in datetime.now().timetuple()[3:6]]))
         num_items = 0
         directories = ['campaign-data']
         if exists('simics-workspace/gold-checkpoints'):
@@ -480,7 +480,7 @@ def backup(options):
         for directory in directories:
             num_items += traverse_directory(directory)
         print('archiving files...')
-        with open_tar(backup_name+'.tar.gz', 'w:gz') \
+        with open_tar('{}.tar.gz'.format(backup_name), 'w:gz') \
             as backup, ProgressBar(max_value=num_items, widgets=[
                 Percentage(), ' (',
                 SimpleProgress(format='%(value)d/%(max_value)d'), ') ', Bar(),

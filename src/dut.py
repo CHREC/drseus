@@ -79,11 +79,10 @@ class dut(object):
         self.open()
 
     def __str__(self):
-        string = ('Serial Port: '+self.serial.port+'\n\tTimeout: ' +
-                  str(self.serial.timeout)+' seconds\n\tPrompt: \"' +
-                  self.prompt+'\"\n\tIP Address: '+str(self.ip_address) +
-                  '\n\tSCP Port: '+str(self.scp_port))
-        return string
+        return ('Serial Port: {}\n\tTimeout: {} seconds\n\tPrompt: "{}"\n\t'
+                'IP Address: {}\n\tSCP Port: {}').format(
+                    self.serial.port, self.serial.timeout, self.prompt,
+                    self.ip_address, self.scp_port)
 
     def start_timer(self):
         self.__start_time = perf_counter()
@@ -127,9 +126,10 @@ class dut(object):
                                  'DUT' if not self.aux else 'AUX',
                                  'Error opening serial port',
                                  db.log_exception)
-                print(colored(
-                    'Error opening serial port '+serial_port+' (attempt ' +
-                    str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
+                print(colored('Error opening serial port {} '
+                              '(attempt {}/{}): {}'.format(
+                                  serial_port, attempt+1, attempts, error),
+                              'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 else:
@@ -204,8 +204,9 @@ class dut(object):
             db.log_event('Warning' if attempt < attempts-1 else 'Error',
                          'DUT' if not self.aux else 'AUX', error_type,
                          db.log_exception)
-        print(colored(self.serial.port+': '+message+' (attempt ' +
-                      str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
+
+        print(colored('{}: {} (attempt {}/{}): {}'.format(
+            self.serial.port, message, attempt+1, attempts, error), 'red'))
         for item in close_items:
             item.close()
         if attempt < attempts-1:
@@ -216,7 +217,7 @@ class dut(object):
     def send_files(self, files=None, attempts=10):
         if not files:
             files = []
-            location = 'campaign-data/'+str(self.db.campaign['id'])
+            location = 'campaign-data/{}'.format(self.db.campaign['id'])
             if self.aux:
                 location += '/aux-files/'
             else:
@@ -237,8 +238,8 @@ class dut(object):
                     copy(file_, location)
             if hasattr(self.options, 'local_diff') and \
                     self.options.local_diff and self.db.campaign['output_file']:
-                files.append('campaign-data/'+str(self.db.campaign['id']) +
-                             '/gold_'+self.db.campaign['output_file'])
+                files.append('campaign-data/{}/gold_{}'.format(
+                    self.db.campaign['id']), self.db.campaign['output_file'])
         if not files:
             return
         if self.options.debug:
@@ -363,10 +364,10 @@ class dut(object):
                                              'DUT' if not self.aux else 'AUX',
                                              'Missing file', local_path)
                             print(colored(
-                                self.serial.port +
-                                ': Error receiving file (attempt ' +
-                                str(attempt+1)+'/'+str(attempts) +
-                                '): missing file', 'red'))
+                                '{}: Error receiving file (attempt {}/{}): '
+                                'missing file'.format(
+                                    self.serial.port, attempt+1, attempts),
+                                'red'))
                             if attempt < attempts-1:
                                 sleep(30)
                             else:

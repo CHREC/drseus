@@ -17,8 +17,8 @@ class bdi(jtag):
         self.open()
 
     def __str__(self):
-        string = ('BDI3000 at '+self.options.debugger_ip_address +
-                  ' port '+str(self.port))
+        string = 'BDI3000 at {} port {}'.format(
+            self.options.debugger_ip_address, self.port)
         return string
 
     def set_targets(self):
@@ -70,7 +70,7 @@ class bdi(jtag):
         super().continue_dut('go 0 1')
 
     def select_core(self, core):
-        self.command('select '+str(core), ['Target CPU', 'Core state'],
+        self.command('select {}'.format(core), ['Target CPU', 'Core state'],
                      'Error selecting core')
 
     def get_mode(self):
@@ -121,16 +121,16 @@ class bdi(jtag):
                 elif bits == 64:
                     command += 'd'
             address = target['base'][target_index] + register['offset']
-            buff = self.command(command+' '+hex(address)+' 1', [':'],
-                                'Error getting register value')
+            buff = self.command('{} {:#x} 1'.format(command, address),
+                                [':'], 'Error getting register value')
         elif 'SPR' in register:
-            buff = self.command('rdspr ' + str(register['SPR']), [':'],
+            buff = self.command('rdspr {}'.format(register['SPR']), [':'],
                                 'Error getting register value')
         elif 'PMR' in register:
-            buff = self.command('rdpmr ' + str(register['PMR']), [':'],
+            buff = self.command('rdpmr {}'.format(register['PMR']), [':'],
                                 'Error getting register value')
         else:
-            buff = self.command('rd '+register_name, [':'],
+            buff = self.command('rd {}'.format(register_name), [':'],
                                 'Error getting register value')
         return buff.split('\r')[0].split(':')[1].split()[0]
 
@@ -156,20 +156,20 @@ class bdi(jtag):
             if 'bits' in register:
                 bits = register['bits']
                 if bits == 8:
-                    command += 'b'
+                    command = 'mmb'
                 elif bits == 16:
-                    command += 'h'
+                    command = 'mmh'
                 elif bits == 64:
-                    command += 'd'
+                    command = 'mmd'
             address = target['base'][target_index] + register['offset']
-            self.command(command+' '+hex(address)+' '+value+' 1',
+            self.command('{} {:#x} {} 1'.format(command, address, value),
                          error_message='Error getting register value')
         elif 'SPR' in register:
-            self.command('rmspr '+str(register['SPR'])+' '+value,
+            self.command('rmspr {} {}'.format(register['SPR'], value),
                          error_message='Error setting register value')
         elif 'PMR' in register:
-            self.command('rmpmr '+str(register['PMR'])+' '+value,
+            self.command('rmpmr {} {}'.format(register['PMR'], value),
                          error_message='Error setting register value')
         else:
-            self.command('rm '+register_name+' '+value,
+            self.command('rm {} {}'.format(register_name, value),
                          error_message='Error setting register value')

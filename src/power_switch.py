@@ -59,8 +59,8 @@ class power_switch(object):
     # def get_status(self):
         response = urlopen(Request(
             'http://'+self.ip_address+'/index.htm',
-            headers={'Authorization': b'Basic '+b64encode(
-                bytes(self.username+':'+self.password, encoding='utf-8'))}))
+            headers={'Authorization': b'Basic '+b64encode(bytes('{}:{}'.format(
+                self.username, self.password), encoding='utf-8'))}))
         parser = table_parser()
         parser.feed(response.read().decode())
         for table in parser.tables:
@@ -88,14 +88,14 @@ class power_switch(object):
         if outlet == 'all':
             outlet = 'a'
         elif outlet not in self.outlets:
-            raise Exception('invalid outlet: '+str(outlet))
+            raise Exception('invalid outlet: {}'.format(outlet))
         state = state.upper()
         if state not in ('OFF', 'ON'):
-            raise Exception('invalid state: '+state)
+            raise Exception('invalid state: {}'.format(state))
         if delay < 1:
             delay = 1
         urlopen(Request(
-            'http://'+self.ip_address+'/outlet?'+str(outlet)+'='+state,
+            'http://{}/outlet?{}={}'.format(self.ip_address, outlet, state),
             headers={'Authorization': b'Basic '+b64encode(
                 bytes(self.username+':'+self.password, encoding='utf-8'))}))
         if exists('power_switch_log.txt'):
@@ -103,8 +103,8 @@ class power_switch(object):
         else:
             log = open('power_switch_log.txt', 'w')
             log.write('Outlet\tState\tTimestamp\n')
-        log.write(str(outlet)+'\t\t'+state+'\t\t' +
-                  datetime.now().strftime('%b %d, %Y %I:%M:%S %p')+'\n')
+        log.write('{}\t\t{}\t\t{}\n'.format(
+            outlet, state, datetime.now().strftime('%b %d, %Y %I:%M:%S %p')))
         log.close()
         sleep(delay)
 

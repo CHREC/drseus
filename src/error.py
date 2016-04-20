@@ -6,9 +6,9 @@ class DrSEUsError(Exception):
 
     def __str__(self):
         string = ''
-        if self.source:
-            string += str(self.source)+': '
+        if self.source is not None:
+            string += '{}: '.format(self.source)
         string += str(self.type)
-        if self.returned:
-            string += ', returned: '+str(self.returned)
+        if self.returned is not None:
+            string += ', returned: {}'.format(self.returned)
         return string

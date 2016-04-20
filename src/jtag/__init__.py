@@ -20,7 +20,7 @@ class jtag(object):
     def __str__(self):
         string = 'JTAG Debugger at '+self.options.debugger_ip_address
         try:
-            string += ' port '+str(self.port)
+            string += ' port {}'.format(self.port)
         except AttributeError:
             pass
         return string
@@ -66,9 +66,8 @@ class jtag(object):
             with self.db as db:
                 db.log_event('Warning' if attempt < attempts-1 else 'Error',
                              'Debugger', event_type, db.log_exception)
-            print(colored(
-                self.dut.serial.port+': Error resetting DUT (attempt ' +
-                str(attempt+1)+'/'+str(attempts)+'): '+str(error), 'red'))
+            print(colored('{}: Error resetting DUT (attempt {}/{}): {}'.format(
+                self.dut.serial.port, attempt, error), 'red'))
             if attempt < attempts-1:
                 sleep(30)
             else:
@@ -181,18 +180,16 @@ class jtag(object):
             with self.db as db:
                 db.update('injection', injection)
             if self.options.debug:
-                print(colored('injection time: '+str(injection['time']),
-                              'magenta'))
-                print(colored('target: '+injection['target'], 'magenta'))
+                print(colored('injection time: {}\ntarget: {}'.format(
+                    injection['time'], injection['target']), 'magenta'))
                 if 'target_index' in injection:
-                    print(colored('target_index: ' +
-                                  str(injection['target_index']), 'magenta'))
-                print(colored('register: '+injection['register'], 'magenta'))
-                print(colored('bit: '+str(injection['bit']), 'magenta'))
-                print(colored('gold value: '+injection['gold_value'],
-                              'magenta'))
-                print(colored('injected value: ' +
-                              injection['injected_value'], 'magenta'))
+                    print(colored('target_index: {}'.format(
+                        injection['target_index']), 'magenta'))
+                print(colored(
+                    'register: {}\nbit: {}\ngold value: {}\ninjected value: {}'
+                    ''.format(injection['register'], injection['bit'],
+                              injection['gold_value'],
+                              injection['injected_value']), 'magenta'))
             self.set_register_value(injection)
             if int(injection['injected_value'], base=16) == \
                     int(self.get_register_value(injection), base=16):

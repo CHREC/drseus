@@ -81,25 +81,24 @@ class openocd(jtag):
         self.open()
 
     def __str__(self):
-        string = 'OpenOCD at localhost port '+str(self.port)
+        string = 'OpenOCD at localhost port {}'.format(self.port)
         if hasattr(self, 'gdb_port') and self.gdb_port:
-            string += ' (GDB port '+str(self.gdb_port)+')'
+            string += ' (GDB port {})'.format(self.gdb_port)
         return string
 
     def set_targets(self):
         super().set_targets('a9')
 
     def open(self):
-        self.openocd = Popen(
-            ['openocd', '-c',
-             'gdb_port '+str(self.gdb_port)+'; '
-             'tcl_port 0; '
-             'telnet_port '+str(self.port)+'; '
-             'interface ftdi; ' +
-             (('ftdi_serial '+self.device_info['ftdi']+';')
-              if self.device_info is not None else ''),
-             '-f', dirname(abspath(__file__))+'/openocd_zedboard_' +
-             ('smp' if self.options.smp else 'amp')+'.cfg'],
+        self.openocd = Popen([
+            'openocd', '-c',
+            'gdb_port {}; tcl_port 0; telnet_port {}; interface ftdi;'.format(
+                self.gdb_port, self.port) +
+            (' ftdi_serial {};'.format(self.device_info['ftdi'])
+             if self.device_info is not None else ''),
+            '-f', '{}/openocd_zedboard_{}.cfg'.format(
+                dirname(abspath(__file__)),
+                'smp' if self.options.smp else 'amp')],
             stderr=(DEVNULL if self.options.command != 'openocd' else None))
         if self.options.command != 'openocd':
             with self.db as db:

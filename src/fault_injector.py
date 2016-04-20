@@ -29,25 +29,24 @@ class fault_injector(object):
             self.debugger.aux.do_login()
 
     def __str__(self):
-        string = ('DrSEUs Attributes:\n\tDebugger: '+str(self.debugger) +
-                  '\n\tDUT:\t'+str(self.debugger.dut).replace('\n\t', '\n\t\t'))
+        string = 'DrSEUs Attributes:\n\tDebugger: {}\n\tDUT:\t{}'.format(
+            self.debugger, str(self.debugger.dut).replace('\n\t', '\n\t\t'))
         if self.db.campaign['aux']:
-            string += '\n\tAUX:\t'+str(self.debugger.aux).replace('\n\t',
-                                                                  '\n\t\t')
-        string += ('\n\tCampaign Information:\n\t\tCampaign Number: ' +
-                   str(self.db.campaign['id'])+'\n\t\t')
-
+            string += '\n\tAUX:\t{}'.format(str(self.debugger.aux).replace(
+                '\n\t', '\n\t\t'))
+        string += ('\n\tCampaign Information:\n\t\tCampaign Number: {}'.format(
+            self.db.campaign['id']))
         if self.db.campaign['command']:
-            string += ('DUT Command: \"'+self.db.campaign['command']+'\"')
+            string += '\n\t\tDUT Command: "{}"'.format(
+                self.db.campaign['command'])
             if self.db.campaign['aux']:
-                string += \
-                    '\n\t\tAUX Command: \"'+self.db.campaign['aux_command']+'\"'
-            string += ('\n\t\t'+'Execution Time: ' +
-                       str(self.db.campaign['execution_time'])+' seconds')
+                string += '\n\t\tAUX Command: "{}"'.format(
+                    self.db.campaign['aux_command'])
+            string += '\n\t\tExecution Time: {} seconds'.format(
+                self.db.campaign['execution_time'])
             if self.db.campaign['simics']:
-                string += ('\n\t\tExecution Cycles: ' +
-                           '{:,}'.format(self.db.campaign['cycles']) +
-                           ' cycles\n')
+                string += '\n\t\tExecution Cycles: {:,}\n'.format(
+                    self.db.campaign['cycles'])
         return string
 
     def close(self, log=True):
@@ -85,17 +84,19 @@ class fault_injector(object):
                 if self.db.campaign['aux_output_file']:
                     self.debugger.aux.get_file(
                         self.db.campaign['output_file'],
-                        'campaign-data/'+str(self.db.campaign['id'])+'/gold_' +
-                        self.db.campaign['output_file'])
-                    self.debugger.aux.command('rm ' +
-                                              self.db.campaign['output_file'])
+                        'campaign-data/{}/gold_{}'.format(
+                            self.db.campaign['id'],
+                            self.db.campaign['output_file']))
+                    self.debugger.aux.command('rm {}'.format(
+                        self.db.campaign['output_file']))
                 else:
                     self.debugger.dut.get_file(
                         self.db.campaign['output_file'],
-                        'campaign-data/'+str(self.db.campaign['id'])+'/gold_' +
-                        self.db.campaign['output_file'])
-                    self.debugger.dut.command('rm ' +
-                                              self.db.campaign['output_file'])
+                        'campaign-data/{}/gold_{}'.format(
+                            self.db.campaign['id'],
+                            self.db.campaign['output_file']))
+                    self.debugger.dut.command('rm {}'.format(
+                      self.db.campaign['output_file']))
             with self.db as db:
                 db.update('campaign')
         self.close()
@@ -117,7 +118,7 @@ class fault_injector(object):
                 return
             if local_diff:
                 directory_listing = directory_listing.replace(
-                    'gold_'+self.db.campaign['output_file'], '')
+                    'gold_{}'.format(self.db.campaign['output_file']), '')
             if self.db.campaign['output_file'] not in directory_listing:
                 self.db.result['outcome_category'] = 'Execution error'
                 self.db.result['outcome'] = 'Missing output file'
@@ -128,15 +129,13 @@ class fault_injector(object):
                 else:
                     self.db.result['data_diff'] = 0
             if not local_diff or self.db.result['data_diff'] != 1.0:
-                result_folder = (
-                    'campaign-data/'+str(self.db.campaign['id']) +
-                    '/results/'+str(self.db.result['id']))
+                result_folder = 'campaign-data/{}/results/{}'.format(
+                    self.db.campaign['id'], self.db.result['id'])
                 makedirs(result_folder)
-                output_location = \
-                    result_folder+'/'+self.db.campaign['output_file']
-                gold_location = (
-                    'campaign-data/'+str(self.db.campaign['id']) +
-                    '/gold_'+self.db.campaign['output_file'])
+                output_location = '{}/{}'.format(
+                    result_folder, self.db.campaign['output_file'])
+                gold_location = 'campaign-data/{}/gold_{}'.format(
+                    self.db.campaign['id'], self.db.campaign['output_file'])
                 try:
                     if self.db.campaign['aux_output_file']:
                         self.debugger.aux.get_file(
@@ -170,8 +169,8 @@ class fault_injector(object):
                     self.db.result['outcome'] = 'Silent data error'
             try:
                 if self.db.campaign['aux_output_file']:
-                    self.debugger.aux.command('rm ' +
-                                              self.db.campaign['output_file'])
+                    self.debugger.aux.command('rm {}'.format(
+                      self.db.campaign['output_file']))
                 else:
                     self.debugger.dut.command('rm ' +
                                               self.db.campaign['output_file'])
@@ -269,9 +268,8 @@ class fault_injector(object):
                     'outcome_category': 'Simics error',
                     'outcome': str(error)})
             finally:
-                rmtree('simics-workspace/injected-checkpoints/' +
-                       str(self.db.campaign['id'])+'/' +
-                       str(self.db.result['id']))
+                rmtree('simics-workspace/injected-checkpoints/{}/{}'.format(
+                       self.db.campaign['id'], self.db.result['id']))
 
         def check_latent_faults():
             for i in range(self.options.latent_iterations):
