@@ -42,9 +42,9 @@ def run():
                 # using p2020 (not using simics)
                 missing_args.append('--jtag_ip')
         if options.command == 'supervise' and not campaign['simics'] and \
-                options.power_switch_outlet is None:
+                options.power_switch_outlet is not None:
             missing_args.append('--power_ip')
     if missing_args:
-        parser.error('the following arguments are required: ' +
-                     ', '.join(missing_args))
+        parser.error('the following arguments are required: {}'.format(
+            ', '.join(missing_args)))
     getattr(utilities, options.func)(options)

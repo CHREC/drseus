@@ -60,9 +60,9 @@ class dut(object):
             else options.aux_ip_address
         self.scp_port = options.dut_scp_port if not aux \
             else options.aux_scp_port
-        self.prompt = (options.dut_prompt if not aux or not options.aux_prompt
-                       else options.aux_prompt)
-        self.prompt += ' '
+        self.prompt = '{} '.format(
+            options.dut_prompt if not aux or not options.aux_prompt
+            else options.aux_prompt)
         self.username = options.dut_username if not aux \
             else options.aux_username
         self.password = options.dut_password if not aux \
@@ -103,8 +103,8 @@ class dut(object):
         serial_port = (self.options.dut_serial_port if not self.aux
                        else self.options.aux_serial_port)
         if self.db.result:
-            self.db.result[('dut' if not self.aux else 'aux') +
-                           '_serial_port'] = serial_port
+            self.db.result['dut_serial_port' if not self.aux
+                           else 'aux_serial_port'] = serial_port
             with self.db as db:
                 db.update('result')
         baud_rate = (self.options.dut_baud_rate if not self.aux
@@ -216,22 +216,21 @@ class dut(object):
     def send_files(self, files=None, attempts=10):
         if not files:
             files = []
-            location = 'campaign-data/{}'.format(self.db.campaign['id'])
-            if self.aux:
-                location += '/aux-files/'
-            else:
-                location += '/dut-files/'
+            location = 'campaign-data/{}/{}-files/'.format(
+                self.db.campaign['id'], 'aux' if self.aux else 'dut')
             if exists(location):
                 for item in listdir(location):
                     files.append(location+item)
             else:
                 if self.options.application_file:
-                    files.append(self.options.directory+'/' +
-                                 (self.options.aux_application if self.aux
-                                  else self.options.application))
+                    files.append('{}/{}'.format(
+                        self.options.directory,
+                        self.options.aux_application if self.aux
+                        else self.options.application))
                 if self.options.files:
                     for file_ in self.options.files:
-                        files.append(self.options.directory+'/'+file_)
+                        files.append('{}/{}'.format(
+                            self.options.directory, file_))
                 makedirs(location)
                 for file_ in files:
                     copy(file_, location)
@@ -424,14 +423,13 @@ class dut(object):
                 returned = True
                 break
             elif buff.endswith('autoboot: ') and self.uboot_command:
-                self.write('\n')
-                self.write(self.uboot_command+'\n')
+                self.write('\n{}\n'.format(self.uboot_command))
                 with self.db as db:
                     db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX', 'Command',
                                  self.uboot_command)
             elif buff.endswith('login: '):
-                self.write(self.username+'\n')
+                self.write('{}\n'.format(self.username))
                 with self.db as db:
                     db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX', 'Logged in',
@@ -439,7 +437,7 @@ class dut(object):
                 if not boot:
                     errors += 1
             elif buff.endswith('Password: '):
-                self.write(self.password+'\n')
+                self.write('{}\n'.format(self.password))
             elif buff.endswith('can\'t get kernel image'):
                 self.write('reset\n')
                 with self.db as db:
@@ -510,18 +508,15 @@ class dut(object):
                              'Booted', success=True)
         return buff, returned
 
-    def command(self, command=None, flush=True, attempts=5):
+    def command(self, command='', flush=True, attempts=5):
         with self.db as db:
             event = db.log_event('Information',
                                  'DUT' if not self.aux else 'AUX', 'Command',
                                  command, success=False)
         for attempt in range(attempts):
-            if command:
-                self.write(command+'\n')
-            else:
-                self.write('\n')
+            self.write('{}\n'.format(command))
             buff, returned = self.read_until(flush=flush)
-            if command and command not in buff and not regex(  # sorry!
+            if command and command not in buff and not regex(  # sorry not sorry
                     escape('_____'.join(command)).replace('_____', '.*'),
                     DOTALL).search(buff):
                 if attempt < attempts-1:
@@ -531,8 +526,8 @@ class dut(object):
                                      'Command error', buff, success=False)
                     sleep(5)
                 else:
-                    raise DrSEUsError(('DUT' if not self.aux else 'AUX') +
-                                      ' Command error', returned=returned)
+                    raise DrSEUsError('{} Command error'.format(
+                        'DUT' if not self.aux else 'AUX'), returned=returned)
             else:
                 with self.db as db:
                     db.log_event_success(event)
@@ -552,10 +547,10 @@ class dut(object):
         if self.options.rsa:
             self.command('mkdir ~/.ssh', flush=flush)
             self.command('touch ~/.ssh/authorized_keys', flush=flush)
-            self.command('echo \"ssh-rsa '+self.rsakey.get_base64() +
-                         '\" > ~/.ssh/authorized_keys', flush=flush)
+            self.command('echo "ssh-rsa {}" > ~/.ssh/authorized_keys'.format(
+                self.rsakey.get_base64()), flush=flush)
         if self.db.campaign['simics']:
-            self.command('ip addr add '+self.ip_address+'/24 dev eth0',
+            self.command('ip addr add {}/24 dev eth0'.format(self.ip_address),
                          flush=flush)
             self.command('ip link set eth0 up', flush=flush)
             self.command('ip addr show', flush=flush)
@@ -581,10 +576,9 @@ class dut(object):
         self.send_files()
 
     def local_diff(self):
-        command = ('diff '+self.db.campaign['output_file']+' gold_' +
-                   self.db.campaign['output_file'])
+        command = 'diff gold_{0} {0}'.format(self.db.campaign['output_file'])
         buff = self.command(command)[0].replace('\r\n', '\n')
-        buff = buff.replace(command+'\n', '')
+        buff = buff.replace('{}\n'.format(command), '')
         buff = buff.replace(self.prompt, '')
         if buff != '':
             return False

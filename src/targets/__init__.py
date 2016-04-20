@@ -292,10 +292,11 @@ def choose_injection(targets, selected_target_indices):
                     injection['field'] = field[0]
                     break
             else:
-                raise Exception('Error finding register field name for '
-                                'target: '+injection['target'] +
-                                ', register: '+injection['register'] +
-                                ', bit: '+str(injection['bit']))
+                raise Exception(
+                    'Error finding register field name for target: {}, '
+                    'register: {}, bit: {}'.format(injection['target'],
+                                                   injection['register'],
+                                                   injection['bit']))
     return injection
 
 

@@ -162,7 +162,7 @@ class openocd(jtag):
         super().continue_dut('resume')
 
     def select_core(self, core):
-        self.command('targets zynq.cpu'+str(core),
+        self.command('targets zynq.cpu{}'.format(core),
                      error_message='Error selecting core')
 
     def get_mode(self):
@@ -191,21 +191,20 @@ class openocd(jtag):
             register_name = register_info['register']
         register = target['registers'][register_info['register']]
         if 'type' in target and target['type'] == 'CP':
-            buff = self.command(' '.join([
-                'arm', 'mrc', str(register['CP']), str(register['Op1']),
-                str(register['CRn']), str(register['CRm']),
-                str(register['Op2'])]),
+            buff = self.command('arm mrc {} {} {} {} {}'.join(
+                register['CP'], register['Op1'], register['CRn'],
+                register['CRm'], register['Op2']),
                 error_message='Error getting register value')
             return hex(int(buff.split('\n')[1].strip()))
         else:
-            buff = self.command('reg '+register_name, [':'],
+            buff = self.command('reg {}'.format(register_name), [':'],
                                 'Error getting register value')
             return \
                 buff.split('\n')[1].split(':')[1].split()[0]
 
     def set_register_value(self, register_info, value=None):
         if register_info == 'cpsr':
-            self.command('reg cpsr '+value,
+            self.command('reg cpsr {}'.format(value),
                          error_message='Error setting register value')
             return
         target = self.targets[register_info['target']]
@@ -217,11 +216,10 @@ class openocd(jtag):
         if value is None:
             value = register_info['injected_value']
         if 'type' in target and target['type'] == 'CP':
-            self.command(' '.join([
-                'arm', 'mrc', str(register['CP']), str(register['Op1']),
-                str(register['CRn']), str(register['CRm']),
-                str(register['Op2']), value]),
+            self.command('arm mrc {} {} {} {} {} {}'.format(
+                register['CP'], register['Op1'], register['CRn'],
+                register['CRm'], register['Op2'], value),
                 error_message='Error setting register value')
         else:
-            self.command('reg '+register_name+' '+value,
+            self.command('reg {} {}'.format(register_name, value),
                          error_message='Error setting register value')

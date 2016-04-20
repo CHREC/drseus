@@ -31,17 +31,16 @@ class database(object):
         if not self.exists():
             if initialize:
                 commands = (
-                    ('CREATE USER '+self.options.db_user +
-                        ' WITH PASSWORD \''+self.options.db_password+'\';'),
-                    ('ALTER ROLE '+self.options.db_user +
-                        ' SET client_encoding TO \'utf8\';'),
-                    ('ALTER ROLE '+self.options.db_user +
-                        ' SET default_transaction_isolation'
-                        ' TO \'read committed\';'),
-                    ('ALTER ROLE '+self.options.db_user +
-                        ' SET timezone TO \'UTC\';'),
-                    ('CREATE DATABASE '+self.options.db_name +
-                        ' WITH OWNER '+self.options.db_user))
+                    'CREATE USER {} WITH PASSWORD \'{}\';'.format(
+                        self.options.db_user, self.options.db_password),
+                    'ALTER ROLE {} SET client_encoding TO \'utf8\';'.format(
+                        self.options.db_user),
+                    'ALTER ROLE {} SET default_transaction_isolation '
+                    'TO \'read committed\';'.format(self.options.db_user),
+                    'ALTER ROLE {} SET timezone TO \'UTC\';'.format(
+                        self.options.db_user),
+                    'CREATE DATABASE {} WITH OWNER {}'.format(
+                        self.options.db_name, self.options.db_user))
                 self.psql(superuser=True, commands=commands)
                 initialize_django(self.options)
                 django_command([argv[0], 'makemigrations', 'log'])
@@ -82,8 +81,8 @@ class database(object):
         popen_command = []
         if superuser and self.options.db_superuser != getuser() and \
                 self.options.db_superuser_password is None:
-            print('running "'+executable+'" with sudo, '
-                  'password may be required')
+            print('running "{}" with sudo, password may be required'.format(
+                executable))
             popen_command.extend(['sudo', '-u', self.options.db_superuser])
         popen_command.append(executable)
         if self.options.db_host != 'localhost' or \
@@ -109,8 +108,8 @@ class database(object):
         process = Popen(popen_command, **kwargs)
         if commands:
             for command in commands:
-                print(executable+'>', command)
-                process.stdin.write(command+'\n')
+                print('{}> {}'.format(executable, command))
+                process.stdin.write('{}\n'.format(command))
             process.stdin.close()
         if password_prompt:
             print('user', end=' ')
@@ -121,7 +120,7 @@ class database(object):
             sys_stdout.flush()
         process.wait()
         if process.returncode:
-            raise Exception(executable+' error')
+            raise Exception('{} error'.format(executable))
 
     def exists(self):
         try:
@@ -145,11 +144,10 @@ class database(object):
             del dictionary['id']
         self.cursor.execute(
             'INSERT INTO log_{} ({}) VALUES ({}) RETURNING id'.format(
-                table,
-                ', '.join(dictionary.keys()),
+                table, ', '.join(dictionary.keys()),
                 ', '.join(['%s']*len(dictionary))),
-            [('{'+','.join(map(str, value))+'}') if isinstance(value, list) or
-             isinstance(value, tuple) else value
+            ['{{}}'.format(','.join(map(str, value)))
+             if isinstance(value, list) or isinstance(value, tuple) else value
              for value in dictionary.values()])
         dictionary['id'] = self.cursor.fetchone()[0]
 
@@ -165,8 +163,8 @@ class database(object):
                 table,
                 '=%s, '.join(dictionary.keys()),
                 dictionary['id']),
-            [('{'+','.join(map(str, value))+'}') if isinstance(value, list) or
-             isinstance(value, tuple) else value
+            ['{{}}'.format(','.join(map(str, value)))
+             if isinstance(value, list) or isinstance(value, tuple) else value
              for value in dictionary.values()])
 
     def __create_result(self, supervisor=False):
@@ -244,65 +242,65 @@ class database(object):
             self.cursor.execute('SELECT * FROM log_campaign ORDER BY id')
             return self.cursor.fetchall()
         else:
-            self.cursor.execute('SELECT * FROM log_campaign WHERE id=%s',
-                                [self.campaign['id']])
+            self.cursor.execute('SELECT * FROM log_campaign WHERE id={}'
+                                ''.format(self.campaign['id']))
             return self.cursor.fetchone()
 
     def get_result(self):
-        self.cursor.execute('SELECT * FROM log_result WHERE campaign_id=%s',
-                            [self.campaign['id']])
+        self.cursor.execute(
+            'SELECT * FROM log_result WHERE campaign_id={}'.format(
+                self.campaign['id']))
         return self.cursor.fetchall()
 
     def get_item(self, item):
-        self.cursor.execute('SELECT * FROM log_'+item+' WHERE result_id=%s ',
-                            [self.result['id']])
+        self.cursor.execute('SELECT * FROM log_{} WHERE result_id={}'.format(
+            item, self.result['id']))
         return self.cursor.fetchall()
 
     def get_count(self, item, item_from='result'):
-        self.cursor.execute('SELECT COUNT(*) FROM log_'+item+' WHERE ' +
-                            item_from+'_id=%s',
-                            [getattr(self, item_from)['id']])
+        self.cursor.execute('SELECT COUNT(*) FROM log_{} WHERE {}_id={}'.format(
+            item, item_from, getattr(self, item_from)['id']))
         return self.cursor.fetchone()[0]
 
     def delete_result(self):
         self.cursor.execute('DELETE FROM log_simics_memory_diff '
-                            'WHERE result_id=%s', [self.result['id']])
+                            'WHERE result_id={}'.format(self.result['id']))
         self.cursor.execute('DELETE FROM log_simics_register_diff '
-                            'WHERE result_id=%s', [self.result['id']])
-        self.cursor.execute('DELETE FROM log_injection WHERE result_id=%s',
-                            [self.result['id']])
-        self.cursor.execute('DELETE FROM log_event WHERE result_id=%s',
-                            [self.result['id']])
-        self.cursor.execute('DELETE FROM log_result WHERE id=%s',
-                            [self.result['id']])
+                            'WHERE result_id={}'.format(self.result['id']))
+        self.cursor.execute('DELETE FROM log_injection WHERE result_id={}'
+                            ''.format(self.result['id']))
+        self.cursor.execute('DELETE FROM log_event WHERE result_id={}'
+                            ''.format(self.result['id']))
+        self.cursor.execute('DELETE FROM log_result WHERE id={}'
+                            ''.format(self.result['id']))
 
     def delete_results(self):
         self.cursor.execute('DELETE FROM log_simics_memory_diff WHERE '
                             'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id=%s)', [self.campaign['id']])
+                            'WHERE campaign_id={})'.format(self.campaign['id']))
         self.cursor.execute('DELETE FROM log_simics_register_diff WHERE '
                             'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id=%s)', [self.campaign['id']])
+                            'WHERE campaign_id={})'.format(self.campaign['id']))
         self.cursor.execute('DELETE FROM log_injection WHERE '
                             'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id=%s)', [self.campaign['id']])
+                            'WHERE campaign_id={})'.format(self.campaign['id']))
         self.cursor.execute('DELETE FROM log_event WHERE '
                             'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id=%s)', [self.campaign['id']])
-        self.cursor.execute('DELETE FROM log_result WHERE campaign_id=%s',
-                            [self.campaign['id']])
+                            'WHERE campaign_id={})'.format(self.campaign['id']))
+        self.cursor.execute('DELETE FROM log_result WHERE campaign_id={}'
+                            ''.format(self.campaign['id']))
 
     def delete_campaign(self):
         self.delete_results()
-        self.cursor.execute('DELETE FROM log_event WHERE campaign_id=%s',
-                            [self.campaign['id']])
-        self.cursor.execute('DELETE FROM log_campaign WHERE id=%s',
-                            [self.campaign['id']])
+        self.cursor.execute('DELETE FROM log_event WHERE campaign_id={}'
+                            ''.format(self.campaign['id']))
+        self.cursor.execute('DELETE FROM log_campaign WHERE id={}'
+                            ''.format(self.campaign['id']))
 
     def delete_database(self, delete_user):
-        commands = ['DROP DATABASE '+self.options.db_name+';']
+        commands = ['DROP DATABASE {};'.format(self.options.db_name)]
         if delete_user:
-            commands.append('DROP USER '+self.options.db_user+';')
+            commands.append('DROP USER {};'.format(self.options.db_user))
         self.psql(superuser=delete_user or self.options.db_host == 'localhost',
                   commands=commands)
 

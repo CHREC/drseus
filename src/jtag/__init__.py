@@ -30,8 +30,8 @@ class jtag(object):
                              timeout=self.timeout)
         with self.db as db:
             db.log_event('Information', 'Debugger', 'Connected to telnet',
-                         self.options.debugger_ip_address+':'+str(self.port),
-                         success=True)
+                         '{}:{}'.format(self.options.debugger_ip_address,
+                                        self.port), success=True)
 
     def open(self):
         self.dut = dut(self.db, self.options)
@@ -180,8 +180,10 @@ class jtag(object):
             with self.db as db:
                 db.update('injection', injection)
             if self.options.debug:
-                print(colored('injection time: {}\ntarget: {}'.format(
-                    injection['time'], injection['target']), 'magenta'))
+                print(colored(
+                    'result id: {}\ninjection time: {}\ntarget: {}'.format(
+                        self.db.result['id'], injection['time'],
+                        injection['target']), 'magenta'))
                 if 'target_index' in injection:
                     print(colored('target_index: {}'.format(
                         injection['target_index']), 'magenta'))

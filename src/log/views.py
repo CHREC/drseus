@@ -44,8 +44,8 @@ def campaigns_page(request):
 def campaign_page(request, campaign_id):
     campaign = models.campaign.objects.get(id=campaign_id)
     chart_data = target_bits_chart(campaign)
-    output_file = ('campaign-data/'+str(campaign_id) +
-                   '/gold_'+campaign.output_file)
+    output_file = 'campaign-data/{}/gold_{}'.format(campaign_id,
+                                                    campaign.output_file)
     output_image = exists(output_file) and what(output_file) is not None
     campaign_table = tables.campaign(models.campaign.objects.filter(
         id=campaign_id))
@@ -202,7 +202,7 @@ def results_page(request, campaign_id=None):
         error_message = 'Filter did not return any results and was ignored.'
         result_filter = filters.result(None, queryset=results)
     else:
-        results = result_filter.qs
+        results = result_filter.qs.order_by('-id')
     if request.method == 'GET':
         if 'view_output' in request.GET:
             if 'select_box' in request.GET:
@@ -210,11 +210,10 @@ def results_page(request, campaign_id=None):
                 results = models.result.objects.filter(
                     id__in=result_ids).order_by('-id')
             if 'view_output_raw' in request.GET:
-                dut_output = '\n'.join([
-                    '\n'.join([
-                        '', '********* Result '+str(result.id)+' *********',
-                        '\n', result.dut_output])
-                    for result in reversed(results)])
+                dut_output = '\n'.join(
+                    ['\n{:*^80}\n\n{}'.format(
+                        ' Result ID {} '.format(result.id), result.dut_output)
+                     for result in reversed(results)])
                 response = HttpResponse(dut_output,
                                         content_type='text/plain')
                 response['Content-Disposition'] = \
@@ -223,9 +222,9 @@ def results_page(request, campaign_id=None):
             if 'view_output_image' in request.GET:
                 result_ids = []
                 for result in results:
-                    if exists('campaign-data/'+str(result.campaign_id) +
-                              '/results/'+str(result.id)+'/' +
-                              result.campaign.output_file):
+                    if exists('campaign-data/{}/results/{}/'.format(
+                            result.campaign_id, result.id,
+                            result.campaign.output_file)):
                         result_ids.append(result.id)
                 results = models.result.objects.filter(
                     id__in=result_ids).order_by('-id')
@@ -286,11 +285,11 @@ def results_page(request, campaign_id=None):
 
 def result_page(request, result_id):
     result = models.result.objects.get(id=result_id)
-    campaign_items_ = [
-        (item[0], '/campaign/'+str(result.campaign_id)+'/'+item[1], item[2],
-         item[3]) for item in campaign_items]
-    output_file = ('campaign-data/'+str(result.campaign_id)+'/results/' +
-                   result_id+'/'+result.campaign.output_file)
+    campaign_items_ = [(
+        item[0], '/campaign/{}/{}'.format(result.campaign_id, item[1]), item[2],
+        item[3]) for item in campaign_items]
+    output_file = 'campaign-data/{}/results/{}/{}'.format(
+        result.campaign_id, result_id, result.campaign.output_file)
     output_image = exists(output_file) and what(output_file) is not None
     result_table = tables.result(models.result.objects.filter(id=result_id))
     event_table = tables.event(models.event.objects.filter(result_id=result_id))
@@ -306,7 +305,7 @@ def result_page(request, result_id):
         models.simics_register_diff.objects.filter(result_id=result.id).delete()
         models.simics_memory_diff.objects.filter(result_id=result.id).delete()
         result.delete()
-        return redirect('/campaign/'+str(result.campaign_id)+'/results')
+        return redirect('/campaign/{}/results'.format(result.campaign_id))
     injections = models.injection.objects.filter(result_id=result_id)
     if result.campaign.simics:
         if injections.count():
@@ -355,12 +354,12 @@ def result_page(request, result_id):
 def output(request, result_id=None, campaign_id=None):
     if result_id is not None:
         result = models.result.objects.get(id=result_id)
-        output_file = ('campaign-data/'+str(result.campaign_id)+'/results/' +
-                       result_id+'/'+result.campaign.output_file)
+        output_file = 'campaign-data/{}/results/{}/{}'.format(
+            result.campaign_id, result_id, result.campaign.output_file)
     elif campaign_id is not None:
         campaign = models.campaign.objects.get(id=campaign_id)
-        output_file = ('campaign-data/'+campaign_id+'/gold_' +
-                       campaign.output_file)
+        output_file = 'campaign-data/{}/gold_{}'.format(campaign_id,
+                                                        campaign.output_file)
     if exists(output_file):
         return HttpResponse(open(output_file, 'rb').read(),
                             content_type=guess_type(output_file))

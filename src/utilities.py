@@ -399,7 +399,7 @@ def __update_checkpoint_dependencies(campaign_id):
                 path_list = path.split('/')
                 path_list = path_list[path_list.index('simics-workspace'):]
                 path_list[-2] = str(campaign_id)
-                new_paths.append('\"'+getcwd()+'/'+'/'.join(path_list))
+                new_paths.append('"{}/{}'.format(getcwd(), '/'.join(path_list)))
             config.set(config, 'sim', 'checkpoint_path', new_paths)
             config.save()
 
@@ -556,8 +556,8 @@ def launch_minicom(options):
     campaign = get_campaign(options)
     drseus = fault_injector(campaign, options)
     if campaign['simics']:
-        checkpoint = ('gold-checkpoints/'+str(drseus.db.campaign['id'])+'/' +
-                      str(drseus.db.campaign['checkpoints']))
+        checkpoint = 'gold-checkpoints/{}/{}'.format(
+            drseus.db.campaign['id'], drseus.db.campaign['checkpoints'])
         if exists('simics-workspace/'+checkpoint+'_merged'):
             drseus.debugger.launch_simics(checkpoint+'_merged')
         else:
