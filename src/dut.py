@@ -126,10 +126,9 @@ class dut(object):
                                  'DUT' if not self.aux else 'AUX',
                                  'Error opening serial port',
                                  db.log_exception)
-                print(colored('Error opening serial port {} '
-                              '(attempt {}/{}): {}'.format(
-                                  serial_port, attempt+1, attempts, error),
-                              'red'))
+                print(colored(
+                    'Error opening serial port {} (attempt {}/{}): {}'.format(
+                        serial_port, attempt+1, attempts, error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 else:
