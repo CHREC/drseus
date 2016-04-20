@@ -79,8 +79,7 @@ def campaigns_chart(queryset):
                     '/results?outcome_category='+this.series.name);
     }
     """.replace('\n    ', '\n                        '))
-    return '['+chart+']'.replace(
-        '\n', '\n                        ')
+    return '[{}]'.format(chart).replace('\n', '\n                        ')
 
 
 def target_bits_chart(campaign):
@@ -99,7 +98,7 @@ def target_bits_chart(campaign):
             'enabled': False
         },
         'exporting': {
-            'filename': campaign.architecture+' targets',
+            'filename': '{} targets'.format(campaign.architecture),
             'sourceWidth': 480,
             'sourceHeight': 360,
             'scale': 2
@@ -135,7 +134,7 @@ def target_bits_chart(campaign):
     for target in target_list:
         bits.append(injection_targets[target]['total_bits'])
     chart['series'] = [{'data': bits}]
-    return ('['+dumps(chart, indent=4)+']').replace(
+    return '[{}]'.format(dumps(chart, indent=4)).replace(
         '\"__click_function__\"', """
     function(event) {
         window.open('/campaign/__campaign_id__'+
@@ -186,8 +185,10 @@ def results_charts(results, group_categories):
         threads.append(thread)
     for thread in threads:
         thread.join()
-    return ('['+',\n'.join(chart_data)+']').replace(
-        '\n', '\n                        '), chart_list
+    return (
+        '[{}]'.format(',\n'.join(chart_data)).replace(
+            '\n', '\n                        '),
+        chart_list)
 
 
 def injections_charts(injections):
@@ -210,5 +211,7 @@ def injections_charts(injections):
         threads.append(thread)
     for thread in threads:
         thread.join()
-    return ('['+',\n'.join(chart_data)+']').replace(
-        '\n', '\n                        '), chart_list
+    return (
+        '[{}]'.format(',\n'.join(chart_data)).replace(
+            '\n', '\n                        '),
+        chart_list)

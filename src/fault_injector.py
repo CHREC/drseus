@@ -170,10 +170,10 @@ class fault_injector(object):
             try:
                 if self.db.campaign['aux_output_file']:
                     self.debugger.aux.command('rm {}'.format(
-                      self.db.campaign['output_file']))
+                        self.db.campaign['output_file']))
                 else:
-                    self.debugger.dut.command('rm ' +
-                                              self.db.campaign['output_file'])
+                    self.debugger.dut.command('rm {}'.format(
+                        self.db.campaign['output_file']))
             except DrSEUsError as error:
                 self.db.result['outcome_category'] = 'Post execution error'
                 self.db.result['outcome'] = error.type
@@ -243,7 +243,8 @@ class fault_injector(object):
                 with self.db as db:
                     db.log_event('Information', 'AUX', 'Command',
                                  self.db.campaign['aux_command'])
-                self.debugger.aux.write(self.db.campaign['aux_command']+'\n')
+                self.debugger.aux.write('{}\n'.format(
+                    self.db.campaign['aux_command']))
             return True
 
         def continue_dut():
@@ -283,10 +284,10 @@ class fault_injector(object):
                         db.log_event('Information', 'DUT', 'Command',
                                      self.db.campaign['command'])
                     if self.db.campaign['aux']:
-                        self.debugger.aux.write(
-                            self.db.campaign['aux_command']+'\n')
-                    self.debugger.dut.write(
-                        self.db.campaign['command']+'\n')
+                        self.debugger.aux.write('{}\n'.format(
+                            self.db.campaign['aux_command']))
+                    self.debugger.dut.write('{}\n'.format(
+                        self.db.campaign['command']))
                     outcome_category = self.db.result['outcome_category']
                     outcome = self.db.result['outcome']
                     self.__monitor_execution()

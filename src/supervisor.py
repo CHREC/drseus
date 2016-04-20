@@ -67,7 +67,7 @@ class supervisor(Cmd):
     def complete(self, text, state):
         ret = Cmd.complete(self, text, state)
         if ret:
-            return ret+' '
+            return ret+'{} '
         else:
             return ret
 
@@ -101,9 +101,11 @@ class supervisor(Cmd):
             while read_thread.is_alive():
                 if select([stdin], [], [], 0.1)[0]:
                     if aux:
-                        self.drseus.debugger.aux.write(stdin.readline()+'\n')
+                        self.drseus.debugger.aux.write('{}\n'.format(
+                            stdin.readline()))
                     else:
-                        self.drseus.debugger.dut.write(stdin.readline()+'\n')
+                        self.drseus.debugger.dut.write('{}\n'.format(
+                            stdin.readline()))
         except KeyboardInterrupt:
             if self.drseus.db.campaign['simics']:
                 self.drseus.debugger.continue_dut()
@@ -141,7 +143,7 @@ class supervisor(Cmd):
             self.drseus.debugger.aux.get_file(arg, output, attempts=1)
         else:
             self.drseus.debugger.dut.get_file(arg, output, attempts=1)
-        print('File saved to '+output)
+        print('File saved to {}'.format(output))
 
     def do_supervise(self, arg):
         """Supervise for targeted runtime (in seconds) or iterations"""
@@ -270,15 +272,14 @@ class supervisor(Cmd):
 
     def do_minicom(self, arg=None):
         """Launch minicom connected to DUT and includes session in log"""
-        timestamp = ('-'.join(['{:02}'.format(unit)
-                               for unit in datetime.now().timetuple()[:3]]) +
-                     '_' +
-                     '-'.join(['{:02}'.format(unit)
-                               for unit in datetime.now().timetuple()[3:6]]))
-        capture = 'minicom_capture.'+timestamp
+        capture = 'minicom_capture.{}_{}'.format(
+            '-'.join(['{:02}'.format(unit)
+                      for unit in datetime.now().timetuple()[:3]]),
+            '-'.join(['{:02}'.format(unit)
+                      for unit in datetime.now().timetuple()[3:6]]))
         self.drseus.debugger.dut.close()
         call(['minicom', '-D', self.drseus.options.dut_serial_port,
-              '--capturefile='+capture])
+              '--capturefile={}'.format(capture)])
         self.drseus.debugger.dut.open()
         if exists(capture):
             with open(capture, 'r') as capture_file:

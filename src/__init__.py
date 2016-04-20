@@ -1,5 +1,7 @@
+from django import setup
+from django.conf import settings
+
 from .arguments import get_options, parser
-from . import utilities
 
 # TODO: add runtime seconds to inject command
 # TODO: consider generating event filter choices only once at startup
@@ -13,6 +15,41 @@ from . import utilities
 
 def run():
     options = get_options()
+    settings.configure(
+        DATABASES={
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': options.db_name,
+                'USER': options.db_user,
+                'PASSWORD': options.db_password,
+                'HOST': options.db_host,
+                'PORT': options.db_port,
+            }
+        },
+        DEBUG=True,
+        INSTALLED_APPS=(
+            'django.contrib.staticfiles',
+            'django_filters',
+            'django_tables2',
+            '{}.log'.format(__name__)
+        ),
+        ROOT_URLCONF='{}.log.urls'.format(__name__),
+        STATIC_URL='/static/',
+        TEMPLATES=[
+            {
+                'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                'APP_DIRS': True,
+                'OPTIONS': {
+                    'context_processors': [
+                        'django.template.context_processors.request',
+                    ],
+                },
+            },
+        ],
+        TIME_ZONE='UTC'
+    )
+    setup()
+    from . import utilities
     missing_args = []
     campaign = None
     if options.command == 'power' and not options.power_switch_ip_address:

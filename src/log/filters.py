@@ -42,7 +42,7 @@ class event(FilterSet):
         source_thread.join()
 
     def choices(self, events, attribute):
-        exclude_kwargs = {attribute+'__isnull': True}
+        exclude_kwargs = {'{}__isnull'.format(attribute): True}
         items = events.exclude(**exclude_kwargs).values_list(
             attribute, flat=True).distinct()
         choices = zip(items, items)
@@ -122,11 +122,11 @@ class injection(FilterSet):
 
     def choices(self, injections, attribute):
         choices = []
-        exclude_kwargs = {attribute+'__isnull': True}
+        exclude_kwargs = {'{}__isnull'.format(attribute): True}
         for item in injections.exclude(**exclude_kwargs).values_list(
                 attribute, flat=True).distinct():
             if isinstance(item, list):
-                choices.append(('{'+','.join(map(str, item))+'}',
+                choices.append(('{{}}'.format(','.join(map(str, item))),
                                 ':'.join(map(str, item))))
             else:
                 choices.append((item, item))
@@ -295,7 +295,7 @@ class result(FilterSet):
         event_source_thread.join()
 
     def choices(self, results, attribute):
-        exclude_kwargs = {attribute+'__isnull': True}
+        exclude_kwargs = {'{}__isnull'.format(attribute): True}
         items = results.exclude(**exclude_kwargs).values_list(
             attribute, flat=True).distinct()
         choices = zip(items, items)
@@ -422,7 +422,7 @@ class simics_register_diff(FilterSet):
             len(register_choices), max_select_box_size)
 
     def choices(self, simics_register_diffs, attribute):
-        exclude_kwargs = {attribute+'__isnull': True}
+        exclude_kwargs = {'{}__isnull'.format(attribute): True}
         items = simics_register_diffs.exclude(**exclude_kwargs).values_list(
             attribute, flat=True).distinct()
         choices = zip(items, items)

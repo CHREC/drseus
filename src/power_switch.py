@@ -58,7 +58,7 @@ class power_switch(object):
 
     # def get_status(self):
         response = urlopen(Request(
-            'http://'+self.ip_address+'/index.htm',
+            'http://{}/index.html'.format(self.ip_address),
             headers={'Authorization': b'Basic '+b64encode(bytes('{}:{}'.format(
                 self.username, self.password), encoding='utf-8'))}))
         parser = table_parser()
@@ -96,8 +96,8 @@ class power_switch(object):
             delay = 1
         urlopen(Request(
             'http://{}/outlet?{}={}'.format(self.ip_address, outlet, state),
-            headers={'Authorization': b'Basic '+b64encode(
-                bytes(self.username+':'+self.password, encoding='utf-8'))}))
+            headers={'Authorization': b'Basic '+b64encode(bytes('{}:{}'.format(
+                self.username, self.password), encoding='utf-8'))}))
         if exists('power_switch_log.txt'):
             log = open('power_switch_log.txt', 'a')
         else:

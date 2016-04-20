@@ -18,7 +18,7 @@ class jtag(object):
                         for prompt in self.prompts]
 
     def __str__(self):
-        string = 'JTAG Debugger at '+self.options.debugger_ip_address
+        string = 'JTAG Debugger at {}'.format(self.options.debugger_ip_address)
         try:
             string += ' port {}'.format(self.port)
         except AttributeError:
@@ -157,7 +157,7 @@ class jtag(object):
             injections.append(injection)
             with self.db as db:
                 db.insert('injection', injection)
-        self.dut.write(self.db.campaign['command']+'\n')
+        self.dut.write('{}\n'.format(self.db.campaign['command']))
         previous_injection_time = 0
         for injection in injections:
             if injection['target'] in ('CPU', 'GPR', 'TLB') or \
@@ -238,13 +238,14 @@ class jtag(object):
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
-            self.telnet.write(bytes(command+line_ending, encoding='utf-8'))
+            self.telnet.write(bytes('{}{}'.format(command, line_ending),
+                                    encoding='utf-8'))
             if echo:
                 index, match, buff = self.telnet.expect(
                     [bytes(command, encoding='utf-8')], timeout=self.timeout)
                 buff = buff.decode('utf-8', 'replace')
             else:
-                buff = command+'\n'
+                buff = '{}\n'.format(command)
             if self.db.result:
                 self.db.result['debugger_output'] += buff
             else:

@@ -25,13 +25,15 @@ directory = dirname(abspath(__file__))
 
 
 def load_targets(architecture, type_):
-    with open(join(directory, architecture, type_+'.json'), 'r') as json_file:
+    with open(join(directory, architecture, '{}.json'.format(type_)), 'r') \
+            as json_file:
         targets = load(json_file)
     return targets
 
 
 def save_targets(architecture, type_, targets):
-    with open(join(directory, architecture, type_+'.json'), 'w') as json_file:
+    with open(join(directory, architecture, '{}.json'.format(type_)), 'w') \
+            as json_file:
         dump(targets, json_file, indent=4, sort_keys=True)
 
 
@@ -81,8 +83,9 @@ def calculate_target_bits(targets):
                         except:
                             print(field)
                 if len(adjust_bit) != bits:
-                    raise Exception('Bits mismatch for register: ' +
-                                    register+' in target: '+target)
+                    raise Exception(
+                        'Bits mismatch for register: {} in target: {}'.format(
+                            register, target))
                 else:
                     (targets[target]['registers'][register]
                             ['adjust_bit']) = sorted(adjust_bit)
@@ -106,8 +109,8 @@ def get_targets(architecture, type_, selected_targets, selected_registers):
             else:
                 invalid_targets.append(selected_target)
         if invalid_targets:
-            raise Exception('invalid selected targets: ' +
-                            ', '.join(invalid_targets))
+            raise Exception('invalid selected targets: {}'.format(
+                ', '.join(invalid_targets)))
         if 'unused_targets' not in targets_info:
             targets_info['unused_targets'] = []
         for target in targets:
@@ -137,8 +140,8 @@ def get_targets(architecture, type_, selected_targets, selected_registers):
             else:
                 invalid_registers.append(selected_register)
         if invalid_registers:
-            raise Exception('invalid selected registers: ' +
-                            ', '.join(invalid_registers))
+            raise Exception('invalid selected registers: {}'.format(
+                ', '.join(invalid_registers)))
         if 'unused_targets' not in targets_info:
             targets_info['unused_targets'] = []
         for target in targets:
@@ -235,8 +238,8 @@ def choose_injection(targets, selected_target_indices):
             register = target['registers'][register[0]]
             break
     else:
-        raise Exception('Error choosing register for target: ' +
-                        injection['target'])
+        raise Exception('Error choosing register for target: {}'.format(
+            injection['target']))
     if 'count' in register:
         injection['register_index'] = []
         for dimension in register['count']:

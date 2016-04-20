@@ -10,7 +10,7 @@ from termcolor import colored
 from threading import Lock
 from traceback import format_exc, format_stack
 
-from .log import initialize_django
+# from .log import models
 
 
 class database(object):
@@ -42,7 +42,6 @@ class database(object):
                     'CREATE DATABASE {} WITH OWNER {}'.format(
                         self.options.db_name, self.options.db_user))
                 self.psql(superuser=True, commands=commands)
-                initialize_django(self.options)
                 django_command([argv[0], 'makemigrations', 'log'])
                 django_command([argv[0], 'migrate'])
             else:

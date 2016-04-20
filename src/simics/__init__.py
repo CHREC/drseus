@@ -38,8 +38,7 @@ class simics(object):
         self.set_targets()
 
     def __str__(self):
-        string = 'Simics simulation of '+self.board
-        return string
+        return 'Simics simulation of {}'.format(self.board)
 
     def set_targets(self):
         if hasattr(self.options, 'selected_targets'):
@@ -58,13 +57,13 @@ class simics(object):
                                        selected_registers)
 
     def launch_simics(self, checkpoint=None):
+        cwd = '{}/simics-workspace'.format(getcwd())
         attempts = 10
         for attempt in range(attempts):
-            self.simics = Popen([getcwd()+'/simics-workspace/simics',
-                                 '-no-win', '-no-gui', '-q'], bufsize=0,
-                                cwd=getcwd()+'/simics-workspace',
-                                universal_newlines=True,
-                                stdin=PIPE, stdout=PIPE)
+            self.simics = Popen(
+                ['{}/simics'.format(cwd), '-no-win', '-no-gui', '-q'],
+                bufsize=0, cwd=cwd, universal_newlines=True,
+                stdin=PIPE, stdout=PIPE)
             try:
                 self.__command()
             except KeyboardInterrupt:
@@ -209,30 +208,27 @@ class simics(object):
                     self.aux.prompt = 'DrSEUs# '
 
     def launch_simics_gui(self, checkpoint):
-        dut_board = 'DUT_'+self.board
         if self.board == 'p2020rdb':
             serial_port = 'serial[0]'
         elif self.board == 'a9x2':
             serial_port = 'serial0'
-        simics_commands = ('read-configuration '+checkpoint+';'
-                           'new-text-console-comp text_console0;'
-                           'disconnect '+dut_board+'.console0.serial'
-                           ' '+dut_board+'.'+serial_port+';'
-                           'connect text_console0.serial'
-                           ' '+dut_board+'.'+serial_port+';'
-                           'connect-real-network-port-in ssh '
-                           'ethernet_switch0 target-ip=10.10.0.100;')
+        simics_commands = (
+            'read-configuration {0}; new-text-console-comp text_console0; '
+            'disconnect DUT_{1}.console0.serial DUT_{1}.{2}; '
+            'connect text_console0.serial DUT_{1}.{2}; '
+            'connect-real-network-port-in ssh ethernet_switch0 '
+            'target-ip=10.10.0.100;'.format(checkpoint, self.board,
+                                            serial_port))
+
         if self.db.campaign['aux']:
-            aux_board = 'AUX_'+self.board+'_1'
-            simics_commands += ('new-text-console-comp text_console1;'
-                                'disconnect '+aux_board+'.console0.serial'
-                                ' '+aux_board+'.'+serial_port+';'
-                                'connect text_console1.serial'
-                                ' '+aux_board+'.'+serial_port+';'
-                                'connect-real-network-port-in ssh '
-                                'ethernet_switch0 target-ip=10.10.0.104;')
-        call([getcwd()+'/simics-workspace/simics-gui', '-e', simics_commands],
-             cwd=getcwd()+'/simics-workspace')
+            simics_commands += (
+                'new-text-console-comp text_console1; '
+                'disconnect AUX_{0}_1.console0.serial AUX_{0}_1.{1}; '
+                'connect text_console1.serial AUX_{0}_1.{1}; '
+                'connect-real-network-port-in ssh ethernet_switch0 '
+                'target-ip=10.10.0.104;'.format(self.board, serial_port))
+        cwd = '{}/simics-workspace'.format(getcwd())
+        call(['{}/simics-gui'.format(cwd), '-e', simics_commands], cwd=cwd)
 
     def close(self):
         if self.simics:
@@ -334,11 +330,11 @@ class simics(object):
                 event = db.log_event('Information', 'Simics', 'Command',
                                      command, success=False)
         if command is not None:
-            self.simics.stdin.write(command+'\n')
+            self.simics.stdin.write('{}\n'.format(command))
             if self.db.result:
-                self.db.result['debugger_output'] += command+'\n'
+                self.db.result['debugger_output'] += '{}\n'.format(command)
             else:
-                self.db.campaign['debugger_output'] += command+'\n'
+                self.db.campaign['debugger_output'] += '{}\n'.format(command)
             if self.options.debug:
                 print(colored(command, 'yellow'))
         buff = read_until()
@@ -351,10 +347,10 @@ class simics(object):
         if self.options.debug:
             print(colored('merging checkpoint...', 'blue'), end='')
             stdout.flush()
-        merged_checkpoint = checkpoint+'_merged'
-        check_call([getcwd()+'/simics-workspace/bin/checkpoint-merge',
-                    checkpoint, merged_checkpoint],
-                   cwd=getcwd()+'/simics-workspace', stdout=DEVNULL)
+        merged_checkpoint = '{}_merged'.format(checkpoint)
+        cwd = '{}/simics-workspace'.format(getcwd())
+        check_call(['{}/bin/checkpoint-merge'.format(cwd), checkpoint,
+                    merged_checkpoint], cwd=cwd, stdout=DEVNULL)
         if self.options.debug:
             print(colored('done', 'blue'))
         return merged_checkpoint
@@ -388,16 +384,24 @@ class simics(object):
                     db.log_event('Information', 'DUT', 'Command',
                                  self.db.campaign['command'])
                 self.dut.write('{}\n'.format(self.db.campaign['command']))
+                length = len(self.db.campaign['dut_output'])
                 read_thread = Thread(target=self.dut.read_until,
                                      kwargs={'flush': False})
                 read_thread.start()
-                checkpoint = 0
+                checkpoint = 1
                 while True:
-                    checkpoint += 1
                     self.__command('run-cycles {}'.format(
                         self.db.campaign['cycles_between']), time=300)
-                    self.db.campaign['dut_output'] += '\n{:*^80}\n\n'.format(
-                        ' Checkpoint {} '.format(checkpoint))
+                    old_length = length
+                    length = len(self.db.campaign['dut_output'])
+                    if length - old_length:
+                        self.db.campaign['dut_output'] += \
+                            '{}{:*^80}\n\n'.format(
+                                '\n'
+                                if self.db.campaign['dut_output'].endswith('\n')
+                                else '\n\n',
+                                ' Checkpoint {} '.format(checkpoint))
+                        length = len(self.db.campaign['dut_output'])
                     incremental_checkpoint = 'gold-checkpoints/{}/{}'.format(
                         self.db.campaign['id'], checkpoint)
                     self.__command('write-configuration {}'.format(
@@ -408,6 +412,8 @@ class simics(object):
                             not aux_process.is_alive()):
                         self.__merge_checkpoint(incremental_checkpoint)
                         break
+                    else:
+                        checkpoint += 1
                 self.db.campaign['checkpoints'] = checkpoint
                 with self.db as db:
                     db.log_event_success(event, update_timestamp=True)
@@ -674,7 +680,8 @@ class simics(object):
                 simics_targets.py for the specified checkpoint and returns a
                 dictionary with all the values.
                 """
-                with simics_config('simics-workspace/'+checkpoint) as config:
+                with simics_config('simics-workspace/{}'.format(checkpoint)) \
+                        as config:
                     registers = {}
                     for target in self.targets:
                         if 'count' in self.targets[target]:
@@ -753,7 +760,8 @@ class simics(object):
                 Parse a content_map created by the Simics craff utility and
                 returns a list of the addresses of the image that contain data.
                 """
-                with open('simics-workspace/'+content_map, 'r') as content_map:
+                with open('simics-workspace/{}'.format(content_map), 'r') \
+                        as content_map:
                     diff_addresses = []
                     for line in content_map:
                         if 'empty' not in line:
@@ -795,10 +803,10 @@ class simics(object):
 
         # def compare_memory(checkpoint, gold_checkpoint, monitored_checkpoint):
             if self.board == 'p2020rdb':
-                gold_rams = '{}/DUT_{}.soc.ram_image[0].craff'.format(
-                    gold_checkpoint, self.board)
-                monitored_rams = '{}/DUT_{}.soc.ram_image[0].craff'.format(
-                    monitored_checkpoint, self.board)
+                gold_rams = ['{}/DUT_{}.soc.ram_image[0].craff'.format(
+                    gold_checkpoint, self.board)]
+                monitored_rams = ['{}/DUT_{}.soc.ram_image[0].craff'.format(
+                    monitored_checkpoint, self.board)]
             elif self.board == 'a9x2':
                 gold_rams = ['{}/DUT_{}.coretile.ddr_image[{}].craff'.format(
                     gold_checkpoint, self.board, index) for index in range(2)]
@@ -823,7 +831,7 @@ class simics(object):
                                 '--output={}'.format(ram_diff)],
                                cwd=cwd, stdout=DEVNULL)
                     check_call([craff, '--content-map', ram_diff,
-                                '--output='+diff_content_map],
+                                '--output={}'.format(diff_content_map)],
                                cwd=cwd, stdout=DEVNULL)
                     craff_output = check_output([craff, '--info', ram_diff],
                                                 cwd=cwd,

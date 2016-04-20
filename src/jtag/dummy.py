@@ -12,7 +12,7 @@ class dummy(jtag):
         self.open()
 
     def __str__(self):
-        return 'dummy debugger'
+        return 'Dummy Debugger'
 
     def open(self):
         self.dut = dut(self.db, self.options)
@@ -40,7 +40,8 @@ class dummy(jtag):
             ps.set_outlet(self.options.power_switch_outlet, 'off')
             ps.set_outlet(self.options.power_switch_outlet, 'on')
         self.open()
-        print(colored('Power cycled device: '+self.dut.serial.port, 'red'))
+        print(colored('Power cycled device: {}'.format(self.dut.serial.port),
+                      'red'))
         with self.db as db:
             db.log_event_success(event)
 
@@ -51,5 +52,5 @@ class dummy(jtag):
         pass
 
     def inject_faults(self):
-        self.dut.write(self.db.campaign['command']+'\n')
+        self.dut.write('{}\n'.format(self.db.campaign['command']))
         return None, None

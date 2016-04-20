@@ -182,8 +182,8 @@ def results_page(request, campaign_id=None):
     if campaign_id is not None:
         campaign = models.campaign.objects.get(id=campaign_id)
         campaign_items_ = campaign_items
-        output_file = ('campaign-data/'+campaign_id+'/gold_' +
-                       campaign.output_file)
+        output_file = 'campaign-data/{}/gold_{}'.format(
+            campaign_id, campaign.output_file)
         if exists(output_file) and what(output_file) is not None:
             output_image = True
         else:
@@ -264,7 +264,7 @@ def results_page(request, campaign_id=None):
                 result_id__in=result_ids).delete()
             results.delete()
             if campaign_id:
-                return redirect('/campaign/'+campaign_id+'/results')
+                return redirect('/campaign/{}/results'.format(campaign_id))
             else:
                 return redirect('/results')
     result_table = tables.results(results)

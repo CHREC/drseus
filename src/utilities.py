@@ -20,7 +20,6 @@ from traceback import print_exc
 from .database import database
 from .fault_injector import fault_injector
 from .jtag.openocd import find_ftdi_serials, find_uart_serials, openocd
-from .log import initialize_django
 from .power_switch import power_switch
 from .simics.config import simics_config
 from .supervisor import supervisor
@@ -141,7 +140,8 @@ def list_campaigns(options):
                 if len(item) < table.column_max_width(i):
                     items.append(item)
                 else:
-                    items.append(item[:table.column_max_width(i)-4]+'...')
+                    items.append('{}...'.format(
+                        item[:table.column_max_width(i)-4]))
             table.table_data.append(items)
     print(table.table)
 
@@ -234,7 +234,8 @@ def create_campaign(options):
                     raise error
     else:
         if not exists(options.directory):
-            raise Exception('cannot find directory '+options.directory)
+            raise Exception('cannot find directory {}'.format(
+                options.directory))
     if options.simics and not exists('simics-workspace'):
         mkdir('simics-workspace')
         dirs = listdir('/opt/simics/simics-4.8')
@@ -243,15 +244,13 @@ def create_campaign(options):
             if simics_dir.startswith('simics-4.8.'):
                 simics_dirs.append((simics_dir, int(simics_dir.split('.')[-1])))
         simics_dirs.sort(key=lambda x: x[1])
-        check_call('/opt/simics/simics-4.8/'+simics_dirs[-1][0] +
-                   '/bin/workspace-setup',
-                   cwd=join(getcwd(), 'simics-workspace'))
+        cwd = join(getcwd(), 'simics-workspace')
+        check_call('/opt/simics/simics-4.8/{}//bin/workspace-setup'.format(
+            simics_dirs[-1][0]), cwd=cwd)
         check_call(['git', 'clone',
-                    'git@gitlab.hcs.ufl.edu:F4/simics-p2020rdb'],
-                   cwd=join(getcwd(), 'simics-workspace'))
+                    'git@gitlab.hcs.ufl.edu:F4/simics-p2020rdb'], cwd=cwd)
         check_call(['git', 'clone',
-                    'git@gitlab.hcs.ufl.edu:F4/simics-a9x2'],
-                   cwd=join(getcwd(), 'simics-workspace'))
+                    'git@gitlab.hcs.ufl.edu:F4/simics-a9x2'], cwd=cwd)
     rsakey_file = StringIO()
     RSAKey.generate(1024).write_private_key(rsakey_file)
     rsakey = rsakey_file.getvalue()
@@ -288,7 +287,7 @@ def create_campaign(options):
             campaign['id']))
     drseus = fault_injector(campaign, options)
     drseus.setup_campaign()
-    print('campaign created')
+    print('created campaign {}'.format(campaign['id']))
 
 
 def inject_campaign(options):
@@ -375,13 +374,11 @@ def regenerate(options):
 
 
 def view_log(options):
-    initialize_django(options)
     django_command([argv[0], 'runserver', ('0.0.0.0:' if options.external
                                            else '')+str(options.port)])
 
 
 def run_django_command(options):
-    initialize_django(options)
     command = [argv[0]+' '+options.command]
     for item in options.django_command:
         command.append(item)
@@ -442,14 +439,14 @@ def backup(options):
     def traverse_directory(directory, archive=None, progress=None):
         num_items = 0
         for item in listdir(directory):
-            if isdir(directory+'/'+item):
-                num_items += traverse_directory(directory+'/'+item, archive,
+            if isdir(join(directory, item)):
+                num_items += traverse_directory(join(directory, item), archive,
                                                 progress)
             else:
                 num_items += 1
                 if archive is not None:
                     try:
-                        archive.add(directory+'/'+item)
+                        archive.add(join(directory, item))
                     except FileNotFoundError:
                         pass
                 if progress is not None:
@@ -462,7 +459,7 @@ def backup(options):
         mkdir('backups')
     if not exists('campaign-data'):
         mkdir('campaign-data')
-    sql_backup = 'campaign-data/'+options.db_name+'.sql'
+    sql_backup = 'campaign-data/{}.sql'.format(options.db_name)
     print('dumping database...')
     database(options).backup_database(sql_backup)
     print('database dumped')
@@ -514,7 +511,7 @@ def restore(options):
         if '.sql' in item:
             print('restoring database...')
             database(options, initialize=True).restore_database(
-                'campaign-data/'+item)
+                join('campaign-data', item))
             print('database restored')
             break
     else:
@@ -558,8 +555,8 @@ def launch_minicom(options):
     if campaign['simics']:
         checkpoint = 'gold-checkpoints/{}/{}'.format(
             drseus.db.campaign['id'], drseus.db.campaign['checkpoints'])
-        if exists('simics-workspace/'+checkpoint+'_merged'):
-            drseus.debugger.launch_simics(checkpoint+'_merged')
+        if exists('simics-workspace/{}_merged'.format(checkpoint)):
+            drseus.debugger.launch_simics('{}_merged'.format(checkpoint))
         else:
             drseus.debugger.launch_simics(checkpoint)
         drseus.debugger.continue_dut()

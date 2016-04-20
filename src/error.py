@@ -5,10 +5,6 @@ class DrSEUsError(Exception):
         self.returned = returned
 
     def __str__(self):
-        string = ''
-        if self.source is not None:
-            string += '{}: '.format(self.source)
-        string += str(self.type)
-        if self.returned is not None:
-            string += ', returned: {}'.format(self.returned)
-        return string
+        return '{}{}{}'.format(
+            '{}: '.format(self.source) if self.source else '', self.type,
+            ', returned: {}'.format(self.returned) if self.returned else '')

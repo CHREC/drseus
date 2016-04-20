@@ -58,7 +58,7 @@ class openocd(jtag):
                     break
             else:
                 raise Exception('could not find entry in "devices.json" for '
-                                'device at '+options.dut_serial_port)
+                                'device at {}'.format(options.dut_serial_port))
         else:
             self.device_info = None
             print('could not find device information file, unpredictable '
@@ -151,7 +151,8 @@ class openocd(jtag):
         else:
             raise Exception('Error finding uart device after power cycle')
         self.open()
-        print(colored('Power cycled device: '+self.dut.serial.port, 'red'))
+        print(colored('Power cycled device: {}'.format(self.dut.serial.port),
+                      'red'))
         with self.db as db:
             db.log_event_success(event)
 

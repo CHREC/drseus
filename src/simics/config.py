@@ -185,42 +185,39 @@ lex.lex(debug=0, optimize=1)
 yacc.yacc(debug=0, optimize=1)
 
 
-class simics_config(object):
-
-    class SimicsConfigError(Exception):
+class SimicsConfigError(Exception):
         def __init__(self, reason, error=None):
             self.reason = reason
             self.error = error
 
         def __str__(self):
-            string = 'SimicsConfigError:'
-            if self.error:
-                string += '\n{}'.format(self.error)
-            string += '\n{}'.format(self.reason)
-            return string
+            return 'SimicsConfigError: {}{}'.format(
+                '{}\n'.format(self.error) if self.error else '', self.reason)
 
-# class simics_config(object):
+
+class simics_config(object):
     def __init__(self, checkpoint):
         self.checkpoint = checkpoint
 
     def __enter__(self):
         try:
-            with open(self.checkpoint+'/config', 'r') as config_file:
+            with open('{}/config'.format(self.checkpoint), 'r') as config_file:
                 config_contents = config_file.read()
-        except EnvironmentError as e:
-            raise self.ConfigError('Error reading checkpoint: %s' % (e,))
+        except EnvironmentError as error:
+            raise SimicsConfigError(
+                'Error reading checkpoint: {}'.format(error))
         try:
             self.config = yacc.parse(config_contents)
         except RuntimeError as error:
-            raise self.ConfigError('Parse error in %s' % (self.checkpoint,),
-                                   error)
+            raise SimicsConfigError('Parse error in {}'.format(self.checkpoint),
+                                    error)
         except ParseError as error:
             if error.args and error.args[0]:
-                raise self.ConfigError(
+                raise SimicsConfigError(
                     'Syntax error in {}:{}'.format(
                         self.checkpoint, error.args[0].lineno),
                     error)
-            raise self.ConfigError(
+            raise SimicsConfigError(
                 'Unknown parse error in {}'.format(self.checkpoint), error)
         return self
 

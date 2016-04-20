@@ -115,11 +115,11 @@ class bdi(jtag):
             if 'bits' in register:
                 bits = register['bits']
                 if bits == 8:
-                    command += 'b'
+                    command = 'mdb'
                 elif bits == 16:
-                    command += 'h'
+                    command = 'mdh'
                 elif bits == 64:
-                    command += 'd'
+                    command = 'mdd'
             address = target['base'][target_index] + register['offset']
             buff = self.command('{} {:#x} 1'.format(command, address),
                                 [':'], 'Error getting register value')
@@ -136,7 +136,7 @@ class bdi(jtag):
 
     def set_register_value(self, register_info, value=None):
         if register_info == 'msr':
-            self.command('rm msr '+value,
+            self.command('rm msr {}'.format(value),
                          error_message='Error setting register value')
             return
         target = self.targets[register_info['target']]

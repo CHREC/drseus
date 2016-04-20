@@ -216,11 +216,11 @@ class dut(object):
     def send_files(self, files=None, attempts=10):
         if not files:
             files = []
-            location = 'campaign-data/{}/{}-files/'.format(
+            location = 'campaign-data/{}/{}-files'.format(
                 self.db.campaign['id'], 'aux' if self.aux else 'dut')
             if exists(location):
                 for item in listdir(location):
-                    files.append(location+item)
+                    files.append('{}/{}'.format(location, item))
             else:
                 if self.options.application_file:
                     files.append('{}/{}'.format(
