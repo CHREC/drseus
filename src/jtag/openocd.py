@@ -192,7 +192,7 @@ class openocd(jtag):
             register_name = register_info['register']
         register = target['registers'][register_info['register']]
         if 'type' in target and target['type'] == 'CP':
-            buff = self.command('arm mrc {} {} {} {} {}'.join(
+            buff = self.command('arm mrc {} {} {} {} {}'.format(
                 register['CP'], register['Op1'], register['CRn'],
                 register['CRm'], register['Op2']),
                 error_message='Error getting register value')
