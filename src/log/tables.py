@@ -156,7 +156,7 @@ class events(Table):
     result_id = TemplateColumn(
         '{% if value %}<a href="/result/{{ value }}">{{ value }}</a>'
         '{% else %}<a href="/campaign/{{ record.campaign_id }}/info">'
-        'Campaign</a>{% endif %}',
+        'Campaign {{ record.campaign_id }}</a>{% endif %}',
         accessor='result_id')
     select_box = CheckBoxColumn(
         accessor='result_id',
