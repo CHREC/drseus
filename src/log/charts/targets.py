@@ -1,128 +1,80 @@
+from collections import OrderedDict
 from copy import deepcopy
-from django.db.models import (Avg, Case, Count, F, IntegerField, Sum, TextField,
-                              Value, When)
+from django.db.models import Avg, Case, Count, F, TextField, Value, When
 from django.db.models.functions import Concat
 from json import dumps
 from time import time
 
-from . import colors, colors_extra
+from . import colors, default_chart
 
 
 def outcomes(**kwargs):
+    campaigns = kwargs['campaigns']
     chart_data = kwargs['chart_data']
     chart_list = kwargs['chart_list']
     group_categories = kwargs['group_categories']
+    indices = kwargs['indices'] if 'indices' in kwargs else False
     injections = kwargs['injections']
     order = kwargs['order']
     outcomes = kwargs['outcomes']
     success = kwargs['success']
 
     start = time()
-    targets = list(injections.values_list('target', flat=True).distinct(
-        ).order_by('target'))
+    if indices:
+        chart_id = 'target_indices_chart'
+        injections = injections.annotate(target_name=Case(
+            When(target_index__isnull=True, then=F('target')),
+            default=Concat('target', Value('['),  'target_index', Value(']'),
+                           output_field=TextField())))
+        targets = list(injections.values_list(
+            'target_name', flat=True).distinct().order_by('target_name'))
+    else:
+        chart_id = 'targets_chart'
+        targets = list(injections.values_list(
+            'target', flat=True).distinct().order_by('target'))
     if len(targets) < 1:
         return
-    extra_colors = list(colors_extra)
-    chart = {
-        'chart': {
-            'renderTo': 'targets_chart',
-            'type': 'column',
-            'zoomType': 'xy'
-        },
-        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
-                   for outcome in outcomes],
-        'credits': {
-            'enabled': False
-        },
-        'exporting': {
-            'filename': 'targets_chart',
-            'sourceWidth': 480,
-            'sourceHeight': 360,
-            'scale': 2
-        },
-        'plotOptions': {
-            'series': {
-                'point': {
-                    'events': {
-                        'click': '__click_function__'
-                    }
-                },
-                'stacking': True
-            }
-        },
-        'series': [],
-        'title': {
-            'text': None
-        },
-        'xAxis': {
-            'categories': targets,
-            'title': {
-                'text': 'Injected Target'
-            }
-        },
-        'yAxis': {
-            'title': {
-                'text': 'Injections'
-            }
-        }
-    }
-    for outcome in outcomes:
-        when_kwargs = {'then': 1}
-        if success:
-            when_kwargs['success'] = outcome
-        else:
-            when_kwargs['result__outcome_category' if group_categories
-                        else 'result__outcome'] = outcome
-        data = list(injections.values_list('target').distinct(
-            ).order_by('target').annotate(
-            count=Sum(Case(When(**when_kwargs), default=0,
-                           output_field=IntegerField()))
-            ).values_list('count', flat=True))
-        chart['series'].append({'data': data, 'name': str(outcome)})
-    chart_percent = deepcopy(chart)
-    chart_percent['chart']['renderTo'] = 'targets_chart_percent'
-    chart_percent['plotOptions']['series']['stacking'] = 'percent'
-    chart_percent['yAxis'] = {
-        'labels': {
-            'format': '{value}%'
-        },
-        'title': {
-            'text': 'Injections'
-        }
-    }
-    chart_percent = dumps(chart_percent, indent=4)
-    chart_percent = chart_percent.replace('\"__click_function__\"', """
-    function(event) {
-        var filter;
-        if (window.location.href.indexOf('?') > -1) {
-            filter = window.location.href.replace(/.*\?/g, '&');
-        } else {
-            filter = '';
-        }
-        var outcome;
-        if (this.series.name == 'True') {
-            outcome = '1';
-        } else if (this.series.name == 'False') {
-            outcome = '0';
-        } else {
-            outcome = this.series.name;
-        }
-        window.open('results?outcome='+outcome+
-                    '&injection__target='+this.category+filter);
-    }
-    """.replace('\n    ', '\n                        '))
+    chart = default_chart(chart_id, 'Injected Target', targets)
     if success:
-        chart_percent = chart_percent.replace('?outcome=',
-                                              '?injection__success=')
+        outcome = 'success'
     elif group_categories:
-        chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
-    chart_data.append(chart_percent)
+        outcome = 'result__outcome_category'
+    else:
+        outcome = 'result__outcome'
+    series = {campaign: OrderedDict([
+        (str(outcome), [0]*len(targets)) for outcome in outcomes])
+        for campaign in campaigns}
+    for campaign, outcome, target, count in injections.values_list(
+            'result__campaign_id', outcome,
+            'target_name' if indices else 'target').distinct().annotate(
+                count=Count('result')
+            ).values_list(
+                'result__campaign_id', outcome,
+                'target_name' if indices else 'target', 'count'):
+        series[campaign][outcome][targets.index(target)] = count
+    for campaign in series:
+        for outcome, data in series[campaign].items():
+            series_data = {'data': data, 'name': outcome, 'stack': campaign}
+            if campaign == campaigns[0]:
+                series_data['id'] = outcome
+            else:
+                series_data['linkedTo'] = outcome
+            if outcome in colors:
+                series_data['color'] = colors[outcome]
+            chart['series'].append(series_data)
+    charts = [dumps(chart, indent=4)]
+    chart_percent = deepcopy(chart)
+    chart_percent['chart']['renderTo'] = '{}_percent'.format(chart_id)
+    chart_percent['plotOptions']['series']['stacking'] = 'percent'
+    chart_percent['yAxis']['labels'] = {'format': '{value}%'}
+    charts.append(dumps(chart_percent, indent=4))
     if len(outcomes) == 1 and not success:
         chart_log = deepcopy(chart)
-        chart_log['chart']['renderTo'] = 'targets_chart_log'
+        chart_log['chart']['renderTo'] = '{}_log'.format(chart_id)
         chart_log['yAxis']['type'] = 'logarithmic'
-        chart_log = dumps(chart_log, indent=4).replace(
-            '\"__click_function__\"', """
+        charts.append(dumps(chart_log, indent=4))
+    for chart in charts:
+        chart = chart.replace('\"__series_click__\"', """
         function(event) {
             var filter;
             if (window.location.href.indexOf('?') > -1) {
@@ -130,217 +82,48 @@ def outcomes(**kwargs):
             } else {
                 filter = '';
             }
-            window.open('results?outcome='+this.series.name+
+            var outcome;
+            if (this.series.name == 'True') {
+                outcome = '1';
+            } else if (this.series.name == 'False') {
+                outcome = '0';
+            } else {
+                outcome = this.series.name;
+            }
+            window.open('/campaign/'+this.series.options.stack+
+                        '/results?outcome='+outcome+
                         '&injection__target='+this.category+filter);
         }
-        """.replace('\n    ', '\n                        '))
-        if group_categories:
-            chart_log = chart_log.replace('?outcome=', '?outcome_category=')
-        chart_data.append(chart_log)
-    chart = dumps(chart, indent=4)
-    chart = chart.replace('\"__click_function__\"', """
-    function(event) {
-        var filter;
-        if (window.location.href.indexOf('?') > -1) {
-            filter = window.location.href.replace(/.*\?/g, '&');
-        } else {
-            filter = '';
-        }
-        var outcome;
-        if (this.series.name == 'True') {
-            outcome = '1';
-        } else if (this.series.name == 'False') {
-            outcome = '0';
-        } else {
-            outcome = this.series.name;
-        }
-        window.open('results?outcome='+outcome+
-                    '&injection__target='+this.category+filter);
-    }
-    """.replace('\n    ', '\n                        '))
-    if success:
-        chart = chart.replace('?outcome=', '?injection__success=')
-    elif group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_data.append(chart)
+        """)
+        chart = chart.replace('\"__tooltip_formatter__\"', """
+            function () {
+                return this.series.name+': <b>'+this.y+'</b><br/>'+
+                       'Target: '+this.x+'<br/>'+
+                       'Campaign: '+this.series.options.stack;
+            }
+        """)
+        chart = chart.replace('\n    ', '\n                        ')
+        if success:
+            chart = chart.replace('?outcome=', '?injection__success=')
+        elif group_categories:
+            chart = chart.replace('?outcome=', '?outcome_category=')
+        chart_data.append(chart)
     chart_list.append({
-        'id': 'targets_chart',
+        'id': chart_id,
         'log': len(outcomes) == 1 and not success,
         'order': order,
         'percent': True,
-        'title': 'Targets'})
-    print('targets_charts:', round(time()-start, 2), 'seconds')
+        'title': 'Targets{}'.format(' (With Indices)' if indices else '')})
+    print(chart_id, round(time()-start, 2), 'seconds')
 
 
 def indices(**kwargs):
-    chart_data = kwargs['chart_data']
-    chart_list = kwargs['chart_list']
-    group_categories = kwargs['group_categories']
-    injections = kwargs['injections']
-    order = kwargs['order']
-    outcomes = kwargs['outcomes']
-    success = kwargs['success']
-
-    start = time()
-    injections = injections.annotate(target_name=Case(
-        When(target_index__isnull=True, then=F('target')),
-        default=Concat('target', Value('['),  'target_index', Value(']'),
-                       output_field=TextField())))
-    targets = list(injections.values_list('target_name', flat=True).distinct(
-        ).order_by('target_name'))
-    if len(targets) < 1:
-        return
-    extra_colors = list(colors_extra)
-    chart = {
-        'chart': {
-            'renderTo': 'target_indices_chart',
-            'type': 'column',
-            'zoomType': 'xy'
-        },
-        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
-                   for outcome in outcomes],
-        'credits': {
-            'enabled': False
-        },
-        'exporting': {
-            'filename': 'target_indices_chart',
-            'sourceWidth': 480,
-            'sourceHeight': 360,
-            'scale': 2
-        },
-        'plotOptions': {
-            'series': {
-                'point': {
-                    'events': {
-                        'click': '__click_function__'
-                    }
-                },
-                'stacking': True
-            }
-        },
-        'series': [],
-        'title': {
-            'text': None
-        },
-        'xAxis': {
-            'categories': targets,
-            'title': {
-                'text': 'Injected Target'
-            }
-        },
-        'yAxis': {
-            'title': {
-                'text': 'Injections'
-            }
-        }
-    }
-    for outcome in outcomes:
-        when_kwargs = {'then': 1}
-        if success:
-            when_kwargs['success'] = outcome
-        else:
-            when_kwargs['result__outcome_category' if group_categories
-                        else 'result__outcome'] = outcome
-        data = list(injections.values_list('target_name').distinct(
-            ).order_by('target_name').annotate(
-            count=Sum(Case(When(**when_kwargs), default=0,
-                           output_field=IntegerField()))
-            ).values_list('count', flat=True))
-        chart['series'].append({'data': data, 'name': str(outcome)})
-    chart_percent = deepcopy(chart)
-    chart_percent['chart']['renderTo'] = 'target_indices_chart_percent'
-    chart_percent['plotOptions']['series']['stacking'] = 'percent'
-    chart_percent['yAxis'] = {
-        'labels': {
-            'format': '{value}%'
-        },
-        'title': {
-            'text': 'Injections'
-        }
-    }
-    chart_percent = dumps(chart_percent, indent=4)
-    chart_percent = chart_percent.replace('\"__click_function__\"', """
-    function(event) {
-        var filter;
-        if (window.location.href.indexOf('?') > -1) {
-            filter = window.location.href.replace(/.*\?/g, '&');
-        } else {
-            filter = '';
-        }
-        var outcome;
-        if (this.series.name == 'True') {
-            outcome = '1';
-        } else if (this.series.name == 'False') {
-            outcome = '0';
-        } else {
-            outcome = this.series.name;
-        }
-        window.open('results?outcome='+outcome+
-                    '&injection__target='+this.category+filter);
-    }
-    """.replace('\n    ', '\n                        '))
-    if success:
-        chart_percent = chart_percent.replace('?outcome=',
-                                              '?injection__success=')
-    elif group_categories:
-        chart_percent = chart_percent.replace('?outcome=', '?outcome_category=')
-    chart_data.append(chart_percent)
-    if len(outcomes) == 1 and not success:
-        chart_log = deepcopy(chart)
-        chart_log['chart']['renderTo'] = 'target_indices_chart_log'
-        chart_log['yAxis']['type'] = 'logarithmic'
-        chart_log = dumps(chart_log, indent=4).replace(
-            '\"__click_function__\"', """
-        function(event) {
-            var filter;
-            if (window.location.href.indexOf('?') > -1) {
-                filter = window.location.href.replace(/.*\?/g, '&');
-            } else {
-                filter = '';
-            }
-            window.open('results?outcome='+this.series.name+
-                        '&injection__target='+this.category+filter);
-        }
-        """.replace('\n    ', '\n                        '))
-        if group_categories:
-            chart_log = chart_log.replace('?outcome=', '?outcome_category=')
-        chart_data.append(chart_log)
-    chart = dumps(chart, indent=4)
-    chart = chart.replace('\"__click_function__\"', """
-    function(event) {
-        var filter;
-        if (window.location.href.indexOf('?') > -1) {
-            filter = window.location.href.replace(/.*\?/g, '&');
-        } else {
-            filter = '';
-        }
-        var outcome;
-        if (this.series.name == 'True') {
-            outcome = '1';
-        } else if (this.series.name == 'False') {
-            outcome = '0';
-        } else {
-            outcome = this.series.name;
-        }
-        window.open('results?outcome='+outcome+
-                    '&injection__target='+this.category+filter);
-    }
-    """.replace('\n    ', '\n                        '))
-    if success:
-        chart = chart.replace('?outcome=', '?injection__success=')
-    elif group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_data.append(chart)
-    chart_list.append({
-        'id': 'target_indices_chart',
-        'log': len(outcomes) == 1 and not success,
-        'order': order,
-        'percent': True,
-        'title': 'Targets (with Indices)'})
-    print('target_indices_charts:', round(time()-start, 2), 'seconds')
+    kwargs['indices'] = True
+    outcomes(**kwargs)
 
 
 def propagation(**kwargs):
+    return
     chart_data = kwargs['chart_data']
     chart_list = kwargs['chart_list']
     injections = kwargs['injections']
@@ -372,7 +155,7 @@ def propagation(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': '__click_function__'
+                        'click': '__series_click__'
                     }
                 }
             }
@@ -416,7 +199,7 @@ def propagation(**kwargs):
             mem_diff_list.append(None)
     chart['series'].append({'data': mem_diff_list, 'name': 'Memory Blocks'})
     chart['series'].append({'data': reg_diff_list, 'name': 'Registers'})
-    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
+    chart = dumps(chart, indent=4).replace('\"__series_click__\"', """
     function(event) {
         var filter;
         if (window.location.href.indexOf('?') > -1) {
@@ -469,7 +252,7 @@ def data_diff(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': '__click_function__'
+                        'click': '__series_click__'
                     }
                 }
             }
@@ -500,7 +283,7 @@ def data_diff(**kwargs):
                          default='result__data_diff'))
         ).values_list('avg', flat=True)
     chart['series'].append({'data': [x*100 for x in data]})
-    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
+    chart = dumps(chart, indent=4).replace('\"__series_click__\"', """
     function(event) {
         var filter;
         if (window.location.href.indexOf('?') > -1) {
@@ -555,7 +338,7 @@ def execution_time(**kwargs):
             'series': {
                 'point': {
                     'events': {
-                        'click': '__click_function__'
+                        'click': '__series_click__'
                     }
                 }
             }
@@ -580,7 +363,7 @@ def execution_time(**kwargs):
         'target').annotate(avg=Avg('result__execution_time')).values_list(
             'avg', flat=True))
     chart['series'].append({'data': data})
-    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
+    chart = dumps(chart, indent=4).replace('\"__series_click__\"', """
     function(event) {
         var filter;
         if (window.location.href.indexOf('?') > -1) {

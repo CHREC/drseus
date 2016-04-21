@@ -8,7 +8,6 @@ from .arguments import get_options, parser
 # TODO: update chart colors
 # TODO: only send files if needed
 # TODO: use regular expressions in telnet expect in jtag
-# TODO: use formatting strings
 # TODO: add mode to redo injection iteration
 # TODO: add support for injection of multi-bit upsets
 

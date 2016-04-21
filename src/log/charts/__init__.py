@@ -59,3 +59,52 @@ def count_intervals(items, intervals, data_diff=False):
         else:
             count_list.append(0)
     return count_list
+
+
+def default_chart(chart_id, axis_title, axis_items):
+    return {
+        'chart': {
+            'renderTo': chart_id,
+            'type': 'column',
+            'zoomType': 'xy'
+        },
+        'credits': {
+            'enabled': False
+        },
+        'exporting': {
+            'filename': chart_id,
+            'sourceWidth': 480,
+            'sourceHeight': 360,
+            'scale': 2
+        },
+        'plotOptions': {
+            'column': {
+                'stacking': 'normal'
+            },
+            'series': {
+                'point': {
+                    'events': {
+                        'click': '__series_click__'
+                    }
+                }
+            }
+        },
+        'series': [],
+        'title': {
+            'text': None
+        },
+        'tooltip': {
+            'formatter': '__tooltip_formatter__'
+        },
+        'xAxis': {
+            'categories': axis_items,
+            'title': {
+                'text': axis_title
+            }
+        },
+        'yAxis': {
+            'title': {
+                'text': 'Injections'
+            }
+        }
+    }
