@@ -1,10 +1,8 @@
-from copy import deepcopy
-from django.db.models import Avg, Case, IntegerField, Sum, When
-from numpy import convolve, ones
+from django.db.models import Avg, Case, When
 from json import dumps
 from time import time
 
-from . import colors, colors_extra
+from . import get_chart
 
 
 def outcomes(**kwargs):
@@ -16,96 +14,19 @@ def outcomes(**kwargs):
     outcomes = kwargs['outcomes']
 
     start = time()
+    chart_id = 'checkpoints_chart'
     injections = injections.exclude(checkpoint__isnull=True)
     checkpoints = list(injections.values_list(
         'checkpoint', flat=True).distinct().order_by('checkpoint'))
     if len(checkpoints) < 1:
         return
-    extra_colors = list(colors_extra)
-    chart = {
-        'chart': {
-            'renderTo': 'checkpoints_chart',
-            'type': 'column',
-            'zoomType': 'xy'
-        },
-        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
-                   for outcome in outcomes],
-        'credits': {
-            'enabled': False
-        },
-        'exporting': {
-            'filename': 'checkpoints_chart',
-            'sourceWidth': 960,
-            'sourceHeight': 540,
-            'scale': 2
-        },
-        'plotOptions': {
-            'series': {
-                'point': {
-                    'events': {
-                        'click': '__click_function__'
-                    }
-                },
-                'stacking': True
-            }
-        },
-        'series': [],
-        'title': {
-            'text': None
-        },
-        'xAxis': {
-            'categories': checkpoints,
-            'title': {
-                'text': 'Injected Checkpoint'
-            }
-        },
-        'yAxis': {
-            'title': {
-                'text': 'Injections'
-            }
-        }
-    }
-    window_size = 10
-    chart_smooth = deepcopy(chart)
-    chart_smooth['chart']['type'] = 'area'
-    chart_smooth['chart']['renderTo'] = 'checkpoints_chart_smooth'
-    for outcome in outcomes:
-        when_kwargs = {'then': 1}
-        when_kwargs['result__outcome_category' if group_categories
-                    else 'result__outcome'] = outcome
-        data = list(injections.values_list(
-            'checkpoint').distinct().order_by('checkpoint').annotate(
-                count=Sum(Case(When(**when_kwargs),
-                               default=0, output_field=IntegerField()))
-            ).values_list('count', flat=True))
-        chart['series'].append({'data': data, 'name': outcome})
-        chart_smooth['series'].append({
-            'data': convolve(
-                data, ones(window_size)/window_size, 'same').tolist(),
-            'name': outcome,
-            'stacking': True})
-    chart_data.append(dumps(chart_smooth, indent=4))
-    chart = dumps(chart, indent=4).replace('\"__click_function__\"', """
-    function(event) {
-        var filter;
-        if (window.location.href.indexOf('?') > -1) {
-            filter = window.location.href.replace(/.*\?/g, '&');
-        } else {
-            filter = '';
-        }
-        window.open('results?outcome='+this.series.name+
-                    '&injection__checkpoint='+this.category+filter);
-    }
-    """.replace('\n    ', '\n                        '))
-    if group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
-    chart_data.append(chart)
-    chart_list.append({
-        'id': 'checkpoints_chart',
-        'order': order,
-        'smooth': True,
-        'title': 'Injections Over Time'})
-    print('checkpoints_charts', round(time()-start, 2), 'seconds')
+    chart = get_chart(chart_id, injections, 'Injected Checkpoint', 'Checkpoint',
+                      'checkpoint', checkpoints, outcomes, group_categories,
+                      smooth=True)
+    chart_data.extend(chart)
+    chart_list.append({'id': chart_id, 'order': order, 'smooth': True,
+                       'title': 'Injections Over Time'})
+    print(chart_id, round(time()-start, 2), 'seconds')
 
 
 def data_diff(**kwargs):

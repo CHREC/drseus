@@ -125,8 +125,8 @@ class injection(FilterSet):
         for item in injections.exclude(**exclude_kwargs).values_list(
                 attribute, flat=True).distinct():
             if isinstance(item, list):
-                choices.append(('{{}}'.format(','.join(map(str, item))),
-                                ':'.join(map(str, item))))
+                choice = '{{{}}}'.format(', '.join(map(str, item)))
+                choices.append((choice, choice))
             else:
                 choices.append((item, item))
         return sorted(choices, key=fix_sort_list)

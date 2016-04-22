@@ -1,15 +1,12 @@
-from collections import OrderedDict
-from copy import deepcopy
 from django.db.models import Avg, Case, Count, F, TextField, Value, When
 from django.db.models.functions import Concat
 from json import dumps
 from time import time
 
-from . import colors, default_chart
+from . import get_chart
 
 
 def outcomes(**kwargs):
-    campaigns = kwargs['campaigns']
     chart_data = kwargs['chart_data']
     chart_list = kwargs['chart_list']
     group_categories = kwargs['group_categories']
@@ -34,86 +31,15 @@ def outcomes(**kwargs):
             'target', flat=True).distinct().order_by('target'))
     if len(targets) < 1:
         return
-    chart = default_chart(chart_id, 'Injected Target', targets)
-    if success:
-        outcome = 'success'
-    elif group_categories:
-        outcome = 'result__outcome_category'
-    else:
-        outcome = 'result__outcome'
-    series = {campaign: OrderedDict([
-        (str(outcome), [0]*len(targets)) for outcome in outcomes])
-        for campaign in campaigns}
-    for campaign, outcome, target, count in injections.values_list(
-            'result__campaign_id', outcome,
-            'target_name' if indices else 'target').distinct().annotate(
-                count=Count('result')
-            ).values_list(
-                'result__campaign_id', outcome,
-                'target_name' if indices else 'target', 'count'):
-        series[campaign][outcome][targets.index(target)] = count
-    for campaign in series:
-        for outcome, data in series[campaign].items():
-            series_data = {'data': data, 'name': outcome, 'stack': campaign}
-            if campaign == campaigns[0]:
-                series_data['id'] = outcome
-            else:
-                series_data['linkedTo'] = outcome
-            if outcome in colors:
-                series_data['color'] = colors[outcome]
-            chart['series'].append(series_data)
-    charts = [dumps(chart, indent=4)]
-    chart_percent = deepcopy(chart)
-    chart_percent['chart']['renderTo'] = '{}_percent'.format(chart_id)
-    chart_percent['plotOptions']['series']['stacking'] = 'percent'
-    chart_percent['yAxis']['labels'] = {'format': '{value}%'}
-    charts.append(dumps(chart_percent, indent=4))
-    if len(outcomes) == 1 and not success:
-        chart_log = deepcopy(chart)
-        chart_log['chart']['renderTo'] = '{}_log'.format(chart_id)
-        chart_log['yAxis']['type'] = 'logarithmic'
-        charts.append(dumps(chart_log, indent=4))
-    for chart in charts:
-        chart = chart.replace('\"__series_click__\"', """
-        function(event) {
-            var filter;
-            if (window.location.href.indexOf('?') > -1) {
-                filter = window.location.href.replace(/.*\?/g, '&');
-            } else {
-                filter = '';
-            }
-            var outcome;
-            if (this.series.name == 'True') {
-                outcome = '1';
-            } else if (this.series.name == 'False') {
-                outcome = '0';
-            } else {
-                outcome = this.series.name;
-            }
-            window.open('/campaign/'+this.series.options.stack+
-                        '/results?outcome='+outcome+
-                        '&injection__target='+this.category+filter);
-        }
-        """)
-        chart = chart.replace('\"__tooltip_formatter__\"', """
-            function () {
-                return this.series.name+': <b>'+this.y+'</b><br/>'+
-                       'Target: '+this.x+'<br/>'+
-                       'Campaign: '+this.series.options.stack;
-            }
-        """)
-        chart = chart.replace('\n    ', '\n                        ')
-        if success:
-            chart = chart.replace('?outcome=', '?injection__success=')
-        elif group_categories:
-            chart = chart.replace('?outcome=', '?outcome_category=')
-        chart_data.append(chart)
-    chart_list.append({
-        'id': chart_id,
-        'log': len(outcomes) == 1 and not success,
-        'order': order,
-        'percent': True,
-        'title': 'Targets{}'.format(' (With Indices)' if indices else '')})
+    log = len(outcomes) == 1 and not success
+    chart = get_chart(chart_id, injections, 'Injected Target', 'Target',
+                      'target_name' if indices else 'target', targets,
+                      outcomes, group_categories, success, percent=True,
+                      log=log)
+    chart_data.extend(chart)
+    chart_list.append({'id': chart_id, 'log': log, 'order': order,
+                       'percent': True, 'title': 'Targets (With Indices)'
+                                                 if indices else 'Targets'})
     print(chart_id, round(time()-start, 2), 'seconds')
 
 

@@ -4,7 +4,7 @@ from numpy import convolve, linspace, ones
 from json import dumps
 from time import time
 
-from . import colors, colors_extra, count_intervals
+from . import colors, colors_extra, count_intervals, get_chart
 
 
 def outcomes(**kwargs):
@@ -16,6 +16,7 @@ def outcomes(**kwargs):
     outcomes = kwargs['outcomes']
 
     start = time()
+    chart_id = 'times_chart'
     injections = injections.exclude(time__isnull=True)
     if injections.count() <= 1:
         return
@@ -24,88 +25,13 @@ def outcomes(**kwargs):
                      xaxis_length, endpoint=False).tolist()[1:]
     if len(times) <= 1:
         return
-    extra_colors = list(colors_extra)
-    chart = {
-        'chart': {
-            'renderTo': 'times_chart',
-            'type': 'column',
-            'zoomType': 'xy'
-        },
-        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
-                   for outcome in outcomes],
-        'credits': {
-            'enabled': False
-        },
-        'exporting': {
-            'filename': 'times_chart',
-            'sourceWidth': 960,
-            'sourceHeight': 540,
-            'scale': 2
-        },
-        'plotOptions': {
-            'series': {
-                # 'point': {
-                #     'events': {
-                #         'click': '__click_function__'
-                #     }
-                # },
-                'stacking': True
-            }
-        },
-        'series': [],
-        'title': {
-            'text': None
-        },
-        'xAxis': {
-            'categories': times,
-            'labels': {
-                'formatter': '__format_function__'
-            },
-            'title': {
-                'text': 'Injection Time (Seconds)'
-            }
-        },
-        'yAxis': {
-            'title': {
-                'text': 'Injections'
-            }
-        }
-    }
-    window_size = 10
-    chart_smooth = deepcopy(chart)
-    chart_smooth['chart']['type'] = 'area'
-    chart_smooth['chart']['renderTo'] = 'times_chart_smooth'
-    for outcome in outcomes:
-        filter_kwargs = {}
-        filter_kwargs['result__outcome_category' if group_categories
-                      else 'result__outcome'] = outcome
-        data = count_intervals(
-            injections.filter(**filter_kwargs).values_list('time', flat=True),
-            times)
-        chart['series'].append({'data': data, 'name': outcome})
-        chart_smooth['series'].append({
-            'data': convolve(
-                data, ones(window_size)/window_size, 'same').tolist(),
-            'name': outcome,
-            'stacking': True})
-    chart_data.append(dumps(chart, indent=4).replace(
-        '\"__format_function__\"', """
-    function() {
-        return this.value.toFixed(4);
-    }
-    """.replace('\n    ', '\n                    ')))
-    chart_data.append(dumps(chart_smooth, indent=4).replace(
-        '\"__format_function__\"', """
-    function() {
-        return this.value.toFixed(4);
-    }
-    """.replace('\n    ', '\n                    ')))
-    chart_list.append({
-        'id': 'times_chart',
-        'order': order,
-        'smooth': True,
-        'title': 'Injections Over Time'})
-    print('times_charts', round(time()-start, 2), 'seconds')
+    chart = get_chart(chart_id, injections, 'Injection Time (Seconds)', 'Time',
+                      'time', times, outcomes, group_categories, smooth=True,
+                      intervals=True)
+    chart_data.extend(chart)
+    chart_list.append({'id': chart_id, 'order': order, 'smooth': True,
+                       'title': 'Injections Over Time'})
+    print(chart_id, round(time()-start, 2), 'seconds')
 
 
 def data_diff(**kwargs):

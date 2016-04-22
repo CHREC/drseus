@@ -654,13 +654,16 @@ class simics(object):
                         self.db.result['id'], checkpoint,  injection['target']),
                     'magenta'))
                 if 'target_index' in injection:
-                    print(colored('target_index: {}'.format(
+                    print(colored('target index: {}'.format(
                         injection['target_index']), 'magenta'))
                 print(colored(
                     'register: {}\nbit: {}\ngold value: {}\ninjected value: {}'
                     ''.format(injection['register'], injection['bit'],
                               injection['gold_value'],
                               injection['injected_value']), 'magenta'))
+                if 'register_index' in injection:
+                    print(colored('register index: {}'.format(
+                        injection['register_index']), 'magenta'))
         else:
             inject_config(injected_checkpoint, injection)
         return injected_checkpoint.replace('simics-workspace/', '')

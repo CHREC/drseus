@@ -153,8 +153,6 @@ def results_charts(results, group_categories):
               checkpoints.outcomes, checkpoints.data_diff, other.num_injections)
     injections = models.injection.objects.filter(
         result_id__in=results.values('id'))
-    campaigns = list(results.values_list('campaign', flat=True).distinct(
-        ).order_by('campaign'))
     if group_categories:
         outcomes = list(results.values_list(
             'outcome_category', flat=True).distinct(
@@ -179,10 +177,10 @@ def results_charts(results, group_categories):
     threads = []
     for order, chart in enumerate(charts):
         thread = Thread(target=chart, kwargs={
-            'campaigns': campaigns, 'chart_data': chart_data,
-            'chart_list': chart_list, 'group_categories': group_categories,
-            'injections': injections, 'order': order, 'outcomes': outcomes,
-            'results': results, 'success': False})
+            'chart_data': chart_data, 'chart_list': chart_list,
+            'group_categories': group_categories, 'injections': injections,
+            'order': order, 'outcomes': outcomes, 'results': results,
+            'success': False})
         thread.start()
         threads.append(thread)
     for thread in threads:
