@@ -13,16 +13,16 @@ from . import tables
 from .charts.json import (campaigns_chart, injections_charts, results_charts,
                           target_bits_chart)
 
-navigation_items = (('All Campaigns', '/', 'campaigns', 'flag'),
+navigation_items = (('All Campaigns', '/', 'campaigns', 'home'),
                     ('All Results', '/results', 'results', 'list'),
-                    ('All Events', '/events', 'events', 'calendar'),
+                    ('All Events', '/events', 'events', 'flag'),
                     ('All Injections', '/injections', 'injections',
                      'crosshairs'),
                     ('All Charts', '/category_charts', 'charts', 'bar-chart'))
 
 campaign_items = (('Campaign Information', 'info', 'info', 'info'),
                   ('Campaign Results', 'results', 'results', 'list'),
-                  ('Campaign Events', 'events', 'events', 'calendar'),
+                  ('Campaign Events', 'events', 'events', 'flag'),
                   ('Campaign Injections', 'injections', 'injections',
                    'crosshairs'),
                   ('Campaign Charts', 'category_charts', 'charts', 'bar-chart'))

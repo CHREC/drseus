@@ -4,7 +4,7 @@ from numpy import convolve, linspace, ones
 from json import dumps
 from time import time
 
-from . import colors, colors_extra, count_intervals, get_chart
+from . import colors, count_intervals, create_chart
 
 
 def outcomes(**kwargs):
@@ -15,7 +15,6 @@ def outcomes(**kwargs):
     order = kwargs['order']
     outcomes = kwargs['outcomes']
 
-    start = time()
     chart_id = 'times_chart'
     injections = injections.exclude(time__isnull=True)
     if injections.count() <= 1:
@@ -25,13 +24,10 @@ def outcomes(**kwargs):
                      xaxis_length, endpoint=False).tolist()[1:]
     if len(times) <= 1:
         return
-    chart = get_chart(chart_id, injections, 'Injection Time (Seconds)', 'Time',
-                      'time', times, outcomes, group_categories, smooth=True,
-                      intervals=True)
-    chart_data.extend(chart)
-    chart_list.append({'id': chart_id, 'order': order, 'smooth': True,
-                       'title': 'Injections Over Time'})
-    print(chart_id, round(time()-start, 2), 'seconds')
+    create_chart(chart_list, chart_data, 'Injections Over Time', order,
+                 chart_id, injections, 'Injection Time (Seconds)', 'Time',
+                 'time', times, outcomes, group_categories, smooth=True,
+                 intervals=True)
 
 
 def data_diff(**kwargs):
@@ -41,6 +37,7 @@ def data_diff(**kwargs):
     order = kwargs['order']
 
     start = time()
+    chart_id = 'diff_times_chart'
     injections = injections.exclude(time__isnull=True)
     if injections.count() <= 1:
         return
@@ -51,7 +48,7 @@ def data_diff(**kwargs):
         return
     chart = {
         'chart': {
-            'renderTo': 'diff_times_chart',
+            'renderTo': chart_id,
             'type': 'column',
             'zoomType': 'xy'
         },
@@ -60,7 +57,7 @@ def data_diff(**kwargs):
             'enabled': False
         },
         'exporting': {
-            'filename': 'diff_times_chart',
+            'filename': chart_id,
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
@@ -68,15 +65,6 @@ def data_diff(**kwargs):
         'legend': {
             'enabled': False
         },
-        # 'plotOptions': {
-        #     'series': {
-        #         'point': {
-        #             'events': {
-        #                 'click': '__click_function__'
-        #             }
-        #         }
-        #     }
-        # },
         'series': [{'data': []}],
         'title': {
             'text': None
@@ -104,16 +92,14 @@ def data_diff(**kwargs):
         injections.values_list('time', 'result__data_diff'), times,
         data_diff=True)
     chart_data.append(dumps(chart, indent=4).replace(
-        '\"__format_function__\"', """
-    function() {
-        return this.value.toFixed(4);
-    }
-    """.replace('\n    ', '\n                    ')))
-    chart_list.append({
-        'id': 'diff_times_chart',
-        'order': order,
-        'title': 'Data Destruction Over Time'})
-    print('diff_times_chart:', round(time()-start, 2), 'seconds')
+        '"__format_function__"', """
+            function() {
+                return this.value.toFixed(4);
+            }
+    """))
+    chart_list.append({'id': chart_id, 'order': order,
+                       'title': 'Data Destruction Over Time'})
+    print(chart_id, round(time()-start, 2), 'seconds')
 
 
 def execution_times(**kwargs):
@@ -125,6 +111,7 @@ def execution_times(**kwargs):
     results = kwargs['results']
 
     start = time()
+    chart_id = 'execution_times_chart'
     results = results.exclude(execution_time__isnull=True).filter(returned=True)
     if results.count() < 1:
         return
@@ -135,31 +122,31 @@ def execution_times(**kwargs):
     times = linspace(
         max(0, avg-(std_dev*std_dev_range)), avg+(std_dev*std_dev_range), 1000,
         endpoint=False).tolist()
-    extra_colors = list(colors_extra)
+    # create_chart(chart_list, chart_data, 'Execution Times', order,
+    #              chart_id, None,
+    #              ('Execution Time (Seconds) for '
+    #               '(\u03bc-{0}\u03c3, \u03bc+{0}\u03c3), '
+    #               '\u03bc={1:.2f} & \u03c3={2:.2f}'.format(std_dev_range, avg,
+    #                                                        std_dev)),
+    #              'Time', 'execution_time', times, outcomes, group_categories,
+    #              results=results, smooth=True, intervals=True)
     chart = {
         'chart': {
-            'renderTo': 'execution_times_chart',
+            'renderTo': chart_id,
             'type': 'column',
             'zoomType': 'xy'
         },
-        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
-                   for outcome in outcomes],
         'credits': {
             'enabled': False
         },
         'exporting': {
-            'filename': 'execution_times_chart',
+            'filename': chart_id,
             'sourceWidth': 960,
             'sourceHeight': 540,
             'scale': 2
         },
         'plotOptions': {
             'series': {
-                # 'point': {
-                #     'events': {
-                #         'click': '__click_function__'
-                #     }
-                # },
                 'stacking': True
             }
         },
@@ -198,26 +185,25 @@ def execution_times(**kwargs):
                                                         flat=True),
             times)
         chart['series'].append({'data': data, 'name': outcome})
+        if outcome in colors:
+            chart['series'][-1]['color'] = colors[outcome]
         chart_smooth['series'].append({
             'data': convolve(
                 data, ones(window_size)/window_size, 'same').tolist(),
             'name': outcome,
             'stacking': True})
     chart_data.append(dumps(chart, indent=4).replace(
-        '\"__format_function__\"', """
-    function() {
-        return this.value.toFixed(4);
-    }
+        '"__format_function__"', """
+            function() {
+                return this.value.toFixed(4);
+            }
     """.replace('\n    ', '\n                    ')))
     chart_data.append(dumps(chart_smooth, indent=4).replace(
-        '\"__format_function__\"', """
-    function() {
-        return this.value.toFixed(4);
-    }
-    """.replace('\n    ', '\n                    ')))
-    chart_list.append({
-        'id': 'execution_times_chart',
-        'order': order,
-        'smooth': True,
-        'title': 'Execution Times'})
-    print('execution_times_charts', round(time()-start, 2), 'seconds')
+        '"__format_function__"', """
+            function() {
+                return this.value.toFixed(4);
+            }
+    """))
+    chart_list.append({'id': chart_id, 'order': order, 'smooth': True,
+                       'title': 'Execution Times'})
+    print(chart_id, round(time()-start, 2), 'seconds')

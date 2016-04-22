@@ -1,9 +1,10 @@
 from bisect import bisect_left
 from collections import defaultdict, OrderedDict
 from copy import deepcopy
-from django.db.models import Count
+from django.db.models import Avg, Case, Count, When
 from json import dumps
 from numpy import convolve, ones
+from time import time
 
 colors = {
     'Data error': '#ba79f2',
@@ -65,13 +66,22 @@ def count_intervals(items, intervals, data_diff=False):
     return count_list
 
 
-def get_chart(chart_id, injections, xaxis_title, xaxis_name, xaxis_type,
-              xaxis_items, yaxis_items, group_categories, success=False,
-              percent=False, log=False, smooth=False,  intervals=False,
-              rotate_labels=False, export_wide=False):
-    campaigns = list(injections.values_list(
-        'result__campaign_id', flat=True).distinct().order_by(
-        'result__campaign_id'))
+def create_chart(chart_list, chart_data, chart_title, order, chart_id,
+                 injections, xaxis_title, xaxis_name, xaxis_type, xaxis_items,
+                 yaxis_items, group_categories=False, success=False,
+                 average=None, percent=False, log=False, smooth=False,
+                 intervals=False, results=None, rotate_labels=False,
+                 export_wide=False):
+    start = time()
+    if results:
+        stack_type = 'campaign_id'
+        model = results
+    else:
+        stack_type = 'result__campaign_id'
+        model = injections
+    campaigns = list(model.values_list(
+        stack_type, flat=True).distinct().order_by(stack_type))
+    log = log and len(yaxis_items) == 1
     smooth = smooth and len(campaigns) == 1
     chart = {
         'chart': {
@@ -137,38 +147,54 @@ def get_chart(chart_id, injections, xaxis_title, xaxis_name, xaxis_type,
     if success:
         yaxis_type = 'success'
     elif group_categories:
-        yaxis_type = 'result__outcome_category'
+        if results:
+            yaxis_type = 'outcome_category'
+        else:
+            yaxis_type = 'result__outcome_category'
     else:
-        yaxis_type = 'result__outcome'
+        if results:
+            yaxis_type = 'outcome'
+        else:
+            yaxis_type = 'result__outcome'
     series = {campaign: OrderedDict([
         (yaxis_item, [0]*len(xaxis_items)) for yaxis_item in yaxis_items])
         for campaign in campaigns}
     if intervals:
-        for campaign, yaxis_item, xaxis_item in injections.values_list(
-                'result__campaign_id', yaxis_type, xaxis_type):
+        for campaign, yaxis_item, xaxis_item in model.values_list(
+                stack_type, yaxis_type, xaxis_type):
             index = bisect_left(xaxis_items, xaxis_item, hi=len(xaxis_items)-1)
             series[campaign][yaxis_item][index] += 1
+    elif average:
+        when_kwargs = {'{}__isnull'.format(average): True, 'then': 0}
+        for campaign, xaxis_item, value in model.values_list(
+                    stack_type, xaxis_type
+                ).distinct().annotate(value=Avg(Case(
+                    When(**when_kwargs), default=average)
+                )).values_list(stack_type, xaxis_type, 'value'):
+            series[campaign][yaxis_items[0]][xaxis_items.index(xaxis_item)] = \
+                value
     else:
-        for campaign, yaxis_item, xaxis_item, count in injections.values_list(
-                    'result__campaign_id', yaxis_type, xaxis_type
-                ).distinct().annotate(count=Count('result')).values_list(
-                    'result__campaign_id', yaxis_type, xaxis_type, 'count'):
-            series[campaign][yaxis_item][xaxis_items.index(xaxis_item)] = count
+        for campaign, yaxis_item, xaxis_item, value in model.values_list(
+                    stack_type, yaxis_type, xaxis_type
+                ).distinct().annotate(value=Count('result')).values_list(
+                    stack_type, yaxis_type, xaxis_type, 'value'):
+            series[campaign][yaxis_item][xaxis_items.index(xaxis_item)] = value
     for stack in series:
-        for yaxis_item, counts in series[stack].items():
+        for yaxis_item, values in series[stack].items():
             series_item = {'name': yaxis_item, 'stack': stack}
-            if stack == campaigns[0]:
-                series_item['id'] = yaxis_item
-            else:
-                series_item['linkedTo'] = yaxis_item
+            if average is None:
+                if stack == campaigns[0]:
+                    series_item['id'] = yaxis_item
+                else:
+                    series_item['linkedTo'] = yaxis_item
             if yaxis_item in colors:
                 series_item['color'] = colors[yaxis_item]
             if smooth:
                 series_item_smooth = deepcopy(series_item)
-                series_item_smooth['data'] = convolve(counts, ones(10)/10,
+                series_item_smooth['data'] = convolve(values, ones(10)/10,
                                                       'same').tolist()
                 chart_smooth['series'].append(series_item_smooth)
-            series_item['data'] = counts
+            series_item['data'] = values
             chart['series'].append(series_item)
     chart_json = [dumps(chart, indent=4)]
     if smooth:
@@ -186,34 +212,59 @@ def get_chart(chart_id, injections, xaxis_title, xaxis_name, xaxis_type,
         chart_json.append(dumps(chart_log, indent=4))
     for index, json in enumerate(chart_json):
         if not intervals:
-            json = json.replace('"__series_click__"', """
-                function(event) {
-                    var filter;
-                    if (window.location.href.indexOf('?') > -1) {
-                        filter = window.location.href.replace(/.*\?/g, '&');
-                    } else {
-                        filter = '';
+            if average:
+                json = json.replace('"__series_click__"', """
+                    function(event) {
+                        var filter;
+                        if (window.location.href.indexOf('?') > -1) {
+                            filter = window.location.href.replace(/.*\?/g, '&');
+                        } else {
+                            filter = '';
+                        }
+                        var outcome;
+                        if (this.series.name == 'True') {
+                            outcome = '1';
+                        } else if (this.series.name == 'False') {
+                            outcome = '0';
+                        } else {
+                            outcome = this.series.name;
+                        }
+                        window.open('/campaign/'+this.series.options.stack+
+                                    '/results?injection____xaxis_type__=' +
+                                    this.category+filter);
                     }
-                    var outcome;
-                    if (this.series.name == 'True') {
-                        outcome = '1';
-                    } else if (this.series.name == 'False') {
-                        outcome = '0';
-                    } else {
-                        outcome = this.series.name;
+                """)
+            else:
+                json = json.replace('"__series_click__"', """
+                    function(event) {
+                        var filter;
+                        if (window.location.href.indexOf('?') > -1) {
+                            filter = window.location.href.replace(/.*\?/g, '&');
+                        } else {
+                            filter = '';
+                        }
+                        var outcome;
+                        if (this.series.name == 'True') {
+                            outcome = '1';
+                        } else if (this.series.name == 'False') {
+                            outcome = '0';
+                        } else {
+                            outcome = this.series.name;
+                        }
+                        window.open('/campaign/'+this.series.options.stack+
+                                    '/results?outcome='+outcome+
+                                    '&injection____xaxis_type__=' +
+                                    this.category+filter);
                     }
-                    window.open('/campaign/'+this.series.options.stack+
-                                '/results?outcome='+outcome+
-                                '&injection__register='+this.category+filter);
-                }
-            """)
+                """)
         json = json.replace('"__tooltip_formatter__"', """
             function () {
                 return this.series.name+': <b>'+this.y+'</b><br/>'+
                        '__xaxis_name__: '+this.x+'<br/>'+
                        'Campaign: '+this.series.options.stack;
             }
-        """).replace('__xaxis_name__', xaxis_name)
+        """).replace('__xaxis_name__', xaxis_name).replace(
+            '__xaxis_type__', xaxis_type)
         if success:
             json = json.replace('?outcome=', '?injection__success=')
         elif group_categories:
@@ -225,4 +276,8 @@ def get_chart(chart_id, injections, xaxis_title, xaxis_name, xaxis_type,
                 }
             """)
         chart_json[index] = json
-    return chart_json
+    chart_data.extend(chart_json)
+    chart_list.append({'id': chart_id, 'log': log, 'order': order,
+                       'percent': percent, 'smooth': smooth,
+                       'title': chart_title})
+    print(chart_id, round(time()-start, 2), 'seconds')

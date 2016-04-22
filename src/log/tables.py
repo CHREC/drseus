@@ -13,7 +13,7 @@ class campaigns(Table):
         '<a href="/campaign/{{ record.id }}/results">'
         '<i class="fa fa-list"></i></a> &nbsp;'
         '<a href="/campaign/{{ record.id }}/events">'
-        '<i class="fa fa-calendar"></i></a> &nbsp;'
+        '<i class="fa fa-flag"></i></a> &nbsp;'
         '<a href="/campaign/{{ record.id }}/injections">'
         '<i class="fa fa-crosshairs"></i></a> &nbsp;'
         '<a href="/campaign/{{ record.id }}/category_charts">'
