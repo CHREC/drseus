@@ -12,6 +12,7 @@ def outcomes(**kwargs):
     injections = kwargs['injections']
     order = kwargs['order']
     outcomes = kwargs['outcomes']
+    success = kwargs['success']
 
     chart_id = 'tlbs_chart'
     injections = injections.filter(target='TLB').annotate(
@@ -25,7 +26,8 @@ def outcomes(**kwargs):
         return
     create_chart(chart_list, chart_data, 'TLB Entries', order, chart_id,
                  injections, 'Injected TLB Entry', 'TLB Entry', 'tlb_entry',
-                 tlb_entries, outcomes, group_categories, rotate_labels=True)
+                 tlb_entries, outcomes, group_categories, success,
+                 rotate_labels=True)
 
 
 def fields(**kwargs):
@@ -35,13 +37,14 @@ def fields(**kwargs):
     injections = kwargs['injections']
     order = kwargs['order']
     outcomes = kwargs['outcomes']
+    success = kwargs['success']
 
     chart_id = 'tlb_fields_chart'
     injections = injections.filter(target='TLB')
-    fields = list(injections.values_list(
-        'field', flat=True).distinct().order_by('field'))
+    fields = injections.values_list('field',
+                                    flat=True).distinct().order_by('field')
     if len(fields) < 1:
         return
     create_chart(chart_list, chart_data, 'TLB Fields', order, chart_id,
                  injections, 'Injected TLB Field', 'TLB Field', 'field', fields,
-                 outcomes, group_categories)
+                 outcomes, group_categories, success)

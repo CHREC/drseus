@@ -43,6 +43,7 @@ def indices(**kwargs):
 
 
 def propagation(**kwargs):
+    return
     chart_data = kwargs['chart_data']
     chart_list = kwargs['chart_list']
     injections = kwargs['injections']

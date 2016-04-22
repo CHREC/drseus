@@ -3,7 +3,7 @@ from django.db.models import Case, IntegerField, Sum, When
 from json import dumps
 from time import time
 
-from . import colors, colors_extra
+from . import colors, colors_extra, create_chart
 
 
 def overview(**kwargs):
@@ -17,98 +17,12 @@ def overview(**kwargs):
     if success:
         results = kwargs['injections']
 
-    start = time()
+    chart_id = 'overview_chart'
     if len(outcomes) < 1:
         return
-    extra_colors = list(colors_extra)
-    chart = {
-        'chart': {
-            'renderTo': 'overview_chart',
-            'type': 'pie'
-        },
-        'colors': [colors[outcome] if outcome in colors else extra_colors.pop()
-                   for outcome in outcomes],
-        'credits': {
-            'enabled': False
-        },
-        'exporting': {
-            'filename': 'overview_chart',
-            'sourceWidth': 480,
-            'sourceHeight': 360,
-            'scale': 2
-        },
-        'plotOptions': {
-            'series': {
-                'point': {
-                    'events': {
-                        'click': '__click_function__'
-                    }
-                }
-            }
-        },
-        'series': [
-            {
-                'data': [],
-                'dataLabels': {
-                    'formatter': '__format_function__',
-                },
-                'name': 'Outcomes'
-            }
-        ],
-        'title': {
-            'text': None
-        }
-    }
-    for outcome in outcomes:
-        filter_kwargs = {}
-        if success:
-            filter_kwargs['success'] = outcome
-        else:
-            filter_kwargs['outcome_category' if group_categories
-                          else 'outcome'] = outcome
-        chart['series'][0]['data'].append((
-            str(outcome), results.filter(**filter_kwargs).count()))
-    outcome_list = dumps(outcomes)
-    chart = dumps(chart, indent=4)
-    chart = chart.replace('\"__click_function__\"', """
-    function(event) {
-        var outcomes = __outcome_list__;
-        var filter;
-        if (window.location.href.indexOf('?') > -1) {
-            filter = window.location.href.replace(/.*\?/g, '&');
-        } else {
-            filter = '';
-        }
-        var outcome;
-        if (this.series.name == 'True') {
-            outcome = '1';
-        } else if (this.series.name == 'False') {
-            outcome = '0';
-        } else {
-            outcome = outcomes[this.x];
-        }
-        window.open('results?outcome='+outcome+filter);
-    }
-    """.replace('\n    ', '\n                        ').replace(
-        '__outcome_list__', outcome_list))
-    if success:
-        chart = chart.replace('?outcome=', '?injection__success=')
-    elif group_categories:
-        chart = chart.replace('?outcome=', '?outcome_category=')
-    chart = chart.replace('\"__format_function__\"', """
-    function() {
-        var outcomes = __outcome_list__;
-        return ''+outcomes[parseInt(this.point.x)]+' '+
-        Highcharts.numberFormat(this.percentage, 1)+'%';
-    }
-    """.replace('\n    ', '\n                    ').replace(
-        '__outcome_list__', outcome_list))
-    chart_data.append(chart)
-    chart_list.append({
-        'id': 'overview_chart',
-        'order': order,
-        'title': 'Overview'})
-    print('overview_chart:', round(time()-start, 2), 'seconds')
+    create_chart(chart_list, chart_data, 'Overview', order, chart_id,
+                 None, None, None, None, None, outcomes, group_categories,
+                 success, results=results, pie=True)
 
 
 def num_injections(**kwargs):

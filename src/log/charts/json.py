@@ -194,11 +194,11 @@ def results_charts(results, group_categories):
 def injections_charts(injections):
     charts = (other.overview, targets.outcomes, targets.indices,
               registers.outcomes, registers.fields, registers.bits,
-              registers.access)
+              registers.access, tlbs.outcomes, tlbs.fields)
     results = models.result.objects.filter(
         id__in=injections.values('result_id'))
-    outcomes = list(injections.values_list(
-        'success', flat=True).distinct().order_by('success'))
+    outcomes = injections.values_list(
+        'success', flat=True).distinct().order_by('success')
     chart_data = []
     chart_list = []
     threads = []
