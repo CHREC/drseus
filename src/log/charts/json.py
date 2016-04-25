@@ -100,9 +100,6 @@ def target_bits_chart(campaign):
 
 def results_charts(results, group_categories):
     start = time()
-    charts_ = [getattr(charts, function[0]) for function in getmembers(
-        charts, lambda x:
-            isfunction(x) and getmodule(x) == charts)]
     injections = models.injection.objects.filter(
         result_id__in=results.values('id'))
     if group_categories:
@@ -127,24 +124,22 @@ def results_charts(results, group_categories):
     chart_data = []
     chart_list = []
     threads = []
-    for order, chart in enumerate(charts_):
+    for chart in [getattr(charts, function[0]) for function in getmembers(
+            charts, lambda x: isfunction(x) and getmodule(x) == charts)]:
         thread = Thread(target=chart, kwargs={
             'chart_data': chart_data, 'chart_list': chart_list,
             'group_categories': group_categories, 'injections': injections,
-            'order': order, 'outcomes': outcomes, 'results': results})
+            'outcomes': outcomes, 'results': results})
         thread.start()
         threads.append(thread)
     for thread in threads:
         thread.join()
-    print('results_charts', round(time()-start, 2), 'seconds')
+    print('total', round(time()-start, 2), 'seconds')
     return '[{}]'.format(',\n'.join(chart_data)), chart_list
 
 
 def injections_charts(injections):
     start = time()
-    charts_ = [getattr(charts, function[0]) for function in getmembers(
-        charts, lambda x:
-            isfunction(x) and getmodule(x) == charts)]
     results = models.result.objects.filter(
         id__in=injections.values('result_id'))
     outcomes = injections.values_list(
@@ -152,14 +147,15 @@ def injections_charts(injections):
     chart_data = []
     chart_list = []
     threads = []
-    for order, chart in enumerate(charts_):
+    for chart in [getattr(charts, function[0]) for function in getmembers(
+            charts, lambda x: isfunction(x) and getmodule(x) == charts)]:
         thread = Thread(target=chart, kwargs={
             'chart_data': chart_data, 'chart_list': chart_list,
-            'group_categories': False, 'injections': injections, 'order': order,
+            'group_categories': False, 'injections': injections,
             'outcomes': outcomes, 'results': results, 'success': True})
         thread.start()
         threads.append(thread)
     for thread in threads:
         thread.join()
-    print('injections_charts', round(time()-start, 2), 'seconds')
+    print('total', round(time()-start, 2), 'seconds')
     return '[{}]'.format(',\n'.join(chart_data)), chart_list
