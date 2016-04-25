@@ -47,7 +47,7 @@ def data_diff_by_targets(**kwargs):
                  xaxis_title='Injected Target',
                  xaxis_name='Target',
                  xaxis_type='target',
-                 yaxis_items=['Data Match'],
+                 yaxis_items=['Average Data Match'],
                  average='result__data_diff',
                  **kwargs)
 
@@ -58,7 +58,7 @@ def execution_time_by_targest(**kwargs):
                  xaxis_title='Injected Target',
                  xaxis_name='Target',
                  xaxis_type='target',
-                 yaxis_items=['Execution Time'],
+                 yaxis_items=['Average Execution Time'],
                  average='result__execution_time',
                  **kwargs)
 
@@ -190,7 +190,7 @@ def data_diff_by_injection_times(**kwargs):
                  xaxis_name='Time',
                  xaxis_type='time',
                  xaxis_items=times,
-                 yaxis_items=['Data Diff'],
+                 yaxis_items=['Average Data Match'],
                  average='result__data_diff',
                  smooth=True,
                  intervals=True,
@@ -216,7 +216,7 @@ def data_diff_by_checkpoint(**kwargs):
                  xaxis_title='Injected Checkpoint',
                  xaxis_name='Checkpoint',
                  xaxis_type='checkpoint',
-                 yaxis_items=['Data Diff'],
+                 yaxis_items=['Average Data Match'],
                  average='result__data_diff',
                  smooth=True,
                  **kwargs)
@@ -243,7 +243,7 @@ def register_propagation(**kwargs):
                  xaxis_title='Injection Target',
                  xaxis_name='Target',
                  xaxis_type='target',
-                 yaxis_items=['Registers'],
+                 yaxis_items=['Average Registers Affected'],
                  average='result__num_register_diffs',
                  log=True,
                  **kwargs)
@@ -257,7 +257,7 @@ def memory_propagation(**kwargs):
                  xaxis_title='Injection Target',
                  xaxis_name='Target',
                  xaxis_type='target',
-                 yaxis_items=['Memory Blocks'],
+                 yaxis_items=['Average Memory Blocks Affected'],
                  average='result__num_memory_diffs',
                  log=True,
                  **kwargs)

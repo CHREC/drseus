@@ -149,6 +149,10 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
                 'text': xaxis_title
             }
         }
+        if len(campaigns) == 1 and len(yaxis_items) == 1:
+            chart['legend'] = {
+                'enabled': False
+            }
     if intervals:
         chart['xAxis']['labels'] = {
             'formatter': '__label_formatter__'
@@ -169,10 +173,16 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
             'x': 5,
             'y': 15
         }
+    if average and 'data_diff' in average:
+        chart['yAxis']['labels'] = {
+            'format': '{value}%'
+        }
+        chart['yAxis']['max'] = 100
     if smooth:
         chart_smooth = deepcopy(chart)
         chart_smooth['chart']['type'] = 'area'
         chart_smooth['chart']['renderTo'] = '{}_smooth'.format(chart_id)
+
     if success:
         yaxis_type = 'success'
     elif group_categories:
@@ -260,8 +270,10 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
                         series_item['linkedTo'] = yaxis_item
                     if yaxis_item in colors:
                         series_item['color'] = colors[yaxis_item]
-                    else:
+                    elif not average:
                         print('* missing color for', yaxis_item)
+                if average and 'data_diff' in average:
+                    values = [x*100 for x in values]
                 if smooth:
                     series_item_smooth = deepcopy(series_item)
                     series_item_smooth['data'] = convolve(values, ones(10)/10,
