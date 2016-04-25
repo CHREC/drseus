@@ -134,7 +134,7 @@ def results_charts(results, group_categories):
         threads.append(thread)
     for thread in threads:
         thread.join()
-    print('total', round(time()-start, 2), 'seconds')
+    print('charts total', round(time()-start, 2), 'seconds')
     return '[{}]'.format(',\n'.join(chart_data)), chart_list
 
 
@@ -157,5 +157,5 @@ def injections_charts(injections):
         threads.append(thread)
     for thread in threads:
         thread.join()
-    print('total', round(time()-start, 2), 'seconds')
+    print('charts total', round(time()-start, 2), 'seconds')
     return '[{}]'.format(',\n'.join(chart_data)), chart_list
