@@ -143,7 +143,7 @@ def injections_charts(injections):
     results = models.result.objects.filter(
         id__in=injections.values('result_id'))
     outcomes = [str(outcome) for outcome in injections.values_list(
-        'success', flat=True).distinct().order_by('success')]
+        'success', flat=True).distinct().order_by('-success')]
     chart_data = []
     chart_list = []
     threads = []

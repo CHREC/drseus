@@ -12,17 +12,23 @@ from .. import fix_sort
 colors = {
     'Data error': '#ba79f2',
     'Detected data error': '#7f6600',
-    'Silet data error': '#162859',
+    'Silent data error': '#162859',
 
     'Execution error': '#cc3333',
     'Hanging': '#c200f2',
     'Illegal instruction': '#ff4400',
     'Kernel error': '#591643',
+    'Reboot': '#e4d354',
     'Segmentation fault': '#f2a200',
+    'Signal SIGABRT': '#f7a35c',
+    'Signal SIGBUS': '#8085e9',
+    'Signal SIGFPE': '#f15c80',
     'Signal SIGILL': '#9fbf60',
     'Signal SIGIOT': '#88ff00',
     'Signal SIGSEGV': '#7c9da6',
     'Signal SIGTRAP': '#ff83ff',
+    'Stall detected': '#90ed7d',
+
 
     'No error': '#33cc70',
     'Latent faults': '#a18069',
@@ -31,15 +37,26 @@ colors = {
 
     'Post execution error': '#0061f2',
 
+    'File transfer error': '#f75d59',
     'SCP error': '#d4a017',
-    'Missing output': '#f75d59',
+    'SSH error': '#434348',
+
+    'Debugger error': '#bf6600',
+    'Error halting DUT': '#91e8e1',
 
     'Simics error': '#006652',
     'Address not mapped': '#992645',
-    'Dropping memop': '#bf6600',
 
-    'True': '#00ff00',
-    'False': '#ff0000'
+    'Incomplete': '#7cb5ec',
+    'In progress': '#2b908f',
+    'Interrupted': '#f45b5b',
+
+    'True': '#01df74',
+    'False': '#fe2e64',
+
+    'Error finding port or pseudoterminal': '#610b0b',
+    'Error getting register value': '#8a0808',
+    'Error injecting fault': '#b40404',
 }
 
 
@@ -219,6 +236,8 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
                 series_item = {'name': yaxis_item}
                 if yaxis_item in colors:
                     series_item['color'] = colors[yaxis_item]
+                else:
+                    print('* missing color for', yaxis_item)
                 series_item['y'] = value
                 chart['series'][0]['data'].append(series_item)
     else:
@@ -239,8 +258,10 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
                         series_item['id'] = yaxis_item
                     else:
                         series_item['linkedTo'] = yaxis_item
-                if yaxis_item in colors:
-                    series_item['color'] = colors[yaxis_item]
+                    if yaxis_item in colors:
+                        series_item['color'] = colors[yaxis_item]
+                    else:
+                        print('* missing color for', yaxis_item)
                 if smooth:
                     series_item_smooth = deepcopy(series_item)
                     series_item_smooth['data'] = convolve(values, ones(10)/10,

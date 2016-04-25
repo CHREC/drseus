@@ -231,6 +231,7 @@ def outcomes_by_num_injections(**kwargs):
                  xaxis_name='Injections',
                  xaxis_model='results',
                  xaxis_type='num_injections',
+                 percent=True,
                  **kwargs)
 
 

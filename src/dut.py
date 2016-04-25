@@ -43,10 +43,11 @@ class dut(object):
         ('Unable to handle kernel paging request', 'Kernel error'),
         ('Alignment trap', 'Kernel error'),
         ('Unhandled fault', 'Kernel error'),
+        ('unhandled signal', 'Kernel error'),
         ('free(), invalid next size', 'Kernel error'),
         ('double free or corruption', 'Kernel error'),
         ('Rebooting in', 'Kernel error'),
-        ('????????', '????????'),
+        ('????????', 'Kernel error'),
         ('Hit any key to stop autoboot:', 'Reboot'),
         ('can\'t get kernel image', 'Error booting')]
 
