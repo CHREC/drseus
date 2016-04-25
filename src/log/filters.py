@@ -104,24 +104,14 @@ class injection(FilterSet):
             choices=register_access_choices)
         self.filters['register_access'].widget.attrs['size'] = min(
             len(register_access_choices), 25)
-        register_alias_choices = self.choices(self.queryset, 'register_alias')
-        self.filters['register_alias'].extra.update(
-            choices=register_alias_choices)
-        self.filters['register_alias'].widget.attrs['size'] = min(
-            len(register_alias_choices), 25)
-        register_index_choices = self.choices(self.queryset, 'register_index')
-        self.filters['register_index'].extra.update(
-            choices=register_index_choices)
-        self.filters['register_index'].widget.attrs['size'] = min(
-            len(register_index_choices), 25)
-        target_choices = self.choices(self.queryset, 'target')
-        self.filters['target'].extra.update(choices=target_choices)
-        self.filters['target'].widget.attrs['size'] = min(
-            len(target_choices), 25)
-        target_index_choices = self.choices(self.queryset, 'target_index')
-        self.filters['target_index'].extra.update(choices=target_index_choices)
-        self.filters['target_index'].widget.attrs['size'] = min(
-            len(target_index_choices), 25)
+        target_name_choices = self.choices(self.queryset, 'target_name')
+        self.filters['target_name'].extra.update(choices=target_name_choices)
+        self.filters['target_name'].widget.attrs['size'] = min(
+            len(target_name_choices), 25)
+        tlb_entry_choices = self.choices(self.queryset, 'tlb_entry')
+        self.filters['tlb_entry'].extra.update(choices=tlb_entry_choices)
+        self.filters['tlb_entry'].widget.attrs['size'] = min(
+            len(tlb_entry_choices), 25)
         print('injection filter', round(time()-start, 2), 'seconds')
 
     def choices(self, injections, attribute):
@@ -154,21 +144,12 @@ class injection(FilterSet):
     register_access = MultipleChoiceFilter(
         label='Register access',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    register_alias = MultipleChoiceFilter(
-        label='Register alias',
-        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    register_index = MultipleChoiceFilter(
-        label='Register index',
-        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     success = BooleanFilter(
         label='Success',
         widget=Select(choices=(('3', 'Unknown'), ('1', 'True'), ('0', 'False')),
                       attrs={'class': 'form-control'}), help_text='')
-    target = MultipleChoiceFilter(
+    target_name = MultipleChoiceFilter(
         label='Target',
-        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    target_index = MultipleChoiceFilter(
-        label='Target index',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     time_gt = NumberFilter(
         name='time', label='Time (>)', lookup_type='gt',
@@ -176,6 +157,9 @@ class injection(FilterSet):
     time_lt = NumberFilter(
         name='time', label='Time (<)', lookup_type='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
+    tlb_entry = MultipleChoiceFilter(
+        label='TLB entry',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
 
     class Meta:
         exclude = ('config_object', 'gold_value', 'injected_value', 'result',
@@ -257,28 +241,16 @@ class result(FilterSet):
             choices=register_access_choices)
         self.filters['injection__register_access'].widget.attrs['size'] = min(
             len(register_access_choices), 25)
-        register_alias_choices = injection.choices(
-            None, injections, 'register_alias')
-        self.filters['injection__register_alias'].extra.update(
-            choices=register_alias_choices)
-        self.filters['injection__register_alias'].widget.attrs['size'] = min(
-            len(register_alias_choices), 25)
-        register_index_choices = injection.choices(
-            None, injections, 'register_index')
-        self.filters['injection__register_index'].extra.update(
-            choices=register_index_choices)
-        self.filters['injection__register_index'].widget.attrs['size'] = min(
-            len(register_index_choices), 25)
-        target_choices = injection.choices(None, injections, 'target')
-        self.filters['injection__target'].extra.update(choices=target_choices)
-        self.filters['injection__target'].widget.attrs['size'] = min(
-            len(target_choices), 25)
-        target_index_choices = injection.choices(
-            None, injections, 'target_index')
-        self.filters['injection__target_index'].extra.update(
-            choices=target_index_choices)
-        self.filters['injection__target_index'].widget.attrs['size'] = min(
-            len(target_index_choices), 25)
+        target_name_choices = injection.choices(None, injections, 'target_name')
+        self.filters['injection__target_name'].extra.update(
+            choices=target_name_choices)
+        self.filters['injection__target_name'].widget.attrs['size'] = min(
+            len(target_name_choices), 25)
+        tlb_entry_choices = injection.choices(None, injections, 'tlb_entry')
+        self.filters['injection__tlb_entry'].extra.update(
+            choices=tlb_entry_choices)
+        self.filters['injection__tlb_entry'].widget.attrs['size'] = min(
+            len(tlb_entry_choices), 25)
         num_injections_choices = self.choices(self.queryset, 'num_injections')
         self.filters['num_injections'].extra.update(
             choices=num_injections_choices)
@@ -378,21 +350,12 @@ class result(FilterSet):
     injection__register_access = MultipleChoiceFilter(
         label='Register access',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    injection__register_alias = MultipleChoiceFilter(
-        label='Register alias',
-        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    injection__register_index = MultipleChoiceFilter(
-        label='Register index',
-        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__success = BooleanFilter(
         label='Success',
         widget=Select(choices=(('3', 'Unknown'), ('1', 'True'), ('0', 'False')),
                       attrs={'class': 'form-control'}), help_text='')
-    injection__target = MultipleChoiceFilter(
+    injection__target_name = MultipleChoiceFilter(
         label='Target',
-        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    injection__target_index = MultipleChoiceFilter(
-        label='Target index',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__time_gt = NumberFilter(
         name='time', label='Time (>)', lookup_type='gt',
@@ -400,6 +363,9 @@ class result(FilterSet):
     injection__time_lt = NumberFilter(
         name='time', label='Time (<)', lookup_type='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
+    injection__tlb_entry = MultipleChoiceFilter(
+        label='TLB entry',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     num_injections = MultipleChoiceFilter(
         label='Quantity',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')

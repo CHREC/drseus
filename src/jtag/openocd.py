@@ -1,37 +1,11 @@
 from json import load
 from os.path import abspath, dirname, exists
-from pyudev import Context
-from socket import AF_INET, SOCK_STREAM, socket
 from subprocess import DEVNULL, Popen
 from termcolor import colored
 from time import sleep
 
 from ..error import DrSEUsError
-from . import jtag
-
-
-def find_ftdi_serials():
-    return list(
-        {dev['ID_SERIAL_SHORT']
-         for dev in Context().list_devices(ID_VENDOR_ID='0403')
-         if 'DEVLINKS' not in dev} &
-        {dev['ID_SERIAL_SHORT']
-         for dev in Context().list_devices(ID_MODEL_ID='6014')
-         if 'DEVLINKS' not in dev})
-
-
-def find_uart_serials():
-    return {dev['DEVNAME']: dev['ID_SERIAL_SHORT'] for dev in
-            Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
-            if 'DEVLINKS' in dev}
-
-
-def find_open_port():
-            sock = socket(AF_INET, SOCK_STREAM)
-            sock.bind(('', 0))
-            port = sock.getsockname()[1]
-            sock.close()
-            return port
+from . import find_open_port, find_zedboard_uart_serials, jtag
 
 
 class openocd(jtag):
@@ -53,7 +27,7 @@ class openocd(jtag):
                 device_info = load(device_file)
             for device in device_info:
                 if device['uart'] == \
-                        find_uart_serials()[options.dut_serial_port]:
+                        find_zedboard_uart_serials()[options.dut_serial_port]:
                     self.device_info = device
                     break
             else:
@@ -143,7 +117,7 @@ class openocd(jtag):
         with self.power_switch as ps:
             ps.set_outlet(self.device_info['outlet'], 'off')
             ps.set_outlet(self.device_info['outlet'], 'on')
-        for serial_port, uart_serial in find_uart_serials().items():
+        for serial_port, uart_serial in find_zedboard_uart_serials().items():
             if uart_serial == self.device_info['uart']:
                 self.options.dut_serial_port = serial_port
                 self.db.result['dut_serial_port'] = serial_port

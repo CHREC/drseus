@@ -1,5 +1,4 @@
-from django.db.models import Avg, Case, F, StdDev, TextField, Value, When
-from django.db.models.functions import Concat, Length, Substr
+from django.db.models import Avg, StdDev
 from django.db.models import Max
 from numpy import linspace
 
@@ -15,24 +14,9 @@ def overview(**kwargs):
                  **kwargs)
 
 
-def outcomes_by_targets(**kwargs):
-    create_chart(order=2,
-                 chart_title='Targets',
-                 xaxis_title='Injected Target',
-                 xaxis_name='Target',
-                 xaxis_type='target',
-                 log=True,
-                 percent=True,
-                 **kwargs)
-
-
-def outcomes_by_target_indices(**kwargs):
-    kwargs['injections'] = kwargs['injections'].annotate(target_name=Case(
-        When(target_index__isnull=True, then=F('target')),
-        default=Concat('target', Value('['),  'target_index', Value(']'),
-                       output_field=TextField())))
+def outcomes_by_target(**kwargs):
     create_chart(order=3,
-                 chart_title='Targets (With Indices)',
+                 chart_title='Targets',
                  xaxis_title='Injected Target',
                  xaxis_name='Target',
                  xaxis_type='target_name',
@@ -46,7 +30,7 @@ def data_diff_by_targets(**kwargs):
                  chart_title='Data Destruction By Target',
                  xaxis_title='Injected Target',
                  xaxis_name='Target',
-                 xaxis_type='target',
+                 xaxis_type='target_name',
                  yaxis_items=['Average Data Match'],
                  average='result__data_diff',
                  **kwargs)
@@ -57,7 +41,7 @@ def execution_time_by_targest(**kwargs):
                  chart_title='Average Execution Time By Target',
                  xaxis_title='Injected Target',
                  xaxis_name='Target',
-                 xaxis_type='target',
+                 xaxis_type='target_name',
                  yaxis_items=['Average Execution Time'],
                  average='result__execution_time',
                  **kwargs)
@@ -108,11 +92,7 @@ def outcomes_by_register_access(**kwargs):
 
 
 def outcomes_by_tlb_entries(**kwargs):
-    kwargs['injections'] = kwargs['injections'].filter(target='TLB').annotate(
-        temp=Concat('register', Value(':'), 'register_index',
-                    output_field=TextField())).annotate(
-        tlb_entry=Concat(Substr('temp', 1, Length('temp')-3), Value('}'),
-                         output_field=TextField()))
+    kwargs['injections'] = kwargs['injections'].filter(target='TLB')
     create_chart(order=10,
                  chart_title='TLB Entries',
                  xaxis_title='Injected TLB Entry',
@@ -163,7 +143,7 @@ def outcomes_by_injection_times(**kwargs):
         return
     times = linspace(0,
                      kwargs['injections'].aggregate(Max('time'))['time__max'],
-                     min(kwargs['injections'].count()/10, 1000),
+                     min(kwargs['injections'].count()/25, 1000),
                      endpoint=False).tolist()[1:]
     create_chart(order=13,
                  chart_title='Injections Over Time',
@@ -182,7 +162,7 @@ def data_diff_by_injection_times(**kwargs):
         return
     times = linspace(0,
                      kwargs['injections'].aggregate(Max('time'))['time__max'],
-                     min(kwargs['injections'].count()/10, 1000),
+                     min(kwargs['injections'].count()/25, 1000),
                      endpoint=False).tolist()[1:]
     create_chart(order=14,
                  chart_title='Data Destruction Over Time',
@@ -242,7 +222,7 @@ def register_propagation(**kwargs):
                  chart_title='Fault Propagation (Registers)',
                  xaxis_title='Injection Target',
                  xaxis_name='Target',
-                 xaxis_type='target',
+                 xaxis_type='target_name',
                  yaxis_items=['Average Registers Affected'],
                  average='result__num_register_diffs',
                  log=True,
@@ -256,7 +236,7 @@ def memory_propagation(**kwargs):
                  chart_title='Fault Propagation (Memory Blocks)',
                  xaxis_title='Injection Target',
                  xaxis_name='Target',
-                 xaxis_type='target',
+                 xaxis_type='target_name',
                  yaxis_items=['Average Memory Blocks Affected'],
                  average='result__num_memory_diffs',
                  log=True,

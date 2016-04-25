@@ -223,6 +223,11 @@ def choose_injection(targets, selected_target_indices):
                 injection['target_index'] = choice(indices)
             else:
                 raise Exception('invalid selected target indices')
+    if 'target_index' in injection:
+        injection['target_name'] = '{}[{}]'.format(injection['target'],
+                                                   injection['target_index'])
+    else:
+        injection['target_name'] = injection['target']
     register_list = []
     total_bits = 0
     for register in target['registers']:
@@ -282,6 +287,9 @@ def choose_injection(targets, selected_target_indices):
             start_bit_index = field['bit_indicies'][0]
             end_bit_index = field['bit_indicies'][1]
         injection['bit'] = randrange(start_bit_index, end_bit_index+1)
+        injection['tlb_entry'] = injection['register']
+        for index in injection['register_index'][:-1]:
+            injection['tlb_entry'] += '[{}]'.format(index)
     else:
         if 'bits' in register:
             injection['bit'] = randrange(register['bits'])

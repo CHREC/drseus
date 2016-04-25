@@ -74,8 +74,10 @@ class injection(Model):
     success = BooleanField()
     target = TextField(null=True)
     target_index = IntegerField(null=True)
+    target_name = TextField(null=True)
     time = FloatField(null=True)
     timestamp = DateTimeField(null=True)
+    tlb_entry = TextField(null=True)
 
 
 class simics_register_diff(Model):

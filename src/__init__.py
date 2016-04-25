@@ -71,6 +71,12 @@ def run():
                 missing_args.append('--serial')
             if not options.dut_prompt:
                 missing_args.append('--prompt')
+            if (hasattr(options, 'aux') and options.aux) or \
+                    (campaign is not None and campaign['aux']):
+                if not options.aux_serial_port:
+                    missing_args.append('--aux_serial')
+                if not options.aux_prompt:
+                    missing_args.append('--aux_prompt')
             if not options.debugger_ip_address and (
                     (hasattr(options, 'architecture') and
                         options.architecture == 'p2020') or
@@ -81,6 +87,11 @@ def run():
                 options.power_switch_outlet is not None:
             missing_args.append('--power_ip')
     if missing_args:
-        parser.error('the following arguments are required: {}'.format(
+        parser.print_usage()
+        print('error: the following arguments are required: {}'.format(
             ', '.join(missing_args)))
+        if '--serial' in missing_args or '--aux_serial' in missing_args:
+            print('\nAvailable serial devices:')
+            utilities.list_devices(only_uart=True)
+        return
     getattr(utilities, options.func)(options)

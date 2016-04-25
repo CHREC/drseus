@@ -1,4 +1,6 @@
+from pyudev import Context
 from random import uniform
+from socket import AF_INET, SOCK_STREAM, socket
 from telnetlib import Telnet
 from termcolor import colored
 from threading import Thread
@@ -7,6 +9,41 @@ from time import sleep
 from ..dut import dut
 from ..error import DrSEUsError
 from ..targets import choose_injection, get_targets
+
+
+def find_all_uarts():
+    return [dev['DEVNAME'] for dev in Context().list_devices(subsystem='tty')
+            if 'DEVLINKS' in dev]
+
+
+def find_p2020_uarts():
+    return [dev['DEVNAME'] for dev in
+            Context().list_devices(ID_VENDOR_ID='067b', ID_MODEL_ID='2303')
+            if 'DEVLINKS' in dev]
+
+
+def find_zedboard_jtag_serials():
+    return list(
+        {dev['ID_SERIAL_SHORT']
+         for dev in Context().list_devices(ID_VENDOR_ID='0403')
+         if 'DEVLINKS' not in dev} &
+        {dev['ID_SERIAL_SHORT']
+         for dev in Context().list_devices(ID_MODEL_ID='6014')
+         if 'DEVLINKS' not in dev})
+
+
+def find_zedboard_uart_serials():
+    return {dev['DEVNAME']: dev['ID_SERIAL_SHORT'] for dev in
+            Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
+            if 'DEVLINKS' in dev}
+
+
+def find_open_port():
+            sock = socket(AF_INET, SOCK_STREAM)
+            sock.bind(('', 0))
+            port = sock.getsockname()[1]
+            sock.close()
+            return port
 
 
 class jtag(object):

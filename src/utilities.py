@@ -19,7 +19,9 @@ from traceback import print_exc
 
 from .database import database
 from .fault_injector import fault_injector
-from .jtag.openocd import find_ftdi_serials, find_uart_serials, openocd
+from .jtag import (find_all_uarts, find_p2020_uarts, find_zedboard_jtag_serials,
+                   find_zedboard_uart_serials)
+from .jtag.openocd import openocd
 from .power_switch import power_switch
 from .simics.config import simics_config
 from .supervisor import supervisor
@@ -35,14 +37,14 @@ def detect_power_switch_devices(options):
     with power_switch(options) as ps:
         status = ps.get_status()
         ps.set_outlet('all', 'off', 1)
-        ftdi_serials_pre = find_ftdi_serials()
-        uart_serials_pre = find_uart_serials().values()
+        ftdi_serials_pre = find_zedboard_jtag_serials()
+        uart_serials_pre = find_zedboard_uart_serials().values()
         for outlet in ps.outlets:
             ps.set_outlet(outlet, 'on', 5)
-            ftdi_serials = [serial for serial in find_ftdi_serials()
+            ftdi_serials = [serial for serial in find_zedboard_jtag_serials()
                             if serial not in ftdi_serials_pre]
             uart_serials = [serial for serial
-                            in find_uart_serials().values()
+                            in find_zedboard_uart_serials().values()
                             if serial not in uart_serials_pre]
             ps.set_outlet(outlet, 'off', 1)
             if len(ftdi_serials) > 1 or len(uart_serials) > 1:
@@ -73,8 +75,8 @@ def detect_devices(options):
         devices = []
     uarts = [device['uart'] for device in devices]
     while True:
-        ftdi_serials = find_ftdi_serials()
-        uart_serials = find_uart_serials().values()
+        ftdi_serials = find_zedboard_jtag_serials()
+        uart_serials = find_zedboard_uart_serials().values()
         if len(ftdi_serials) > 1 or len(uart_serials) > 1:
             print('too many devices detected, disconnect all but one device')
         elif not len(ftdi_serials) or not len(uart_serials):
@@ -95,15 +97,28 @@ def detect_devices(options):
     print('saved device information to "devices.json"')
 
 
-def list_serials(none=None):
-    ftdis = find_ftdi_serials()
-    uarts = find_uart_serials()
-    print('FTDI JTAG device serial numbers: ')
-    for serial in ftdis:
-        print('\t'+serial)
-    print('Cypress UART device serial numbers:')
-    for uart, serial in uarts.items():
-        print('\t'+uart+': '+serial)
+def list_devices(none=None, only_uart=False):
+    zedboard_jtags = find_zedboard_jtag_serials() if not only_uart else []
+    if zedboard_jtags:
+        print('ZedBoard JTAG serial numbers: ')
+        for serial in zedboard_jtags:
+            print('\t{}'.format(serial))
+    zedboard_uarts = find_zedboard_uart_serials()
+    if zedboard_uarts:
+        print('ZedBoard UART serial numbers:')
+        for uart, serial in zedboard_uarts.items():
+            print('\t{}: {}'.format(uart, serial))
+    p2020_uarts = find_p2020_uarts()
+    if p2020_uarts:
+        print('P2020 UART devices:')
+        for serial in p2020_uarts:
+            print('\t{}'.format(serial))
+    other_uarts = [uart for uart in find_all_uarts()
+                   if uart not in zedboard_uarts and uart not in p2020_uarts]
+    if other_uarts:
+        print('Other UART devices:')
+        for serial in other_uarts:
+            print('\t{}'.format(serial))
 
 
 def set_outlet(options):
@@ -336,7 +351,7 @@ def inject_campaign(options):
                                   campaign['architecture'] == 'a9'):
         if not campaign['simics'] and \
                 campaign['architecture'] == 'a9':
-            uarts = list(find_uart_serials().keys())
+            uarts = list(find_zedboard_uart_serials().keys())
         processes = []
         for i in range(options.processes):
             if not campaign['simics'] and \

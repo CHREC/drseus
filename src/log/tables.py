@@ -104,7 +104,7 @@ class results(Table):
 
     def render_targets(self, record):
         if record is not None:
-            targets = list(record.injection_set.values_list('target',
+            targets = list(record.injection_set.values_list('target_name',
                                                             flat=True))
         else:
             return '-'

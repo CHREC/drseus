@@ -590,10 +590,10 @@ clean.add_argument(
 clean.set_defaults(func='clean')
 
 serials = subparsers.add_parser(
-    'serials', aliases=['sn'],
-    help='print serial numbers for currently connected devices',
-    description='print serial numbers for currently connected devices')
-serials.set_defaults(func='list_serials')
+    'devices', aliases=['dev'],
+    help='print information about currently connected devices',
+    description='print information about currently connected devices')
+serials.set_defaults(func='list_devices')
 
 django = subparsers.add_parser(
     'django',
