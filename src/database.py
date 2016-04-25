@@ -145,7 +145,7 @@ class database(object):
             'INSERT INTO log_{} ({}) VALUES ({}) RETURNING id'.format(
                 table, ', '.join(dictionary.keys()),
                 ', '.join(['%s']*len(dictionary))),
-            ['{{}}'.format(','.join(map(str, value)))
+            ['{{{}}}'.format(','.join(map(str, value)))
              if isinstance(value, list) or isinstance(value, tuple) else value
              for value in dictionary.values()])
         dictionary['id'] = self.cursor.fetchone()[0]
@@ -162,7 +162,7 @@ class database(object):
                 table,
                 '=%s, '.join(dictionary.keys()),
                 dictionary['id']),
-            ['{{}}'.format(','.join(map(str, value)))
+            ['{{{}}}'.format(','.join(map(str, value)))
              if isinstance(value, list) or isinstance(value, tuple) else value
              for value in dictionary.values()])
 
