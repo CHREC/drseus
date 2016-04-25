@@ -7,9 +7,10 @@ from . import create_chart
 
 
 def overview(**kwargs):
+    if 'success' not in kwargs or not kwargs['success']:
+        kwargs['xaxis_model'] = 'results'
     create_chart(order=1,
                  chart_title='Overview',
-                 xaxis_model='results',
                  pie=True,
                  **kwargs)
 
