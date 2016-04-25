@@ -505,7 +505,8 @@ class simics(object):
             checkpoint_nums.remove(checkpoint_num)
             checkpoints_to_inject.append(checkpoint_num)
         checkpoints_to_inject = sorted(checkpoints_to_inject)
-        latent_faults = 0
+        reg_errors = 0
+        mem_errors = 0
         if checkpoints_to_inject:
             for injection_number, checkpoint in \
                     enumerate(checkpoints_to_inject, start=1):
@@ -518,9 +519,12 @@ class simics(object):
                     next_checkpoint = checkpoints_to_inject[injection_number]
                 else:
                     next_checkpoint = self.db.campaign['checkpoints']
-                errors = self.__compare_checkpoints(checkpoint, next_checkpoint)
-                if errors > latent_faults:
-                    latent_faults = errors
+                reg_errors_, mem_errors_ = \
+                    self.__compare_checkpoints(checkpoint, next_checkpoint)
+                if reg_errors_ > reg_errors:
+                    reg_errors = reg_errors_
+                if mem_errors_ > mem_errors:
+                    mem_errors = mem_errors_
                 if injections_remaining:
                     self.close()
                 else:
@@ -531,9 +535,9 @@ class simics(object):
                 self.db.campaign['id'], self.db.result['id']))
             self.launch_simics('gold-checkpoints/{}/1'.format(
                 self.db.campaign['id']))
-            latent_faults = \
+            reg_errors, mem_errors = \
                 self.__compare_checkpoints(1, self.db.campaign['checkpoints'])
-        return latent_faults, (latent_faults and persistent_faults())
+        return reg_errors, mem_errors, (reg_errors and persistent_faults())
 
     def regenerate_checkpoints(self, injections):
         self.db.result['id'] = self.options.result_id
@@ -890,4 +894,4 @@ class simics(object):
                     checkpoint, gold_checkpoint, monitored_checkpoint)
                 if errors > reg_errors:
                     mem_errors = errors
-        return reg_errors + mem_errors
+        return reg_errors, mem_errors

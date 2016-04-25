@@ -1,10 +1,13 @@
 from bisect import bisect_left
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 from copy import deepcopy
 from django.db.models import Avg, Case, Count, When
 from json import dumps
 from numpy import convolve, ones
 from time import time
+from traceback import extract_stack
+
+from .. import fix_sort
 
 colors = {
     'Data error': '#ba79f2',
@@ -39,56 +42,47 @@ colors = {
     'False': '#ff0000'
 }
 
-colors_extra = ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
-                '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1']*5
 
-
-def count_intervals(items, intervals, data_diff=False):
-    if data_diff:
-        count_dict = defaultdict(list)
-    else:
-        count_dict = defaultdict(int)
-    for item in items:
-        if data_diff:
-            index = bisect_left(intervals, item[0], hi=len(intervals)-1)
-            count_dict[intervals[index]].append(
-                item[1] if item[1] is not None else 0)
-        else:
-            index = bisect_left(intervals, item, hi=len(intervals)-1)
-            count_dict[intervals[index]] += 1
-    count_list = []
-    for interval in intervals:
-        if interval in count_dict.keys():
-            if data_diff:
-                count_list.append(
-                    sum(count_dict[interval])/len(count_dict[interval])*100)
-            else:
-                count_list.append(count_dict[interval])
-        else:
-            count_list.append(0)
-    return count_list
-
-
-def create_chart(chart_list, chart_data, chart_title, order, chart_id,
-                 injections, xaxis_title, xaxis_name, xaxis_type, xaxis_items,
-                 yaxis_items, group_categories=False, success=False,
-                 average=None, percent=False, log=False, smooth=False,
-                 intervals=False, results=None, pie=False, rotate_labels=False,
-                 export_wide=False):
+def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
+                 results=None, outcomes=None,
+                 # x axis info
+                 xaxis_title=None, xaxis_name=None, xaxis_type=None,
+                 xaxis_model='injections', xaxis_items=None,
+                 # y axis info
+                 yaxis_items=None, average=None,
+                 # axis options
+                 intervals=False, pie=False,
+                 # series groups
+                 group_categories=True, success=False,
+                 # additional charts
+                 percent=False, log=False, smooth=False,
+                 # chart properties
+                 rotate_labels=False, export_wide=False):
     start = time()
-    if results is not None:
+    chart_id = str(extract_stack()[-2][-2])
+    if yaxis_items is None:
+        yaxis_items = outcomes
+    if xaxis_model == 'injections':
+        stack_type = 'result__campaign_id'
+        model = injections
+    elif xaxis_model == 'results':
         stack_type = 'campaign_id'
         model = results
     else:
-        stack_type = 'result__campaign_id'
-        model = injections
+        raise Exception()
+    if success and (average or xaxis_model == 'results'):
+        return
     if not pie:
+        if xaxis_items is None:
+            xaxis_items = model.values_list(xaxis_type, flat=True).distinct()
         campaigns = list(model.values_list(
             stack_type, flat=True).distinct().order_by(stack_type))
         log = log and len(yaxis_items) == 1
         smooth = smooth and len(campaigns) == 1
         if not isinstance(xaxis_items, list):
-            xaxis_items = list(xaxis_items)
+            xaxis_items = sorted(xaxis_items, key=fix_sort)
+        if len(xaxis_items) < 1:
+            return
     chart = {
         'chart': {
             'renderTo': chart_id,
@@ -114,7 +108,10 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
         },
         'yAxis': {
             'title': {
-                'text': 'Injections'
+                'text':  (
+                    yaxis_items[0] if yaxis_items and len(yaxis_items) == 1
+                    else 'Results' if xaxis_model == 'results'
+                    else 'Injections')
             }
         }
     }
@@ -162,18 +159,24 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
     if success:
         yaxis_type = 'success'
     elif group_categories:
-        if results is not None:
+        if xaxis_model == 'results':
             yaxis_type = 'outcome_category'
         else:
             yaxis_type = 'result__outcome_category'
     else:
-        if results is not None:
+        if xaxis_model == 'results':
             yaxis_type = 'outcome'
         else:
             yaxis_type = 'result__outcome'
     if pie:
         series = OrderedDict([[str(yaxis_item), 0]
                               for yaxis_item in yaxis_items])
+    elif intervals and average:
+        series = {
+            campaign: OrderedDict([(str(yaxis_item),
+                                    [[] for i in range(len(xaxis_items))])
+                                   for yaxis_item in yaxis_items])
+            for campaign in campaigns}
     else:
         series = {
             campaign: OrderedDict([(str(yaxis_item), [0]*len(xaxis_items))
@@ -184,11 +187,6 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
                 model.values_list(yaxis_type).distinct().annotate(
                     value=Count(yaxis_type)).values_list(yaxis_type, 'value'):
             series[str(yaxis_item)] = value
-    elif intervals:
-        for campaign, yaxis_item, xaxis_item in model.values_list(
-                stack_type, yaxis_type, xaxis_type):
-            index = bisect_left(xaxis_items, xaxis_item, hi=len(xaxis_items)-1)
-            series[campaign][str(yaxis_item)][index] += 1
     elif average:
         when_kwargs = {'{}__isnull'.format(average): True, 'then': 0}
         for campaign, xaxis_item, value in model.values_list(
@@ -196,13 +194,24 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
                 ).distinct().annotate(value=Avg(Case(
                     When(**when_kwargs), default=average)
                 )).values_list(stack_type, xaxis_type, 'value'):
-            (series[campaign][str(yaxis_items[0])]
-                   [xaxis_items.index(xaxis_item)]) = value
+            if intervals:
+                x_index = bisect_left(xaxis_items, xaxis_item,
+                                      hi=len(xaxis_items)-1)
+                series[campaign][str(yaxis_items[0])][x_index].append(value)
+            else:
+                (series[campaign][str(yaxis_items[0])]
+                       [xaxis_items.index(xaxis_item)]) = value
+    elif intervals:
+        for campaign, yaxis_item, xaxis_item in model.values_list(
+                stack_type, yaxis_type, xaxis_type):
+            index = bisect_left(xaxis_items, xaxis_item, hi=len(xaxis_items)-1)
+            series[campaign][str(yaxis_item)][index] += 1
     else:
         for campaign, yaxis_item, xaxis_item, value in model.values_list(
                     stack_type, yaxis_type, xaxis_type
-                ).distinct().annotate(value=Count('result')).values_list(
-                    stack_type, yaxis_type, xaxis_type, 'value'):
+                ).distinct().annotate(value=Count(
+                    'id' if xaxis_model == 'results' else 'result_id')
+                ).values_list(stack_type, yaxis_type, xaxis_type, 'value'):
             (series[campaign][str(yaxis_item)]
                    [xaxis_items.index(xaxis_item)]) = value
     if pie:
@@ -215,8 +224,17 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
     else:
         for stack in series:
             for yaxis_item, values in series[stack].items():
-                series_item = {'name': yaxis_item, 'stack': stack}
-                if average is None:
+                if isinstance(values[0], list):
+                    # TODO: remove these empty averages from axis
+                    values = [sum(value)/len(value) if len(value) else 0
+                              for value in values]
+                series_item = {}
+                if 'campaign_id' not in xaxis_type:
+                    series_item['stack'] = stack
+                if average and len(series) > 1:
+                    series_item['name'] = 'Campaign {}'.format(stack)
+                else:
+                    series_item['name'] = yaxis_item
                     if stack == campaigns[0]:
                         series_item['id'] = yaxis_item
                     else:
@@ -285,8 +303,8 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
                             outcome = this.series.name;
                         }
                         window.open('/campaign/'+this.series.options.stack+
-                                    '/results?injection____xaxis_type__=' +
-                                    this.category+filter);
+                                    '/results?__xaxis_model_type__' +
+                                    '__xaxis_type__='+this.category+filter);
                     }
                 """)
             else:
@@ -308,7 +326,7 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
                         }
                         window.open('/campaign/'+this.series.options.stack+
                                     '/results?outcome='+outcome+
-                                    '&injection____xaxis_type__=' +
+                                    '&__xaxis_model_type____xaxis_type__=' +
                                     this.category+filter);
                     }
                 """)
@@ -324,6 +342,14 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
                     Highcharts.numberFormat(this.percentage, 1)+'%';
                 }
             """.replace('__yaxis_items__', str(yaxis_items)))
+        elif 'campaign_id' in xaxis_type:
+            json = json.replace('"__tooltip_formatter__"', """
+                function () {
+                    return this.series.name+': <b>'+this.y+'</b><br/>'+
+                           '__xaxis_name__: '+this.x+'<br/>';
+                }
+            """).replace('__xaxis_name__', xaxis_name).replace(
+                '__xaxis_type__', xaxis_type)
         else:
             json = json.replace('"__tooltip_formatter__"', """
                 function () {
@@ -334,7 +360,7 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
             """).replace('__xaxis_name__', xaxis_name).replace(
                 '__xaxis_type__', xaxis_type)
         if success:
-            json = json.replace('?outcome=', '?injection__success=')
+            json = json.replace('?outcome=', '?__xaxis_model_type__success=')
         elif group_categories:
             json = json.replace('?outcome=', '?outcome_category=')
         if intervals:
@@ -343,6 +369,8 @@ def create_chart(chart_list, chart_data, chart_title, order, chart_id,
                     return this.value.toFixed(4);
                 }
             """)
+        json = json.replace('__xaxis_model_type__',
+                            '' if xaxis_model == 'results' else 'injection__')
         chart_json[index] = json
     chart_data.extend(chart_json)
     chart_list.append({'id': chart_id, 'log': log, 'order': order,

@@ -221,7 +221,8 @@ class fault_injector(object):
             self.db.result['outcome_category'] = 'No error'
             if persistent_faults:
                 self.db.result['outcome'] = 'Persistent faults'
-            elif latent_faults:
+            elif self.db.result['num_register_diffs'] or \
+                    self.db.result['num_memory_diffs']:
                 self.db.result['outcome'] = 'Latent faults'
             else:
                 self.db.result['outcome'] = 'Masked faults'
@@ -322,7 +323,8 @@ class fault_injector(object):
                                      self.db.campaign['command'])
                     self.debugger.dut.reset_timer()
                 try:
-                    latent_faults, persistent_faults = \
+                    (self.db.result['num_register_diffs'],
+                     self.db.result['num_memory_diffs'], persistent_faults) = \
                         self.debugger.inject_faults()
                 except DrSEUsError as error:
                     self.db.result['outcome'] = str(error)
@@ -332,8 +334,7 @@ class fault_injector(object):
                         self.db.result['outcome_category'] = 'Debugger error'
                         continue_dut()
                 else:
-                    self.__monitor_execution(
-                        latent_faults, persistent_faults, log_time=True)
+                    self.__monitor_execution(persistent_faults, log_time=True)
                     check_latent_faults()
                 if self.db.campaign['simics']:
                     close_simics()

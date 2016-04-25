@@ -217,7 +217,7 @@ class jtag(object):
                                      success=False)
                 self.set_mode(injection['processor_mode'])
             self.continue_dut()
-        return 0, False
+        return None, None, False
 
     def command(self, command, expected_output, error_message,
                 log_event, line_ending, echo):

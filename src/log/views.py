@@ -33,11 +33,13 @@ table_length = 50
 def campaigns_page(request):
     campaign = models.campaign.objects.all()
     campaign_table = tables.campaigns(campaign)
-    chart_data = campaigns_chart(models.result.objects.all())
+    chart_data, chart_list = campaigns_chart(models.result.objects.all())
+    chart_list = sorted(chart_list, key=lambda x: x['order'])
     RequestConfig(request).configure(campaign_table)
     return render(request, 'campaigns.html', {
         'campaign_table': campaign_table,
         'chart_data': chart_data,
+        'chart_list': chart_list,
         'navigation_items': navigation_items})
 
 

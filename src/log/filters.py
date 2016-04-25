@@ -396,6 +396,24 @@ class result(FilterSet):
     num_injections = MultipleChoiceFilter(
         label='Quantity',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    num_memory_diffs = MultipleChoiceFilter(
+        label='Quantity',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    num_register_diffs = MultipleChoiceFilter(
+        label='Quantity',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    num_memory_diffs_gt = NumberFilter(
+        name='num_memory_diffs', label='Register diffs (>)', lookup_type='gt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
+    num_memory_diffs_lt = NumberFilter(
+        name='num_memory_diffs', label='Register diffs (<)', lookup_type='lt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
+    num_register_diffs_gt = NumberFilter(
+        name='num_register_diffs', label='Memory diffs (>)', lookup_type='gt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
+    num_register_diffs_lt = NumberFilter(
+        name='num_register_diffs', label='Memory diffs (<)', lookup_type='lt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     outcome = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     outcome_category = MultipleChoiceFilter(

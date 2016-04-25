@@ -40,6 +40,8 @@ class result(Model):
     dut_serial_port = TextField(null=True)
     execution_time = FloatField(null=True)
     num_injections = IntegerField(null=True)
+    num_register_diffs = IntegerField(null=True)
+    num_memory_diffs = IntegerField(null=True)
     outcome = TextField()
     outcome_category = TextField()
     timestamp = DateTimeField()
