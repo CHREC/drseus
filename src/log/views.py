@@ -46,9 +46,12 @@ def campaigns_page(request):
 def campaign_page(request, campaign_id):
     campaign = models.campaign.objects.get(id=campaign_id)
     chart_data = target_bits_chart(campaign)
-    output_file = 'campaign-data/{}/gold_{}'.format(campaign_id,
-                                                    campaign.output_file)
-    output_image = exists(output_file) and what(output_file) is not None
+    if campaign.output_file:
+        output_file = 'campaign-data/{}/gold_{}'.format(campaign_id,
+                                                        campaign.output_file)
+        output_file = exists(output_file) and what(output_file) is not None
+    else:
+        output_file = False
     campaign_table = tables.campaign(models.campaign.objects.filter(
         id=campaign_id))
     event_table = tables.event(models.event.objects.filter(
@@ -62,7 +65,7 @@ def campaign_page(request, campaign_id):
         'chart_data': chart_data,
         'event_table': event_table,
         'navigation_items': navigation_items,
-        'output_image': output_image})
+        'output_file': output_file})
 
 
 def category_charts_page(request, campaign_id=None):
@@ -187,14 +190,14 @@ def results_page(request, campaign_id=None):
         output_file = 'campaign-data/{}/gold_{}'.format(
             campaign_id, campaign.output_file)
         if exists(output_file) and what(output_file) is not None:
-            output_image = True
+            output_file = True
         else:
-            output_image = False
+            output_file = False
         results = models.result.objects.filter(campaign_id=campaign_id)
     else:
         campaign = None
         campaign_items_ = None
-        output_image = True
+        output_file = True
         results = models.result.objects.all()
     result_filter = filters.result(request.GET, queryset=results)
     error_title = None
@@ -221,7 +224,7 @@ def results_page(request, campaign_id=None):
                 response['Content-Disposition'] = \
                     'attachment; filename="dut_output.txt"'
                 return response
-            if 'view_output_image' in request.GET:
+            if 'view_output_file' in request.GET:
                 result_ids = []
                 for result in results:
                     if exists('campaign-data/{}/results/{}/'.format(
@@ -234,7 +237,7 @@ def results_page(request, campaign_id=None):
                 return render(request, 'output.html', {
                     'campaign': campaign,
                     'campaign_items': campaign_items if campaign else None,
-                    'image': 'view_output_image' in request.GET,
+                    'file': 'view_output_file' in request.GET,
                     'navigation_items': navigation_items,
                     'results': results})
             else:
@@ -280,7 +283,7 @@ def results_page(request, campaign_id=None):
         'filter': result_filter,
         'filter_tabs': True,
         'navigation_items': navigation_items,
-        'output_image': output_image,
+        'output_file': output_file,
         'result_count': '{:,}'.format(results.count()),
         'result_table': result_table})
 
@@ -290,9 +293,18 @@ def result_page(request, result_id):
     campaign_items_ = [(
         item[0], '/campaign/{}/{}'.format(result.campaign_id, item[1]), item[2],
         item[3]) for item in campaign_items]
-    output_file = 'campaign-data/{}/results/{}/{}'.format(
-        result.campaign_id, result_id, result.campaign.output_file)
-    output_image = exists(output_file) and what(output_file) is not None
+    if result.campaign.output_file:
+        output_file = 'campaign-data/{}/results/{}/{}'.format(
+            result.campaign_id, result_id, result.campaign.output_file)
+        output_file = exists(output_file) and what(output_file) is not None
+    else:
+        output_file = False
+    if result.campaign.log_file:
+        log_file = 'campaign-data/{}/results/{}/{}'.format(
+            result.campaign_id, result_id, result.campaign.log_file)
+        log_file = exists(log_file) and what(log_file) is not None
+    else:
+        log_file = False
     result_table = tables.result(models.result.objects.filter(id=result_id))
     event_table = tables.event(models.event.objects.filter(result_id=result_id))
     if request.method == 'POST' and 'launch' in request.POST:
@@ -345,9 +357,10 @@ def result_page(request, result_id):
         'event_table': event_table,
         'filter': register_filter,
         'injection_table': injection_table,
+        'log_file': log_file,
         'memory_table': memory_table,
         'navigation_items': navigation_items,
-        'output_image': output_image,
+        'output_file': output_file,
         'register_table': register_table,
         'result': result,
         'result_table': result_table})
@@ -362,6 +375,17 @@ def output(request, result_id=None, campaign_id=None):
         campaign = models.campaign.objects.get(id=campaign_id)
         output_file = 'campaign-data/{}/gold_{}'.format(campaign_id,
                                                         campaign.output_file)
+    if exists(output_file):
+        return HttpResponse(open(output_file, 'rb').read(),
+                            content_type=guess_type(output_file))
+    else:
+        return HttpResponse()
+
+
+def log(request, result_id):
+    result = models.result.objects.get(id=result_id)
+    output_file = 'campaign-data/{}/results/{}/{}'.format(
+        result.campaign_id, result_id, result.campaign.log_file)
     if exists(output_file):
         return HttpResponse(open(output_file, 'rb').read(),
                             content_type=guess_type(output_file))

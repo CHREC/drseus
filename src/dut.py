@@ -302,7 +302,7 @@ class dut(object):
 
     def get_file(self, file_, local_path='', attempts=10):
         if isdir(local_path):
-            local_path = join(local_path)
+            local_path = join(local_path, file_)
         if self.options.debug:
             print(colored('getting file...', 'blue'), end='')
             stdout.flush()

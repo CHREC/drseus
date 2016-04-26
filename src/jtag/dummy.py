@@ -28,9 +28,6 @@ class dummy(jtag):
         if self.db.campaign['aux']:
             self.aux.close()
 
-    def reset_dut(self):
-        pass
-
     def power_cycle_dut(self):
         with self.db as db:
             event = db.log_event('Information', 'Debugger',
@@ -45,12 +42,14 @@ class dummy(jtag):
         with self.db as db:
             db.log_event_success(event)
 
-    def halt_dut(self):
+    def set_targets(self):
+        self.targets = {}
+
+    def reset_dut(*args, **kwargs):
         pass
 
-    def continue_dut(self):
+    def halt_dut(*args, **kwargs):
         pass
 
-    def inject_faults(self):
-        self.dut.write('{}\n'.format(self.db.campaign['command']))
-        return None, None
+    def continue_dut(*args, **kwargs):
+        pass

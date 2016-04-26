@@ -67,7 +67,7 @@ class supervisor(Cmd):
     def complete(self, text, state):
         ret = Cmd.complete(self, text, state)
         if ret:
-            return ret+'{} '
+            return '{} '.format(ret)
         else:
             return ret
 

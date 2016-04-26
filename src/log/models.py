@@ -18,6 +18,7 @@ class campaign(Model):
     dut_output = TextField(null=True)
     execution_time = FloatField(null=True)
     kill_dut = BooleanField()
+    log_file = TextField()
     output_file = TextField()
     rsakey = TextField()
     simics = BooleanField()

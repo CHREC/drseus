@@ -296,6 +296,11 @@ new_campaign.add_argument(
     default='',
     help='target application output file')
 new_campaign.add_argument(
+    '-l', '--log',
+    dest='log_file',
+    default='',
+    help='target application log file')
+new_campaign.add_argument(
     '-x', '--aux',
     action='store_true',
     help='use auxiliary device during testing')
@@ -637,6 +642,8 @@ def get_options():
         options.command = 'regenerate'
     elif options.command == 'p':
         options.command = 'power'
+    elif options.command == 'm':
+        options.command = 'minicom'
     if system() == 'Darwin' and options.db_superuser == 'postgres':
         options.db_superuser = getuser()
     if options.db_ask:

@@ -184,16 +184,17 @@ class jtag(object):
             injection_times.append(uniform(0,
                                            self.db.campaign['execution_time']))
         injections = []
-        for injection_time in sorted(injection_times):
-            injection = choose_injection(self.targets,
-                                         self.options.selected_target_indices)
-            injection.update({'result_id': self.db.result['id'],
-                              'success': False,
-                              'time': injection_time,
-                              'timestamp': None})
-            injections.append(injection)
-            with self.db as db:
-                db.insert('injection', injection)
+        if self.targets:
+            for injection_time in sorted(injection_times):
+                injection = choose_injection(
+                    self.targets, self.options.selected_target_indices)
+                injection.update({'result_id': self.db.result['id'],
+                                  'success': False,
+                                  'time': injection_time,
+                                  'timestamp': None})
+                injections.append(injection)
+                with self.db as db:
+                    db.insert('injection', injection)
         self.dut.write('{}\n'.format(self.db.campaign['command']))
         previous_injection_time = 0
         for injection in injections:
@@ -331,3 +332,18 @@ class jtag(object):
             with self.db as db:
                 db.log_event_success(event)
         return return_buffer
+
+    def select_core(self, core):
+        pass
+
+    def get_mode(self):
+        pass
+
+    def set_mode(self, mode):
+        pass
+
+    def get_register_value(self, register_info):
+        pass
+
+    def set_register_value(self, register_info, value):
+        pass

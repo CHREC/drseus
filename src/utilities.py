@@ -288,6 +288,7 @@ def create_campaign(options):
         'description': options.description,
         'dut_output': '',
         'kill_dut': options.kill_dut,
+        'log_file': options.log_file,
         'output_file': options.output_file,
         'rsakey': rsakey,
         'simics': options.simics,

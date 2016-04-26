@@ -1,5 +1,6 @@
 from difflib import SequenceMatcher
 from os import listdir, makedirs
+from os.path import exists, join
 from shutil import rmtree
 from threading import Thread
 from time import perf_counter
@@ -131,9 +132,10 @@ class fault_injector(object):
             if not local_diff or self.db.result['data_diff'] != 1.0:
                 result_folder = 'campaign-data/{}/results/{}'.format(
                     self.db.campaign['id'], self.db.result['id'])
-                makedirs(result_folder)
-                output_location = '{}/{}'.format(
-                    result_folder, self.db.campaign['output_file'])
+                if not exists(result_folder):
+                    makedirs(result_folder)
+                output_location = join(result_folder,
+                                       self.db.campaign['output_file'])
                 gold_location = 'campaign-data/{}/gold_{}'.format(
                     self.db.campaign['id'], self.db.campaign['output_file'])
                 try:
@@ -179,6 +181,36 @@ class fault_injector(object):
                 self.db.result['outcome'] = error.type
                 return
 
+        def get_log():
+            result_folder = 'campaign-data/{}/results/{}'.format(
+                self.db.campaign['id'], self.db.result['id'])
+            if not exists(result_folder):
+                    makedirs(result_folder)
+            output_location = join(result_folder, self.db.campaign['log_file'])
+            try:
+                if self.db.campaign['aux_output_file']:
+                    self.debugger.aux.get_file(
+                        self.db.campaign['log_file'], output_location)
+                else:
+                    self.debugger.dut.get_file(
+                        self.db.campaign['log_file'], output_location)
+            except DrSEUsError as error:
+                self.db.result['outcome_category'] = 'File transfer error'
+                self.db.result['outcome'] = error.type
+                if not listdir(result_folder):
+                    rmtree(result_folder)
+                return
+            try:
+                if self.db.campaign['aux_output_file']:
+                    self.debugger.aux.command('rm {}'.format(
+                        self.db.campaign['log_file']))
+                else:
+                    self.debugger.dut.command('rm {}'.format(
+                        self.db.campaign['log_file']))
+            except DrSEUsError as error:
+                self.db.result['outcome_category'] = 'Post execution error'
+                self.db.result['outcome'] = error.type
+
     # def __monitor_execution(self, start_time=None, latent_faults=0,
     #                         persistent_faults=False):
         if self.db.campaign['aux']:
@@ -217,6 +249,8 @@ class fault_injector(object):
         if self.db.campaign['output_file'] and \
                 self.db.result['outcome'] == 'In progress':
             check_output()
+        if self.db.campaign['log_file']:
+            get_log()
         if self.db.result['outcome'] == 'In progress':
             self.db.result['outcome_category'] = 'No error'
             if persistent_faults:

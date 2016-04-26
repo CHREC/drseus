@@ -80,11 +80,11 @@
         </ul>
     </li>
 
-    {% if output_image %}
+    {% if output_file %}
         <li class="treeview">
             <a href="#">
                 <i class="fa fa-image"></i>
-                <span>View Image Output</span>
+                <span>View Output File</span>
                 <i class="fa fa-angle-left pull-right"></i>
             </a>
             <ul class="treeview-menu">
@@ -173,11 +173,11 @@
             }
         }
 
-        function view_output(image, raw, all) {
+        function view_output(file, raw, all) {
             var newdiv = document.createElement('div');
             input = "<input type='hidden' name='view_output'>";
-            if (image) {
-                input += "\n<input type='hidden' name='view_output_image'>";
+            if (file) {
+                input += "\n<input type='hidden' name='view_output_file'>";
             }
             if (all) {
                 input += "\n<input type='hidden' name='view_output_all'>";

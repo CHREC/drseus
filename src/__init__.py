@@ -3,6 +3,7 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
+# TODO: log minicom session (outside supevisor)
 # TODO: add supervisor command to load injected state (simics)
 # TODO: add runtime seconds to inject command
 # TODO: consider generating event filter choices only once at startup
@@ -87,6 +88,8 @@ def run():
         if options.command == 'supervise' and not campaign['simics'] and \
                 options.power_switch_outlet is not None:
             missing_args.append('--power_ip')
+    if options.command == 'minicom' and not options.dut_serial_port:
+        missing_args.append('--serial')
     if missing_args:
         parser.print_usage()
         print('error: the following arguments are required: {}'.format(

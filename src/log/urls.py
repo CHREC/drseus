@@ -20,5 +20,6 @@ urlpatterns = [
         views.charts_page),
     url(r'^campaign/(?P<campaign_id>[0-9]+)/output$', views.output),
     url(r'^result/(?P<result_id>[0-9]+)$', views.result_page),
-    url(r'^result/(?P<result_id>[0-9]+)/output$', views.output)
+    url(r'^result/(?P<result_id>[0-9]+)/output$', views.output),
+    url(r'^result/(?P<result_id>[0-9]+)/log$', views.log)
 ]
