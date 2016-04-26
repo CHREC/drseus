@@ -3,6 +3,7 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
+# TODO: add supervisor command to load injected state (simics)
 # TODO: add runtime seconds to inject command
 # TODO: consider generating event filter choices only once at startup
 # TODO: update chart colors

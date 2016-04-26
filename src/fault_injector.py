@@ -339,7 +339,12 @@ class fault_injector(object):
                 if self.db.campaign['simics']:
                     close_simics()
                 else:
-                    self.debugger.dut.flush()
+                    try:
+                        self.debugger.dut.flush(check_errors=True)
+                    except DrSEUsError as error:
+                        self.db.result.update({
+                            'outcome_category': 'Post execution error',
+                            'outcome': error.type})
                     if self.db.campaign['aux']:
                         self.debugger.aux.flush()
                 with self.db as db:

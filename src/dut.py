@@ -1,6 +1,6 @@
 from io import StringIO
 from os import listdir, makedirs
-from os.path import exists, isdir
+from os.path import exists, isdir, join
 from paramiko import AutoAddPolicy, RSAKey, SSHClient
 from re import compile as regex
 from re import DOTALL, escape
@@ -149,7 +149,7 @@ class dut(object):
             db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                          'Closed serial port', success=True)
 
-    def flush(self):
+    def flush(self, check_errors=False):
         try:
             self.serial.reset_output_buffer()
             buff = None
@@ -182,6 +182,10 @@ class dut(object):
                                          else 'aux_output'] += buff
                         with self.db as db:
                             db.update('campaign')
+                    if check_errors:
+                        for message, category in self.error_messages:
+                            if message in buff:
+                                raise DrSEUsError(category)
             with self.db as db:
                 db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                              'Flushed serial buffers', buff, success=True)
@@ -298,9 +302,7 @@ class dut(object):
 
     def get_file(self, file_, local_path='', attempts=10):
         if isdir(local_path):
-            if local_path[-1] != '/':
-                local_path += '/'
-            local_path += file_
+            local_path = join(local_path)
         if self.options.debug:
             print(colored('getting file...', 'blue'), end='')
             stdout.flush()
