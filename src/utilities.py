@@ -216,6 +216,7 @@ def delete(options):
         if exists('campaign-data'):
             rmtree('campaign-data')
             print('deleted campaign data')
+        connection.close()
         delete_database(options)
         print('deleted database')
         if exists('log/migrations'):
@@ -224,36 +225,19 @@ def delete(options):
 
 
 def create_campaign(options):
-    if options.directory == 'fiapps':
-        if not exists('fiapps'):
-            check_call(['git', 'clone',
-                        'git@gitlab.hcs.ufl.edu:F4/fiapps.git'])
-        if options.application_file:
-            try:
-                check_call(['make', options.application],
-                           cwd=join(getcwd(), 'fiapps'))
-            except Exception as error:
-                if not exists(options.application):
-                    raise error
-    else:
-        if not exists(options.directory):
-            raise Exception('cannot find directory {}'.format(
-                options.directory))
+    if not exists(options.directory):
+        raise Exception('cannot find directory {}'.format(
+            options.directory))
+    if options.directory == 'fiapps' and options.application_file:
+        try:
+            check_call(['make', options.application],
+                       cwd=join(getcwd(), 'fiapps'))
+        except Exception as error:
+            if not exists(options.application):
+                raise error
     if options.simics and not exists('simics-workspace'):
-        mkdir('simics-workspace')
-        dirs = listdir('/opt/simics/simics-4.8')
-        simics_dirs = []
-        for simics_dir in dirs:
-            if simics_dir.startswith('simics-4.8.'):
-                simics_dirs.append((simics_dir, int(simics_dir.split('.')[-1])))
-        simics_dirs.sort(key=lambda x: x[1])
-        cwd = join(getcwd(), 'simics-workspace')
-        check_call('/opt/simics/simics-4.8/{}//bin/workspace-setup'.format(
-            simics_dirs[-1][0]), cwd=cwd)
-        check_call(['git', 'clone',
-                    'git@gitlab.hcs.ufl.edu:F4/simics-p2020rdb'], cwd=cwd)
-        check_call(['git', 'clone',
-                    'git@gitlab.hcs.ufl.edu:F4/simics-a9x2'], cwd=cwd)
+        raise Exception('cannot find simics-workspace, '
+                        'trying running "scripts/setup_environment.sh"')
     options.campaign = new_campaign(options)
     if options.aux_application is None:
         options.aux_application = options.application
@@ -397,13 +381,12 @@ def launch_supervisor(options):
         drseus.cmdloop()
     except:
         print_exc()
-        with drseus.drseus.db as db:
-            db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
+        drseus.drseus.db.log_event(
+            'Error', 'DrSEUs', 'Exception', drseus.drseus.db.log_exception)
         drseus.drseus.debugger.close()
-        drseus.drseus.db.result.update({'outcome_category': 'Incomplete',
-                                        'outcome': 'Uncaught exception'})
-        with drseus.drseus.db as db:
-            db.log_result(exit=True)
+        drseus.drseus.db.result.outcome_category = 'Incomplete'
+        drseus.drseus.db.outcome = 'Uncaught exception'
+        drseus.drseus.db.log_result(exit=True)
 
 
 def backup(options):

@@ -1,5 +1,5 @@
 # DrSEUs
-## (D)ynamic (r)obust (S)ingle (E)vent (U)pset (s)imulator
+## The Dynamic Robust Single Event Upset Simulator, Created by Ed Carlisle IV
 
 Fault injection framework and application for performing CPU fault injection on:
 
@@ -16,9 +16,9 @@ DrSEUs Terminology:
 
 Run drseus.py --help for usage information
 
-Use arguments in files by prefixing with "@", for example: "drseus.py @conf/new/p2020"
+Use arguments in files by prefixing with "@", for example: "drseus.py @conf/sample/p2020"
 
-Usage Example:
+Example:
 
 * drseus.py new ppc_fi_2d_conv_fft_omp -s -a "lena.bmp out.bmp" -f lena.bmp -o out.bmp
     * Creates a Simics fault-injection campaign
@@ -30,3 +30,5 @@ Usage Example:
 * drseus.py log
     * Starts log server
     * Navigate to http://localhost:8000 in your web browser
+
+Before using DrSEUs for the first time, you must first run "scripts/install_dependencies.sh" then run "scripts/setup_environment.sh"

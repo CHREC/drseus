@@ -293,9 +293,8 @@ class fault_injector(object):
             try:
                 self.debugger.close()
             except DrSEUsError as error:
-                self.db.result.update({
-                    'outcome_category': 'Simics error',
-                    'outcome': str(error)})
+                self.db.result.outcome_category = 'Simics error'
+                self.db.result.outcome = str(error)
             finally:
                 rmtree('simics-workspace/injected-checkpoints/{}/{}'.format(
                        self.db.campaign.id, self.db.result.id))
@@ -369,9 +368,8 @@ class fault_injector(object):
                     try:
                         self.debugger.dut.flush(check_errors=True)
                     except DrSEUsError as error:
-                        self.db.result.update({
-                            'outcome_category': 'Post execution error',
-                            'outcome': error.type})
+                        self.db.result.outcome_category = 'Post execution error'
+                        self.db.result.outcome = error.type
                     if self.db.campaign.aux:
                         self.debugger.aux.flush()
                 self.db.log_result()

@@ -1,9 +1,34 @@
 #!/bin/sh
 
+set -e
+
 cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 
-virtualenv python
+if [ ! -d python ]; then
+    virtualenv python
+fi
 
 python/bin/pip3 install --upgrade django django-filter django_tables2 numpy \
                                   paramiko pip ply progressbar2 psycopg2 \
                                   pyserial pyudev scp termcolor terminaltables
+
+if [ ! -d simics-workspace ]; then
+    printf 'setup simics workspace? [Y/n]: '
+    read simics
+    if [ "$simics" != "n" ]; then
+        mkdir simics-workspace
+        cd simics-workspace
+        simics=$(find /opt/simics/ -name "simics-4.8.*")
+       "$simics"/bin/workspace-setup
+       git clone git@gitlab.hcs.ufl.edu:F4/simics-a9x2
+       git clone git@gitlab.hcs.ufl.edu:F4/simics-p2020rdb
+    fi
+fi
+
+if [ ! -d fiapps ]; then
+    printf 'clone fiapps git repo? [Y/n]: '
+    read fiapps
+    if [ "$fiapps" != "n" ]; then
+       git clone git@gitlab.hcs.ufl.edu:F4/fiapps.git
+    fi
+fi
