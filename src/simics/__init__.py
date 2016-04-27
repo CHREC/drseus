@@ -1,3 +1,4 @@
+from datetime import datetime
 from os import getcwd, listdir, makedirs, mkdir
 from os.path import exists, join
 from random import choice
@@ -330,7 +331,8 @@ class simics(object):
                 print(colored(command, 'yellow'))
         buff = read_until()
         if command:
-            self.db.log_event_success(event)
+            event.success = True
+            event.save()
         return buff
 
     def __merge_checkpoint(self, checkpoint):
@@ -403,7 +405,9 @@ class simics(object):
                     else:
                         checkpoint += 1
                 self.db.campaign.checkpoints = checkpoint
-                self.db.log_event_success(event, update_timestamp=True)
+                event.success = True
+                event.timestamp = datetime.now()
+                event.save()
                 self.continue_dut()
                 if self.db.campaign.aux:
                     aux_process.join()
@@ -450,7 +454,9 @@ class simics(object):
                 int((end_cycles - start_cycles) / self.options.iterations)
             self.db.campaign.execution_time = \
                 (end_time - start_time) / self.options.iterations
-            self.db.log_event_success(event, update_timestamp=True)
+            event.success = True
+            event.timestamp = datetime.now()
+            event.save()
         create_checkpoints()
 
     def inject_faults(self):

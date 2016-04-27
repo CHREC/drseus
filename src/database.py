@@ -35,7 +35,9 @@ def initialize_database(options):
 
 
 def get_campaign(options):
-    if not options.campaign_id:
+    if options == 'all':
+        return campaign_model.objects.all().order_by('id')
+    elif not options.campaign_id:
         return campaign_model.objects.latest('id')
     else:
         return campaign_model.objects.get(id=options.campaign_id)
@@ -132,7 +134,8 @@ def delete_database(options):
                superuser=options.delete_user or options.db_host == 'localhost',
                commands=commands)
     else:
-        remove(options.db_file)
+        if exists(options.db_file):
+            remove(options.db_file)
 
 
 def backup_database(options, backup_file):
@@ -201,9 +204,3 @@ class database(object):
             source=source,
             success=success)
         return event
-
-    def log_event_success(self, event, success=True, update_timestamp=False):
-        event.success = success
-        if update_timestamp:
-            event.timestamp = datetime.now()
-        event.save()

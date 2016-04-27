@@ -522,7 +522,8 @@ class dut(object):
                     raise DrSEUsError('{} Command error'.format(
                         'DUT' if not self.aux else 'AUX'), returned=returned)
             else:
-                self.db.log_event_success(event)
+                event.success = True
+                event.save()
                 break
         return buff, returned
 

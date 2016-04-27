@@ -38,7 +38,8 @@ class dummy(jtag):
         self.open()
         print(colored('Power cycled device: {}'.format(self.dut.serial.port),
                       'red'))
-        self.db.log_event_success(event)
+        event.success = True
+        event.save()
 
     def set_targets(self):
         self.targets = {}

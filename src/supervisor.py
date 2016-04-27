@@ -311,7 +311,8 @@ class supervisor(Cmd):
             output = check_output(arg, shell=True, universal_newlines=True)
             print(output, end='')
             event.description = output
-            self.drseus.db.log_event_success(event)
+            event.success = True
+            event.save()
         except CalledProcessError as error:
             print(error.output, end='')
             event.description = error.output

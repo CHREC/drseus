@@ -124,7 +124,8 @@ class openocd(jtag):
         self.open()
         print(colored('Power cycled device: {}'.format(self.dut.serial.port),
                       'red'))
-        self.db.log_event_success(event)
+        event.success = True
+        event.save()
 
     def halt_dut(self):
         super().halt_dut('halt', ['target state: halted']*2)

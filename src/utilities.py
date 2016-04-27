@@ -21,7 +21,6 @@ from .fault_injector import fault_injector
 from .jtag import (find_all_uarts, find_p2020_uarts, find_zedboard_jtag_serials,
                    find_zedboard_uart_serials)
 from .jtag.openocd import openocd
-from .log import models
 from .power_switch import power_switch
 from .simics.config import simics_config
 from .supervisor import supervisor
@@ -140,7 +139,12 @@ def list_outlets(options):
 def list_campaigns(options):
     table = AsciiTable([['ID', 'Results', 'Command', 'Arch', 'Simics']],
                        'DrSEUs Campaigns')
-    for campaign in models.campaign.objects.all():
+    try:
+        campaigns = list(get_campaign('all'))
+    except:
+        print('error connecting to database, try creating a new campaign first')
+        return
+    for campaign in campaigns:
         results = campaign.result_set.count()
         items = []
         for i, item in enumerate((campaign.id, results, campaign.command,
@@ -157,7 +161,10 @@ def list_campaigns(options):
 
 
 def delete(options):
-    campaign = get_campaign(options)
+    try:
+        campaign = get_campaign(options)
+    except:
+        campaign = None
     if options.selection in ('results', 'r'):
         if input('are you sure you want to delete all results for campaign {}?'
                  ' [y/N]: '.format(options.campaign_id)) not in \
@@ -329,7 +336,7 @@ def regenerate(options):
     campaign = get_campaign(options)
     if not campaign.simics:
         raise Exception('this feature is only available for Simics campaigns')
-    injections = models.injection.objects.filter(result_id=options.result_id)
+    injections = campaign.result_set.get(id=options.result_id).injection_set
     drseus = fault_injector(options)
     checkpoint = drseus.debugger.regenerate_checkpoints(injections)
     drseus.debugger.launch_simics_gui(checkpoint)

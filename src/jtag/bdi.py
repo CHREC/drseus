@@ -41,7 +41,8 @@ class bdi(jtag):
         self.connect_telnet()
         sleep(1)
         self.command(None, error_message='', log_event=False)
-        self.db.log_event_success(event)
+        event.success = True
+        event.save()
 
     def reset_dut(self, attempts=5):
         expected_output = [

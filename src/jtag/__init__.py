@@ -138,7 +138,8 @@ class jtag(object):
             'Information', 'Debugger', 'Halt DUT', success=False)
         self.command(halt_command, expected_output, 'Error halting DUT', False)
         self.dut.stop_timer()
-        self.db.log_event_success(event)
+        event.success = True
+        event.save()
 
     def continue_dut(self, continue_command):
         event = self.db.log_event(
@@ -146,7 +147,8 @@ class jtag(object):
         self.command(continue_command, error_message='Error continuing DUT',
                      log_event=False)
         self.dut.start_timer()
-        self.db.log_event_success(event)
+        event.success = True
+        event.save()
 
     def time_application(self):
         event = self.db.log_event(
@@ -172,7 +174,8 @@ class jtag(object):
             dut_process.join()
         self.db.campaign.execution_time = \
             self.dut.get_timer_value() / self.options.iterations
-        self.db.log_event_success(event)
+        event.success = True
+        event.save()
 
     def inject_faults(self):
         injection_times = []
@@ -310,7 +313,8 @@ class jtag(object):
             if message in return_buffer:
                 raise DrSEUsError(error_message)
         if log_event:
-            self.db.log_event_success(event)
+            event.success = True
+            event.save()
         return return_buffer
 
     def select_core(self, core):
