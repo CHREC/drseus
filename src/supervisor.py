@@ -1,4 +1,3 @@
-from bdb import BdbQuit
 from cmd import Cmd
 from datetime import datetime
 from multiprocessing import Value
@@ -33,7 +32,7 @@ class supervisor(Cmd):
         else:
             switch = None
         self.drseus = fault_injector(campaign, options, switch)
-        if campaign['simics']:
+        if campaign.simics:
             self.launch_simics()
         else:
             self.drseus.debugger.reset_dut()
@@ -42,13 +41,13 @@ class supervisor(Cmd):
         if exists('.supervisor_history'):
             read_history_file('.supervisor_history')
         set_history_length(options.history_length)
-        if campaign['aux']:
+        if campaign.aux:
             self.__class__ = aux_supervisor
 
     def launch_simics(self):
         checkpoint = 'gold-checkpoints/{}/{}'.format(
-            self.drseus.db.campaign['id'],
-            self.drseus.db.campaign['checkpoints'])
+            self.drseus.db.campaign.id,
+            self.drseus.db.campaign.checkpoints)
         if exists('simics-workspace/{}_merged'.format(checkpoint)):
             self.drseus.debugger.launch_simics('{}_merged'.format(checkpoint))
         else:
@@ -82,7 +81,7 @@ class supervisor(Cmd):
         except ValueError:
             print('Invalid value entered')
             return
-        if self.drseus.db.campaign['simics']:
+        if self.drseus.db.campaign.simics:
             self.drseus.debugger.timeout = new_timeout
         if aux:
             self.drseus.debugger.aux.default_timeout = new_timeout
@@ -107,7 +106,7 @@ class supervisor(Cmd):
                         self.drseus.debugger.dut.write('{}\n'.format(
                             stdin.readline()))
         except KeyboardInterrupt:
-            if self.drseus.db.campaign['simics']:
+            if self.drseus.db.campaign.simics:
                 self.drseus.debugger.continue_dut()
             if aux:
                 self.drseus.debugger.aux.write('\x03')
@@ -123,7 +122,7 @@ class supervisor(Cmd):
             else:
                 self.drseus.debugger.dut.read_until(continuous=True)
         except KeyboardInterrupt:
-            if self.drseus.db.campaign['simics']:
+            if self.drseus.db.campaign.simics:
                 self.drseus.debugger.continue_dut()
 
     def do_send_file_dut(self, arg, aux=False):
@@ -136,7 +135,7 @@ class supervisor(Cmd):
     def do_get_file_dut(self, arg, aux=False):
         """Retrieve file from DUT device"""
         output = 'campaign-data/{}/results/{}/'.format(
-            self.drseus.db.campaign['id'], self.drseus.result['id'])
+            self.drseus.db.campaign.id, self.drseus.result.id)
         makedirs(output)
         output += arg
         if aux:
@@ -162,43 +161,38 @@ class supervisor(Cmd):
                 return
             iteration_counter = Value('L', supervise_iterations)
             timer = None
-        if self.drseus.db.campaign['simics']:
+        if self.drseus.db.campaign.simics:
             self.drseus.debugger.close()
         else:
             self.drseus.debugger.dut.flush()
-        with self.drseus.db as db:
-            db.log_result()
+        self.drseus.db.log_result()
         try:
             self.drseus.inject_campaign(iteration_counter, timer)
-            self.drseus.db.result.update({'outcome_category': 'DrSEUs',
-                                          'outcome': 'Supervisor'})
-            with self.drseus.db as db:
-                db.update('result')
+            self.drseus.db.result.outcome_category = 'DrSEUs'
+            self.drseus.db.result.outcome = 'Supervisor'
         except KeyboardInterrupt:
-            if self.drseus.db.campaign['simics']:
+            if self.drseus.db.campaign.simics:
                 self.drseus.debugger.continue_dut()
             if self.drseus.debugger.dut:
                 self.drseus.debugger.dut.write('\x03')
                 self.drseus.debugger.dut.flush()
-            if self.drseus.db.campaign['aux'] and self.drseus.debugger.aux:
+            if self.drseus.db.campaign.aux and self.drseus.debugger.aux:
                 self.drseus.debugger.aux.write('\x03')
                 self.drseus.debugger.aux.flush()
-            with self.drseus.db as db:
-                db.log_event('Information', 'User', 'Interrupted',
-                             db.log_exception)
-            self.drseus.db.result.update({'outcome_category': 'Incomplete',
-                                          'outcome': 'Interrupted'})
-            with self.drseus.db as db:
-                db.log_result(supervisor=True)
+            self.drseus.db.log_event(
+                'Information', 'User', 'Interrupted',
+                self.drseus.db.log_exception)
+            self.drseus.db.result.outcome_category = 'Incomplete'
+            self.drseus.db.result.outcome = 'Interrupted'
+            self.drseus.db.log_result(supervisor=True)
         except:
             print_exc()
-            with self.drseus.db as db:
-                db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
-            self.drseus.db.result.update({'outcome_category': 'Incomplete',
-                                          'outcome': 'Uncaught exception'})
-            with self.drseus.db as db:
-                db.log_result(supervisor=True)
-        if self.drseus.db.campaign['simics']:
+            self.drseus.db.log_event(
+                'Error', 'DrSEUs', 'Exception', self.drseus.db.log_exception)
+            self.drseus.db.result.outcome_category = 'Incomplete'
+            self.drseus.db.result.outcome = 'Uncaught exception'
+            self.drseus.db.log_result(supervisor=True)
+        if self.drseus.db.campaign.simics:
             self.drseus.debugger.close()
             self.launch_simics()
 
@@ -229,44 +223,36 @@ class supervisor(Cmd):
             iteration_counter = None
         else:
             iteration_counter = Value('L', options.iterations)
-        if self.drseus.db.campaign['simics']:
+        if self.drseus.db.campaign.simics:
             self.drseus.debugger.close()
         else:
             self.drseus.debugger.dut.flush()
-        with self.drseus.db as db:
-            db.log_result()
+        self.drseus.db.log_result()
         try:
             self.drseus.inject_campaign(iteration_counter)
-            self.drseus.db.result.update({'outcome_category': 'DrSEUs',
-                                          'outcome': 'Supervisor'})
-            with self.drseus.db as db:
-                db.update('result')
         except KeyboardInterrupt:
-            if self.drseus.db.campaign['simics']:
+            if self.drseus.db.campaign.simics:
                 self.drseus.debugger.continue_dut()
             if self.drseus.debugger.dut:
                 self.drseus.debugger.dut.write('\x03')
                 self.drseus.debugger.dut.flush()
-            if self.drseus.db.campaign['aux'] and self.drseus.debugger.aux:
+            if self.drseus.db.campaign.aux and self.drseus.debugger.aux:
                 self.drseus.debugger.aux.write('\x03')
                 self.drseus.debugger.aux.flush()
-            with self.drseus.db as db:
-                db.log_event('Information', 'User', 'Interrupted',
-                             db.log_exception)
-            self.drseus.db.result.update({'outcome_category': 'Incomplete',
-                                          'outcome': 'Interrupted'})
-            with self.drseus.db as db:
-                db.log_result(supervisor=True)
+            self.drseus.db.log_event(
+                'Information', 'User', 'Interrupted',
+                self.drseus.db.log_exception)
+            self.drseus.db.result.outcome_category = 'Incomplete'
+            self.drseus.db.result.outcome = 'Interrupted'
+            self.drseus.db.log_result(supervisor=True)
         except:
             print_exc()
-            with self.drseus.db as db:
-                db.log_event('Error', 'DrSEUs', 'Exception',
-                             db.log_exception)
-            self.drseus.db.result.update({'outcome_category': 'Incomplete',
-                                          'outcome': 'Uncaught exception'})
-            with self.drseus.db as db:
-                db.log_result(supervisor=True)
-        if self.drseus.db.campaign['simics']:
+            self.drseus.db.log_event(
+                'Error', 'DrSEUs', 'Exception', self.drseus.db.log_exception)
+            self.drseus.db.result.outcome_category = 'Incomplete'
+            self.drseus.db.result.outcome = 'Uncaught exception'
+            self.drseus.db.log_result(supervisor=True)
+        if self.drseus.db.campaign.simics:
             self.drseus.debugger.close()
             self.launch_simics()
 
@@ -283,9 +269,8 @@ class supervisor(Cmd):
         self.drseus.debugger.dut.open()
         if exists(capture):
             with open(capture, 'r') as capture_file:
-                self.drseus.db.result['dut_output'] += capture_file.read()
-                with self.drseus.db as db:
-                    db.update('result')
+                self.drseus.db.result.dut_output += capture_file.read()
+                self.drseus.db.result.save()
             remove(capture)
 
     def help_inject(self):
@@ -294,19 +279,16 @@ class supervisor(Cmd):
 
     def do_log(self, arg):
         """Log current status as a result"""
-        self.drseus.db.result.update({
-            'outcome_category': 'DrSEUs',
-            'outcome': arg if arg else 'User'})
-        with self.drseus.db as db:
-            db.log_result(supervisor=True)
+        self.drseus.db.result.outcome_category = 'DrSEUs'
+        self.drseus.db.result.outcome = arg if arg else 'User'
+        self.drseus.db.log_result(supervisor=True)
 
     def do_event(self, arg):
         """Log an event"""
         if not arg:
             arg = input('Event type: ')
         description = input('Event description: ')
-        with self.drseus.db as db:
-            db.log_event('Information', 'User', arg, description)
+        self.drseus.db.log_event('Information', 'User', arg, description)
 
     def do_power_cycle(self, arg=None):
         """Power cycle device using web power switch"""
@@ -319,26 +301,21 @@ class supervisor(Cmd):
 
     def do_debug(self, arg=None):
         """Start PDB"""
-        try:
-            set_trace()
-        except BdbQuit:
-            pass
+        set_trace()
 
     def do_shell(self, arg):
         """Pass command to a system shell when line begins with \"!\""""
-        with self.drseus.db as db:
-            event = db.log_event('Information', 'Shell', arg, success=False)
+        event = self.drseus.db.log_event(
+            'Information', 'Shell', arg, success=False)
         try:
             output = check_output(arg, shell=True, universal_newlines=True)
             print(output, end='')
-            event['description'] = output
-            with self.drseus.db as db:
-                db.log_event_success(event)
+            event.description = output
+            self.drseus.db.log_event_success(event)
         except CalledProcessError as error:
             print(error.output, end='')
-            event['description'] = error.output
-            with self.drseus.db as db:
-                db.update('event', event)
+            event.description = error.output
+            event.save()
 
     def do_exit(self, arg=None):
         """Exit DrSEUs"""

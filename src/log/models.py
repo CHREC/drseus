@@ -8,14 +8,14 @@ class campaign(Model):
     aux = BooleanField()
     architecture = TextField()
     aux_command = TextField(null=True)
-    aux_output = TextField(null=True)
+    aux_output = TextField(default='')
     checkpoints = IntegerField(null=True)
     command = TextField()
     cycles = BigIntegerField(null=True)
     cycles_between = BigIntegerField(null=True)
-    debugger_output = TextField(null=True)
+    debugger_output = TextField(default='')
     description = TextField(null=True)
-    dut_output = TextField(null=True)
+    dut_output = TextField(default='')
     execution_time = FloatField(null=True)
     kill_dut = BooleanField()
     log_file = TextField()
@@ -24,20 +24,20 @@ class campaign(Model):
     simics = BooleanField()
     start_cycle = BigIntegerField(null=True)
     start_time = FloatField(null=True)
-    timestamp = DateTimeField()
+    timestamp = DateTimeField(auto_now_add=True)
     aux_output_file = BooleanField()
 
 
 class result(Model):
-    aux_output = TextField(null=True)
+    aux_output = TextField(default='')
     aux_serial_port = TextField(null=True)
     campaign = ForeignKey(campaign)
     returned = NullBooleanField()
     cycles = BigIntegerField(null=True)
     data_diff = FloatField(null=True)
-    debugger_output = TextField(null=True)
+    debugger_output = TextField(default='')
     detected_errors = IntegerField(null=True)
-    dut_output = TextField(null=True)
+    dut_output = TextField(default='')
     dut_serial_port = TextField(null=True)
     execution_time = FloatField(null=True)
     num_injections = IntegerField(null=True)
@@ -45,7 +45,7 @@ class result(Model):
     num_memory_diffs = IntegerField(null=True)
     outcome = TextField()
     outcome_category = TextField()
-    timestamp = DateTimeField()
+    timestamp = DateTimeField(auto_now_add=True)
 
 
 class event(Model):
@@ -55,7 +55,7 @@ class event(Model):
     result = ForeignKey(result, null=True)
     source = TextField()
     success = NullBooleanField()
-    timestamp = DateTimeField()
+    timestamp = DateTimeField(auto_now_add=True)
     type = TextField()
 
 
@@ -77,7 +77,7 @@ class injection(Model):
     target_index = IntegerField(null=True)
     target_name = TextField(null=True)
     time = FloatField(null=True)
-    timestamp = DateTimeField(null=True)
+    timestamp = DateTimeField(auto_now_add=True)
     tlb_entry = TextField(null=True)
 
 

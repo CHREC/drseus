@@ -54,8 +54,7 @@ def campaign_page(request, campaign_id):
         output_file = False
     campaign_table = tables.campaign(models.campaign.objects.filter(
         id=campaign_id))
-    event_table = tables.event(models.event.objects.filter(
-        campaign_id=campaign_id))
+    event_table = tables.event(campaign.event_set.all())
     RequestConfig(request, paginate=False).configure(campaign_table)
     RequestConfig(request, paginate=False).configure(event_table)
     return render(request, 'campaign.html', {
@@ -76,7 +75,7 @@ def charts_page(request, campaign_id=None, group_categories=False):
     if campaign_id is not None:
         campaign = models.campaign.objects.get(id=campaign_id)
         campaign_items_ = campaign_items
-        results = models.result.objects.filter(campaign_id=campaign_id)
+        results = campaign.result_set.all()
     else:
         campaign = None
         campaign_items_ = None
@@ -193,7 +192,7 @@ def results_page(request, campaign_id=None):
             output_file = True
         else:
             output_file = False
-        results = models.result.objects.filter(campaign_id=campaign_id)
+        results = campaign.result_set.all()
     else:
         campaign = None
         campaign_items_ = None
@@ -252,21 +251,8 @@ def results_page(request, campaign_id=None):
         elif 'delete' in request.POST and 'results[]' in request.POST:
             result_ids = [int(result_id) for result_id
                           in dict(request.POST)['results[]']]
-            models.event.objects.filter(result_id__in=result_ids).delete()
-            models.injection.objects.filter(result_id__in=result_ids).delete()
-            models.simics_memory_diff.objects.filter(
-                result_id__in=result_ids).delete()
-            models.simics_register_diff.objects.filter(
-                result_id__in=result_ids).delete()
             models.result.objects.filter(id__in=result_ids).delete()
         elif 'delete_all' in request.POST:
-            result_ids = results.values('id')
-            models.event.objects.filter(result_id__in=result_ids).delete()
-            models.injection.objects.filter(result_id__in=result_ids).delete()
-            models.simics_memory_diff.objects.filter(
-                result_id__in=result_ids).delete()
-            models.simics_register_diff.objects.filter(
-                result_id__in=result_ids).delete()
             results.delete()
             if campaign_id:
                 return redirect('/campaign/{}/results'.format(campaign_id))
@@ -306,7 +292,7 @@ def result_page(request, result_id):
     else:
         log_file = False
     result_table = tables.result(models.result.objects.filter(id=result_id))
-    event_table = tables.event(models.event.objects.filter(result_id=result_id))
+    event_table = tables.event(result.event_set.all())
     if request.method == 'POST' and 'launch' in request.POST:
         Popen([argv[0], 'regenerate', result_id])
     if request.method == 'POST' and 'save' in request.POST:
@@ -314,28 +300,22 @@ def result_page(request, result_id):
         result.outcome_category = request.POST['outcome_category']
         result.save()
     elif request.method == 'POST' and 'delete' in request.POST:
-        models.event.objects.filter(result_id=result.id).delete()
-        models.injection.objects.filter(result_id=result.id).delete()
-        models.simics_register_diff.objects.filter(result_id=result.id).delete()
-        models.simics_memory_diff.objects.filter(result_id=result.id).delete()
         result.delete()
         return redirect('/campaign/{}/results'.format(result.campaign_id))
-    injections = models.injection.objects.filter(result_id=result_id)
+    injections = result.injection_set.all()
     if result.campaign.simics:
         if injections.count():
             injection_table = tables.simics_injection(injections)
         else:
             injection_table = None
-        register_diffs = models.simics_register_diff.objects.filter(
-            result_id=result_id)
+        register_diffs = result.simics_register_diff_set.all()
         register_filter = filters.simics_register_diff(
             request.GET, queryset=register_diffs)
         register_table = tables.simics_register_diff(register_filter.qs)
         RequestConfig(
             request,
             paginate={'per_page': table_length}).configure(register_table)
-        memory_diffs = models.simics_memory_diff.objects.filter(
-            result_id=result_id)
+        memory_diffs = result.simics_memory_diff_set.all()
         memory_table = tables.simics_memory_diff(memory_diffs)
         RequestConfig(
             request,

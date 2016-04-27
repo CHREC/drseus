@@ -18,14 +18,14 @@ class dummy(jtag):
         self.dut = dut(self.db, self.options)
         self.dut.write('\x03')
         self.dut.do_login()
-        if self.db.campaign['aux']:
+        if self.db.campaign.aux:
             self.aux = dut(self.db, self.options, aux=True)
             self.aux.write('\x03')
             self.aux.do_login()
 
     def close(self):
         self.dut.close()
-        if self.db.campaign['aux']:
+        if self.db.campaign.aux:
             self.aux.close()
 
     def power_cycle_dut(self):

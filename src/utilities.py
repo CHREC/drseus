@@ -1,12 +1,10 @@
-from bdb import BdbQuit
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
-from io import StringIO
+from django.db import connection
 from json import dump, load
 from multiprocessing import Process, Value
 from os import getcwd, listdir, mkdir, remove, walk
 from os.path import abspath, dirname, exists, isdir, join
-from paramiko import RSAKey
 from pdb import set_trace
 from progressbar import ProgressBar
 from progressbar.widgets import Bar, Percentage, SimpleProgress, Timer
@@ -17,11 +15,13 @@ from tarfile import open as open_tar
 from terminaltables import AsciiTable
 from traceback import print_exc
 
-from .database import database
+from .database import (backup_database, delete_database, get_campaign,
+                       new_campaign, restore_database)
 from .fault_injector import fault_injector
 from .jtag import (find_all_uarts, find_p2020_uarts, find_zedboard_jtag_serials,
                    find_zedboard_uart_serials)
 from .jtag.openocd import openocd
+from .log import models
 from .power_switch import power_switch
 from .simics.config import simics_config
 from .supervisor import supervisor
@@ -138,43 +138,25 @@ def list_outlets(options):
 
 
 def list_campaigns(options):
-    options.campaign_id = '*'
-    db = database(options)
     table = AsciiTable([['ID', 'Results', 'Command', 'Arch', 'Simics']],
                        'DrSEUs Campaigns')
-    with db:
-        campaign_list = db.get_campaign()
-        for campaign in campaign_list:
-            db.campaign['id'] = campaign['id']
-            results = db.get_count('result', 'campaign')
-            items = []
-            for i, item in enumerate((str(campaign['id']), str(results),
-                                      campaign['command'],
-                                      campaign['architecture'],
-                                      str(bool(campaign['simics'])))):
-                if len(item) < table.column_max_width(i):
-                    items.append(item)
-                else:
-                    items.append('{}...'.format(
-                        item[:table.column_max_width(i)-4]))
-            table.table_data.append(items)
+    for campaign in models.campaign.objects.all():
+        results = campaign.result_set.count()
+        items = []
+        for i, item in enumerate((campaign.id, results, campaign.command,
+                                  campaign.architecture, campaign.simics)):
+            if not isinstance(item, str):
+                item = str(item)
+            if len(item) < table.column_max_width(i):
+                items.append(item)
+            else:
+                items.append('{}...'.format(
+                    item[:table.column_max_width(i)-4]))
+        table.table_data.append(items)
     print(table.table)
 
 
-def get_campaign(options):
-    with database(options) as db:
-        campaign = db.get_campaign()
-    if campaign is None:
-        raise Exception('could not find campaign ID {}'.format(
-            options.campaign_id))
-    return campaign
-
-
 def delete(options):
-    try:
-        db = database(options)
-    except:
-        db = None
     if options.delete in ('results', 'r'):
         if input('are you sure you want to delete all results for campaign {}?'
                  ' [y/N]: '.format(options.campaign_id)) not in \
@@ -188,10 +170,9 @@ def delete(options):
             rmtree('simics-workspace/injected-checkpoints/{}'.format(
                 options.campaign_id))
             print('deleted injected checkpoints')
-        if db:
-            with db:
-                db.delete_results()
-            print('flushed database')
+        models.result.objects.filter(campaign_id=options.campaign_id).delete()
+        print('deleted campaign {} results from database'.format(
+            options.campaign_id))
     elif options.delete in ('campaign', 'c'):
         if input('are you sure you want to delete campaign {}? [y/N]: '.format(
                 options.campaign_id)) not in ['y', 'Y', 'yes']:
@@ -209,11 +190,8 @@ def delete(options):
             rmtree('simics-workspace/injected-checkpoints/{}'.format(
                 options.campaign_id))
             print('deleted injected checkpoints')
-        if db:
-            with db:
-                db.delete_campaign()
-                print('deleted campaign {} from database'.format(
-                    options.campaign_id))
+        models.campaign.objects.get(id=options.campaign_id).delete()
+        print('deleted campaign {} from database'.format(options.campaign_id))
     elif options.delete in ('all', 'a'):
         if input('are you sure you want to delete all campaigns, files, and '
                  'database? [y/N]: ') not in ['y', 'Y', 'yes']:
@@ -227,9 +205,8 @@ def delete(options):
         if exists('campaign-data'):
             rmtree('campaign-data')
             print('deleted campaign data')
-        if db:
-            db.delete_database(options.delete_user)
-            print('deleted database')
+        delete_database(options)
+        print('deleted database')
         if exists('log/migrations'):
             rmtree('log/migrations')
             print('deleted django migrations')
@@ -266,97 +243,66 @@ def create_campaign(options):
                     'git@gitlab.hcs.ufl.edu:F4/simics-p2020rdb'], cwd=cwd)
         check_call(['git', 'clone',
                     'git@gitlab.hcs.ufl.edu:F4/simics-a9x2'], cwd=cwd)
-    rsakey_file = StringIO()
-    RSAKey.generate(1024).write_private_key(rsakey_file)
-    rsakey = rsakey_file.getvalue()
-    rsakey_file.close()
-    campaign = {
-        'architecture': options.architecture,
-        'aux': options.aux,
-        'aux_command': None if not options.aux else (
-            ('./' if options.application_file else '') +
-            (options.aux_application if options.aux_application
-                else options.application) +
-            ((' '+' '.join(options.aux_arguments)) if options.aux_arguments
-                else '')),
-        'aux_output': '',
-        'aux_output_file': options.aux and options.aux_output_file,
-        'command': (
-            ('./' if options.application_file else '') + options.application +
-            ((' '+' '.join(options.arguments)) if options.arguments else '')),
-        'debugger_output': '',
-        'description': options.description,
-        'dut_output': '',
-        'kill_dut': options.kill_dut,
-        'log_file': options.log_file,
-        'output_file': options.output_file,
-        'rsakey': rsakey,
-        'simics': options.simics,
-        'timestamp': None}
+    options.campaign = new_campaign(options)
     if options.aux_application is None:
         options.aux_application = options.application
-    with database(options, initialize=True) as db:
-        db.insert('campaign', campaign)
-    campaign_directory = 'campaign-data/{}'.format(campaign['id'])
+    campaign_directory = 'campaign-data/{}'.format(options.campaign.id)
     if exists(campaign_directory):
         raise Exception('directory already exists: campaign-data/{}'.format(
-            campaign['id']))
-    drseus = fault_injector(campaign, options)
+            options.campaign.id))
+    drseus = fault_injector(options)
     drseus.setup_campaign()
-    print('created campaign {}'.format(campaign['id']))
+    print('created campaign {}'.format(options.campaign.id))
 
 
 def inject_campaign(options):
     campaign = get_campaign(options)
+    architecture = campaign.architecture
+    simics = campaign.simics
 
     def perform_injections(iteration_counter, switch):
-        drseus = fault_injector(campaign, options, switch)
+        drseus = fault_injector(options, switch)
         try:
             drseus.inject_campaign(iteration_counter)
         except KeyboardInterrupt:
-            with drseus.db as db:
-                db.log_event('Information', 'User', 'Interrupted',
-                             db.log_exception)
+            drseus.db.log_event(
+                'Information', 'User', 'Interrupted', drseus.db.log_exception)
             drseus.debugger.close()
-            drseus.db.result.update({'outcome_category': 'Incomplete',
-                                     'outcome': 'Interrupted'})
-            with drseus.db as db:
-                db.log_result(exit=True)
+            drseus.db.result.outcome_category = 'Incomplete'
+            drseus.db.result.outcome = 'Interrupted'
+            drseus.db.log_result(exit=True)
         except:
             print_exc()
-            with drseus.db as db:
-                db.log_event('Error', 'DrSEUs', 'Exception', db.log_exception)
+            drseus.db.log_event(
+                'Error', 'DrSEUs', 'Exception', drseus.db.log_exception)
             drseus.debugger.close()
-            drseus.db.result.update({'outcome_category': 'Incomplete',
-                                     'outcome': 'Uncaught exception'})
-            with drseus.db as db:
-                db.log_result(exit=True)
+            drseus.db.result.outcome_category = 'Incomplete'
+            drseus.db.result.outcome = 'Uncaught exception'
+            drseus.db.log_result(exit=True)
             if options.processes == 1 and options.debug:
                 print('dropping into python debugger')
-                try:
-                    set_trace()
-                except BdbQuit:
-                    pass
+                set_trace()
 
 # def inject_campaign(options):
     if options.iterations is not None:
         iteration_counter = Value('L', options.iterations)
     else:
         iteration_counter = None
-    if not campaign['simics'] and campaign['architecture'] == 'a9' \
+    if not simics and architecture == 'a9' \
             and options.power_switch_ip_address:
         switch = power_switch(options)
     else:
         switch = None
-    if options.processes > 1 and (campaign['simics'] or
-                                  campaign['architecture'] == 'a9'):
-        if not campaign['simics'] and \
-                campaign['architecture'] == 'a9':
+    if options.processes > 1 and (simics or
+                                  architecture == 'a9'):
+        connection.close()
+        if not simics and \
+                architecture == 'a9':
             uarts = list(find_zedboard_uart_serials().keys())
         processes = []
         for i in range(options.processes):
-            if not campaign['simics'] and \
-                    campaign['architecture'] == 'a9':
+            if not simics and \
+                    architecture == 'a9':
                 if i < len(uarts):
                     options.dut_serial_port = uarts[i]
                 else:
@@ -377,16 +323,14 @@ def inject_campaign(options):
 
 def regenerate(options):
     campaign = get_campaign(options)
-    if not campaign['simics']:
+    if not campaign.simics:
         raise Exception('this feature is only available for Simics campaigns')
-    with database(options) as db:
-        db.result['id'] = options.result_id
-        injections = db.get_item('injection')
-    drseus = fault_injector(campaign, options)
+    injections = models.injection.objects.filter(result_id=options.result_id)
+    drseus = fault_injector(options)
     checkpoint = drseus.debugger.regenerate_checkpoints(injections)
     drseus.debugger.launch_simics_gui(checkpoint)
     rmtree('simics-workspace/injected-checkpoints/{}/{}'.format(
-        campaign['id'], options.result_id))
+        campaign.id, options.result_id))
 
 
 def view_log(options):
@@ -477,7 +421,7 @@ def backup(options):
         mkdir('campaign-data')
     sql_backup = 'campaign-data/{}.sql'.format(options.db_name)
     print('dumping database...')
-    database(options).backup_database(sql_backup)
+    backup_database(options, sql_backup)
     print('database dumped')
     if options.files:
         backup_name = 'backups/{}_{}'.format(
@@ -525,9 +469,8 @@ def restore(options):
         print('done')
     for item in listdir('campaign-data'):
         if '.sql' in item:
-            print('restoring database...')
-            database(options, initialize=True).restore_database(
-                join('campaign-data', item))
+            print('restoring database from {}...'.format(item))
+            restore_database(options, join('campaign-data', item))
             print('database restored')
             break
     else:
@@ -567,10 +510,10 @@ def launch_minicom(options):
     options.debug = False
     options.jtag = False
     campaign = get_campaign(options)
-    drseus = fault_injector(campaign, options)
-    if campaign['simics']:
+    drseus = fault_injector(options)
+    if campaign.simics:
         checkpoint = 'gold-checkpoints/{}/{}'.format(
-            drseus.db.campaign['id'], drseus.db.campaign['checkpoints'])
+            drseus.db.campaign.id, drseus.db.campaign.checkpoints)
         if exists('simics-workspace/{}_merged'.format(checkpoint)):
             drseus.debugger.launch_simics('{}_merged'.format(checkpoint))
         else:

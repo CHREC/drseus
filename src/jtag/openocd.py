@@ -120,7 +120,7 @@ class openocd(jtag):
         for serial_port, uart_serial in find_zedboard_uart_serials().items():
             if uart_serial == self.device_info['uart']:
                 self.options.dut_serial_port = serial_port
-                self.db.result['dut_serial_port'] = serial_port
+                self.db.result.dut_serial_port = serial_port
                 break
         else:
             raise Exception('Error finding uart device after power cycle')

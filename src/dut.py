@@ -68,7 +68,7 @@ class dut(object):
             else options.aux_username
         self.password = options.dut_password if not aux \
             else options.aux_password
-        rsakey_file = StringIO(database.campaign['rsakey'])
+        rsakey_file = StringIO(database.campaign.rsakey)
         self.rsakey = RSAKey.from_private_key(rsakey_file)
         rsakey_file.close()
         self.uboot_command = options.dut_uboot if not aux \
@@ -104,15 +104,15 @@ class dut(object):
         serial_port = (self.options.dut_serial_port if not self.aux
                        else self.options.aux_serial_port)
         if self.db.result:
-            self.db.result['dut_serial_port' if not self.aux
-                           else 'aux_serial_port'] = serial_port
-            with self.db as db:
-                db.update('result')
+            if self.aux:
+                self.db.result.aux_serial_port = serial_port
+            else:
+                self.db.result.dut_serial_port = serial_port
         baud_rate = (self.options.dut_baud_rate if not self.aux
                      else self.options.aux_baud_rate)
         self.serial = Serial(port=None, baudrate=baud_rate,
                              timeout=self.options.timeout, rtscts=True)
-        if self.db.campaign['simics']:
+        if self.db.campaign.simics:
             # workaround for pyserial 3
             self.serial._dsrdtr = True
         self.serial.port = serial_port
@@ -122,11 +122,10 @@ class dut(object):
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except Exception as error:
-                with self.db as db:
-                    db.log_event('Warning' if attempt < attempts-1 else 'Error',
-                                 'DUT' if not self.aux else 'AUX',
-                                 'Error opening serial port',
-                                 db.log_exception)
+                self.db.log_event(
+                    'Warning' if attempt < attempts-1 else 'Error',
+                    'DUT' if not self.aux else 'AUX',
+                    'Error opening serial port', self.db.log_exception)
                 print(colored(
                     'Error opening serial port {} (attempt {}/{}): {}'.format(
                         serial_port, attempt+1, attempts, error), 'red'))
@@ -138,16 +137,16 @@ class dut(object):
                 break
         self.serial.reset_input_buffer()
         self.serial.reset_output_buffer()
-        with self.db as db:
-            db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                         'Connected to serial port', serial_port, success=True)
+        self.db.log_event(
+            'Information', 'DUT' if not self.aux else 'AUX',
+            'Connected to serial port', serial_port, success=True)
 
     def close(self):
         self.flush()
         self.serial.close()
-        with self.db as db:
-            db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                         'Closed serial port', success=True)
+        self.db.log_event(
+            'Information', 'DUT' if not self.aux else 'AUX',
+            'Closed serial port', success=True)
 
     def flush(self, check_errors=False):
         try:
@@ -173,28 +172,30 @@ class dut(object):
                     if self.options.debug:
                         stdout.flush()
                     if self.db.result:
-                        self.db.result['dut_output' if not self.aux
-                                       else 'aux_output'] += buff
-                        with self.db as db:
-                            db.update('result')
+                        if self.aux:
+                            self.db.result.aux_output += buff
+                        else:
+                            self.db.result.dut_output += buff
+                        self.db.result.save()
                     else:
-                        self.db.campaign['dut_output' if not self.aux
-                                         else 'aux_output'] += buff
-                        with self.db as db:
-                            db.update('campaign')
+                        if self.aux:
+                            self.db.campaign.aux_output += buff
+                        else:
+                            self.db.campaign.dut_output += buff
+                        self.db.campaign.save()
                     if check_errors:
                         for message, category in self.error_messages:
                             if message in buff:
                                 raise DrSEUsError(category)
-            with self.db as db:
-                db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                             'Flushed serial buffers', buff, success=True)
+            self.db.log_event(
+                'Information', 'DUT' if not self.aux else 'AUX',
+                'Flushed serial buffers', buff, success=True)
         except KeyboardInterrupt:
             raise KeyboardInterrupt
         except:
-            with self.db as db:
-                db.log_event('Error', 'DUT' if not self.aux else 'AUX',
-                             'Error flushing serial buffers', db.log_exception)
+            self.db.log_event(
+                'Error', 'DUT' if not self.aux else 'AUX',
+                'Error flushing serial buffers', self.db.log_exception)
 
     def reset_ip(self):
         if self.options.reset_ip and (
@@ -204,11 +205,9 @@ class dut(object):
 
     def __attempt_exception(self, attempt, attempts, error, error_type, message,
                             close_items=[]):
-        with self.db as db:
-            db.log_event('Warning' if attempt < attempts-1 else 'Error',
-                         'DUT' if not self.aux else 'AUX', error_type,
-                         db.log_exception)
-
+        self.db.log_event(
+            'Warning' if attempt < attempts-1 else 'Error',
+            'DUT' if not self.aux else 'AUX', error_type, self.db.log_exception)
         print(colored('{}: {} (attempt {}/{}): {}'.format(
             self.serial.port, message, attempt+1, attempts, error), 'red'))
         for item in close_items:
@@ -222,7 +221,7 @@ class dut(object):
         if not files:
             files = []
             location = 'campaign-data/{}/{}-files'.format(
-                self.db.campaign['id'], 'aux' if self.aux else 'dut')
+                self.db.campaign.id, 'aux' if self.aux else 'dut')
             if exists(location):
                 for item in listdir(location):
                     files.append('{}/{}'.format(location, item))
@@ -240,9 +239,9 @@ class dut(object):
                 for file_ in files:
                     copy(file_, location)
             if hasattr(self.options, 'local_diff') and \
-                    self.options.local_diff and self.db.campaign['output_file']:
+                    self.options.local_diff and self.db.campaign.output_file:
                 files.append('campaign-data/{}/gold_{}'.format(
-                    self.db.campaign['id']), self.db.campaign['output_file'])
+                    self.db.campaign.id), self.db.campaign.output_file)
         if not files:
             return
         if self.options.debug:
@@ -293,11 +292,9 @@ class dut(object):
                         ssh.close()
                         if self.options.debug:
                             print(colored('done', 'blue'))
-                        with self.db as db:
-                            db.log_event('Information',
-                                         'DUT' if not self.aux else 'AUX',
-                                         'Sent files', ', '.join(files),
-                                         success=True)
+                        self.db.log_event(
+                            'Information', 'DUT' if not self.aux else 'AUX',
+                            'Sent files', ', '.join(files), success=True)
                         break
 
     def get_file(self, file_, local_path='', attempts=10):
@@ -352,18 +349,15 @@ class dut(object):
                         if exists(local_path):
                             if self.options.debug:
                                 print(colored('done', 'blue'))
-                            with self.db as db:
-                                db.log_event('Information',
-                                             'DUT' if not self.aux else 'AUX',
-                                             'Received file', file_,
-                                             success=True)
+                            self.db.log_event(
+                                'Information', 'DUT' if not self.aux else 'AUX',
+                                'Received file', file_, success=True)
                             break
                         else:
-                            with self.db as db:
-                                db.log_event('Warning' if attempt < attempts-1
-                                             else 'Error',
-                                             'DUT' if not self.aux else 'AUX',
-                                             'Missing file', local_path)
+                            self.db.log_event(
+                                'Warning' if attempt < attempts-1 else 'Error',
+                                'DUT' if not self.aux else 'AUX',
+                                'Missing file', local_path)
                             print(colored(
                                 '{}: Error receiving file (attempt {}/{}): '
                                 'missing file'.format(
@@ -393,9 +387,9 @@ class dut(object):
                     char = self.serial.read().decode('utf-8', 'replace')
             except SerialException:
                 errors += 1
-                with self.db as db:
-                    db.log_event('Error', 'DUT' if not self.aux else 'AUX',
-                                 'Read error', db.log_exception)
+                self.db.log_event(
+                    'Error', 'DUT' if not self.aux else 'AUX', 'Read error',
+                    self.db.log_exception)
                 self.close()
                 self.open()
                 continue
@@ -403,19 +397,23 @@ class dut(object):
                 char = ''
             if not char:
                 hanging = True
-                with self.db as db:
-                    db.log_event('Error', 'DUT' if not self.aux else 'AUX',
-                                 'Read timeout', db.log_trace)
+                self.db.log_event(
+                    'Error', 'DUT' if not self.aux else 'AUX', 'Read timeout',
+                    self.db.log_trace)
                 if continuous:
                     continue
                 else:
                     break
             if self.db.result:
-                self.db.result['dut_output' if not self.aux
-                               else 'aux_output'] += char
+                if self.aux:
+                    self.db.result.aux_output += char
+                else:
+                    self.db.result.dut_output += char
             else:
-                self.db.campaign['dut_output' if not self.aux
-                                 else 'aux_output'] += char
+                if self.aux:
+                    self.db.campaign.aux_output += char
+                else:
+                    self.db.campaign.dut_output += char
             if self.options.debug:
                 print(colored(char, 'green' if not self.aux else 'cyan'),
                       end='')
@@ -427,26 +425,23 @@ class dut(object):
                 break
             elif buff.endswith('autoboot: ') and self.uboot_command:
                 self.write('\n{}\n'.format(self.uboot_command))
-                with self.db as db:
-                    db.log_event('Information',
-                                 'DUT' if not self.aux else 'AUX', 'Command',
-                                 self.uboot_command)
+                self.db.log_event(
+                    'Information', 'DUT' if not self.aux else 'AUX', 'Command',
+                    self.uboot_command)
             elif buff.endswith('login: '):
                 self.write('{}\n'.format(self.username))
-                with self.db as db:
-                    db.log_event('Information',
-                                 'DUT' if not self.aux else 'AUX', 'Logged in',
-                                 self.username)
+                self.db.log_event(
+                    'Information', 'DUT' if not self.aux else 'AUX',
+                    'Logged in', self.username)
                 if not boot:
                     errors += 1
             elif buff.endswith('Password: '):
                 self.write('{}\n'.format(self.password))
             elif buff.endswith('can\'t get kernel image'):
                 self.write('reset\n')
-                with self.db as db:
-                    db.log_event('Information',
-                                 'DUT' if not self.aux else 'AUX', 'Command',
-                                 'reset')
+                self.db.log_event(
+                    'Information', 'DUT' if not self.aux else 'AUX', 'Command',
+                    'reset')
                 errors += 1
             for message, category in self.error_messages:
                 if buff.endswith(message):
@@ -457,19 +452,17 @@ class dut(object):
                         self.serial.timeout = 30
                         errors += 1
                     event_buff = buff.replace(event_buff_logged, '')
-                    with self.db as db:
-                        db.log_event('Warning' if boot else 'Error',
-                                     'DUT' if not self.aux else 'AUX',
-                                     category, event_buff)
+                    self.db.log_event(
+                        'Warning' if boot else 'Error',
+                        'DUT' if not self.aux else 'AUX', category, event_buff)
                     event_buff_logged += event_buff
             if not continuous and errors > 10:
                 break
-            if not boot and buff and buff[-1] == '\n':
-                with self.db as db:
-                    if self.db.result:
-                        db.update('result')
-                    else:
-                        db.update('campaign')
+            if not boot and buff and buff.endswith('\n'):
+                if self.db.result is None:
+                    self.db.campaign.save()
+                else:
+                    self.db.result.save()
         self.stop_timer()
         if self.serial.timeout != self.options.timeout:
             try:
@@ -477,9 +470,9 @@ class dut(object):
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except:
-                with self.db as db:
-                    db.log_event('Error', 'DUT' if not self.aux else 'AUX',
-                                 'Error resetting timeout', db.log_exception)
+                self.db.log_event(
+                    'Error', 'DUT' if not self.aux else 'AUX',
+                    'Error resetting timeout', self.db.log_exception)
                 self.close()
                 self.open()
         if self.options.debug:
@@ -487,16 +480,15 @@ class dut(object):
         if 'drseus_detected_errors:' in buff:
             for line in buff.split('\n'):
                 if 'drseus_detected_errors:' in line:
-                    if self.db.result['detected_errors'] is None:
-                        self.db.result['detected_errors'] = 0
+                    if self.db.result.detected_errors is None:
+                        self.db.result.detected_errors = 0
                     # TODO: use regular expression
-                    self.db.result['detected_errors'] += \
+                    self.db.result.detected_errors += \
                         int(line.replace('drseus_detected_errors:', ''))
-        with self.db as db:
-            if self.db.result:
-                db.update('result')
-            else:
-                db.update('campaign')
+        if self.db.result is None:
+            self.db.campaign.save()
+        else:
+            self.db.result.save()
         if errors:
             for message, category in self.error_messages:
                 if not (boot and category in ('Error booting', 'Reboot',
@@ -506,16 +498,15 @@ class dut(object):
         if hanging:
             raise DrSEUsError('Hanging', returned=returned)
         if boot:
-            with self.db as db:
-                db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                             'Booted', success=True)
+            self.db.log_event(
+                'Information', 'DUT' if not self.aux else 'AUX', 'Booted',
+                success=True)
         return buff, returned
 
     def command(self, command='', flush=True, attempts=5):
-        with self.db as db:
-            event = db.log_event('Information',
-                                 'DUT' if not self.aux else 'AUX', 'Command',
-                                 command, success=False)
+        event = self.db.log_event(
+            'Information', 'DUT' if not self.aux else 'AUX', 'Command',
+            command, success=False)
         for attempt in range(attempts):
             self.write('{}\n'.format(command))
             buff, returned = self.read_until(flush=flush)
@@ -523,17 +514,15 @@ class dut(object):
                     escape('_____'.join(command)).replace('_____', '.*'),
                     DOTALL).search(buff):
                 if attempt < attempts-1:
-                    with self.db as db:
-                        db.log_event('Warning',
-                                     'DUT' if not self.aux else 'AUX',
-                                     'Command error', buff, success=False)
+                    self.db.log_event(
+                        'Warning', 'DUT' if not self.aux else 'AUX',
+                        'Command error', buff, success=False)
                     sleep(5)
                 else:
                     raise DrSEUsError('{} Command error'.format(
                         'DUT' if not self.aux else 'AUX'), returned=returned)
             else:
-                with self.db as db:
-                    db.log_event_success(event)
+                self.db.log_event_success(event)
                 break
         return buff, returned
 
@@ -552,7 +541,7 @@ class dut(object):
             self.command('touch ~/.ssh/authorized_keys', flush=flush)
             self.command('echo "ssh-rsa {}" > ~/.ssh/authorized_keys'.format(
                 self.rsakey.get_base64()), flush=flush)
-        if self.db.campaign['simics']:
+        if self.db.campaign.simics:
             self.command('ip addr add {}/24 dev eth0'.format(self.ip_address),
                          flush=flush)
             self.command('ip link set eth0 up', flush=flush)
@@ -579,7 +568,7 @@ class dut(object):
         self.send_files()
 
     def local_diff(self):
-        command = 'diff gold_{0} {0}'.format(self.db.campaign['output_file'])
+        command = 'diff gold_{0} {0}'.format(self.db.campaign.output_file)
         buff = self.command(command)[0].replace('\r\n', '\n')
         buff = buff.replace('{}\n'.format(command), '')
         buff = buff.replace(self.prompt, '')

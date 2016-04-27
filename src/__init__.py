@@ -50,6 +50,7 @@ def run():
         TIME_ZONE='UTC'
     )
     setup()
+    from . import database
     from . import utilities
     missing_args = []
     campaign = None
@@ -59,22 +60,20 @@ def run():
             not (options.command == 'delete' and
                  options.delete in ('a', 'all')):
         if not options.campaign_id:
-            campaign = utilities.get_campaign(options)
-            options.campaign_id = campaign['id']
-        else:
-            campaign = utilities.get_campaign(options)
+            options.campaign_id = database.get_campaign(options).id
+        campaign = utilities.get_campaign(options)
         if options.command != 'regenerate':
-            options.architecture = campaign['architecture']
+            options.architecture = campaign.architecture
     if options.command in ('new', 'inject', 'supervise'):
         if (hasattr(options, 'simics') and not options.simics) or \
-                (campaign and not campaign['simics']):
+                (campaign and not campaign.simics):
             # not using simics
             if not options.dut_serial_port:
                 missing_args.append('--serial')
             if not options.dut_prompt:
                 missing_args.append('--prompt')
             if (hasattr(options, 'aux') and options.aux) or \
-                    (campaign is not None and campaign['aux']):
+                    (campaign and campaign.aux):
                 if not options.aux_serial_port:
                     missing_args.append('--aux_serial')
                 if not options.aux_prompt:
@@ -82,10 +81,10 @@ def run():
             if not options.debugger_ip_address and (
                     (hasattr(options, 'architecture') and
                         options.architecture == 'p2020') or
-                    (campaign and campaign['architecture'] == 'p2020')):
+                    (campaign and campaign.architecture == 'p2020')):
                 # using p2020 (not using simics)
                 missing_args.append('--jtag_ip')
-        if options.command == 'supervise' and not campaign['simics'] and \
+        if options.command == 'supervise' and not campaign.simics and \
                 options.power_switch_outlet is not None:
             missing_args.append('--power_ip')
     if options.command == 'minicom' and not options.dut_serial_port:

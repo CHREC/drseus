@@ -1,100 +1,100 @@
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
+from django.db.utils import OperationalError
 from getpass import getuser
-from psycopg2 import connect, OperationalError
-from psycopg2.extras import DictCursor
+from io import StringIO
+from paramiko import RSAKey
 from subprocess import DEVNULL, PIPE, Popen
 from sys import argv
 from sys import stdout as sys_stdout
 from termcolor import colored
-from threading import Lock
 from traceback import format_exc, format_stack
 
-# from .log import models
+from .log.models import campaign as campaign_model
 
 
-class database(object):
-    log_exception = '__LOG_EXCEPTION__'
-    log_trace = '__LOG_TRACE__'
+def initialize_database(options):
+    commands = (
+        'CREATE USER {} WITH PASSWORD \'{}\';'.format(options.db_user,
+                                                      options.db_password),
+        'ALTER ROLE {} SET client_encoding TO \'utf8\';'.format(
+            options.db_user),
+        'ALTER ROLE {} SET default_transaction_isolation '
+        'TO \'read committed\';'.format(options.db_user),
+        'ALTER ROLE {} SET timezone TO \'UTC\';'.format(options.db_user),
+        'CREATE DATABASE {} WITH OWNER {}'.format(options.db_name,
+                                                  options.db_user))
+    __psql(options, superuser=True, commands=commands)
+    django_command([argv[0], 'makemigrations', 'log'])
+    django_command([argv[0], 'migrate'])
 
-    def __init__(self, options, campaign={}, create_result=False,
-                 initialize=False):
-        if not campaign:
-            campaign = {'id': options.campaign_id}
-        self.campaign = campaign
-        self.result = {}
-        self.options = options
-        self.lock = Lock()
-        if create_result:
-            with self as db:
-                db.__create_result(supervisor=options.command == 'supervise')
-        if not self.exists():
-            if initialize:
-                commands = (
-                    'CREATE USER {} WITH PASSWORD \'{}\';'.format(
-                        self.options.db_user, self.options.db_password),
-                    'ALTER ROLE {} SET client_encoding TO \'utf8\';'.format(
-                        self.options.db_user),
-                    'ALTER ROLE {} SET default_transaction_isolation '
-                    'TO \'read committed\';'.format(self.options.db_user),
-                    'ALTER ROLE {} SET timezone TO \'UTC\';'.format(
-                        self.options.db_user),
-                    'CREATE DATABASE {} WITH OWNER {}'.format(
-                        self.options.db_name, self.options.db_user))
-                self.psql(superuser=True, commands=commands)
-                django_command([argv[0], 'makemigrations', 'log'])
-                django_command([argv[0], 'migrate'])
-            else:
-                raise Exception('could not connect to database, '
-                                'try creating a new campaign')
 
-    def __enter__(self):
-        self.lock.acquire()
-        try:
-            self.connection = connect(host=self.options.db_host,
-                                      port=self.options.db_port,
-                                      database=self.options.db_name,
-                                      user=self.options.db_user,
-                                      password=self.options.db_password,
-                                      cursor_factory=DictCursor)
-            self.cursor = self.connection.cursor()
-        except KeyboardInterrupt:
-            self.lock.release()
-            raise KeyboardInterrupt
-        return self
+def get_campaign(options):
+    if not options.campaign_id:
+        campaign = campaign_model.objects.latest('id')
+    else:
+        campaign = campaign_model.objects.get(id=options.campaign_id)
+    if campaign is None:
+        raise Exception('could not find campaign ID {}'.format(
+            options.campaign_id))
+    return campaign
 
-    def __exit__(self, type_, value, traceback):
-        try:
-            self.connection.commit()
-            self.connection.close()
-        finally:
-            self.lock.release()
-        if type_ is not None or value is not None or traceback is not None:
-            return False  # reraise exception
 
-    def psql(self, executable='psql', superuser=False, database=False,
-             args=[], commands=[], stdin=None, stdout=None):
+def new_campaign(options):
+    rsakey_file = StringIO()
+    RSAKey.generate(1024).write_private_key(rsakey_file)
+    rsakey = rsakey_file.getvalue()
+    rsakey_file.close()
+    campaign = campaign_model(
+        architecture=options.architecture,
+        aux=options.aux,
+        aux_command=None if not options.aux else (
+            ('./' if options.application_file else '') +
+            (options.aux_application if options.aux_application
+                else options.application) +
+            ((' '+' '.join(options.aux_arguments)) if options.aux_arguments
+                else '')),
+        aux_output_file=options.aux and options.aux_output_file,
+        command=(
+            ('./' if options.application_file else '') + options.application +
+            ((' '+' '.join(options.arguments)) if options.arguments else '')),
+        description=options.description,
+        kill_dut=options.kill_dut,
+        log_file=options.log_file,
+        output_file=options.output_file,
+        rsakey=rsakey,
+        simics=options.simics)
+    try:
+        campaign.save()
+    except OperationalError:
+        initialize_database(options)
+        campaign.save()
+    return campaign
+
+
+def __psql(options, executable='psql', superuser=False, database=False,
+           args=[], commands=[], stdin=None, stdout=None):
         if commands and stdin is not None:
             print('cannot simultaneously send commands and redirect stdin, '
                   'ignoring stdin redirect')
         popen_command = []
-        if superuser and self.options.db_superuser != getuser() and \
-                self.options.db_superuser_password is None:
+        if superuser and options.db_superuser != getuser() and \
+                options.db_superuser_password is None:
             print('running "{}" with sudo, password may be required'.format(
                 executable))
-            popen_command.extend(['sudo', '-u', self.options.db_superuser])
+            popen_command.extend(['sudo', '-u', options.db_superuser])
         popen_command.append(executable)
-        if self.options.db_host != 'localhost' or \
-                not (superuser and self.options.db_superuser_password is None):
-            popen_command.extend(['-h', self.options.db_host, '-W'])
+        if options.db_host != 'localhost' or \
+                not (superuser and options.db_superuser_password is None):
+            popen_command.extend(['-h', options.db_host, '-W'])
             password_prompt = True
         else:
             password_prompt = False
-        popen_command.extend(['-p', str(self.options.db_port)])
+        popen_command.extend(['-p', str(options.db_port)])
         if not superuser:
-            popen_command.extend(['-U', self.options.db_user])
+            popen_command.extend(['-U', options.db_user])
         if database:
-            popen_command.extend(['-d', self.options.db_name])
+            popen_command.extend(['-d', options.db_name])
         if args:
             popen_command.extend(args)
         kwargs = {}
@@ -113,92 +113,69 @@ class database(object):
         if password_prompt:
             print('user', end=' ')
             if superuser:
-                print(self.options.db_superuser, end=' ')
+                print(options.db_superuser, end=' ')
             else:
-                print(self.options.db_user, end=' ')
+                print(options.db_user, end=' ')
             sys_stdout.flush()
         process.wait()
         if process.returncode:
             raise Exception('{} error'.format(executable))
 
-    def exists(self):
-        try:
-            self.__enter__()
-        except OperationalError:
-            self.lock.release()
-            return False
+
+def delete_database(options):
+    commands = ['DROP DATABASE {};'.format(options.db_name)]
+    if options.delete_user:
+        commands.append('DROP USER {};'.format(options.db_user))
+    __psql(options,
+           superuser=options.delete_user or options.db_host == 'localhost',
+           commands=commands)
+
+
+def backup_database(options, backup_file):
+    with open(backup_file, 'w') as backup:
+        __psql(superuser=options.db_host == 'localhost', executable='pg_dump',
+               database=True, args=['-c'], stdout=backup)
+
+
+def restore_database(options, backup_file):
+    with open(backup_file, 'r') as backup:
+        __psql(options, superuser=True, database=True,
+               args=['--single-transaction'], stdin=backup, stdout=DEVNULL)
+
+
+class database(object):
+    log_exception = '__LOG_EXCEPTION__'
+    log_trace = '__LOG_TRACE__'
+
+    def __init__(self, options):
+        self.options = options
+        self.campaign = get_campaign(options)
+        if options.command == 'new':
+            self.result = None
         else:
-            self.__exit__(None, None, None)
-            return True
-
-    def insert(self, table, dictionary=None):
-        if dictionary is None:
-            if table == 'campaign':
-                dictionary = self.campaign
-            elif table == 'result':
-                dictionary = self.result
-        if 'timestamp' in dictionary:
-            dictionary['timestamp'] = datetime.now()
-        if 'id' in dictionary:
-            del dictionary['id']
-        self.cursor.execute(
-            'INSERT INTO log_{} ({}) VALUES ({}) RETURNING id'.format(
-                table, ', '.join(dictionary.keys()),
-                ', '.join(['%s']*len(dictionary))),
-            ['{{{}}}'.format(','.join(map(str, value)))
-             if isinstance(value, list) or isinstance(value, tuple) else value
-             for value in dictionary.values()])
-        dictionary['id'] = self.cursor.fetchone()[0]
-
-    def update(self, table, dictionary=None):
-        if table == 'campaign':
-            dictionary = self.campaign
-        elif table == 'result':
-            dictionary = self.result
-        if 'timestamp' in dictionary:
-            dictionary['timestamp'] = datetime.now()
-        self.cursor.execute(
-            'UPDATE log_{} SET {}=%s WHERE id={}'.format(
-                table,
-                '=%s, '.join(dictionary.keys()),
-                dictionary['id']),
-            ['{{{}}}'.format(','.join(map(str, value)))
-             if isinstance(value, list) or isinstance(value, tuple) else value
-             for value in dictionary.values()])
+            self.__create_result(supervisor=options.command == 'supervise')
 
     def __create_result(self, supervisor=False):
-        self.result.update({'aux_output': '',
-                            'campaign_id': self.campaign['id'],
-                            'cycles': None,
-                            'data_diff': None,
-                            'debugger_output': '',
-                            'detected_errors': None,
-                            'dut_output': '',
-                            'execution_time': None,
-                            'num_injections': None,
-                            'outcome_category': ('DrSEUs' if supervisor
-                                                 else 'Incomplete'),
-                            'outcome': ('Supervisor' if supervisor
-                                        else 'In progress'),
-                            'returned': None,
-                            'timestamp': None})
-        self.insert('result')
+        self.result = self.campaign.result_set.create(
+            outcome_category=('DrSEUs' if supervisor else 'Incomplete'),
+            outcome=('Supervisor' if supervisor else 'In progress'))
 
     def log_result(self, supervisor=False, exit=False):
-        if self.result['outcome_category'] != 'DrSEUs':
-            if 'dut_serial_port' in self.result:
-                out = '{}, '.format(self.result['dut_serial_port'])
+        if self.result.outcome_category != 'DrSEUs':
+            if self.result.dut_serial_port:
+                out = '{}, '.format(self.result.dut_serial_port)
             else:
                 out = ''
-            out += '{}: {} - {}'.format(self.result['id'],
-                                        self.result['outcome_category'],
-                                        self.result['outcome'])
-            if self.result['data_diff'] is not None and \
-                    self.result['data_diff'] < 1.0:
-                out += ' {0:.2f}%'.format(min(self.result['data_diff']*100,
+            out += '{}: {} - {}'.format(self.result.id,
+                                        self.result.outcome_category,
+                                        self.result.outcome)
+            if self.result.data_diff is not None and \
+                    self.result.data_diff < 1.0:
+                out += ' {0:.2f}%'.format(min(self.result.data_diff*100,
                                               99.990))
             print(colored(out, 'blue'))
-        self.update('result')
+        self.result.timestamp = datetime.now()
+        self.result.save()
         if not exit:
             self.__create_result(supervisor)
 
@@ -206,111 +183,23 @@ class database(object):
                   success=None, campaign=False):
         if description == self.log_trace:
             description = ''.join(format_stack()[:-2])
-            success = False
+            if success is None:
+                success = False
         elif description == self.log_exception:
             description = ''.join(format_exc())
-            success = False
-        event = {'description': description,
-                 'type': type_,
-                 'level': level,
-                 'source': source,
-                 'success': success,
-                 'timestamp': None}
-        if self.result and not campaign:
-            event['result_id'] = self.result['id']
-        else:
-            event['campaign_id'] = self.campaign['id']
-        self.insert('event', event)
+            if success is None:
+                success = False
+        campaign = campaign or self.result is None
+        event = (self.campaign if campaign else self.result).event_set.create(
+            description=description,
+            type=type_,
+            level=level,
+            source=source,
+            success=success)
         return event
 
     def log_event_success(self, event, success=True, update_timestamp=False):
-        event['success'] = success
-        if not update_timestamp:
-            timestamp = event['timestamp']
-            del event['timestamp']
-        self.update('event', event)
-        if not update_timestamp:
-            event['timestamp'] = timestamp
-
-    def get_campaign(self):
-        if not self.campaign['id']:
-            self.cursor.execute('SELECT * FROM log_campaign '
-                                'ORDER BY id DESC LIMIT 1')
-            return self.cursor.fetchone()
-        elif self.campaign['id'] == '*':
-            self.cursor.execute('SELECT * FROM log_campaign ORDER BY id')
-            return self.cursor.fetchall()
-        else:
-            self.cursor.execute('SELECT * FROM log_campaign WHERE id={}'
-                                ''.format(self.campaign['id']))
-            return self.cursor.fetchone()
-
-    def get_result(self):
-        self.cursor.execute(
-            'SELECT * FROM log_result WHERE campaign_id={}'.format(
-                self.campaign['id']))
-        return self.cursor.fetchall()
-
-    def get_item(self, item):
-        self.cursor.execute('SELECT * FROM log_{} WHERE result_id={}'.format(
-            item, self.result['id']))
-        return self.cursor.fetchall()
-
-    def get_count(self, item, item_from='result'):
-        self.cursor.execute('SELECT COUNT(*) FROM log_{} WHERE {}_id={}'.format(
-            item, item_from, getattr(self, item_from)['id']))
-        return self.cursor.fetchone()[0]
-
-    def delete_result(self):
-        self.cursor.execute('DELETE FROM log_simics_memory_diff '
-                            'WHERE result_id={}'.format(self.result['id']))
-        self.cursor.execute('DELETE FROM log_simics_register_diff '
-                            'WHERE result_id={}'.format(self.result['id']))
-        self.cursor.execute('DELETE FROM log_injection WHERE result_id={}'
-                            ''.format(self.result['id']))
-        self.cursor.execute('DELETE FROM log_event WHERE result_id={}'
-                            ''.format(self.result['id']))
-        self.cursor.execute('DELETE FROM log_result WHERE id={}'
-                            ''.format(self.result['id']))
-
-    def delete_results(self):
-        self.cursor.execute('DELETE FROM log_simics_memory_diff WHERE '
-                            'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id={})'.format(self.campaign['id']))
-        self.cursor.execute('DELETE FROM log_simics_register_diff WHERE '
-                            'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id={})'.format(self.campaign['id']))
-        self.cursor.execute('DELETE FROM log_injection WHERE '
-                            'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id={})'.format(self.campaign['id']))
-        self.cursor.execute('DELETE FROM log_event WHERE '
-                            'result_id IN (SELECT id FROM log_result '
-                            'WHERE campaign_id={})'.format(self.campaign['id']))
-        self.cursor.execute('DELETE FROM log_result WHERE campaign_id={}'
-                            ''.format(self.campaign['id']))
-
-    def delete_campaign(self):
-        self.delete_results()
-        self.cursor.execute('DELETE FROM log_event WHERE campaign_id={}'
-                            ''.format(self.campaign['id']))
-        self.cursor.execute('DELETE FROM log_campaign WHERE id={}'
-                            ''.format(self.campaign['id']))
-
-    def delete_database(self, delete_user):
-        commands = ['DROP DATABASE {};'.format(self.options.db_name)]
-        if delete_user:
-            commands.append('DROP USER {};'.format(self.options.db_user))
-        self.psql(superuser=delete_user or self.options.db_host == 'localhost',
-                  commands=commands)
-
-    def backup_database(self, backup_file):
-        with open(backup_file, 'w') as backup:
-            self.psql(superuser=self.options.db_host == 'localhost',
-                      executable='pg_dump', database=True, args=['-c'],
-                      stdout=backup)
-
-    def restore_database(self, backup_file):
-        with open(backup_file, 'r') as backup:
-            self.psql(superuser=True, database=True,
-                      args=['--single-transaction'], stdin=backup,
-                      stdout=DEVNULL)
+        event.success = success
+        if update_timestamp:
+            event.timestamp = datetime.now()
+        event.save()

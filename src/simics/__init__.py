@@ -1,5 +1,5 @@
 from os import getcwd, listdir, makedirs, mkdir
-from os.path import exists
+from os.path import exists, join
 from random import choice
 from re import findall
 from shutil import copyfile
@@ -31,9 +31,9 @@ class simics(object):
         self.running = False
         self.db = database
         self.options = options
-        if database.campaign['architecture'] == 'p2020':
+        if database.campaign.architecture == 'p2020':
             self.board = 'p2020rdb'
-        elif database.campaign['architecture'] == 'a9':
+        elif database.campaign.architecture == 'a9':
             self.board = 'a9x2'
         self.set_targets()
 
@@ -49,10 +49,10 @@ class simics(object):
             selected_registers = self.options.selected_registers
         else:
             selected_registers = None
-        if self.db.campaign['architecture'] == 'p2020':
+        if self.db.campaign.architecture == 'p2020':
             self.targets = get_targets('p2020', 'simics', selected_targets,
                                        selected_registers)
-        elif self.db.campaign['architecture'] == 'a9':
+        elif self.db.campaign.architecture == 'a9':
             self.targets = get_targets('a9', 'simics', selected_targets,
                                        selected_registers)
 
@@ -70,10 +70,9 @@ class simics(object):
                 raise KeyboardInterrupt
             except Exception as error:
                 self.simics.kill()
-                with self.db as db:
-                    db.log_event('Warning' if attempt < attempts-1 else 'Error',
-                                 'Simics', 'Error launching Simics',
-                                 db.log_exception)
+                self.db.log_event(
+                    'Warning' if attempt < attempts-1 else 'Error', 'Simics',
+                    'Error launching Simics', self.db.log_exception)
                 print(colored(
                     'error launching simics (attempt {}/{}): {}'.format(
                         attempt, attempts, error), 'red'))
@@ -83,20 +82,19 @@ class simics(object):
                     raise Exception('error launching simics, check your '
                                     'license connection')
             else:
-                with self.db as db:
-                    db.log_event('Information', 'Simics', 'Launched Simics',
-                                 success=True)
+                self.db.log_event(
+                    'Information', 'Simics', 'Launched Simics', success=True)
                 break
         if checkpoint is None:
             self.__command('$drseus=TRUE')
             buff = self.__command(
                 'run-command-file simics-{0}/{0}-linux{1}.simics'.format(
-                    self.board, '-ethernet' if self.db.campaign['aux'] else ''))
+                    self.board, '-ethernet' if self.db.campaign.aux else ''))
         else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
             buff += self.__command('connect-real-network-port-in ssh '
                                    'ethernet_switch0 target-ip=10.10.0.100')
-            if self.db.campaign['aux']:
+            if self.db.campaign.aux:
                 buff += self.__command('connect-real-network-port-in ssh '
                                        'ethernet_switch0 target-ip=10.10.0.104')
         self.__command('enable-real-time-mode')
@@ -119,9 +117,9 @@ class simics(object):
             elif 'Host TCP port' in line:
                 ssh_ports.append(int(line.split('->')[0].split()[-1]))
                 found_settings += 1
-            if not self.db.campaign['aux'] and found_settings == 2:
+            if not self.db.campaign.aux and found_settings == 2:
                 break
-            elif self.db.campaign['aux'] and found_settings == 4:
+            elif self.db.campaign.aux and found_settings == 4:
                 break
         else:
             self.close()
@@ -163,7 +161,7 @@ class simics(object):
         self.options.dut_ip_address = '10.10.0.100'
         self.options.dut_scp_port = ssh_ports[0]
         self.dut = dut(self.db, self.options)
-        if self.db.campaign['aux']:
+        if self.db.campaign.aux:
             self.options.aux_serial_port = serial_ports[1]
             self.options.aux_ip_address = '10.10.0.104'
             self.options.aux_scp_port = ssh_ports[1]
@@ -175,7 +173,7 @@ class simics(object):
             if self.board == 'p2020rdb':
                 self.__command('DUT_p2020rdb.soc.phys_mem.load-file '
                                '$initrd_image $initrd_addr')
-                if self.db.campaign['aux']:
+                if self.db.campaign.aux:
                     self.__command('AUX_p2020rdb_1.soc.phys_mem.load-file '
                                    '$initrd_image $initrd_addr')
             elif self.board == 'a9x2':
@@ -183,26 +181,26 @@ class simics(object):
                                '$kernel_image $kernel_addr')
                 self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
                                '$initrd_image $initrd_addr')
-                if self.db.campaign['aux']:
+                if self.db.campaign.aux:
                     self.__command('AUX_a9x2_1.coretile.mpcore.phys_mem.'
                                    'load-file $kernel_image $kernel_addr')
                     self.__command('AUX_a9x2_1.coretile.mpcore.phys_mem.'
                                    'load-file $initrd_image $initrd_addr')
             self.continue_dut()
-            if self.db.campaign['aux']:
+            if self.db.campaign.aux:
                 aux_process = Thread(
                     target=self.aux.do_login,
                     kwargs={'change_prompt': self.board == 'a9x2',
                             'flush': False})
                 aux_process.start()
             self.dut.do_login(change_prompt=(self.board == 'a9x2'), flush=False)
-            if self.db.campaign['aux']:
+            if self.db.campaign.aux:
                 aux_process.join()
         else:
             self.dut.ip_address = '127.0.0.1'
             if self.board == 'a9x2':
                 self.dut.prompt = 'DrSEUs# '
-            if self.db.campaign['aux']:
+            if self.db.campaign.aux:
                 self.aux.ip_address = '127.0.0.1'
                 if self.board == 'a9x2':
                     self.aux.prompt = 'DrSEUs# '
@@ -220,7 +218,7 @@ class simics(object):
             'target-ip=10.10.0.100;'.format(checkpoint, self.board,
                                             serial_port))
 
-        if self.db.campaign['aux']:
+        if self.db.campaign.aux:
             simics_commands += (
                 'new-text-console-comp text_console1; '
                 'disconnect AUX_{0}_1.console0.serial AUX_{0}_1.{1}; '
@@ -244,22 +242,19 @@ class simics(object):
             except DrSEUsError as error:
                 if error.type == 'Timeout reading from Simics':
                     self.simics.kill()
-                    with self.db as db:
-                        db.log_event('Warning', 'Simics',
-                                     'Killed unresponsive Simics',
-                                     db.log_exception)
+                    self.db.log_event(
+                        'Warning', 'Simics', 'Killed unresponsive Simics',
+                        self.db.log_exception)
                     self.simics = None
                     return
             self.simics.wait()
-            with self.db as db:
-                db.log_event('Information', 'Simics', 'Closed Simics',
-                             success=True)
+            self.db.log_event(
+                'Information', 'Simics', 'Closed Simics', success=True)
             self.simics = None
 
     def halt_dut(self):
         if self.running:
-            with self.db as db:
-                db.log_event('Information', 'Simics', 'Halt DUT')
+            self.db.log_event('Information', 'Simics', 'Halt DUT')
             self.simics.send_signal(SIGINT)
             self.running = False
             self.__command()
@@ -269,14 +264,13 @@ class simics(object):
             self.simics.stdin.write('run\n')
             self.running = True
             if self.db.result:
-                self.db.result['debugger_output'] += 'run\n'
+                self.db.result.debugger_output += 'run\n'
             else:
-                self.db.campaign['debugger_output'] += 'run\n'
+                self.db.campaign.debugger_output += 'run\n'
             if self.options.debug:
                 print(colored('run', 'yellow'))
-            with self.db as db:
-                db.log_event('Information', 'Simics', 'Continue DUT',
-                             success=True)
+            self.db.log_event(
+                'Information', 'Simics', 'Continue DUT', success=True)
 
     def reset_dut(self):
         pass
@@ -293,15 +287,15 @@ class simics(object):
                 except TimeoutException:
                     char = ''
                     hanging = True
-                    with self.db as db:
-                        db.log_event('Warning', 'Simics', 'Read timeout',
-                                     db.log_exception)
+                    self.db.log_event(
+                        'Warning', 'Simics', 'Read timeout',
+                        self.db.log_exception)
                 if not char:
                     break
                 if self.db.result:
-                    self.db.result['debugger_output'] += char
+                    self.db.result.debugger_output += char
                 else:
-                    self.db.campaign['debugger_output'] += char
+                    self.db.campaign.debugger_output += char
                 if self.options.debug:
                     print(colored(char, 'yellow'), end='')
                     stdout.flush()
@@ -310,15 +304,13 @@ class simics(object):
                     break
             if self.options.debug:
                 print()
-            with self.db as db:
-                if self.db.result:
-                    db.update('result')
-                else:
-                    db.update('campaign')
+            if self.db.result is None:
+                self.db.campaign.save()
+            else:
+                self.db.result.save()
             for message in self.error_messages:
                 if message in buff:
-                    with self.db as db:
-                        db.log_event('Error', 'Simics', message, buff)
+                    self.db.log_event('Error', 'Simics', message, buff)
                     raise DrSEUsError(message)
             if hanging:
                 raise DrSEUsError('Timeout reading from Simics')
@@ -326,21 +318,19 @@ class simics(object):
 
     # def __command(self, command=None, time=10):
         if command:
-            with self.db as db:
-                event = db.log_event('Information', 'Simics', 'Command',
-                                     command, success=False)
+            event = self.db.log_event(
+                'Information', 'Simics', 'Command', command, success=False)
         if command is not None:
             self.simics.stdin.write('{}\n'.format(command))
             if self.db.result:
-                self.db.result['debugger_output'] += '{}\n'.format(command)
+                self.db.result.debugger_output += '{}\n'.format(command)
             else:
-                self.db.campaign['debugger_output'] += '{}\n'.format(command)
+                self.db.campaign.debugger_output += '{}\n'.format(command)
             if self.options.debug:
                 print(colored(command, 'yellow'))
         buff = read_until()
         if command:
-            with self.db as db:
-                db.log_event_success(event)
+            self.db.log_event_success(event)
         return buff
 
     def __merge_checkpoint(self, checkpoint):
@@ -362,135 +352,127 @@ class simics(object):
     def time_application(self):
 
         def create_checkpoints():
-            with self.db as db:
-                event = db.log_event('Information', 'Simics',
-                                     'Created gold checkpoints', success=False,
-                                     campaign=True)
+            event = self.db.log_event(
+                'Information', 'Simics', 'Created gold checkpoints',
+                success=False, campaign=True)
             makedirs('simics-workspace/gold-checkpoints/{}'.format(
-                self.db.campaign['id']))
-            if self.db.campaign['command']:
-                self.db.campaign['cycles_between'] = \
-                    int(self.db.campaign['cycles'] / self.options.checkpoints)
-                if self.db.campaign['aux']:
-                    with self.db as db:
-                        db.log_event('Information', 'AUX', 'Command',
-                                     self.db.campaign['aux_command'])
+                self.db.campaign.id))
+            if self.db.campaign.command:
+                self.db.campaign.cycles_between = \
+                    int(self.db.campaign.cycles / self.options.checkpoints)
+                if self.db.campaign.aux:
+                    self.db.log_event(
+                        'Information', 'AUX', 'Command',
+                        self.db.campaign.aux_command)
                     aux_process = Thread(
                         target=self.aux.command,
-                        kwargs={'command': self.db.campaign['aux_command'],
+                        kwargs={'command': self.db.campaign.aux_command,
                                 'flush': False})
                     aux_process.start()
-                with self.db as db:
-                    db.log_event('Information', 'DUT', 'Command',
-                                 self.db.campaign['command'])
-                self.dut.write('{}\n'.format(self.db.campaign['command']))
-                length = len(self.db.campaign['dut_output'])
+                self.db.log_event(
+                    'Information', 'DUT', 'Command', self.db.campaign.command)
+                self.dut.write('{}\n'.format(self.db.campaign.command))
+                length = len(self.db.campaign.dut_output)
                 read_thread = Thread(target=self.dut.read_until,
                                      kwargs={'flush': False})
                 read_thread.start()
                 checkpoint = 1
                 while True:
                     self.__command('run-cycles {}'.format(
-                        self.db.campaign['cycles_between']), time=300)
+                        self.db.campaign.cycles_between), time=300)
                     old_length = length
-                    length = len(self.db.campaign['dut_output'])
+                    length = len(self.db.campaign.dut_output)
                     if length - old_length:
-                        self.db.campaign['dut_output'] += \
+                        self.db.campaign.dut_output += \
                             '{}{:*^80}\n\n'.format(
                                 '\n'
-                                if self.db.campaign['dut_output'].endswith('\n')
+                                if self.db.campaign.dut_output.endswith('\n')
                                 else '\n\n',
                                 ' Checkpoint {} '.format(checkpoint))
-                        length = len(self.db.campaign['dut_output'])
+                        length = len(self.db.campaign.dut_output)
                     incremental_checkpoint = 'gold-checkpoints/{}/{}'.format(
-                        self.db.campaign['id'], checkpoint)
+                        self.db.campaign.id, checkpoint)
                     self.__command('write-configuration {}'.format(
                         incremental_checkpoint), time=300)
                     if not read_thread.is_alive() or \
-                        (self.db.campaign['aux'] and
-                            self.db.campaign['kill_dut'] and
+                        (self.db.campaign.aux and
+                            self.db.campaign.kill_dut and
                             not aux_process.is_alive()):
                         self.__merge_checkpoint(incremental_checkpoint)
                         break
                     else:
                         checkpoint += 1
-                self.db.campaign['checkpoints'] = checkpoint
-                with self.db as db:
-                    db.log_event_success(event, update_timestamp=True)
+                self.db.campaign.checkpoints = checkpoint
+                self.db.log_event_success(event, update_timestamp=True)
                 self.continue_dut()
-                if self.db.campaign['aux']:
+                if self.db.campaign.aux:
                     aux_process.join()
-                if self.db.campaign['kill_dut']:
+                if self.db.campaign.kill_dut:
                     self.dut.write('\x03')
                 read_thread.join()
             else:
-                self.db.campaign['checkpoints'] = 1
+                self.db.campaign.checkpoints = 1
                 self.halt_dut()
                 self.__command(
                     'write-configuration gold-checkpoints/{}/1'.format(
-                        self.db.campaign['id']), time=300)
+                        self.db.campaign.id), time=300)
 
     # def time_application(self):
-        if self.db.campaign['command']:
-            with self.db as db:
-                event = db.log_event('Information', 'Simics',
-                                     'Timed application', success=False,
-                                     campaign=True)
+        if self.db.campaign.command:
+            event = self.db.log_event(
+                'Information', 'Simics', 'Timed application', success=False,
+                campaign=True)
             self.halt_dut()
             start_cycles, start_time = self.get_time()
             self.continue_dut()
             for i in range(self.options.iterations):
-                if self.db.campaign['aux']:
+                if self.db.campaign.aux:
                     aux_process = Thread(
                         target=self.aux.command,
-                        kwargs={'command': self.db.campaign['aux_command'],
+                        kwargs={'command': self.db.campaign.aux_command,
                                 'flush': False})
                     aux_process.start()
                 dut_process = Thread(
                     target=self.dut.command,
-                    kwargs={'command': self.db.campaign['command'],
+                    kwargs={'command': self.db.campaign.command,
                             'flush': False})
                 dut_process.start()
-                if self.db.campaign['aux']:
+                if self.db.campaign.aux:
                     aux_process.join()
-                if self.db.campaign['kill_dut']:
+                if self.db.campaign.kill_dut:
                     self.dut.write('\x03')
                 dut_process.join()
             self.halt_dut()
             end_cycles, end_time = self.get_time()
-            self.db.campaign['start_cycle'] = end_cycles
-            self.db.campaign['start_time'] = end_time
-            self.db.campaign['cycles'] = \
+            self.db.campaign.start_cycle = end_cycles
+            self.db.campaign.start_time = end_time
+            self.db.campaign.cycles = \
                 int((end_cycles - start_cycles) / self.options.iterations)
-            self.db.campaign['execution_time'] = \
+            self.db.campaign.execution_time = \
                 (end_time - start_time) / self.options.iterations
-            with self.db as db:
-                db.log_event_success(event, update_timestamp=True)
+            self.db.log_event_success(event, update_timestamp=True)
         create_checkpoints()
 
     def inject_faults(self):
 
         def persistent_faults():
-            with self.db as db:
-                injections = \
-                    db.get_item('injection')
-                register_diffs = db.get_item('simics_register_diff')
-                memory_diffs = db.get_count('simics_memory_diff')
-            if memory_diffs > 0:
+            if self.db.result.simics_memory_diff_set.count() > 0:
                 return False
+            injections = self.db.result.injection_set.all()
+            register_diffs = self.db.result.simics_register_diff_set.all()
             for register_diff in register_diffs:
                 for injection in injections:
-                    if injection['register_index'] is None:
-                        injected_register = injection['register']
+                    if injection.register_index is None:
+                        injected_register = injection.register
                     else:
                         injected_register = '{}:{}'.format(
-                            injection['register'],
-                            ':'.join(map(str, injection['register_index'])))
-                    if register_diff['config_object'] == \
-                        injection['config_object'] and \
-                            register_diff['register'] == injected_register:
-                        if (int(register_diff['monitored_value'], base=0) ==
-                                int(injection['injected_value'], base=0)):
+                            injection.register,
+                            ':'.join(map(str, injection.register_index)))
+                    if register_diff.config_object == \
+                        injection.config_object and \
+                            register_diff.register == injected_register:
+                        if (int(register_diff.monitored_value, base=0) ==
+                                int(injection.injected_value, base=0)):
                             break
                 else:
                     return False
@@ -498,7 +480,7 @@ class simics(object):
                 return True
 
     # def inject_faults(self):
-        checkpoint_nums = list(range(1, self.db.campaign['checkpoints']))
+        checkpoint_nums = list(range(1, self.db.campaign.checkpoints))
         checkpoints_to_inject = []
         for i in range(self.options.injections):
             checkpoint_num = choice(checkpoint_nums)
@@ -518,7 +500,7 @@ class simics(object):
                 if injections_remaining:
                     next_checkpoint = checkpoints_to_inject[injection_number]
                 else:
-                    next_checkpoint = self.db.campaign['checkpoints']
+                    next_checkpoint = self.db.campaign.checkpoints
                 reg_errors_, mem_errors_ = \
                     self.__compare_checkpoints(checkpoint, next_checkpoint)
                 if reg_errors_ > reg_errors:
@@ -532,28 +514,28 @@ class simics(object):
         else:
             self.close()
             makedirs('simics-workspace/injected-checkpoints/{}/{}'.format(
-                self.db.campaign['id'], self.db.result['id']))
+                self.db.campaign.id, self.db.result.id))
             self.launch_simics('gold-checkpoints/{}/1'.format(
-                self.db.campaign['id']))
+                self.db.campaign.id))
             reg_errors, mem_errors = \
-                self.__compare_checkpoints(1, self.db.campaign['checkpoints'])
+                self.__compare_checkpoints(1, self.db.campaign.checkpoints)
         return reg_errors, mem_errors, (reg_errors and persistent_faults())
 
     def regenerate_checkpoints(self, injections):
-        self.db.result['id'] = self.options.result_id
+        self.db.result.id = self.options.result_id
         for injection_number, injection in enumerate(injections, start=1):
             injected_checkpoint = self.__inject_checkpoint(
-                injection_number, injection['checkpoint'], injection)
+                injection_number, injection.checkpoint, injection)
             if injection_number < len(injections):
                 self.launch_simics(checkpoint=injected_checkpoint)
-                for j in range(injection['checkpoint'],
-                               injections[injection_number]['checkpoint']):
+                for j in range(injection.checkpoint,
+                               injections[injection_number].checkpoint):
                     self.__command('run-cycles {}'.format(
-                        self.db.campaign['cycles_between']), time=300)
+                        self.db.campaign.cycles_between), time=300)
                 self.__command(
                     'write-configuration injected-checkpoints/{}/{}/{}'.format(
-                        self.db.campaign['id'], self.options.result_id,
-                        injections[injection_number]['checkpoint']), time=300)
+                        self.db.campaign.id, self.options.result_id,
+                        injections[injection_number].checkpoint), time=300)
                 self.close()
         return injected_checkpoint
 
@@ -563,7 +545,7 @@ class simics(object):
 
             def flip_bit(value, bit):
                 num_bits = get_num_bits(
-                    injection['register'], injection['target'], self.targets)
+                    injection.register, injection.target, self.targets)
                 if bit >= num_bits or bit < 0:
                     raise Exception('invalid bit: {} for num_bits: {}'.format(
                         bit, num_bits))
@@ -577,30 +559,30 @@ class simics(object):
 
         # def inject_config(injected_checkpoint, injection):
             with simics_config(injected_checkpoint) as config:
-                config_object = injection['config_object']
-                if 'register_alias' in injection:
-                    register = injection['register_alias']
+                config_object = injection.config_object
+                if injection.register_alias is None:
+                    register = injection.register
                 else:
-                    register = injection['register']
+                    register = injection.register_alias
                 gold_value = config.get(config_object, register)
                 if gold_value is None:
                     raise Exception('error getting register value from config')
-                if 'register_index' in injection:
+                if injection.register_index is None:
+                    if not injection.injected_value:
+                        injected_value = flip_bit(gold_value, injection.bit)
+                    config.set(config_object, register, injected_value)
+                else:
                     register_list_ = register_list = gold_value
-                    if 'injected_value' not in injection:
-                        for index in injection['register_index']:
+                    if not injection.injected_value:
+                        for index in injection.register_index:
                             gold_value = gold_value[index]
-                        injected_value = flip_bit(gold_value, injection['bit'])
-                    for index in range(len(injection['register_index'])-1):
+                        injected_value = flip_bit(gold_value, injection.bit)
+                    for index in range(len(injection.register_index)-1):
                         register_list_ = \
-                            register_list_[injection['register_index'][index]]
-                    register_list_[injection['register_index'][-1]] = \
+                            register_list_[injection.register_index[index]]
+                    register_list_[injection.register_index[-1]] = \
                         injected_value
                     config.set(config_object, register, register_list)
-                else:
-                    if 'injected_value' not in injection:
-                        injected_value = flip_bit(gold_value, injection['bit'])
-                    config.set(config_object, register, injected_value)
                 config.save()
             return gold_value, injected_value
 
@@ -608,66 +590,56 @@ class simics(object):
     #                         injection=None):
         if injection_number == 1:
             gold_checkpoint = 'simics-workspace/gold-checkpoints/{}/{}'.format(
-                self.db.campaign['id'], checkpoint)
+                self.db.campaign.id, checkpoint)
         else:
             gold_checkpoint = \
                 'simics-workspace/injected-checkpoints/{}/{}/{}'.format(
-                    self.db.campaign['id'], self.db.result['id'], checkpoint)
+                    self.db.campaign.id, self.db.result.id, checkpoint)
         injected_checkpoint = \
             'simics-workspace/injected-checkpoints/{}/{}/{}_injected'.format(
-                self.db.campaign['id'], self.db.result['id'], checkpoint)
+                self.db.campaign.id, self.db.result.id, checkpoint)
         makedirs(injected_checkpoint)
         checkpoint_files = listdir(gold_checkpoint)
         for checkpoint_file in checkpoint_files:
-            copyfile('{}/{}'.format(gold_checkpoint, checkpoint_file),
-                     '{}/{}'.format(injected_checkpoint, checkpoint_file))
+            copyfile(join(gold_checkpoint, checkpoint_file),
+                     join(injected_checkpoint, checkpoint_file))
         if injection is None:
             injection = choose_injection(self.targets,
                                          self.options.selected_target_indices)
-            config_object = 'DUT_{}.{}'.format(
-                self.board, self.targets[injection['target']]['object'])
-            if 'target_index' in injection:
-                config_object += '[{}]'.format(injection['target_index'])
-            injection.update({'checkpoint': checkpoint,
-                              'config_object': config_object,
-                              'result_id': self.db.result['id'],
-                              'success': False,
-                              'timestamp': None})
-            with self.db as db:
-                db.insert('injection', injection)
+            injection = self.db.result.injection_set.create(
+                checkpoint=checkpoint, success=False, **injection)
+            injection.config_object = 'DUT_{}.{}'.format(
+                self.board, self.targets[injection.target]['object'])
+            if injection.target_index is not None:
+                injection.config_object += '[{}]'.format(injection.target_index)
+            injection.save()
             try:
-                injection['gold_value'], injection['injected_value'] = \
+                injection.gold_value, injection.injected_value = \
                     inject_config(injected_checkpoint, injection)
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except:
-                with self.db as db:
-                    db.update('injection', injection)
-                    db.log_event('Error', 'Simics', 'Error injecting fault',
-                                 db.log_exception, success=False)
+                self.db.log_event(
+                    'Error', 'Simics', 'Error injecting fault',
+                    self.db.log_exception, success=False)
                 raise DrSEUsError('Error injecting fault')
             else:
-                injection['success'] = True
-                with self.db as db:
-                    db.update('injection', injection)
-                    db.log_event('Information', 'Simics', 'Fault injected',
-                                 success=True)
+                injection.success = True
+                injection.save()
+                self.db.log_event(
+                    'Information', 'Simics', 'Fault injected', success=True)
             if self.options.debug:
                 print(colored(
-                    'result id: {}\ncheckpoint number: {}\ntarget: {}'.format(
-                        self.db.result['id'], checkpoint,  injection['target']),
-                    'magenta'))
-                if 'target_index' in injection:
-                    print(colored('target index: {}'.format(
-                        injection['target_index']), 'magenta'))
-                print(colored(
+                    'result id: {}\ncheckpoint number: {}\ntarget: {}\n'
                     'register: {}\nbit: {}\ngold value: {}\ninjected value: {}'
-                    ''.format(injection['register'], injection['bit'],
-                              injection['gold_value'],
-                              injection['injected_value']), 'magenta'))
-                if 'register_index' in injection:
+                    ''.format(
+                        self.db.result.id, checkpoint,  injection.target_name,
+                        injection.register, injection.bit, injection.gold_value,
+                        injection.injected_value),
+                    'magenta'))
+                if injection.register_index is not None:
                     print(colored('register index: {}'.format(
-                        injection['register_index']), 'magenta'))
+                        injection.register_index), 'magenta'))
         else:
             inject_config(injected_checkpoint, injection)
         return injected_checkpoint.replace('simics-workspace/', '')
@@ -716,23 +688,20 @@ class simics(object):
 
             # watch out! we're gonna use recursion
             # keep your arms and legs inside the stack frame at all times
-            def log_diffs(db, config_object, register, gold_value,
-                          monitored_value):
+            def log_diffs(config_object, register, gold_value, monitored_value):
                 if isinstance(gold_value, list):
                     for index in range(len(gold_value)):
-                        log_diffs(db, config_object,
-                                  '{}:{}'.format(register, index),
-                                  gold_value[index], monitored_value[index])
+                        log_diffs(
+                            config_object, '{}:{}'.format(register, index),
+                            gold_value[index], monitored_value[index])
                 else:
                     if int(monitored_value, base=0) != int(gold_value, base=0):
-                        register_diff = {
-                            'result_id': self.db.result['id'],
-                            'checkpoint': checkpoint,
-                            'config_object': config_object,
-                            'register': register,
-                            'gold_value': gold_value,
-                            'monitored_value': monitored_value}
-                        db.insert('simics_register_diff', register_diff)
+                        self.db.result.simics_register_diff_set.create(
+                            checkpoint=checkpoint,
+                            config_object=config_object,
+                            register=register,
+                            gold_value=gold_value,
+                            monitored_value=monitored_value)
 
         # def compare_registers(checkpoint, gold_checkpoint,
         #                       monitored_checkpoint):
@@ -745,13 +714,13 @@ class simics(object):
             # with open('mon_regs.txt', 'w') as mon_out:
             #     pp = pprint.PrettyPrinter(indent=4, stream=mon_out)
             #     pp.pprint(monitored_registers)
-            with self.db as db:
-                for config_object in gold_registers:
-                    for register in gold_registers[config_object]:
-                        log_diffs(db, config_object, register,
-                                  gold_registers[config_object][register],
-                                  monitored_registers[config_object][register])
-                diffs = db.get_count('simics_register_diff')
+            for config_object in gold_registers:
+                for register in gold_registers[config_object]:
+                    log_diffs(
+                        config_object, register,
+                        gold_registers[config_object][register],
+                        monitored_registers[config_object][register])
+                diffs = self.db.result.simics_register_diff_set.count()
             return diffs
 
         def compare_memory(checkpoint, gold_checkpoint, monitored_checkpoint):
@@ -825,36 +794,35 @@ class simics(object):
             diff_content_maps = ['{}.content_map'.format(diff)
                                  for diff in ram_diffs]
             diffs = 0
-            memory_diff = {'result_id': self.db.result['id'],
-                           'checkpoint': checkpoint}
             cwd = '{}/simics-workspace'.format(getcwd())
             craff = '{}/bin/craff'.format(cwd)
-            with self.db as db:
-                for (memory_diff['image_index'], gold_ram, monitored_ram,
-                     ram_diff, diff_content_map) in zip(
+            for (image_index, gold_ram, monitored_ram, ram_diff,
+                    diff_content_map) in zip(
                         range(len(monitored_rams)), gold_rams, monitored_rams,
                         ram_diffs, diff_content_maps):
-                    check_call([craff, '--diff', gold_ram, monitored_ram,
-                                '--output={}'.format(ram_diff)],
-                               cwd=cwd, stdout=DEVNULL)
-                    check_call([craff, '--content-map', ram_diff,
-                                '--output={}'.format(diff_content_map)],
-                               cwd=cwd, stdout=DEVNULL)
-                    craff_output = check_output([craff, '--info', ram_diff],
-                                                cwd=cwd,
-                                                universal_newlines=True)
-                    block_size = int(findall(r'\d+',
-                                             craff_output.split('\n')[2])[1])
-                    changed_blocks = parse_content_map(diff_content_map,
-                                                       block_size)
-                    diffs += len(changed_blocks)
-                    if self.options.extract_blocks:
-                        extract_diff_blocks(gold_ram, monitored_ram,
-                                            monitored_checkpoint,
-                                            changed_blocks, block_size)
-                    for block in changed_blocks:
-                        memory_diff['block'] = hex(block)
-                        db.insert('simics_memory_diff', memory_diff)
+                check_call([craff, '--diff', gold_ram, monitored_ram,
+                            '--output={}'.format(ram_diff)],
+                           cwd=cwd, stdout=DEVNULL)
+                check_call([craff, '--content-map', ram_diff,
+                            '--output={}'.format(diff_content_map)],
+                           cwd=cwd, stdout=DEVNULL)
+                craff_output = check_output([craff, '--info', ram_diff],
+                                            cwd=cwd,
+                                            universal_newlines=True)
+                block_size = int(findall(r'\d+',
+                                         craff_output.split('\n')[2])[1])
+                changed_blocks = parse_content_map(diff_content_map,
+                                                   block_size)
+                diffs += len(changed_blocks)
+                if self.options.extract_blocks:
+                    extract_diff_blocks(gold_ram, monitored_ram,
+                                        monitored_checkpoint,
+                                        changed_blocks, block_size)
+                for block in changed_blocks:
+                    self.db.result.simics_memory_diff_set.create(
+                        checkpoint=checkpoint,
+                        image_index=image_index,
+                        block=hex(block))
             return diffs
 
     # def __compare_checkpoints(self, checkpoint, last_checkpoint):
@@ -862,18 +830,18 @@ class simics(object):
         mem_errors = 0
         if self.options.compare_all:
             checkpoints = range(checkpoint+1, last_checkpoint+1)
-            cycles_between = self.db.campaign['cycles_between']
+            cycles_between = self.db.campaign.cycles_between
         else:
             checkpoints = [last_checkpoint]
-            cycles_between = self.db.campaign['cycles_between'] * \
+            cycles_between = self.db.campaign.cycles_between * \
                 (last_checkpoint-checkpoint)
         for checkpoint in checkpoints:
             self.__command('run-cycles {}'.format(cycles_between),
                            time=300 if self.options.compare_all else 600)
             incremental_checkpoint = 'injected-checkpoints/{}/{}/{}'.format(
-                self.db.campaign['id'], self.db.result['id'], checkpoint)
+                self.db.campaign.id, self.db.result.id, checkpoint)
             monitor = self.options.compare_all or \
-                checkpoint == self.db.campaign['checkpoints']
+                checkpoint == self.db.campaign.checkpoints
             if monitor or checkpoint == last_checkpoint:
                 self.__command('write-configuration {}'.format(
                     incremental_checkpoint), time=300)
@@ -881,7 +849,7 @@ class simics(object):
                 monitored_checkpoint = \
                     self.__merge_checkpoint(incremental_checkpoint)
                 gold_incremental_checkpoint = 'gold-checkpoints/{}/{}'.format(
-                    self.db.campaign['id'], checkpoint)
+                    self.db.campaign.id, checkpoint)
                 gold_checkpoint = '{}_merged'.format(
                     gold_incremental_checkpoint)
                 if not exists('simics-workspace/{}'.format(gold_checkpoint)):

@@ -36,7 +36,9 @@ def data_diff_by_targets(**kwargs):
                  **kwargs)
 
 
-def execution_time_by_targest(**kwargs):
+def execution_time_by_target(**kwargs):
+    kwargs['injections'] = kwargs['injections'].filter(
+        result__returned=True).exclude(result__execution_time__isnull=True)
     create_chart(order=5,
                  chart_title='Average Execution Time By Target',
                  xaxis_title='Injected Target',
