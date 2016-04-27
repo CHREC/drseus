@@ -29,9 +29,8 @@ class bdi(jtag):
         super().close()
 
     def reset_bdi(self):
-        with self.db as db:
-            event = db.log_event('Warning', 'Debugger', 'Reset BDI',
-                                 success=False)
+        event = self.db.log_event(
+            'Warning', 'Debugger', 'Reset BDI',  success=False)
         self.telnet.write(bytes('boot\r\n', encoding='utf-8'))
         self.telnet.close()
         if self.db.result is None:
@@ -42,8 +41,7 @@ class bdi(jtag):
         self.connect_telnet()
         sleep(1)
         self.command(None, error_message='', log_event=False)
-        with self.db as db:
-            db.log_event_success(event)
+        self.db.log_event_success(event)
 
     def reset_dut(self, attempts=5):
         expected_output = [
@@ -74,21 +72,25 @@ class bdi(jtag):
                      'Error selecting core')
 
     def get_mode(self):
-        msr = int(self.get_register_value('msr'), base=16)
+        msr = int(self.command(
+            'rd msr', [':'], 'Error getting register value'
+        ).split('\r')[0].split(':')[1].split()[0], base=16)
         supervisor = not bool(msr & (1 << 14))
         return 'supervisor' if supervisor else 'user'
 
     def set_mode(self, mode='supervisor'):
-        msr = list(bin(int(self.get_register_value('msr'), base=16)))
+        msr = list(bin(int(self.command(
+            'rd msr', [':'], 'Error getting register value'
+        ).split('\r')[0].split(':')[1].split()[0], base=16)))
         if mode == 'supervisor':
             msr[-15] = '0'
         else:
             msr[-15] = '1'
         msr = hex(int(''.join(msr), base=2))
-        self.set_register_value('msr', msr)
-        with self.db as db:
-            db.log_event('Information', 'Debugger', 'Set processor mode',
-                         mode, success=True)
+        self.command('rm msr {}'.format(msr),
+                     error_message='Error setting register value')
+        self.db.log_event(
+            'Information', 'Debugger', 'Set processor mode', mode, success=True)
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):
@@ -96,20 +98,16 @@ class bdi(jtag):
                                log_event, '\r\n', False)
 
     def get_register_value(self, register_info):
-        if register_info == 'msr':
-            return self.command(
-                'rd msr', [':'], 'Error getting register value'
-            ).split('\r')[0].split(':')[1].split()[0]
-        target = self.targets[register_info['target']]
-        if 'target_index' in register_info:
-            target_index = register_info['target_index']
-        else:
+        target = self.targets[register_info.target]
+        if register_info.target_index is None:
             target_index = 0
-        if 'register_alias' in register_info:
-            register_name = register_info['register_alias']
         else:
-            register_name = register_info['register']
-        register = target['registers'][register_info['register']]
+            target_index = register_info.target_index
+        if register_info.register_alias is None:
+            register_name = register_info.register
+        else:
+            register_name = register_info.register_alias
+        register = target['registers'][register_info.register]
         if 'type' in target and target['type'] == 'memory_mapped':
             command = 'md'
             if 'bits' in register:
@@ -134,23 +132,18 @@ class bdi(jtag):
                                 'Error getting register value')
         return buff.split('\r')[0].split(':')[1].split()[0]
 
-    def set_register_value(self, register_info, value=None):
-        if register_info == 'msr':
-            self.command('rm msr {}'.format(value),
-                         error_message='Error setting register value')
-            return
-        target = self.targets[register_info['target']]
-        if 'target_index' in register_info:
-            target_index = register_info['target_index']
-        else:
+    def set_register_value(self, register_info):
+        target = self.targets[register_info.target]
+        if register_info.target_index is None:
             target_index = 0
-        if 'register_alias' in register_info:
-            register_name = register_info['register_alias']
         else:
-            register_name = register_info['register']
-        register = target['registers'][register_info['register']]
-        if value is None:
-            value = register_info['injected_value']
+            target_index = register_info.target_index
+        if register_info.register_alias is None:
+            register_name = register_info.register
+        else:
+            register_name = register_info.register_alias
+        register = target['registers'][register_info.register]
+        value = register_info.injected_value
         if 'type' in target and target['type'] == 'memory_mapped':
             command = 'mm'
             if 'bits' in register:

@@ -11,6 +11,7 @@ compile_dir('src', force=True, quiet=1, legacy=True)
 
 with open_tar('drseus.tar.gz', 'w:gz') as package:
     package.add('scripts/install_dependencies.sh', 'install_dependencies.sh')
+    package.add('scripts/setup_environment.sh', 'setup_environment.sh')
     package.add('drseus.py')
     package.add('README.md')
     for root, dirs, files in walk(join(top_dir, 'src')):

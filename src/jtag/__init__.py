@@ -1,4 +1,3 @@
-from datetime import datetime
 from pyudev import Context
 from random import uniform
 from socket import AF_INET, SOCK_STREAM, socket
@@ -13,24 +12,27 @@ from ..targets import choose_injection, get_targets
 
 
 def find_all_uarts():
-    return [dev['DEVNAME'] for dev in Context().list_devices(subsystem='tty')
-            if 'DEVLINKS' in dev]
+    return sorted(
+        dev['DEVNAME'] for dev in Context().list_devices(subsystem='tty')
+        if 'DEVLINKS' in dev and not (dev['ID_VENDOR_ID'] == '0403' and
+                                      dev['ID_MODEL_ID'] == '6014'))
 
 
 def find_p2020_uarts():
-    return [dev['DEVNAME'] for dev in
-            Context().list_devices(ID_VENDOR_ID='067b', ID_MODEL_ID='2303')
-            if 'DEVLINKS' in dev]
+    return sorted(
+        dev['DEVNAME'] for dev in
+        Context().list_devices(ID_VENDOR_ID='067b', ID_MODEL_ID='2303')
+        if 'DEVLINKS' in dev)
 
 
 def find_zedboard_jtag_serials():
-    return list(
+    return sorted(
         {dev['ID_SERIAL_SHORT']
          for dev in Context().list_devices(ID_VENDOR_ID='0403')
-         if 'DEVLINKS' not in dev} &
+         if 'DEVLINKS' in dev} &
         {dev['ID_SERIAL_SHORT']
          for dev in Context().list_devices(ID_MODEL_ID='6014')
-         if 'DEVLINKS' not in dev})
+         if 'DEVLINKS' in dev})
 
 
 def find_zedboard_uart_serials():
@@ -66,10 +68,10 @@ class jtag(object):
     def connect_telnet(self):
         self.telnet = Telnet(self.options.debugger_ip_address, self.port,
                              timeout=self.timeout)
-        with self.db as db:
-            db.log_event('Information', 'Debugger', 'Connected to telnet',
-                         '{}:{}'.format(self.options.debugger_ip_address,
-                                        self.port), success=True)
+        self.db.log_event(
+            'Information', 'Debugger', 'Connected to telnet',
+            '{}:{}'.format(self.options.debugger_ip_address, self.port),
+            success=True)
 
     def open(self):
         self.dut = dut(self.db, self.options)
@@ -79,9 +81,8 @@ class jtag(object):
 
     def close(self):
         self.telnet.close()
-        with self.db as db:
-            db.log_event('Information', 'Debugger', 'Closed telnet',
-                         success=True)
+        self.db.log_event(
+            'Information', 'Debugger', 'Closed telnet', success=True)
         self.dut.close()
         if self.db.campaign.aux:
             self.aux.close()
@@ -101,9 +102,9 @@ class jtag(object):
     def reset_dut(self, expected_output, attempts):
 
         def attempt_exception(attempt, attempts, error, event_type):
-            with self.db as db:
-                db.log_event('Warning' if attempt < attempts-1 else 'Error',
-                             'Debugger', event_type, db.log_exception)
+            self.db.log_event(
+                'Warning' if attempt < attempts-1 else 'Error', 'Debugger',
+                event_type, self.db.log_exception)
             print(colored('{}: Error resetting DUT (attempt {}/{}): {}'.format(
                 self.dut.serial.port, attempt, attempts, error), 'red'))
             if attempt < attempts-1:
@@ -128,34 +129,29 @@ class jtag(object):
                     attempt_exception(attempt, attempts, error,
                                       'Error booting DUT')
                 else:
-                    with self.db as db:
-                        db.log_event('Information', 'Debugger', 'Reset DUT',
-                                     success=True)
+                    self.db.log_event(
+                        'Information', 'Debugger', 'Reset DUT', success=True)
                     break
 
     def halt_dut(self, halt_command, expected_output):
-        with self.db as db:
-            event = db.log_event('Information', 'Debugger', 'Halt DUT',
-                                 success=False)
+        event = self.db.log_event(
+            'Information', 'Debugger', 'Halt DUT', success=False)
         self.command(halt_command, expected_output, 'Error halting DUT', False)
         self.dut.stop_timer()
-        with self.db as db:
-            db.log_event_success(event)
+        self.db.log_event_success(event)
 
     def continue_dut(self, continue_command):
-        with self.db as db:
-            event = db.log_event('Information', 'Debugger', 'Continue DUT',
-                                 success=False)
+        event = self.db.log_event(
+            'Information', 'Debugger', 'Continue DUT', success=False)
         self.command(continue_command, error_message='Error continuing DUT',
                      log_event=False)
         self.dut.start_timer()
-        with self.db as db:
-            db.log_event_success(event)
+        self.db.log_event_success(event)
 
     def time_application(self):
-        with self.db as db:
-            event = db.log_event('Information', 'Debugger', 'Timed application',
-                                 success=False, campaign=True)
+        event = self.db.log_event(
+            'Information', 'Debugger', 'Timed application', success=False,
+            campaign=True)
         self.dut.reset_timer()
         for i in range(self.options.iterations):
             if self.db.campaign.aux:
@@ -176,8 +172,7 @@ class jtag(object):
             dut_process.join()
         self.db.campaign.execution_time = \
             self.dut.get_timer_value() / self.options.iterations
-        with self.db as db:
-            db.log_event_success(event)
+        self.db.log_event_success(event)
 
     def inject_faults(self):
         injection_times = []
@@ -189,7 +184,7 @@ class jtag(object):
             for injection_time in sorted(injection_times):
                 injection = choose_injection(
                     self.targets, self.options.selected_target_indices)
-                self.db.result.injection_set.create(
+                injection = self.db.result.injection_set.create(
                     success=False, time=injection_time, **injection)
                 injections.append(injection)
         self.dut.write('{}\n'.format(self.db.campaign.command))

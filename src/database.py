@@ -3,6 +3,8 @@ from django.core.management import execute_from_command_line as django_command
 from django.db.utils import OperationalError
 from getpass import getuser
 from io import StringIO
+from os import mkdir, remove
+from os.path import exists
 from paramiko import RSAKey
 from subprocess import DEVNULL, PIPE, Popen
 from sys import argv
@@ -14,30 +16,29 @@ from .log.models import campaign as campaign_model
 
 
 def initialize_database(options):
-    commands = (
-        'CREATE USER {} WITH PASSWORD \'{}\';'.format(options.db_user,
-                                                      options.db_password),
-        'ALTER ROLE {} SET client_encoding TO \'utf8\';'.format(
-            options.db_user),
-        'ALTER ROLE {} SET default_transaction_isolation '
-        'TO \'read committed\';'.format(options.db_user),
-        'ALTER ROLE {} SET timezone TO \'UTC\';'.format(options.db_user),
-        'CREATE DATABASE {} WITH OWNER {}'.format(options.db_name,
-                                                  options.db_user))
-    __psql(options, superuser=True, commands=commands)
-    django_command([argv[0], 'makemigrations', 'log'])
+    if options.db_postgresql:
+        commands = (
+            'CREATE USER {} WITH PASSWORD \'{}\';'.format(options.db_user,
+                                                          options.db_password),
+            'ALTER ROLE {} SET client_encoding TO \'utf8\';'.format(
+                options.db_user),
+            'ALTER ROLE {} SET default_transaction_isolation '
+            'TO \'read committed\';'.format(options.db_user),
+            'ALTER ROLE {} SET timezone TO \'UTC\';'.format(options.db_user),
+            'CREATE DATABASE {} WITH OWNER {}'.format(options.db_name,
+                                                      options.db_user))
+        __psql(options, superuser=True, commands=commands)
+        django_command([argv[0], 'makemigrations', 'log'])
+    elif not exists('campaign-data'):
+        mkdir('campaign-data')
     django_command([argv[0], 'migrate'])
 
 
 def get_campaign(options):
     if not options.campaign_id:
-        campaign = campaign_model.objects.latest('id')
+        return campaign_model.objects.latest('id')
     else:
-        campaign = campaign_model.objects.get(id=options.campaign_id)
-    if campaign is None:
-        raise Exception('could not find campaign ID {}'.format(
-            options.campaign_id))
-    return campaign
+        return campaign_model.objects.get(id=options.campaign_id)
 
 
 def new_campaign(options):
@@ -123,12 +124,15 @@ def __psql(options, executable='psql', superuser=False, database=False,
 
 
 def delete_database(options):
-    commands = ['DROP DATABASE {};'.format(options.db_name)]
-    if options.delete_user:
-        commands.append('DROP USER {};'.format(options.db_user))
-    __psql(options,
-           superuser=options.delete_user or options.db_host == 'localhost',
-           commands=commands)
+    if options.db_postgresql:
+        commands = ['DROP DATABASE {};'.format(options.db_name)]
+        if options.delete_user:
+            commands.append('DROP USER {};'.format(options.db_user))
+        __psql(options,
+               superuser=options.delete_user or options.db_host == 'localhost',
+               commands=commands)
+    else:
+        remove(options.db_file)
 
 
 def backup_database(options, backup_file):

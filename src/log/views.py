@@ -305,7 +305,7 @@ def result_page(request, result_id):
     injections = result.injection_set.all()
     if result.campaign.simics:
         if injections.count():
-            injection_table = tables.simics_injection(injections)
+            injection_table = tables.injection(injections)
         else:
             injection_table = None
         register_diffs = result.simics_register_diff_set.all()
@@ -325,7 +325,7 @@ def result_page(request, result_id):
         memory_table = None
         register_table = None
         if injections.count():
-            injection_table = tables.hw_injection(injections)
+            injection_table = tables.injection(injections)
         else:
             injection_table = None
     RequestConfig(request, paginate=False).configure(result_table)

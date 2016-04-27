@@ -29,7 +29,7 @@ class campaigns(Table):
 
     def render_results(self, record):
         return '{:,}'.format(
-            models.result.objects.filter(campaign=record.id).count())
+            record.result_set.count())
 
     class Meta:
         fields = ('links', 'id', 'results', 'command', 'architecture', 'simics',
@@ -57,7 +57,7 @@ class campaign(Table):
 
     def render_results(self, record):
         return '{:,}'.format(
-            models.result.objects.filter(campaign=record.id).count())
+            record.result_set.count())
 
     class Meta:
         fields = ('id', 'timestamp', 'results', 'command', 'aux_command',
@@ -207,16 +207,16 @@ class injections(Table):
         accessor='success')
 
     class Meta:
-        fields = ('result_id', 'target', 'target_index', 'register',
-                  'register_index', 'bit', 'field', 'register_access',
-                  'processor_mode', 'gold_value', 'injected_value', 'success_')
+        fields = ('result_id', 'target_name', 'register', 'register_index',
+                  'bit', 'field', 'register_access', 'processor_mode',
+                  'gold_value', 'injected_value', 'success_')
         model = models.injection
         order_by = ('target', 'target_index', 'register', 'register_index',
                     'bit', 'success')
         template = 'django_tables2/bootstrap.html'
 
 
-class hw_injection(Table):
+class injection(Table):
     success_ = TemplateColumn(
         '{% if value == None %}-'
         '{% elif value %}<span class="true">\u2714</span>'
@@ -228,28 +228,11 @@ class hw_injection(Table):
         return '{0:.6f}'.format(record.time)
 
     class Meta:
-        fields = ('timestamp', 'time', 'target', 'target_index', 'register',
+        fields = ('timestamp', 'time', 'checkpoint', 'target_name', 'register',
                   'register_index', 'bit', 'field', 'register_access',
                   'gold_value', 'injected_value', 'success_')
         model = models.injection
-        order_by = 'time'
-        template = 'django_tables2/bootstrap.html'
-
-
-class simics_injection(Table):
-    success_ = TemplateColumn(
-        '{% if value == None %}-'
-        '{% elif value %}<span class="true">\u2714</span>'
-        '{% else %}<span class="false">\u2718</span>{% endif %}',
-        accessor='success')
-    timestamp = DateTimeColumn(format=datetime_format)
-
-    class Meta:
-        fields = ('timestamp', 'checkpoint', 'target', 'target_index',
-                  'register', 'register_index', 'register_alias', 'bit',
-                  'field', 'gold_value', 'injected_value', 'success_')
-        model = models.injection
-        order_by = 'checkpoint'
+        order_by = 'id'
         template = 'django_tables2/bootstrap.html'
 
 

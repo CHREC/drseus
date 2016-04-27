@@ -75,9 +75,8 @@ class openocd(jtag):
                 'smp' if self.options.smp else 'amp')],
             stderr=(DEVNULL if self.options.command != 'openocd' else None))
         if self.options.command != 'openocd':
-            with self.db as db:
-                db.log_event('Information', 'Debugger', 'Launched openocd',
-                             success=True)
+            self.db.log_event(
+                'Information', 'Debugger', 'Launched openocd', success=True)
             sleep(1)
         if self.options.command != 'openocd':
             super().open()
@@ -85,9 +84,8 @@ class openocd(jtag):
     def close(self):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
         self.openocd.wait()
-        with self.db as db:
-            db.log_event('Information', 'Debugger', 'Closed openocd',
-                         success=True)
+        self.db.log_event(
+            'Information', 'Debugger', 'Closed openocd', success=True)
         super().close()
 
     def command(self, command, expected_output=[], error_message=None,
@@ -110,9 +108,8 @@ class openocd(jtag):
                 ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], attempts)
 
     def power_cycle_dut(self):
-        with self.db as db:
-            event = db.log_event('Information', 'Debugger',
-                                 'Power cycled DUT', success=False)
+        event = self.db.log_event(
+            'Information', 'Debugger', 'Power cycled DUT', success=False)
         self.close()
         with self.power_switch as ps:
             ps.set_outlet(self.device_info['outlet'], 'off')
@@ -127,8 +124,7 @@ class openocd(jtag):
         self.open()
         print(colored('Power cycled device: {}'.format(self.dut.serial.port),
                       'red'))
-        with self.db as db:
-            db.log_event_success(event)
+        self.db.log_event_success(event)
 
     def halt_dut(self):
         super().halt_dut('halt', ['target state: halted']*2)
@@ -141,30 +137,30 @@ class openocd(jtag):
                      error_message='Error selecting core')
 
     def get_mode(self):
-        cpsr = int(self.get_register_value('cpsr'), base=16)
+        cpsr = int(self.command(
+            'reg cpsr', [':'], 'Error getting register value'
+        ).split('\n')[1].split(':')[1].split()[0], base=16)
         return self.modes[str(bin(cpsr))[-5:]]
 
     def set_mode(self, mode='svc'):
         modes = {value: key for key, value in self.modes.items()}
         mask = modes[mode]
-        value = self.get_register_value('cpsr')
-        value = hex(int(str(bin(int(value, base=16)))[:-5]+mask, base=2))
-        self.set_register_value('cpsr', value)
-        with self.db as db:
-            db.log_event('Information', 'Debugger', 'Set processor mode', mode,
-                         success=True)
+        cpsr = self.command(
+            'reg cpsr', [':'], 'Error getting register value'
+        ).split('\n')[1].split(':')[1].split()[0]
+        cpsr = hex(int(str(bin(int(cpsr, base=16)))[:-5]+mask, base=2))
+        self.command('reg cpsr {}'.format(cpsr),
+                     error_message='Error setting register value')
+        self.db.log_event(
+            'Information', 'Debugger', 'Set processor mode', mode, success=True)
 
     def get_register_value(self, register_info):
-        if register_info == 'cpsr':
-            return self.command(
-                'reg cpsr', [':'], 'Error getting register value'
-            ).split('\n')[1].split(':')[1].split()[0]
-        target = self.targets[register_info['target']]
-        if 'register_alias' in register_info:
-            register_name = register_info['register_alias']
+        target = self.targets[register_info.target]
+        if register_info.register_alias is None:
+            register_name = register_info.register
         else:
-            register_name = register_info['register']
-        register = target['registers'][register_info['register']]
+            register_name = register_info.register_alias
+        register = target['registers'][register_info.register]
         if 'type' in target and target['type'] == 'CP':
             buff = self.command('arm mrc {} {} {} {} {}'.format(
                 register['CP'], register['Op1'], register['CRn'],
@@ -177,19 +173,14 @@ class openocd(jtag):
             return \
                 buff.split('\n')[1].split(':')[1].split()[0]
 
-    def set_register_value(self, register_info, value=None):
-        if register_info == 'cpsr':
-            self.command('reg cpsr {}'.format(value),
-                         error_message='Error setting register value')
-            return
-        target = self.targets[register_info['target']]
-        if 'register_alias' in register_info:
-            register_name = register_info['register_alias']
+    def set_register_value(self, register_info):
+        target = self.targets[register_info.target]
+        if register_info.register_alias is None:
+            register_name = register_info.register
         else:
-            register_name = register_info['register']
-        register = target['registers'][register_info['register']]
-        if value is None:
-            value = register_info['injected_value']
+            register_name = register_info.register_alias
+        register = target['registers'][register_info.register]
+        value = register_info.injected_value
         if 'type' in target and target['type'] == 'CP':
             self.command('arm mrc {} {} {} {} {} {}'.format(
                 register['CP'], register['Op1'], register['CRn'],

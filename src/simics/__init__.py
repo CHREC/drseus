@@ -492,9 +492,11 @@ class simics(object):
         if checkpoints_to_inject:
             for injection_number, checkpoint in \
                     enumerate(checkpoints_to_inject, start=1):
-                injected_checkpoint = self.__inject_checkpoint(injection_number,
-                                                               checkpoint)
+                injected_checkpoint, injection = \
+                    self.__inject_checkpoint(injection_number, checkpoint)
                 self.launch_simics(injected_checkpoint)
+                injection.time = self.get_time()[1]-self.db.campaign.start_time
+                injection.save()
                 injections_remaining = \
                     injection_number < len(checkpoints_to_inject)
                 if injections_remaining:
@@ -525,7 +527,7 @@ class simics(object):
         self.db.result.id = self.options.result_id
         for injection_number, injection in enumerate(injections, start=1):
             injected_checkpoint = self.__inject_checkpoint(
-                injection_number, injection.checkpoint, injection)
+                injection_number, injection.checkpoint, injection)[0]
             if injection_number < len(injections):
                 self.launch_simics(checkpoint=injected_checkpoint)
                 for j in range(injection.checkpoint,
@@ -642,7 +644,7 @@ class simics(object):
                         injection.register_index), 'magenta'))
         else:
             inject_config(injected_checkpoint, injection)
-        return injected_checkpoint.replace('simics-workspace/', '')
+        return injected_checkpoint.replace('simics-workspace/', ''), injection
 
     def __compare_checkpoints(self, checkpoint, last_checkpoint):
 

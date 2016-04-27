@@ -106,7 +106,7 @@ def list_devices(none=None, only_uart=False):
     zedboard_uarts = find_zedboard_uart_serials()
     if zedboard_uarts:
         print('ZedBoard UART serial numbers:')
-        for uart, serial in zedboard_uarts.items():
+        for uart, serial in sorted(zedboard_uarts.items()):
             print('\t{}: {}'.format(uart, serial))
     p2020_uarts = find_p2020_uarts()
     if p2020_uarts:
@@ -157,7 +157,8 @@ def list_campaigns(options):
 
 
 def delete(options):
-    if options.delete in ('results', 'r'):
+    campaign = get_campaign(options)
+    if options.selection in ('results', 'r'):
         if input('are you sure you want to delete all results for campaign {}?'
                  ' [y/N]: '.format(options.campaign_id)) not in \
                 ['y', 'Y', 'yes']:
@@ -170,10 +171,11 @@ def delete(options):
             rmtree('simics-workspace/injected-checkpoints/{}'.format(
                 options.campaign_id))
             print('deleted injected checkpoints')
-        models.result.objects.filter(campaign_id=options.campaign_id).delete()
-        print('deleted campaign {} results from database'.format(
-            options.campaign_id))
-    elif options.delete in ('campaign', 'c'):
+        if campaign is not None:
+            campaign.result_set.all().delete()
+            print('deleted campaign {} results from database'.format(
+                options.campaign_id))
+    elif options.selection in ('campaign', 'c'):
         if input('are you sure you want to delete campaign {}? [y/N]: '.format(
                 options.campaign_id)) not in ['y', 'Y', 'yes']:
             return
@@ -190,9 +192,11 @@ def delete(options):
             rmtree('simics-workspace/injected-checkpoints/{}'.format(
                 options.campaign_id))
             print('deleted injected checkpoints')
-        models.campaign.objects.get(id=options.campaign_id).delete()
-        print('deleted campaign {} from database'.format(options.campaign_id))
-    elif options.delete in ('all', 'a'):
+        if campaign is not None:
+            campaign.delete()
+            print('deleted campaign {} from database'.format(
+                options.campaign_id))
+    elif options.selection in ('all', 'a'):
         if input('are you sure you want to delete all campaigns, files, and '
                  'database? [y/N]: ') not in ['y', 'Y', 'yes']:
             return
@@ -345,28 +349,29 @@ def run_django_command(options):
     django_command(command)
 
 
-def __update_checkpoint_dependencies(campaign_id):
-    for checkpoint in listdir('simics-workspace/gold-checkpoints/{}'.format(
-            campaign_id)):
-        with simics_config('simics-workspace/gold-checkpoints/{}/{}'.format(
-                campaign_id, checkpoint)) as config:
-            paths = config.get(config, 'sim', 'checkpoint_path')
-            new_paths = []
-            for path in paths:
-                path_list = path.split('/')
-                path_list = path_list[path_list.index('simics-workspace'):]
-                path_list[-2] = str(campaign_id)
-                new_paths.append('"{}/{}'.format(getcwd(), '/'.join(path_list)))
-            config.set(config, 'sim', 'checkpoint_path', new_paths)
-            config.save()
+def update_dependencies(*args):
 
+    def update_checkpoint_dependencies(campaign_id):
+        for checkpoint in listdir('simics-workspace/gold-checkpoints/{}'.format(
+                campaign_id)):
+            with simics_config('simics-workspace/gold-checkpoints/{}/{}'.format(
+                    campaign_id, checkpoint)) as config:
+                paths = config.get(config, 'sim', 'checkpoint_path')
+                new_paths = []
+                for path in paths:
+                    path_list = path.split('/')
+                    path_list = path_list[path_list.index('simics-workspace'):]
+                    path_list[-2] = str(campaign_id)
+                    new_paths.append('"{}/{}'.format(getcwd(),
+                                                     '/'.join(path_list)))
+                config.set(config, 'sim', 'checkpoint_path', new_paths)
+                config.save()
 
-def update_dependencies(none=None):
     if exists('simics-workspace/gold-checkpoints'):
         print('updating gold checkpoint path dependencies...', end='')
         stdout.flush()
         for campaign in listdir('simics-workspace/gold-checkpoints'):
-            __update_checkpoint_dependencies(campaign)
+            update_checkpoint_dependencies(campaign)
         print('done')
 
 

@@ -216,6 +216,17 @@ database_settings.add_argument(
     '--db_su_ask',
     action='store_true',
     help='prompt for superuser password')
+sqlite_settings = parser.add_argument_group('SQLite settings')
+sqlite_settings.add_argument(
+    '--sqlite',
+    action='store_false',
+    dest='db_postgresql',
+    help='use SQLite instead of PostgreSQL')
+sqlite_settings.add_argument(
+    '--db_file',
+    metavar='FILE',
+    default='campaign-data/db.sqlite',
+    help='SQLite database file [default=campaign-data/db.sqlite]')
 
 power_settings = parser.add_argument_group('web power switch settings')
 power_settings.add_argument(
@@ -503,7 +514,8 @@ delete = subparsers.add_parser(
     description='delete results and campaigns',
     help='delete results and campaigns')
 delete.add_argument(
-    'delete',
+    'selection',
+    metavar='SELECTION',
     choices=['results', 'campaign', 'all', 'r', 'c', 'a'],
     help='delete {results, r} for the selected campaign, '
          'delete selected {campaign, c} and its results, '

@@ -29,9 +29,8 @@ class dummy(jtag):
             self.aux.close()
 
     def power_cycle_dut(self):
-        with self.db as db:
-            event = db.log_event('Information', 'Debugger',
-                                 'Power cycled DUT', success=False)
+        event = self.db.log_event(
+            'Information', 'Debugger', 'Power cycled DUT', success=False)
         self.close()
         with self.power_switch as ps:
             ps.set_outlet(self.options.power_switch_outlet, 'off')
@@ -39,8 +38,7 @@ class dummy(jtag):
         self.open()
         print(colored('Power cycled device: {}'.format(self.dut.serial.port),
                       'red'))
-        with self.db as db:
-            db.log_event_success(event)
+        self.db.log_event_success(event)
 
     def set_targets(self):
         self.targets = {}

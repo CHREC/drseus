@@ -25,6 +25,9 @@ def run():
                 'PASSWORD': options.db_password,
                 'HOST': options.db_host,
                 'PORT': options.db_port,
+            } if options.db_postgresql else {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': options.db_file
             }
         },
         DEBUG=True,
@@ -58,7 +61,7 @@ def run():
         options.power_switch_ip_address = '10.42.0.60'
     if options.command in ('inject', 'supervise', 'delete', 'regenerate') and \
             not (options.command == 'delete' and
-                 options.delete in ('a', 'all')):
+                 options.selection in ('a', 'all')):
         if not options.campaign_id:
             options.campaign_id = database.get_campaign(options).id
         campaign = utilities.get_campaign(options)
