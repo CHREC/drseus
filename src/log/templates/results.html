@@ -151,10 +151,18 @@
 
 {% block script %}
     <script>
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '?');
+        } else {
+            filter = '';
+        }
+        {% endif %}
         {% if campaign %}
             $('#results-campaign-link').addClass('active')
+            $('#charts-campaign-link a').attr('href', $('#charts-campaign-link a').attr('href') + filter)
         {% else %}
             $('#results-navigation-link').addClass('active')
+            $('#charts-navigation-link a').attr('href', $('#charts-navigation-link a').attr('href') + filter)
         {% endif %}
 
         function update_selection(select) {

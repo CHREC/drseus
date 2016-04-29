@@ -82,10 +82,18 @@
 
 {% block script %}
     <script>
+        if (window.location.href.indexOf('?') > -1) {
+            filter = window.location.href.replace(/.*\?/g, '?');
+        } else {
+            filter = '';
+        }
+        {% endif %}
         {% if campaign %}
             $('#charts-campaign-link').addClass('active')
+            $('#results-campaign-link a').attr('href', $('#results-campaign-link a').attr('href') + filter)
         {% else %}
             $('#charts-navigation-link').addClass('active')
+            $('#results-navigation-link a').attr('href', $('#results-navigation-link a').attr('href') + filter)
         {% endif %}
 
         $("#raw-data .btn").click(function () {
