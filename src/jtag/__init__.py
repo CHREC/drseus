@@ -106,7 +106,7 @@ class jtag(object):
                 'Warning' if attempt < attempts-1 else 'Error', 'Debugger',
                 event_type, self.db.log_exception)
             print(colored('{}: Error resetting DUT (attempt {}/{}): {}'.format(
-                self.dut.serial.port, attempt, attempts, error), 'red'))
+                self.dut.serial.port, attempt+1, attempts, error), 'red'))
             if attempt < attempts-1:
                 sleep(30)
             else:

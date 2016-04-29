@@ -18,7 +18,7 @@ if [ ! -d simics-workspace ]; then
     if [ "$simics" != "n" ]; then
         mkdir simics-workspace
         cd simics-workspace
-        simics=$(find /opt/simics/ -name "simics-4.8.*")
+        simics=$(find /opt/simics/ -name "simics-4.8.*" | tail -n 1)
        "$simics"/bin/workspace-setup
        git clone git@gitlab.hcs.ufl.edu:F4/simics-a9x2
        git clone git@gitlab.hcs.ufl.edu:F4/simics-p2020rdb
