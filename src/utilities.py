@@ -1,3 +1,4 @@
+from copy import copy
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
 from django.db import connection
@@ -299,6 +300,7 @@ def inject_campaign(options):
             if not simics and \
                     architecture == 'a9':
                 if i < len(uarts):
+                    options = copy(options)
                     options.dut_serial_port = uarts[i]
                 else:
                     break

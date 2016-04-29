@@ -54,7 +54,7 @@ class fault_injector(object):
 
     def close(self, log=True):
         self.debugger.close()
-        if log and self.db.result:
+        if log and self.db.result is not None:
             result_items = self.db.result.events.count()
             result_items += self.db.result.injection_set.count()
             result_items += self.db.result.simics_memory_diff_set.count()

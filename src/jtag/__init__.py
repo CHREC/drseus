@@ -254,10 +254,10 @@ class jtag(object):
         if error_message is None:
             error_message = command
         buff = self.telnet.read_very_eager().decode('utf-8', 'replace')
-        if self.db.result:
-            self.db.result.debugger_output += buff
-        else:
+        if self.db.result is None:
             self.db.campaign.debugger_output += buff
+        else:
+            self.db.result.debugger_output += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
         if command:
@@ -269,10 +269,10 @@ class jtag(object):
                 buff = buff.decode('utf-8', 'replace')
             else:
                 buff = '{}\n'.format(command)
-            if self.db.result:
-                self.db.result.debugger_output += buff
-            else:
+            if self.db.result is None:
                 self.db.campaign.debugger_output += buff
+            else:
+                self.db.result.debugger_output += buff
             if self.options.debug:
                 print(colored(buff, 'yellow'))
             if echo and index < 0:
@@ -281,10 +281,10 @@ class jtag(object):
             index, match, buff = self.telnet.expect(expected_output,
                                                     timeout=self.timeout)
             buff = buff.decode('utf-8', 'replace')
-            if self.db.result:
-                self.db.result.debugger_output += buff
-            else:
+            if self.db.result is None:
                 self.db.campaign.debugger_output += buff
+            else:
+                self.db.result.debugger_output += buff
             return_buffer += buff
             if self.options.debug:
                 print(colored(buff, 'yellow'), end='')
@@ -296,10 +296,10 @@ class jtag(object):
         index, match, buff = self.telnet.expect(self.prompts,
                                                 timeout=self.timeout)
         buff = buff.decode('utf-8', 'replace')
-        if self.db.result:
-            self.db.result.debugger_output += buff
-        else:
+        if self.db.result is None:
             self.db.campaign.debugger_output += buff
+        else:
+            self.db.result.debugger_output += buff
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))

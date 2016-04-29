@@ -103,11 +103,6 @@ class dut(object):
     def open(self, attempts=10):
         serial_port = (self.options.dut_serial_port if not self.aux
                        else self.options.aux_serial_port)
-        if self.db.result:
-            if self.aux:
-                self.db.result.aux_serial_port = serial_port
-            else:
-                self.db.result.dut_serial_port = serial_port
         baud_rate = (self.options.dut_baud_rate if not self.aux
                      else self.options.aux_baud_rate)
         self.serial = Serial(port=None, baudrate=baud_rate,
@@ -171,18 +166,19 @@ class dut(object):
                                 end='')
                     if self.options.debug:
                         stdout.flush()
-                    if self.db.result:
-                        if self.aux:
-                            self.db.result.aux_output += buff
-                        else:
-                            self.db.result.dut_output += buff
-                        self.db.result.save()
-                    else:
+                    if self.db.result is None:
                         if self.aux:
                             self.db.campaign.aux_output += buff
                         else:
                             self.db.campaign.dut_output += buff
                         self.db.campaign.save()
+                    else:
+                        if self.aux:
+                            self.db.result.aux_output += buff
+                        else:
+                            self.db.result.dut_output += buff
+                        self.db.result.save()
+
                     if check_errors:
                         for message, category in self.error_messages:
                             if message in buff:
@@ -404,16 +400,16 @@ class dut(object):
                     continue
                 else:
                     break
-            if self.db.result:
-                if self.aux:
-                    self.db.result.aux_output += char
-                else:
-                    self.db.result.dut_output += char
-            else:
+            if self.db.result is None:
                 if self.aux:
                     self.db.campaign.aux_output += char
                 else:
                     self.db.campaign.dut_output += char
+            else:
+                if self.aux:
+                    self.db.result.aux_output += char
+                else:
+                    self.db.result.dut_output += char
             if self.options.debug:
                 print(colored(char, 'green' if not self.aux else 'cyan'),
                       end='')

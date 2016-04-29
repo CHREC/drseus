@@ -264,10 +264,10 @@ class simics(object):
         if not self.running:
             self.simics.stdin.write('run\n')
             self.running = True
-            if self.db.result:
-                self.db.result.debugger_output += 'run\n'
-            else:
+            if self.db.result is None:
                 self.db.campaign.debugger_output += 'run\n'
+            else:
+                self.db.result.debugger_output += 'run\n'
             if self.options.debug:
                 print(colored('run', 'yellow'))
             self.db.log_event(
@@ -293,10 +293,10 @@ class simics(object):
                         self.db.log_exception)
                 if not char:
                     break
-                if self.db.result:
-                    self.db.result.debugger_output += char
-                else:
+                if self.db.result is None:
                     self.db.campaign.debugger_output += char
+                else:
+                    self.db.result.debugger_output += char
                 if self.options.debug:
                     print(colored(char, 'yellow'), end='')
                     stdout.flush()
@@ -323,10 +323,10 @@ class simics(object):
                 'Information', 'Simics', 'Command', command, success=False)
         if command is not None:
             self.simics.stdin.write('{}\n'.format(command))
-            if self.db.result:
-                self.db.result.debugger_output += '{}\n'.format(command)
-            else:
+            if self.db.result is None:
                 self.db.campaign.debugger_output += '{}\n'.format(command)
+            else:
+                self.db.result.debugger_output += '{}\n'.format(command)
             if self.options.debug:
                 print(colored(command, 'yellow'))
         buff = read_until()

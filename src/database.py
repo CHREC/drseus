@@ -165,7 +165,9 @@ class database(object):
     def __create_result(self, supervisor=False):
         self.result = self.campaign.result_set.create(
             outcome_category=('DrSEUs' if supervisor else 'Incomplete'),
-            outcome=('Supervisor' if supervisor else 'In progress'))
+            outcome=('Supervisor' if supervisor else 'In progress'),
+            dut_serial_port=self.options.dut_serial_port,
+            aux_serial_port=self.options.aux_serial_port)
 
     def log_result(self, supervisor=False, exit=False):
         if self.result.outcome_category != 'DrSEUs':

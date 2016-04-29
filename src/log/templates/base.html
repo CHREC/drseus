@@ -167,6 +167,19 @@
         <script>
             $.widget.bridge('uibutton', $.ui.button);
 
+            if (window.location.href.indexOf('?') > -1) {
+                filter = window.location.href.replace(/.*\?/g, '?');
+            } else {
+                filter = '';
+            }
+            {% if not campaign %}
+                $('#charts-navigation-link a').attr('href', $('#charts-navigation-link a').attr('href') + filter)
+                $('#results-navigation-link a').attr('href', $('#results-navigation-link a').attr('href') + filter)
+            {% else %}
+                $('#charts-campaign-link a').attr('href', $('#charts-campaign-link a').attr('href') + filter)
+                $('#results-campaign-link a').attr('href', $('#results-campaign-link a').attr('href') + filter)
+            {% endif %}
+
             $('.expand').on('click', function () {
                 var box = $(this).parents('.box').parent();
                 if (box.hasClass('col-lg-6')) {
