@@ -91,7 +91,7 @@ class bdi(jtag):
         self.command('rm msr {}'.format(msr),
                      error_message='Error setting register value')
         self.db.log_event(
-            'Information', 'Debugger', 'Set processor mode', mode, success=True)
+            'Information', 'Debugger', 'Set processor mode', mode)
 
     def command(self, command, expected_output=[], error_message=None,
                 log_event=True):

@@ -76,7 +76,7 @@ class openocd(jtag):
             stderr=(DEVNULL if self.options.command != 'openocd' else None))
         if self.options.command != 'openocd':
             self.db.log_event(
-                'Information', 'Debugger', 'Launched openocd', success=True)
+                'Information', 'Debugger', 'Launched openocd')
             sleep(1)
         if self.options.command != 'openocd':
             super().open()
@@ -85,7 +85,7 @@ class openocd(jtag):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
         self.openocd.wait()
         self.db.log_event(
-            'Information', 'Debugger', 'Closed openocd', success=True)
+            'Information', 'Debugger', 'Closed openocd')
         super().close()
 
     def command(self, command, expected_output=[], error_message=None,
@@ -153,7 +153,7 @@ class openocd(jtag):
         self.command('reg cpsr {}'.format(cpsr),
                      error_message='Error setting register value')
         self.db.log_event(
-            'Information', 'Debugger', 'Set processor mode', mode, success=True)
+            'Information', 'Debugger', 'Set processor mode', mode)
 
     def get_register_value(self, register_info):
         target = self.targets[register_info.target]

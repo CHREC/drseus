@@ -84,7 +84,7 @@ class simics(object):
                                     'license connection')
             else:
                 self.db.log_event(
-                    'Information', 'Simics', 'Launched Simics', success=True)
+                    'Information', 'Simics', 'Launched Simics')
                 break
         if checkpoint is None:
             self.__command('$drseus=TRUE')
@@ -249,8 +249,7 @@ class simics(object):
                     self.simics = None
                     return
             self.simics.wait()
-            self.db.log_event(
-                'Information', 'Simics', 'Closed Simics', success=True)
+            self.db.log_event('Information', 'Simics', 'Closed Simics')
             self.simics = None
 
     def halt_dut(self):
@@ -270,8 +269,7 @@ class simics(object):
                 self.db.result.debugger_output += 'run\n'
             if self.options.debug:
                 print(colored('run', 'yellow'))
-            self.db.log_event(
-                'Information', 'Simics', 'Continue DUT', success=True)
+            self.db.log_event('Information', 'Simics', 'Continue DUT')
 
     def reset_dut(self):
         pass
@@ -629,13 +627,13 @@ class simics(object):
             except:
                 self.db.log_event(
                     'Error', 'Simics', 'Error injecting fault',
-                    self.db.log_exception, success=False)
+                    self.db.log_exception)
                 raise DrSEUsError('Error injecting fault')
             else:
                 injection.success = True
                 injection.save()
                 self.db.log_event(
-                    'Information', 'Simics', 'Fault injected', success=True)
+                    'Information', 'Simics', 'Fault injected')
             if self.options.debug:
                 print(colored(
                     'result id: {}\ncheckpoint number: {}\ntarget: {}\n'

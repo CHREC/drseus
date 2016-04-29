@@ -70,8 +70,7 @@ class jtag(object):
                              timeout=self.timeout)
         self.db.log_event(
             'Information', 'Debugger', 'Connected to telnet',
-            '{}:{}'.format(self.options.debugger_ip_address, self.port),
-            success=True)
+            '{}:{}'.format(self.options.debugger_ip_address, self.port))
 
     def open(self):
         self.dut = dut(self.db, self.options)
@@ -82,7 +81,7 @@ class jtag(object):
     def close(self):
         self.telnet.close()
         self.db.log_event(
-            'Information', 'Debugger', 'Closed telnet', success=True)
+            'Information', 'Debugger', 'Closed telnet')
         self.dut.close()
         if self.db.campaign.aux:
             self.aux.close()
@@ -118,7 +117,7 @@ class jtag(object):
         for attempt in range(attempts):
             try:
                 self.command('reset', expected_output,
-                             'Error resetting DUT', False)
+                             'Error resetting DUT', True)
             except DrSEUsError as error:
                 attempt_exception(attempt, attempts, error,
                                   'Error resetting DUT')
@@ -129,8 +128,6 @@ class jtag(object):
                     attempt_exception(attempt, attempts, error,
                                       'Error booting DUT')
                 else:
-                    self.db.log_event(
-                        'Information', 'Debugger', 'Reset DUT', success=True)
                     break
 
     def halt_dut(self, halt_command, expected_output):
@@ -226,7 +223,7 @@ class jtag(object):
                 injection.success = True
                 injection.save()
                 self.db.log_event(
-                    'Information', 'Debugger', 'Fault injected', success=True)
+                    'Information', 'Debugger', 'Fault injected')
             else:
                 self.set_mode()
                 self.set_register_value(injection)
@@ -236,18 +233,19 @@ class jtag(object):
                     injection.save()
                     self.db.log_event(
                         'Information', 'Debugger',
-                        'Fault injected as supervisor', success=True)
+                        'Fault injected as supervisor')
                 else:
                     self.db.log_event(
-                        'Error', 'Debugger', 'Injection failed', success=False)
+                        'Error', 'Debugger', 'Injection failed')
                 self.set_mode(injection.processor_mode)
             self.continue_dut()
         return None, None, False
 
     def command(self, command, expected_output, error_message,
                 log_event, line_ending, echo):
-        event = self.db.log_event(
-            'Information', 'Debugger', 'Command', command, success=False)
+        if log_event:
+            event = self.db.log_event(
+                'Information', 'Debugger', 'Command', command, success=False)
         expected_output = [bytes(output, encoding='utf-8')
                            for output in expected_output]
         return_buffer = ''

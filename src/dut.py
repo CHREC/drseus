@@ -1,3 +1,4 @@
+from datetime import datetime
 from io import StringIO
 from os import listdir, makedirs
 from os.path import exists, isdir, join
@@ -134,14 +135,14 @@ class dut(object):
         self.serial.reset_output_buffer()
         self.db.log_event(
             'Information', 'DUT' if not self.aux else 'AUX',
-            'Connected to serial port', serial_port, success=True)
+            'Connected to serial port', serial_port)
 
     def close(self):
         self.flush()
         self.serial.close()
         self.db.log_event(
             'Information', 'DUT' if not self.aux else 'AUX',
-            'Closed serial port', success=True)
+            'Closed serial port')
 
     def flush(self, check_errors=False):
         try:
@@ -185,7 +186,7 @@ class dut(object):
                                 raise DrSEUsError(category)
             self.db.log_event(
                 'Information', 'DUT' if not self.aux else 'AUX',
-                'Flushed serial buffers', buff, success=True)
+                'Flushed serial buffers', buff)
         except KeyboardInterrupt:
             raise KeyboardInterrupt
         except:
@@ -290,7 +291,7 @@ class dut(object):
                             print(colored('done', 'blue'))
                         self.db.log_event(
                             'Information', 'DUT' if not self.aux else 'AUX',
-                            'Sent files', ', '.join(files), success=True)
+                            'Sent files', ', '.join(files))
                         break
 
     def get_file(self, file_, local_path='', attempts=10):
@@ -347,7 +348,7 @@ class dut(object):
                                 print(colored('done', 'blue'))
                             self.db.log_event(
                                 'Information', 'DUT' if not self.aux else 'AUX',
-                                'Received file', file_, success=True)
+                                'Received file', file_)
                             break
                         else:
                             self.db.log_event(
@@ -495,8 +496,7 @@ class dut(object):
             raise DrSEUsError('Hanging', returned=returned)
         if boot:
             self.db.log_event(
-                'Information', 'DUT' if not self.aux else 'AUX', 'Booted',
-                success=True)
+                'Information', 'DUT' if not self.aux else 'AUX', 'Booted')
         return buff, returned
 
     def command(self, command='', flush=True, attempts=5):
@@ -512,13 +512,14 @@ class dut(object):
                 if attempt < attempts-1:
                     self.db.log_event(
                         'Warning', 'DUT' if not self.aux else 'AUX',
-                        'Command error', buff, success=False)
+                        'Command error', buff)
                     sleep(5)
                 else:
                     raise DrSEUsError('{} Command error'.format(
                         'DUT' if not self.aux else 'AUX'), returned=returned)
             else:
                 event.success = True
+                event.timestamp = datetime.now()
                 event.save()
                 break
         return buff, returned
