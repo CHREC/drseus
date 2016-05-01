@@ -71,17 +71,9 @@ class simics(object):
                 raise KeyboardInterrupt
             except Exception as error:
                 self.simics.kill()
-                self.db.log_event(
-                    'Warning' if attempt < attempts-1 else 'Error', 'Simics',
-                    'Error launching Simics', self.db.log_exception)
-                print(colored(
-                    'error launching simics (attempt {}/{}): {}'.format(
-                        attempt, attempts, error), 'red'))
-                if attempt < attempts-1:
-                    sleep(30)
-                elif attempt == attempts-1:
-                    raise Exception('error launching simics, check your '
-                                    'license connection')
+                self.__attempt_exception(
+                    attempt, attempts, error, 'Error launching Simics',
+                    'Error launching Simics, check your license connection')
             else:
                 self.db.log_event(
                     'Information', 'Simics', 'Launched Simics')
@@ -333,14 +325,38 @@ class simics(object):
             event.save()
         return buff
 
-    def __merge_checkpoint(self, checkpoint):
+    def __attempt_exception(self, attempt, attempts, error, error_type, message,
+                            close_items=[]):
+        self.db.log_event(
+            'Warning' if attempt < attempts-1 else 'Error', 'Simics',
+            error_type, self.db.log_exception)
+        print(colored('{}: {} (attempt {}/{}): {}'.format(
+            self.serial.port, message, attempt+1, attempts, error), 'red'))
+        for item in close_items:
+            item.close()
+        if attempt < attempts-1:
+            sleep(30)
+        else:
+            raise DrSEUsError(error_type)
+
+    def __merge_checkpoint(self, checkpoint, attempts=10):
         if self.options.debug:
             print(colored('merging checkpoint...', 'blue'), end='')
             stdout.flush()
         merged_checkpoint = '{}_merged'.format(checkpoint)
         cwd = '{}/simics-workspace'.format(getcwd())
-        check_call(['{}/bin/checkpoint-merge'.format(cwd), checkpoint,
-                    merged_checkpoint], cwd=cwd, stdout=DEVNULL)
+        for attempt in range(attempts):
+            try:
+                check_call(['{}/bin/checkpoint-merge'.format(cwd), checkpoint,
+                            merged_checkpoint], cwd=cwd, stdout=DEVNULL)
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
+            except Exception as error:
+                self.__attempt_exception(
+                    attempt, attempts, error, 'Checkpoint merge error',
+                    'Error merging checkpoint')
+            else:
+                break
         if self.options.debug:
             print(colored('done', 'blue'))
         return merged_checkpoint
