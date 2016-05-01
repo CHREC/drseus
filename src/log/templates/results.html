@@ -27,82 +27,265 @@
     <li class="treeview">
         <a href="#">
             <i class="fa fa-folder-open"></i>
-            <span>Open Tabs</span>
+            <span>Open</span>
             <i class="fa fa-angle-left pull-right"></i>
         </a>
         <ul class="treeview-menu">
             <li>
-                <a href="javascript:{}" onclick="open_results(true)">
-                    <i class="fa fa-circle-o"></i>
-                    <span>Open Selected</span>
+                <a href="#">
+                    <i class="fa fa-clone"></i>
+                    <span>Results</span>
+                    <i class="fa fa-angle-left pull-right"></i>
                 </a>
+                <ul class="treeview-menu">
+                    <li>
+                        <a href="javascript:{}" onclick="open_results(true)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>Selected</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:{}" onclick="open_results(false)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>All (Displayed)</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
             <li>
-                <a href="javascript:{}" onclick="open_results(false)">
-                    <i class="fa fa-circle-o"></i>
-                    <span>Open All (Displayed)</span>
+                <a href="#">
+                    <i class="fa fa-terminal"></i>
+                    <span>DUT Console</span>
+                    <i class="fa fa-angle-left pull-right"></i>
                 </a>
+                <ul class="treeview-menu">
+                    <li>
+                        <a href="javascript:{}" onclick="view_output('dut', false, false)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>Selected</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:{}" onclick="view_output('dut', false, true)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>All (Filtered)</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
+            {% if not campaign or campaign.aux %}
+                <li>
+                    <a href="#">
+                        <i class="fa fa-terminal"></i>
+                        <span>AUX Console</span>
+                        <i class="fa fa-angle-left pull-right"></i>
+                    </a>
+                    <ul class="treeview-menu">
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('aux', false, false)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>Selected</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('aux', false, true)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>All (Filtered)</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            {% endif %}
+            <li>
+                <a href="#">
+                    <i class="fa fa-terminal"></i>
+                    <span>Debugger</span>
+                    <i class="fa fa-angle-left pull-right"></i>
+                </a>
+                <ul class="treeview-menu">
+                    <li>
+                        <a href="javascript:{}" onclick="view_output('debugger', false, false)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>Selected</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:{}" onclick="view_output('debugger', false, true)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>All (Filtered)</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            {% if output_file %}
+                <li>
+                    <a href="#">
+                        <i class="fa fa-file-image-o"></i>
+                        <span>Output File</span>
+                        <i class="fa fa-angle-left pull-right"></i>
+                    </a>
+                    <ul class="treeview-menu">
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('output', false, false)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>Selected</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('output', false, true)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>All (Filtered)</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            {% endif %}
+            {% if not campaign or campaign.log_file %}
+                <li>
+                    <a href="#">
+                        <i class="fa fa-file-code-o"></i>
+                        <span>Log File</span>
+                        <i class="fa fa-angle-left pull-right"></i>
+                    </a>
+                    <ul class="treeview-menu">
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('log', false, false)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>Selected</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('log', false, true)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>All (Filtered)</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            {% endif %}
         </ul>
     </li>
 
     <li class="treeview">
         <a href="#">
-            <i class="fa fa-terminal"></i>
-            <span>View Console Output</span>
+            <i class="fa fa-download"></i>
+            <span>Download</span>
             <i class="fa fa-angle-left pull-right"></i>
         </a>
         <ul class="treeview-menu">
             <li>
-                <a href="javascript:{}" onclick="view_output(false, false, false)">
-                    <i class="fa fa-circle-o"></i>
-                    <span>View Selected</span>
+                <a href="#">
+                    <i class="fa fa-terminal"></i>
+                    <span>DUT Console</span>
+                    <i class="fa fa-angle-left pull-right"></i>
                 </a>
+                <ul class="treeview-menu">
+                    <li>
+                        <a href="javascript:{}" onclick="view_output('dut', true, false)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>Selected</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:{}" onclick="view_output('dut', true, true)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>All (Filtered)</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
+            {% if not campaign or campaign.aux %}
+                <li>
+                    <a href="#">
+                        <i class="fa fa-terminal"></i>
+                        <span>AUX Console</span>
+                        <i class="fa fa-angle-left pull-right"></i>
+                    </a>
+                    <ul class="treeview-menu">
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('aux', true, false)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>Selected</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('aux', true, true)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>All (Filtered)</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            {% endif %}
             <li>
-                <a href="javascript:{}" onclick="view_output(false, false, true)">
-                    <i class="fa fa-circle-o"></i>
-                    <span>View Filtered</span>
+                <a href="#">
+                    <i class="fa fa-terminal"></i>
+                    <span>Debugger</span>
+                    <i class="fa fa-angle-left pull-right"></i>
                 </a>
+                <ul class="treeview-menu">
+                    <li>
+                        <a href="javascript:{}" onclick="view_output('debugger', true, false)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>Selected</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:{}" onclick="view_output('debugger', true, true)">
+                            <i class="fa fa-circle-o"></i>
+                            <span>All (Filtered)</span>
+                        </a>
+                    </li>
+                </ul>
             </li>
-            <li>
-                <a href="javascript:{}" onclick="view_output(false, true, false)">
-                    <i class="fa fa-circle-o"></i>
-                    <span>Download Selected</span>
-                </a>
-            </li>
-            <li>
-                <a href="javascript:{}" onclick="view_output(false, true, true)">
-                    <i class="fa fa-circle-o"></i>
-                    <span>Download Filtered</span>
-                </a>
-            </li>
+            {% if not campaign or campaign.output_file %}
+                <li>
+                    <a href="#">
+                        <i class="fa fa-file-image-o"></i>
+                        <span>Output File</span>
+                        <i class="fa fa-angle-left pull-right"></i>
+                    </a>
+                    <ul class="treeview-menu">
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('output', true, false)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>Selected</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('output', true, true)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>All (Filtered)</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            {% endif %}
+            {% if not campaign or campaign.log_file %}
+                <li>
+                    <a href="#">
+                        <i class="fa fa-file-code-o"></i>
+                        <span>Log File</span>
+                        <i class="fa fa-angle-left pull-right"></i>
+                    </a>
+                    <ul class="treeview-menu">
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('log', true, false)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>Selected</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:{}" onclick="view_output('log', true, true)">
+                                <i class="fa fa-circle-o"></i>
+                                <span>All (Filtered)</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            {% endif %}
         </ul>
     </li>
-
-    {% if output_file %}
-        <li class="treeview">
-            <a href="#">
-                <i class="fa fa-image"></i>
-                <span>View Output File</span>
-                <i class="fa fa-angle-left pull-right"></i>
-            </a>
-            <ul class="treeview-menu">
-                <li>
-                    <a href="javascript:{}" onclick="view_output(true, false, false)">
-                        <i class="fa fa-circle-o"></i>
-                        <span>View Selected</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="javascript:{}" onclick="view_output(true, false, true)">
-                        <i class="fa fa-circle-o"></i>
-                        <span>View All (Filtered)</span>
-                    </a>
-                </li>
-            </ul>
-        </li>
-    {% endif %}
 
     <li class="treeview">
         <a href="#">
@@ -180,21 +363,34 @@
             }
         }
 
-        function view_output(file, raw, all) {
-            var newdiv = document.createElement('div');
-            input = "<input type='hidden' name='view_output'>";
-            if (file) {
+        function view_output(type, download, all) {
+            var input = "<input type='hidden' name='view_output'>";
+            if (type === 'dut') {
+                input += "\n<input type='hidden' name='view_dut_output'>";
+            } else if (type === 'aux') {
+                input += "\n<input type='hidden' name='view_aux_output'>";
+            } else if (type === 'debugger') {
+                input += "\n<input type='hidden' name='view_debugger_output'>";
+            } else if (type === 'output') {
                 input += "\n<input type='hidden' name='view_output_file'>";
+            } else if (type === 'log') {
+                input += "\n<input type='hidden' name='view_log_file'>";
+            } else {
+                return false;
+            }
+            if (download) {
+                input += "\n<input type='hidden' name='view_download'>";
             }
             if (all) {
-                input += "\n<input type='hidden' name='view_output_all'>";
+                input += "\n<input type='hidden' name='view_all'>";
             }
-            if (raw) {
-                input += "\n<input type='hidden' name='view_output_raw'>";
-            }
+            var newdiv = document.createElement('div');
             newdiv.innerHTML = input;
             document.getElementById('get_form').appendChild(newdiv);
+            $('#get_form').attr('target', '_blank');
             document.getElementById('get_form').submit();
+            document.getElementById('get_form').removeChild(newdiv);
+            $('#get_form').removeAttr('target');
             return false;
         }
 

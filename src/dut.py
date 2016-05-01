@@ -28,16 +28,20 @@ class dut(object):
         ('drseus_sighandler: SIGTRAP', 'Signal SIGTRAP'),
         ('drseus_sighandler: SIGSYS', 'Signal SIGSYS'),
         ('drseus_sighandler: SIGEMT', 'Signal SIGEMT'),
+
+        ('Segmentation fault', 'Segmentation fault'),
+        ('Illegal instruction', 'Illegal instruction'),
+
         ('command not found', 'Invalid command'),
         ('Unknown command', 'Invalid command'),
         ('No such file or directory', 'Missing file'),
-        ('panic', 'Kernel error'),
-        ('Oops', 'Kernel error'),
-        ('Segmentation fault', 'Segmentation fault'),
-        ('Illegal instruction', 'Illegal instruction'),
-        ('Call Trace:', 'Kernel error'),
+
         ('detected stalls on CPU', 'Stall detected'),
         ('detected stall on CPU', 'Stall detected'),
+
+        ('panic', 'Kernel error'),
+        ('Oops', 'Kernel error'),
+        ('Call Trace:', 'Kernel error'),
         ('malloc(), memory corruption', 'Kernel error'),
         ('malloc(): memory corruption', 'Kernel error'),
         ('Bad swap file entry', 'Kernel error'),
@@ -49,7 +53,12 @@ class dut(object):
         ('double free or corruption', 'Kernel error'),
         ('Rebooting in', 'Kernel error'),
         ('????????', 'Kernel error'),
+        ('Backtrace:', 'Kernel error'),
+        ('Exception stack', 'Kernel error'),
+
         ('Hit any key to stop autoboot:', 'Reboot'),
+        ('Booting Linux', 'Reboot'),
+
         ('can\'t get kernel image', 'Error booting')]
 
     def __init__(self, database, options, aux=False):

@@ -2,7 +2,19 @@
 
 {% block body %}
     <section class="content-header">
-        <h1>Outputs</h1>
+        <h1>
+            {% if type == "dut_output" %}
+                DUT Console Outputs
+            {% elif type == "aux_output" %}
+                AUX Console Outputs
+            {% elif type == "debugger_output" %}
+                Debugger Console Outputs
+            {% elif type == "output_file" %}
+                Output Files
+            {% elif type == "log_file" %}
+                Log Files
+            {% endif %}
+        </h1>
         <ol class="breadcrumb">
             <li><a href="/">Campaigns</a></li>
             {% if campaign %}
@@ -37,23 +49,20 @@
                             </div>
                         </div>
                         <div class="box-body">
-                            {% if file %}
+                            {% if type == "dut_output" %}
+                                <code class="console">{{ result.dut_output }}</code>
+                            {% elif type == "aux_output" %}
+                                <code class="console">{{ result.aux_output }}</code>
+                            {% elif type == "debugger_output" %}
+                                <code class="console">{{ result.debugger_output }}</code>
+                            {% elif type == "output_file" %}
                                 <div align="center">
                                     <div class="output-file"><img src="/result/{{ result.id }}/output"></div>
                                 </div>
-                            {% else %}
-                                {% if campaign.aux %}
-                                    <h3 align="center">
-                                        DUT Output
-                                    </h3>
-                                {% endif %}
-                                <code class="console">{{ result.dut_output }}</code>
-                                {% if campaign.aux %}
-                                    <h3 align="center">
-                                        AUX Output
-                                    </h3>
-                                    <code class="console">{{ result.aux_output }}</code>
-                                {% endif %}
+                            {% elif type == "log_file" %}
+                                <div align="center">
+                                    <div class="log-file"><img src="/result/{{ result.id }}/log"></div>
+                                </div>
                             {% endif %}
                         </div>
                     </div>

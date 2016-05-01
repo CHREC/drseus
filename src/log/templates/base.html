@@ -31,7 +31,7 @@
                             <ul class="nav navbar-nav">
                                 {% if filter %}
                                     <li><a href="#" data-toggle="control-sidebar"><i class="fa fa-filter"></i> Filter</a></li>
-                                    <li><a href="javascript:{}" onclick="document.getElementById('get_form').submit(); return false;"><i class="fa fa-check"></i> Apply</a></li>
+                                    <li><a href="javascript:{}" onclick="apply_filter()"><i class="fa fa-check"></i> Apply</a></li>
                                     <li><a href="javascript:{}" onclick="clear_filter()"><i class="fa fa-close"></i> Clear</a></li>
                                 {% endif %}
                             </ul>
@@ -186,6 +186,15 @@
                 return false;
             });
 
+            function apply_filter(select) {
+                var checkboxes = document.getElementsByName('select_box');
+                for(var i=0, n=checkboxes.length; i<n; i++) {
+                    checkboxes[i].checked = false;
+                }
+                document.getElementById('get_form').submit();
+                return false;
+            }
+
             function clear_filter() {
                 window.location.assign(window.location.href.replace(/\?.*/g, ''));
             }
@@ -195,8 +204,6 @@
         <script src="{% get_static_prefix %}js/bootstrap.min.js"></script>
         <script src="{% get_static_prefix %}js/AdminLTE.min.js"></script>
         <script>
-            // $(".content-wrapper, .right-side").css('min-height', window-height - $('.main-footer').outerHeight());
-
             function filter_scroll() {
                 {% if filter %}
                     $(".control-sidebar .tab-content").slimScroll({destroy: true}).height("auto");

@@ -211,6 +211,51 @@
             </a>
         </li>
     {% endif %}
+    <li class="treeview">
+        <a href="#">
+            <i class="fa fa-download"></i>
+            <span>Download</span>
+            <i class="fa fa-angle-left pull-right"></i>
+        </a>
+        <ul class="treeview-menu">
+            <li>
+                <a href="javascript:{}" onclick="get_output('dut')">
+                    <i class="fa fa-terminal"></i>
+                    <span>DUT Console</span>
+                </a>
+            </li>
+            {% if result.campaign.aux %}
+                <li>
+                    <a href="javascript:{}" onclick="get_output('aux')">
+                        <i class="fa fa-terminal"></i>
+                        <span>AUX Console</span>
+                    </a>
+                </li>
+            {% endif %}
+            <li>
+                <a href="javascript:{}" onclick="get_output('debugger')">
+                    <i class="fa fa-terminal"></i>
+                    <span>Debugger</span>
+                </a>
+            </li>
+            {% if result.campaign.output_file %}
+            <li>
+                <a href="javascript:{}" onclick="get_output('output')">
+                    <i class="fa fa-file-image-o"></i>
+                    <span>Output File</span>
+                </a>
+            </li>
+            {% endif %}
+            {% if result.campaign.log_file %}
+            <li>
+                <a href="javascript:{}" onclick="get_output('log')">
+                    <i class="fa fa-file-code-o"></i>
+                    <span>Log File</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </li>
     <li>
         <a href="javascript:{}" onclick="save_result()">
             <i class="fa fa-save"></i>
@@ -229,6 +274,28 @@
     <script>
         function launch_simics() {
             $.post('', {'launch': true, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
+        }
+
+        function get_output(type) {
+            var input;
+            if (type === 'dut') {
+                input = "<input type='hidden' name='get_dut_output'>";
+            } else if (type === 'debugger') {
+                input = "<input type='hidden' name='get_debugger_output'>";
+            } else if (type === 'aux') {
+                input = "<input type='hidden' name='get_aux_output'>";
+            } else if (type === 'output') {
+                input = "<input type='hidden' name='get_output_file'>";
+            } else if (type === 'log') {
+                input = "<input type='hidden' name='get_log_file'>";
+            } else {
+                return false;
+            }
+            var newdiv = document.createElement('div');
+            newdiv.innerHTML = input;
+            document.getElementById('get_form').appendChild(newdiv);
+            document.getElementById('get_form').submit();
+            return false;
         }
 
         function save_result() {

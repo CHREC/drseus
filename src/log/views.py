@@ -209,21 +209,68 @@ def results_page(request, campaign_id=None):
         results = result_filter.qs.order_by('-id')
     if request.method == 'GET':
         if 'view_output' in request.GET:
-            if 'select_box' in request.GET:
+            if 'view_all' not in request.GET and 'select_box' in request.GET:
                 result_ids = map(int, dict(request.GET)['select_box'])
                 results = models.result.objects.filter(
                     id__in=result_ids).order_by('-id')
-            if 'view_output_raw' in request.GET:
-                dut_output = '\n'.join(
-                    ['\n{:*^80}\n\n{}'.format(
-                        ' Result ID {} '.format(result.id), result.dut_output)
-                     for result in reversed(results)])
-                response = HttpResponse(dut_output,
-                                        content_type='text/plain')
-                response['Content-Disposition'] = \
-                    'attachment; filename="dut_output.txt"'
-                return response
-            if 'view_output_file' in request.GET:
+            if 'view_dut_output' in request.GET:
+                if 'view_download' in request.GET:
+                    dut_output = '\n'.join(
+                        ['\n{:*^80}\n\n{}'.format(
+                            ' Result ID {} '.format(result.id),
+                         result.dut_output)
+                         for result in reversed(results)])
+                    response = HttpResponse(dut_output,
+                                            content_type='text/plain')
+                    response['Content-Disposition'] = \
+                        'attachment; filename="dut_output.txt"'
+                    return response
+                else:
+                    return render(request, 'output.html', {
+                        'campaign': campaign,
+                        'campaign_items': campaign_items if campaign else None,
+                        'navigation_items': navigation_items,
+                        'results': results,
+                        'type': 'dut_output'})
+            elif 'view_aux_output' in request.GET:
+                if 'view_download' in request.GET:
+                    aux_output = '\n'.join(
+                        ['\n{:*^80}\n\n{}'.format(
+                            ' Result ID {} '.format(result.id),
+                         result.aux_output)
+                         for result in reversed(results)])
+                    response = HttpResponse(aux_output,
+                                            content_type='text/plain')
+                    response['Content-Disposition'] = \
+                        'attachment; filename="aux_output.txt"'
+                    return response
+                else:
+                    return render(request, 'output.html', {
+                        'campaign': campaign,
+                        'campaign_items': campaign_items if campaign else None,
+                        'navigation_items': navigation_items,
+                        'results': results,
+                        'type': 'aux_output'})
+            elif 'view_debugger_output' in request.GET:
+                if 'view_download' in request.GET:
+                    debugger_output = '\n'.join(
+                        ['\n{:*^80}\n\n{}'.format(
+                            ' Result ID {} '.format(result.id),
+                         result.debugger_output)
+                         for result in reversed(results)])
+                    response = HttpResponse(debugger_output,
+                                            content_type='text/plain')
+                    response['Content-Disposition'] = \
+                        'attachment; filename="debugger_output.txt"'
+                    return response
+                else:
+                    return render(request, 'output.html', {
+                        'campaign': campaign,
+                        'campaign_items': campaign_items if campaign else None,
+                        'navigation_items': navigation_items,
+                        'results': results,
+                        'type': 'debugger_output'})
+            elif 'view_output_file' in request.GET:
                 result_ids = []
                 for result in results:
                     if exists('campaign-data/{}/results/{}/'.format(
@@ -232,15 +279,25 @@ def results_page(request, campaign_id=None):
                         result_ids.append(result.id)
                 results = models.result.objects.filter(
                     id__in=result_ids).order_by('-id')
-            if results.count():
-                return render(request, 'output.html', {
-                    'campaign': campaign,
-                    'campaign_items': campaign_items if campaign else None,
-                    'file': 'view_output_file' in request.GET,
-                    'navigation_items': navigation_items,
-                    'results': results})
-            else:
-                results = result_filter.qs
+                if 'view_download' in request.GET:
+                    pass  # TODO: implement
+                else:
+                    return render(request, 'output.html', {
+                        'campaign': campaign,
+                        'campaign_items': campaign_items if campaign else None,
+                        'navigation_items': navigation_items,
+                        'results': results,
+                        'type': 'output_file'})
+            elif 'view_log_file' in request.GET:
+                if 'view_download' in request.GET:
+                    pass  # TODO: implement
+                else:
+                    return render(request, 'output.html', {
+                        'campaign': campaign,
+                        'campaign_items': campaign_items if campaign else None,
+                        'navigation_items': navigation_items,
+                        'results': results,
+                        'type': 'log_file'})
     elif request.method == 'POST':
         if 'new_outcome_category' in request.POST:
             results.values('outcome_category').update(
@@ -276,6 +333,32 @@ def results_page(request, campaign_id=None):
 
 def result_page(request, result_id):
     result = models.result.objects.get(id=result_id)
+    if request.method == 'GET':
+        if 'get_dut_output' in request.GET:
+            response = HttpResponse(result.dut_output,
+                                    content_type='text/plain')
+            response['Content-Disposition'] = \
+                'attachment; filename="result_{}_dut_output.txt"'.format(
+                    result.id)
+            return response
+        elif 'get_debugger_output' in request.GET:
+            response = HttpResponse(result.debugger_output,
+                                    content_type='text/plain')
+            response['Content-Disposition'] = \
+                'attachment; filename="result_{}_debugger_output.txt"'.format(
+                    result.id)
+            return response
+        elif 'get_aux_output' in request.GET:
+            response = HttpResponse(result.aux_output,
+                                    content_type='text/plain')
+            response['Content-Disposition'] = \
+                'attachment; filename="result_{}_aux_output.txt"'.format(
+                    result.id)
+            return response
+        elif 'get_output_file' in request.GET:
+            pass  # TODO: implement
+        elif 'get_log_file' in request.GET:
+            pass  # TODO: implement
     campaign_items_ = [(
         item[0], '/campaign/{}/{}'.format(result.campaign_id, item[1]), item[2],
         item[3]) for item in campaign_items]
