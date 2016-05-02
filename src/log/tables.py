@@ -83,7 +83,7 @@ class results(Table):
         return '{:,}'.format(record.cycles)
 
     def render_data_diff(self, record):
-        return '{0:.2f}%'.format(record.data_diff*100)
+        return '{0:.2f}%'.format(min(record.data_diff*100, 99.99))
 
     def render_execution_time(self, record):
         return '{0:.4f}'.format(record.execution_time)
@@ -136,7 +136,7 @@ class result(Table):
         return '{:,}'.format(record.cycles)
 
     def render_data_diff(self, record):
-        return '{0:.2f}%'.format(record.data_diff*100)
+        return '{0:.2f}%'.format(min(record.data_diff*100, 99.99))
 
     def render_execution_time(self, record):
         return '{0:.4f}'.format(record.execution_time)

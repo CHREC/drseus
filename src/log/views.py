@@ -1,11 +1,16 @@
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import redirect, render
 from django_tables2 import RequestConfig
 from imghdr import what
+from io import BytesIO
 from mimetypes import guess_type
 from os.path import exists
 from subprocess import Popen
-from sys import argv
+from sys import argv, stdout
+from tarfile import open as open_tar
+from tarfile import TarInfo
+from tempfile import TemporaryFile
+from time import time
 
 from . import filters
 from . import models
@@ -183,121 +188,211 @@ def injections_page(request, campaign_id=None):
 
 
 def results_page(request, campaign_id=None):
-    if campaign_id is not None:
-        campaign = models.campaign.objects.get(id=campaign_id)
-        campaign_items_ = campaign_items
-        output_file = 'campaign-data/{}/gold_{}'.format(
-            campaign_id, campaign.output_file)
-        if exists(output_file) and what(output_file) is not None:
-            output_file = True
-        else:
-            output_file = False
-        results = campaign.result_set.all()
-    else:
-        campaign = None
-        campaign_items_ = None
-        output_file = True
-        results = models.result.objects.all()
-    result_filter = filters.result(request.GET, queryset=results)
     error_title = None
     error_message = None
-    if not result_filter.qs.count() and results.count():
-        error_title = 'Filter Error'
-        error_message = 'Filter did not return any results and was ignored.'
-        result_filter = filters.result(None, queryset=results)
+    result_filter = None
+    if request.method == 'GET' and 'view_output' in request.GET and \
+            'view_all' not in request.GET and 'select_box' in request.GET:
+        result_ids = map(int, dict(request.GET)['select_box'])
+        results = models.result.objects.filter(
+            id__in=result_ids).order_by('-id')
     else:
-        results = result_filter.qs.order_by('-id')
-    if request.method == 'GET':
-        if 'view_output' in request.GET:
-            if 'view_all' not in request.GET and 'select_box' in request.GET:
-                result_ids = map(int, dict(request.GET)['select_box'])
-                results = models.result.objects.filter(
-                    id__in=result_ids).order_by('-id')
-            if 'view_dut_output' in request.GET:
-                if 'view_download' in request.GET:
-                    dut_output = '\n'.join(
-                        ['\n{:*^80}\n\n{}'.format(
-                            ' Result ID {} '.format(result.id),
-                         result.dut_output)
-                         for result in reversed(results)])
-                    response = HttpResponse(dut_output,
-                                            content_type='text/plain')
-                    response['Content-Disposition'] = \
-                        'attachment; filename="dut_output.txt"'
-                    return response
-                else:
-                    return render(request, 'output.html', {
-                        'campaign': campaign,
-                        'campaign_items': campaign_items if campaign else None,
-                        'navigation_items': navigation_items,
-                        'results': results,
-                        'type': 'dut_output'})
-            elif 'view_aux_output' in request.GET:
-                if 'view_download' in request.GET:
-                    aux_output = '\n'.join(
-                        ['\n{:*^80}\n\n{}'.format(
-                            ' Result ID {} '.format(result.id),
-                         result.aux_output)
-                         for result in reversed(results)])
-                    response = HttpResponse(aux_output,
-                                            content_type='text/plain')
-                    response['Content-Disposition'] = \
-                        'attachment; filename="aux_output.txt"'
-                    return response
-                else:
-                    return render(request, 'output.html', {
-                        'campaign': campaign,
-                        'campaign_items': campaign_items if campaign else None,
-                        'navigation_items': navigation_items,
-                        'results': results,
-                        'type': 'aux_output'})
-            elif 'view_debugger_output' in request.GET:
-                if 'view_download' in request.GET:
-                    debugger_output = '\n'.join(
-                        ['\n{:*^80}\n\n{}'.format(
-                            ' Result ID {} '.format(result.id),
-                         result.debugger_output)
-                         for result in reversed(results)])
-                    response = HttpResponse(debugger_output,
-                                            content_type='text/plain')
-                    response['Content-Disposition'] = \
-                        'attachment; filename="debugger_output.txt"'
-                    return response
-                else:
-                    return render(request, 'output.html', {
-                        'campaign': campaign,
-                        'campaign_items': campaign_items if campaign else None,
-                        'navigation_items': navigation_items,
-                        'results': results,
-                        'type': 'debugger_output'})
-            elif 'view_output_file' in request.GET:
-                result_ids = []
-                for result in results:
-                    if exists('campaign-data/{}/results/{}/'.format(
-                            result.campaign_id, result.id,
-                            result.campaign.output_file)):
-                        result_ids.append(result.id)
-                results = models.result.objects.filter(
-                    id__in=result_ids).order_by('-id')
-                if 'view_download' in request.GET:
-                    pass  # TODO: implement
-                else:
-                    return render(request, 'output.html', {
-                        'campaign': campaign,
-                        'campaign_items': campaign_items if campaign else None,
-                        'navigation_items': navigation_items,
-                        'results': results,
-                        'type': 'output_file'})
-            elif 'view_log_file' in request.GET:
-                if 'view_download' in request.GET:
-                    pass  # TODO: implement
-                else:
-                    return render(request, 'output.html', {
-                        'campaign': campaign,
-                        'campaign_items': campaign_items if campaign else None,
-                        'navigation_items': navigation_items,
-                        'results': results,
-                        'type': 'log_file'})
+        if campaign_id is not None:
+            campaign = models.campaign.objects.get(id=campaign_id)
+            campaign_items_ = campaign_items
+            output_file = 'campaign-data/{}/gold_{}'.format(
+                campaign_id, campaign.output_file)
+            if exists(output_file) and what(output_file) is not None:
+                output_file = True
+            else:
+                output_file = False
+            results = campaign.result_set.all()
+        else:
+            campaign = None
+            campaign_items_ = None
+            output_file = True
+            results = models.result.objects.all()
+        result_filter = filters.result(request.GET, queryset=results)
+        if not result_filter.qs.count() and results.count():
+            error_title = 'Filter Error'
+            error_message = 'Filter did not return any results and was ignored.'
+            result_filter = filters.result(None, queryset=results)
+        else:
+            results = result_filter.qs.order_by('-id')
+    if request.method == 'GET' and 'view_output' in request.GET:
+        if 'view_dut_output' in request.GET:
+            if 'view_download' in request.GET:
+                temp_file = TemporaryFile()
+                start = time()
+                with open_tar(fileobj=temp_file, mode='w:gz') as archive:
+                    for result in results:
+                        with BytesIO(result.dut_output.encode('utf-8')) as \
+                                byte_file:
+                            info = TarInfo('{}_dut_output.txt'.format(
+                                result.id))
+                            info.size = len(result.dut_output)
+                            archive.addfile(info, byte_file)
+                print('archive created', round(time()-start, 2), 'seconds')
+                response = FileResponse(
+                    temp_file, content_type='application/x-compressed')
+                response['Content-Disposition'] = \
+                    'attachment; filename=dut_outputs.tar.gz'
+                response['Content-Length'] = temp_file.tell()
+                temp_file.seek(0)
+                return response
+            else:
+                return render(request, 'output.html', {
+                    'campaign': campaign,
+                    'campaign_items': campaign_items if campaign else None,
+                    'navigation_items': navigation_items,
+                    'results': results,
+                    'type': 'dut_output'})
+        elif 'view_aux_output' in request.GET:
+            if 'view_download' in request.GET:
+                aux_output = '\n'.join(
+                    ['\n{:*^80}\n\n{}'.format(
+                        ' Result ID {} '.format(result.id),
+                     result.aux_output)
+                     for result in reversed(results)])
+                response = HttpResponse(aux_output,
+                                        content_type='text/plain')
+                response['Content-Disposition'] = \
+                    'attachment; filename="aux_output.txt"'
+                return response
+                temp_file = TemporaryFile()
+                start = time()
+                with open_tar(fileobj=temp_file, mode='w:gz') as archive:
+                    for result in results:
+                        with BytesIO(result.aux_output.encode('utf-8')) as \
+                                byte_file:
+                            info = TarInfo('{}_aux_output.txt'.format(
+                                result.id))
+                            info.size = len(result.aux_output)
+                            archive.addfile(info, byte_file)
+                print('archive created', round(time()-start, 2), 'seconds')
+                response = FileResponse(
+                    temp_file, content_type='application/x-compressed')
+                response['Content-Disposition'] = \
+                    'attachment; filename=aux_outputs.tar.gz'
+                response['Content-Length'] = temp_file.tell()
+                temp_file.seek(0)
+                return response
+            else:
+                return render(request, 'output.html', {
+                    'campaign': campaign,
+                    'campaign_items': campaign_items if campaign else None,
+                    'navigation_items': navigation_items,
+                    'results': results,
+                    'type': 'aux_output'})
+        elif 'view_debugger_output' in request.GET:
+            if 'view_download' in request.GET:
+                debugger_output = '\n'.join(
+                    ['\n{:*^80}\n\n{}'.format(
+                        ' Result ID {} '.format(result.id),
+                     result.debugger_output)
+                     for result in reversed(results)])
+                response = HttpResponse(debugger_output,
+                                        content_type='text/plain')
+                response['Content-Disposition'] = \
+                    'attachment; filename="debugger_output.txt"'
+                return response
+                temp_file = TemporaryFile()
+                start = time()
+                with open_tar(fileobj=temp_file, mode='w:gz') as archive:
+                    for result in results:
+                        with BytesIO(
+                                result.debugger_output.encode('utf-8')) as \
+                                byte_file:
+                            info = TarInfo('{}_debugger_output.txt'.format(
+                                result.id))
+                            info.size = len(result.debugger_output)
+                            archive.addfile(info, byte_file)
+                print('archive created', round(time()-start, 2), 'seconds')
+                response = FileResponse(
+                    temp_file, content_type='application/x-compressed')
+                response['Content-Disposition'] = \
+                    'attachment; filename=debugger_outputs.tar.gz'
+                response['Content-Length'] = temp_file.tell()
+                temp_file.seek(0)
+                return response
+            else:
+                return render(request, 'output.html', {
+                    'campaign': campaign,
+                    'campaign_items': campaign_items if campaign else None,
+                    'navigation_items': navigation_items,
+                    'results': results,
+                    'type': 'debugger_output'})
+        elif 'view_output_file' in request.GET:
+            result_ids = []
+            for result in results:
+                if exists('campaign-data/{}/results/{}/{}'.format(
+                        result.campaign_id, result.id,
+                        result.campaign.output_file)):
+                    result_ids.append(result.id)
+            results = models.result.objects.filter(
+                id__in=result_ids).order_by('-id')
+            if 'view_download' in request.GET:
+                temp_file = TemporaryFile()
+                start = time()
+                with open_tar(fileobj=temp_file, mode='w:gz') as archive:
+                    for result in results:
+                        archive.add(
+                            'campaign-data/{}/results/{}/{}'.format(
+                                result.campaign_id, result.id,
+                                result.campaign.output_file),
+                            '{}_{}'.format(
+                                result.id, result.campaign.output_file))
+                print('archive created', round(time()-start, 2), 'seconds')
+                response = FileResponse(
+                    temp_file, content_type='application/x-compressed')
+                response['Content-Disposition'] = \
+                    'attachment; filename=output_files.tar.gz'
+                response['Content-Length'] = temp_file.tell()
+                temp_file.seek(0)
+                return response
+            else:
+                return render(request, 'output.html', {
+                    'campaign': campaign,
+                    'campaign_items': campaign_items if campaign else None,
+                    'navigation_items': navigation_items,
+                    'results': results,
+                    'type': 'output_file'})
+        elif 'view_log_file' in request.GET:
+            result_ids = []
+            for result in results:
+                if exists('campaign-data/{}/results/{}/{}'.format(
+                        result.campaign_id, result.id,
+                        result.campaign.log_file)):
+                    result_ids.append(result.id)
+            results = models.result.objects.filter(
+                id__in=result_ids).order_by('-id')
+            if 'view_download' in request.GET:
+                temp_file = TemporaryFile()
+                start = time()
+                stdout.flush()
+                with open_tar(fileobj=temp_file, mode='w:gz') as archive:
+                    for result in results:
+                        archive.add(
+                            'campaign-data/{}/results/{}/{}'.format(
+                                result.campaign_id, result.id,
+                                result.campaign.log_file),
+                            '{}_{}'.format(
+                                result.id, result.campaign.log_file))
+                print('archive created', round(time()-start, 2), 'seconds')
+                response = FileResponse(
+                    temp_file, content_type='application/x-compressed')
+                response['Content-Disposition'] = \
+                    'attachment; filename=log_files.tar.gz'
+                response['Content-Length'] = temp_file.tell()
+                temp_file.seek(0)
+                return response
+            else:
+                return render(request, 'output.html', {
+                    'campaign': campaign,
+                    'campaign_items': campaign_items if campaign else None,
+                    'navigation_items': navigation_items,
+                    'results': results,
+                    'type': 'log_file'})
     elif request.method == 'POST':
         if 'new_outcome_category' in request.POST:
             results.values('outcome_category').update(
@@ -338,27 +433,35 @@ def result_page(request, result_id):
             response = HttpResponse(result.dut_output,
                                     content_type='text/plain')
             response['Content-Disposition'] = \
-                'attachment; filename="result_{}_dut_output.txt"'.format(
-                    result.id)
+                'attachment; filename="{}_dut_output.txt"'.format(
+                    result_id)
             return response
         elif 'get_debugger_output' in request.GET:
             response = HttpResponse(result.debugger_output,
                                     content_type='text/plain')
             response['Content-Disposition'] = \
-                'attachment; filename="result_{}_debugger_output.txt"'.format(
-                    result.id)
+                'attachment; filename="{}_debugger_output.txt"'.format(
+                    result_id)
             return response
         elif 'get_aux_output' in request.GET:
             response = HttpResponse(result.aux_output,
                                     content_type='text/plain')
             response['Content-Disposition'] = \
-                'attachment; filename="result_{}_aux_output.txt"'.format(
-                    result.id)
+                'attachment; filename="{}_aux_output.txt"'.format(
+                    result_id)
             return response
         elif 'get_output_file' in request.GET:
-            pass  # TODO: implement
+            response = output(None, result_id)
+            response['Content-Disposition'] = \
+                'attachment; filename={}_{}'.format(
+                    result_id, result.campaign.output_file)
+            return response
         elif 'get_log_file' in request.GET:
-            pass  # TODO: implement
+            response = log(None, result_id)
+            response['Content-Disposition'] = \
+                'attachment; filename={}_{}'.format(
+                    result_id, result.campaign.log_file)
+            return response
     campaign_items_ = [(
         item[0], '/campaign/{}/{}'.format(result.campaign_id, item[1]), item[2],
         item[3]) for item in campaign_items]
@@ -439,18 +542,18 @@ def output(request, result_id=None, campaign_id=None):
         output_file = 'campaign-data/{}/gold_{}'.format(campaign_id,
                                                         campaign.output_file)
     if exists(output_file):
-        return HttpResponse(open(output_file, 'rb').read(),
-                            content_type=guess_type(output_file))
+        return FileResponse(
+            open(output_file, 'rb'), content_type=guess_type(output_file))
     else:
         return HttpResponse()
 
 
 def log(request, result_id):
     result = models.result.objects.get(id=result_id)
-    output_file = 'campaign-data/{}/results/{}/{}'.format(
+    log_file = 'campaign-data/{}/results/{}/{}'.format(
         result.campaign_id, result_id, result.campaign.log_file)
-    if exists(output_file):
-        return HttpResponse(open(output_file, 'rb').read(),
-                            content_type=guess_type(output_file))
+    if exists(log_file):
+        return FileResponse(
+            open(log_file, 'rb'), content_type=guess_type(log_file))
     else:
         return HttpResponse()
