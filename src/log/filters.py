@@ -162,7 +162,8 @@ class injection(FilterSet):
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
 
     class Meta:
-        exclude = ('config_object', 'gold_value', 'injected_value', 'result',
+        exclude = ('config_object', 'gold_value', 'injected_value',
+                   'register_alias', 'result', 'target', 'target_index', 'time',
                    'timestamp')
         model = models.injection
 
@@ -332,6 +333,12 @@ class result(FilterSet):
         label='Success',
         widget=Select(choices=(('3', 'Unknown'), ('1', 'True'), ('0', 'False')),
                       attrs={'class': 'form-control'}), help_text='')
+    id_gt = NumberFilter(
+        name='id', label='Result ID (>)', lookup_type='gt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
+    id_lt = NumberFilter(
+        name='id', label='Result ID (<)', lookup_type='lt',
+        widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     injection__bit = MultipleChoiceFilter(
         label='Bit',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
@@ -367,13 +374,7 @@ class result(FilterSet):
         label='TLB entry',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     num_injections = MultipleChoiceFilter(
-        label='Quantity',
-        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    num_memory_diffs = MultipleChoiceFilter(
-        label='Quantity',
-        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
-    num_register_diffs = MultipleChoiceFilter(
-        label='Quantity',
+        label='Injection quantity',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     num_memory_diffs_gt = NumberFilter(
         name='num_memory_diffs', label='Register diffs (>)', lookup_type='gt',
@@ -395,7 +396,8 @@ class result(FilterSet):
     class Meta:
         model = models.result
         exclude = ('aux_serial_port', 'campaign', 'cycles', 'data_diff',
-                   'detected_errors', 'execution_time', 'returned', 'timestamp')
+                   'detected_errors', 'execution_time', 'num_memory_diffs',
+                   'num_register_diffs', 'returned', 'timestamp')
 
 
 class simics_register_diff(FilterSet):
