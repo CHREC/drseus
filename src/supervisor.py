@@ -22,7 +22,7 @@ from .simics import simics
 # TODO: add background read thread and interact command
 #       (remove dut read and dut command)
 class supervisor(Cmd):
-    def __init__(self, campaign, options):
+    def __init__(self, options):
         options.injections = 0
         options.latent_iterations = 0
         options.compare_all = False
@@ -31,8 +31,8 @@ class supervisor(Cmd):
             switch = power_switch(options)
         else:
             switch = None
-        self.drseus = fault_injector(campaign, options, switch)
-        if campaign.simics:
+        self.drseus = fault_injector(options, switch)
+        if self.drseus.db.campaign.simics:
             self.launch_simics()
         else:
             self.drseus.debugger.reset_dut()
@@ -41,7 +41,7 @@ class supervisor(Cmd):
         if exists('.supervisor_history'):
             read_history_file('.supervisor_history')
         set_history_length(options.history_length)
-        if campaign.aux:
+        if self.drseus.db.campaign.aux:
             self.__class__ = aux_supervisor
 
     def launch_simics(self):

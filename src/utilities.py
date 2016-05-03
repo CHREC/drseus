@@ -378,7 +378,7 @@ def launch_openocd(options):
 
 
 def launch_supervisor(options):
-    drseus = supervisor(get_campaign(options), options)
+    drseus = supervisor(options)
     try:
         drseus.cmdloop()
     except:

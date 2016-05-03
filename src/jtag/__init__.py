@@ -159,16 +159,12 @@ class jtag(object):
                     kwargs={'command': self.db.campaign.aux_command,
                             'flush': False})
                 aux_process.start()
-            dut_process = Thread(
-                target=self.dut.command,
-                kwargs={'command': self.db.campaign.command,
-                        'flush': False})
-            dut_process.start()
+            self.dut.write('{}\n'.format(self.db.campaign.command))
             if self.db.campaign.aux:
                 aux_process.join()
             if self.db.campaign.kill_dut:
                 self.dut.write('\x03')
-            dut_process.join()
+            self.dut.read_until()
         self.db.campaign.execution_time = \
             self.dut.get_timer_value() / self.options.iterations
         event.success = True
@@ -180,7 +176,7 @@ class jtag(object):
             injection_times.append(uniform(0,
                                            self.db.campaign.execution_time))
         injections = []
-        if self.targets:
+        if hasattr(self, 'targets') and self.targets:
             for injection_time in sorted(injection_times):
                 injection = choose_injection(
                     self.targets, self.options.selected_target_indices)

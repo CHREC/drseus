@@ -32,12 +32,9 @@ td .console {
     margin: 0 auto;
     width: 80%;
 }
-.output-file {
-    text-align: center;
-}
-.output-file img {
-    max-width:100%;
-    max-height:100%;
+.file {
+    height: 500px;
+    width: 100%;
 }
 .table-container {
     overflow-x: auto;

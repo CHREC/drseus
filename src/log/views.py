@@ -1,7 +1,6 @@
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import redirect, render
 from django_tables2 import RequestConfig
-from imghdr import what
 from io import BytesIO
 from mimetypes import guess_type
 from os.path import exists
@@ -54,7 +53,8 @@ def campaign_page(request, campaign_id):
     if campaign.output_file:
         output_file = 'campaign-data/{}/gold_{}'.format(campaign_id,
                                                         campaign.output_file)
-        output_file = exists(output_file) and what(output_file) is not None
+        output_file = \
+            exists(output_file) and guess_type(output_file)[0] is not None
     else:
         output_file = False
     campaign_table = tables.campaign(models.campaign.objects.filter(
@@ -191,6 +191,10 @@ def results_page(request, campaign_id=None):
     error_title = None
     error_message = None
     result_filter = None
+    if campaign_id is not None:
+        campaign = models.campaign.objects.get(id=campaign_id)
+    else:
+        campaign = None
     if request.method == 'GET' and 'view_output' in request.GET and \
             'view_all' not in request.GET and 'select_box' in request.GET:
         result_ids = map(int, dict(request.GET)['select_box'])
@@ -198,17 +202,15 @@ def results_page(request, campaign_id=None):
             id__in=result_ids).order_by('-id')
     else:
         if campaign_id is not None:
-            campaign = models.campaign.objects.get(id=campaign_id)
             campaign_items_ = campaign_items
             output_file = 'campaign-data/{}/gold_{}'.format(
                 campaign_id, campaign.output_file)
-            if exists(output_file) and what(output_file) is not None:
+            if exists(output_file) and guess_type(output_file)[0] is not None:
                 output_file = True
             else:
                 output_file = False
             results = campaign.result_set.all()
         else:
-            campaign = None
             campaign_items_ = None
             output_file = True
             results = models.result.objects.all()
@@ -249,16 +251,6 @@ def results_page(request, campaign_id=None):
                     'type': 'dut_output'})
         elif 'view_aux_output' in request.GET:
             if 'view_download' in request.GET:
-                aux_output = '\n'.join(
-                    ['\n{:*^80}\n\n{}'.format(
-                        ' Result ID {} '.format(result.id),
-                     result.aux_output)
-                     for result in reversed(results)])
-                response = HttpResponse(aux_output,
-                                        content_type='text/plain')
-                response['Content-Disposition'] = \
-                    'attachment; filename="aux_output.txt"'
-                return response
                 temp_file = TemporaryFile()
                 start = time()
                 with open_tar(fileobj=temp_file, mode='w:gz') as archive:
@@ -286,16 +278,6 @@ def results_page(request, campaign_id=None):
                     'type': 'aux_output'})
         elif 'view_debugger_output' in request.GET:
             if 'view_download' in request.GET:
-                debugger_output = '\n'.join(
-                    ['\n{:*^80}\n\n{}'.format(
-                        ' Result ID {} '.format(result.id),
-                     result.debugger_output)
-                     for result in reversed(results)])
-                response = HttpResponse(debugger_output,
-                                        content_type='text/plain')
-                response['Content-Disposition'] = \
-                    'attachment; filename="debugger_output.txt"'
-                return response
                 temp_file = TemporaryFile()
                 start = time()
                 with open_tar(fileobj=temp_file, mode='w:gz') as archive:
@@ -468,13 +450,14 @@ def result_page(request, result_id):
     if result.campaign.output_file:
         output_file = 'campaign-data/{}/results/{}/{}'.format(
             result.campaign_id, result_id, result.campaign.output_file)
-        output_file = exists(output_file) and what(output_file) is not None
+        output_file = \
+            exists(output_file) and guess_type(output_file)[0] is not None
     else:
         output_file = False
     if result.campaign.log_file:
         log_file = 'campaign-data/{}/results/{}/{}'.format(
             result.campaign_id, result_id, result.campaign.log_file)
-        log_file = exists(log_file) and what(log_file) is not None
+        log_file = exists(log_file) and guess_type(log_file)[0] is not None
     else:
         log_file = False
     result_table = tables.result(models.result.objects.filter(id=result_id))
