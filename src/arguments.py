@@ -309,7 +309,7 @@ new_campaign.add_argument(
 new_campaign.add_argument(
     '-l', '--log',
     dest='log_file',
-    default='',
+    nargs='+',
     help='target application log file')
 new_campaign.add_argument(
     '-x', '--aux',

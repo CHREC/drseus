@@ -1,7 +1,7 @@
 from datetime import datetime
 from io import StringIO
 from os import listdir, makedirs
-from os.path import exists, isdir, join
+from os.path import exists
 from paramiko import AutoAddPolicy, RSAKey, SSHClient
 from re import compile as regex
 from re import DOTALL, escape
@@ -224,6 +224,7 @@ class dut(object):
             raise DrSEUsError(error_type)
 
     def send_files(self, files=None, attempts=10):
+        rename_gold = False
         if not files:
             files = []
             location = 'campaign-data/{}/{}-files'.format(
@@ -246,8 +247,9 @@ class dut(object):
                     copy(file_, location)
             if hasattr(self.options, 'local_diff') and \
                     self.options.local_diff and self.db.campaign.output_file:
-                files.append('campaign-data/{}/gold_{}'.format(
-                    self.db.campaign.id), self.db.campaign.output_file)
+                files.append('campaign-data/{}/gold/{}'.format(
+                    self.db.campaign.id, self.db.campaign.output_file))
+                rename_gold = True
         if not files:
             return
         if self.options.debug:
@@ -302,10 +304,10 @@ class dut(object):
                             'Information', 'DUT' if not self.aux else 'AUX',
                             'Sent files', ', '.join(files))
                         break
+        if rename_gold:
+            self.command('mv {0} gold_{0}'.format(self.db.campaign.output_file))
 
     def get_file(self, file_, local_path='', attempts=10):
-        if isdir(local_path):
-            local_path = join(local_path, file_)
         if self.options.debug:
             print(colored('getting file...', 'blue'), end='')
             stdout.flush()

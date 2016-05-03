@@ -51,7 +51,7 @@ def campaign_page(request, campaign_id):
     campaign = models.campaign.objects.get(id=campaign_id)
     chart_data = target_bits_chart(campaign)
     if campaign.output_file:
-        output_file = 'campaign-data/{}/gold_{}'.format(campaign_id,
+        output_file = 'campaign-data/{}/gold/{}'.format(campaign_id,
                                                         campaign.output_file)
         output_file = \
             exists(output_file) and guess_type(output_file)[0] is not None
@@ -340,26 +340,16 @@ def results_page(request, campaign_id=None):
                     'results': results,
                     'type': 'output_file'})
         elif 'view_log_file' in request.GET:
-            result_ids = []
-            for result in results:
-                if exists('campaign-data/{}/results/{}/{}'.format(
-                        result.campaign_id, result.id,
-                        result.campaign.log_file)):
-                    result_ids.append(result.id)
-            results = models.result.objects.filter(
-                id__in=result_ids).order_by('-id')
             if 'view_download' in request.GET:
                 temp_file = TemporaryFile()
                 start = time()
-                stdout.flush()
                 with open_tar(fileobj=temp_file, mode='w:gz') as archive:
                     for result in results:
-                        archive.add(
-                            'campaign-data/{}/results/{}/{}'.format(
-                                result.campaign_id, result.id,
-                                result.campaign.log_file),
-                            '{}_{}'.format(
-                                result.id, result.campaign.log_file))
+                        for log_file in result.campaign.log_file:
+                            archive.add(
+                                'campaign-data/{}/results/{}/{}'.format(
+                                    result.campaign_id, result.id, log_file),
+                                '{}_{}'.format(result.id, log_file))
                 print('archive created', round(time()-start, 2), 'seconds')
                 response = FileResponse(
                     temp_file, content_type='application/x-compressed')
@@ -433,16 +423,25 @@ def result_page(request, result_id):
                     result_id)
             return response
         elif 'get_output_file' in request.GET:
-            response = output(None, result_id)
+            response = get_file(result.campaign.output_file, result_id)
             response['Content-Disposition'] = \
                 'attachment; filename={}_{}'.format(
                     result_id, result.campaign.output_file)
             return response
         elif 'get_log_file' in request.GET:
-            response = log(None, result_id)
+            temp_file = TemporaryFile()
+            with open_tar(fileobj=temp_file, mode='w:gz') as archive:
+                for log_file in result.campaign.log_file:
+                    archive.add(
+                        'campaign-data/{}/results/{}/{}'.format(
+                            result.campaign_id, result.id, log_file),
+                        '{}_{}'.format(result.id, log_file))
+            response = FileResponse(
+                temp_file, content_type='application/x-compressed')
             response['Content-Disposition'] = \
-                'attachment; filename={}_{}'.format(
-                    result_id, result.campaign.log_file)
+                'attachment; filename={}_log_files.tar.gz'.format(result.id)
+            response['Content-Length'] = temp_file.tell()
+            temp_file.seek(0)
             return response
     campaign_items_ = [(
         item[0], '/campaign/{}/{}'.format(result.campaign_id, item[1]), item[2],
@@ -454,12 +453,6 @@ def result_page(request, result_id):
             exists(output_file) and guess_type(output_file)[0] is not None
     else:
         output_file = False
-    if result.campaign.log_file:
-        log_file = 'campaign-data/{}/results/{}/{}'.format(
-            result.campaign_id, result_id, result.campaign.log_file)
-        log_file = exists(log_file) and guess_type(log_file)[0] is not None
-    else:
-        log_file = False
     result_table = tables.result(models.result.objects.filter(id=result_id))
     event_table = tables.event(result.event_set.all())
     if request.method == 'POST' and 'launch' in request.POST:
@@ -506,7 +499,6 @@ def result_page(request, result_id):
         'event_table': event_table,
         'filter': register_filter,
         'injection_table': injection_table,
-        'log_file': log_file,
         'memory_table': memory_table,
         'navigation_items': navigation_items,
         'output_file': output_file,
@@ -515,28 +507,15 @@ def result_page(request, result_id):
         'result_table': result_table})
 
 
-def output(request, result_id=None, campaign_id=None):
+def get_file(request, filename, result_id=None, campaign_id=None):
     if result_id is not None:
         result = models.result.objects.get(id=result_id)
-        output_file = 'campaign-data/{}/results/{}/{}'.format(
-            result.campaign_id, result_id, result.campaign.output_file)
+        file_ = 'campaign-data/{}/results/{}/{}'.format(
+            result.campaign_id, result_id, filename)
     elif campaign_id is not None:
-        campaign = models.campaign.objects.get(id=campaign_id)
-        output_file = 'campaign-data/{}/gold_{}'.format(campaign_id,
-                                                        campaign.output_file)
-    if exists(output_file):
+        file_ = 'campaign-data/{}/gold/{}'.format(campaign_id, filename)
+    if exists(file_):
         return FileResponse(
-            open(output_file, 'rb'), content_type=guess_type(output_file))
+            open(file_, 'rb'), content_type=guess_type(file_))
     else:
-        return HttpResponse()
-
-
-def log(request, result_id):
-    result = models.result.objects.get(id=result_id)
-    log_file = 'campaign-data/{}/results/{}/{}'.format(
-        result.campaign_id, result_id, result.campaign.log_file)
-    if exists(log_file):
-        return FileResponse(
-            open(log_file, 'rb'), content_type=guess_type(log_file))
-    else:
-        return HttpResponse()
+        return HttpResponse('File not found')

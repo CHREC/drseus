@@ -68,50 +68,44 @@
             </div>
         </div>
 
-        {% if output_file %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="box">
-                        <div class="box-header">
-                            <h3 class="box-title">Output File</h3>
-                            <div class="box-tools pull-right">
-                                <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-                                <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
-                            </div>
-                        </div>
-                        <div class="box-body">
-                            <iframe class="file" frameborder="0" src="/result/{{ result.id }}/output"></iframe>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-
-        {% if log_file %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="box">
-                        <div class="box-header">
-                            <h3 class="box-title">Log File</h3>
-                            <div class="box-tools pull-right">
-                                <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-                                <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
-                            </div>
-                        </div>
-                        <div class="box-body">
-                            <iframe class="file" frameborder="0" src="/result/{{ result.id }}/log"></iframe>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-
         <div class="row">
-            {% if result.campaign.aux %}
-            <div class="col-lg-5">
-            {% else %}
-            <div class="col-lg-6">
+            {% if output_file %}
+                <div class="col-lg-6">
+                    <div class="box">
+                        <div class="box-header">
+                            <h3 class="box-title">Output File: {{ result.campaign.output_file }}</h3>
+                            <div class="box-tools pull-right">
+                                <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                                <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="box-body">
+                            <iframe class="file" frameborder="0" src="/result/{{ result.id }}/file/{{ result.campaign.output_file }}"></iframe>
+                        </div>
+                    </div>
+                </div>
             {% endif %}
+
+            {% if result.campaign.log_file %}
+                {% for log_file in result.campaign.log_file %}
+                    <div class="col-lg-6">
+                        <div class="box">
+                            <div class="box-header">
+                                <h3 class="box-title">Log File: {{ log_file }}</h3>
+                                <div class="box-tools pull-right">
+                                    <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                                    <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                                </div>
+                            </div>
+                            <div class="box-body">
+                                <iframe class="file" frameborder="0" src="/result/{{ result.id }}/file/{{ log_file }}"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="col-lg-6">
                 <div class="box">
                     <div class="box-header">
                         <h3 class="box-title">DUT Console Output</h3>
@@ -127,7 +121,7 @@
             </div>
 
             {% if result.campaign.aux %}
-                <div class="col-lg-5">
+                <div class="col-lg-6">
                     <div class="box">
                         <div class="box-header">
                             <h3 class="box-title">AUX Console Output</h3>
@@ -144,11 +138,7 @@
             {% endif %}
 
             {% if result.debugger_output %}
-                {% if result.campaign.aux %}
-                <div class="col-lg-2">
-                {% else %}
                 <div class="col-lg-6">
-                {% endif %}
                     <div class="box">
                         <div class="box-header">
                             <h3 class="box-title">Debugger Output</h3>
@@ -163,10 +153,8 @@
                     </div>
                 </div>
             {% endif %}
-        </div>
 
-        {% if result.campaign.simics %}
-            <div class="row">
+            {% if result.campaign.simics %}
                 <div class="col-lg-6">
                     <div class="box">
                         <div class="box-header">
@@ -177,7 +165,9 @@
                             </div>
                         </div>
                         <div class="box-body">
-                            {% render_table register_table %}
+                            <div class="resize">
+                                {% render_table register_table %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -192,12 +182,14 @@
                             </div>
                         </div>
                         <div class="box-body">
-                            {% render_table memory_table %}
+                            <div class="resize">
+                                {% render_table memory_table %}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
             {% endif %}
+        </div>
     </section>
 {% endblock %}
 

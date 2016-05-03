@@ -18,8 +18,9 @@ urlpatterns = [
         views.category_charts_page),
     url(r'^campaign/(?P<campaign_id>[0-9]+)/outcome_charts$',
         views.charts_page),
-    url(r'^campaign/(?P<campaign_id>[0-9]+)/output$', views.output),
+    url(r'^campaign/(?P<campaign_id>[0-9]+)/file/(?P<filename>.+)$',
+        views.get_file),
     url(r'^result/(?P<result_id>[0-9]+)$', views.result_page),
-    url(r'^result/(?P<result_id>[0-9]+)/output$', views.output),
-    url(r'^result/(?P<result_id>[0-9]+)/log$', views.log)
+    url(r'^result/(?P<result_id>[0-9]+)/file/(?P<filename>.+)$',
+        views.get_file)
 ]

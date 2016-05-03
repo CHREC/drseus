@@ -56,9 +56,13 @@
                             {% elif type == "debugger_output" %}
                                 <code class="console">{{ result.debugger_output }}</code>
                             {% elif type == "output_file" %}
-                                <iframe class="file" frameborder="0" src="/result/{{ result.id }}/output"></iframe>
+                                Output file: {{ result.campaign.output_file }}
+                                <iframe class="file" frameborder="0" src="/result/{{ result.id }}/file/{{ result.campaign.output_file }}"></iframe>
                             {% elif type == "log_file" %}
-                                <iframe class="file" frameborder="0" src="/result/{{ result.id }}/log"></iframe>
+                                {% for log_file in result.campaign.log_file %}
+                                    <p>Log file: {{ log_file }}</p>
+                                    <iframe class="file" frameborder="0" src="/result/{{ result.id }}/file/{{ log_file }}"></iframe>
+                                {% endfor %}
                             {% endif %}
                         </div>
                     </div>
