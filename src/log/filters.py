@@ -2,14 +2,14 @@ from django.forms import NumberInput, Select, SelectMultiple, Textarea
 from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             MultipleChoiceFilter, NumberFilter)
 from threading import Thread
-from time import time
+from time import perf_counter
 
 from . import fix_sort_list, models
 
 
 class event(FilterSet):
     def __init__(self, *args, **kwargs):
-        start = time()
+        start = perf_counter()
         super().__init__(*args, **kwargs)
         self.queryset = kwargs['queryset']
 
@@ -40,7 +40,7 @@ class event(FilterSet):
         type_thread.join()
         level_thread.join()
         source_thread.join()
-        print('event filter', round(time()-start, 2), 'seconds')
+        print('event filter', round(perf_counter()-start, 2), 'seconds')
 
     def choices(self, events, attribute):
         exclude_kwargs = {'{}__isnull'.format(attribute): True}
@@ -74,7 +74,7 @@ class event(FilterSet):
 
 class injection(FilterSet):
     def __init__(self, *args, **kwargs):
-        start = time()
+        start = perf_counter()
         super().__init__(*args, **kwargs)
         self.queryset = kwargs['queryset']
 
@@ -112,7 +112,7 @@ class injection(FilterSet):
         self.filters['tlb_entry'].extra.update(choices=tlb_entry_choices)
         self.filters['tlb_entry'].widget.attrs['size'] = min(
             len(tlb_entry_choices), 25)
-        print('injection filter', round(time()-start, 2), 'seconds')
+        print('injection filter', round(perf_counter()-start, 2), 'seconds')
 
     def choices(self, injections, attribute):
         choices = []
@@ -170,7 +170,7 @@ class injection(FilterSet):
 
 class result(FilterSet):
     def __init__(self, *args, **kwargs):
-        start = time()
+        start = perf_counter()
         super().__init__(*args, **kwargs)
         self.queryset = kwargs['queryset']
         events = models.event.objects.filter(
@@ -271,7 +271,7 @@ class result(FilterSet):
         event_type_thread.join()
         event_level_thread.join()
         event_source_thread.join()
-        print('result filter', round(time()-start, 2), 'seconds')
+        print('result filter', round(perf_counter()-start, 2), 'seconds')
 
     def choices(self, results, attribute):
         exclude_kwargs = {'{}__isnull'.format(attribute): True}
@@ -402,7 +402,7 @@ class result(FilterSet):
 
 class simics_register_diff(FilterSet):
     def __init__(self, *args, **kwargs):
-        start = time()
+        start = perf_counter()
         super().__init__(*args, **kwargs)
         self.queryset = kwargs['queryset']
         checkpoint_choices = self.choices(self.queryset, 'checkpoint')
@@ -413,7 +413,7 @@ class simics_register_diff(FilterSet):
         self.filters['register'].extra.update(choices=register_choices)
         self.filters['register'].widget.attrs['size'] = min(
             len(register_choices), 50)
-        print('register diff filter', round(time()-start, 2), 'seconds')
+        print('register diff filter', round(perf_counter()-start, 2), 'seconds')
 
     def choices(self, simics_register_diffs, attribute):
         exclude_kwargs = {'{}__isnull'.format(attribute): True}

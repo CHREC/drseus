@@ -1,7 +1,7 @@
 from inspect import isfunction, getmembers, getmodule
 from json import dumps
 from threading import Thread
-from time import time
+from time import perf_counter
 
 from ...targets import get_targets
 from .. import models
@@ -99,7 +99,7 @@ def target_bits_chart(campaign):
 
 
 def results_charts(results, group_categories):
-    start = time()
+    start = perf_counter()
     injections = models.injection.objects.filter(
         result_id__in=results.values('id'))
     if group_categories:
@@ -134,12 +134,12 @@ def results_charts(results, group_categories):
         threads.append(thread)
     for thread in threads:
         thread.join()
-    print('charts total', round(time()-start, 2), 'seconds')
+    print('charts total', round(perf_counter()-start, 2), 'seconds')
     return '[{}]'.format(',\n'.join(chart_data)), chart_list
 
 
 def injections_charts(injections):
-    start = time()
+    start = perf_counter()
     results = models.result.objects.filter(
         id__in=injections.values('result_id'))
     outcomes = [str(outcome) for outcome in injections.values_list(
@@ -157,5 +157,5 @@ def injections_charts(injections):
         threads.append(thread)
     for thread in threads:
         thread.join()
-    print('charts total', round(time()-start, 2), 'seconds')
+    print('charts total', round(perf_counter()-start, 2), 'seconds')
     return '[{}]'.format(',\n'.join(chart_data)), chart_list

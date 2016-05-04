@@ -4,7 +4,7 @@ from copy import deepcopy
 from django.db.models import Avg, Case, Count, When
 from json import dumps
 from numpy import convolve, ones
-from time import time
+from time import perf_counter
 from traceback import extract_stack
 
 from .. import fix_sort
@@ -75,7 +75,7 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
                  percent=False, log=False, smooth=False,
                  # chart properties
                  rotate_labels=False, export_wide=False):
-    start = time()
+    start = perf_counter()
     chart_id = str(extract_stack()[-2][-2])
     if yaxis_items is None:
         yaxis_items = outcomes
@@ -409,4 +409,4 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
     chart_list.append({'id': chart_id, 'log': log, 'order': order,
                        'percent': percent, 'smooth': smooth,
                        'title': chart_title})
-    print(chart_id, round(time()-start, 2), 'seconds')
+    print(chart_id, round(perf_counter()-start, 2), 'seconds')

@@ -5,11 +5,11 @@ from io import BytesIO
 from mimetypes import guess_type
 from os.path import exists
 from subprocess import Popen
-from sys import argv, stdout
+from sys import argv
 from tarfile import open as open_tar
 from tarfile import TarInfo
 from tempfile import TemporaryFile
-from time import time
+from time import perf_counter
 
 from . import filters
 from . import models
@@ -225,7 +225,7 @@ def results_page(request, campaign_id=None):
         if 'view_dut_output' in request.GET:
             if 'view_download' in request.GET:
                 temp_file = TemporaryFile()
-                start = time()
+                start = perf_counter()
                 with open_tar(fileobj=temp_file, mode='w:gz') as archive:
                     for result in results:
                         with BytesIO(result.dut_output.encode('utf-8')) as \
@@ -234,7 +234,8 @@ def results_page(request, campaign_id=None):
                                 result.id))
                             info.size = len(result.dut_output)
                             archive.addfile(info, byte_file)
-                print('archive created', round(time()-start, 2), 'seconds')
+                print('archive created', round(perf_counter()-start, 2),
+                      'seconds')
                 response = FileResponse(
                     temp_file, content_type='application/x-compressed')
                 response['Content-Disposition'] = \
@@ -252,7 +253,7 @@ def results_page(request, campaign_id=None):
         elif 'view_aux_output' in request.GET:
             if 'view_download' in request.GET:
                 temp_file = TemporaryFile()
-                start = time()
+                start = perf_counter()
                 with open_tar(fileobj=temp_file, mode='w:gz') as archive:
                     for result in results:
                         with BytesIO(result.aux_output.encode('utf-8')) as \
@@ -261,7 +262,8 @@ def results_page(request, campaign_id=None):
                                 result.id))
                             info.size = len(result.aux_output)
                             archive.addfile(info, byte_file)
-                print('archive created', round(time()-start, 2), 'seconds')
+                print('archive created', round(perf_counter()-start, 2),
+                      'seconds')
                 response = FileResponse(
                     temp_file, content_type='application/x-compressed')
                 response['Content-Disposition'] = \
@@ -279,7 +281,7 @@ def results_page(request, campaign_id=None):
         elif 'view_debugger_output' in request.GET:
             if 'view_download' in request.GET:
                 temp_file = TemporaryFile()
-                start = time()
+                start = perf_counter()
                 with open_tar(fileobj=temp_file, mode='w:gz') as archive:
                     for result in results:
                         with BytesIO(
@@ -289,7 +291,8 @@ def results_page(request, campaign_id=None):
                                 result.id))
                             info.size = len(result.debugger_output)
                             archive.addfile(info, byte_file)
-                print('archive created', round(time()-start, 2), 'seconds')
+                print('archive created', round(perf_counter()-start, 2),
+                      'seconds')
                 response = FileResponse(
                     temp_file, content_type='application/x-compressed')
                 response['Content-Disposition'] = \
@@ -315,7 +318,7 @@ def results_page(request, campaign_id=None):
                 id__in=result_ids).order_by('-id')
             if 'view_download' in request.GET:
                 temp_file = TemporaryFile()
-                start = time()
+                start = perf_counter()
                 with open_tar(fileobj=temp_file, mode='w:gz') as archive:
                     for result in results:
                         archive.add(
@@ -324,7 +327,8 @@ def results_page(request, campaign_id=None):
                                 result.campaign.output_file),
                             '{}_{}'.format(
                                 result.id, result.campaign.output_file))
-                print('archive created', round(time()-start, 2), 'seconds')
+                print('archive created', round(perf_counter()-start, 2),
+                      'seconds')
                 response = FileResponse(
                     temp_file, content_type='application/x-compressed')
                 response['Content-Disposition'] = \
@@ -342,7 +346,7 @@ def results_page(request, campaign_id=None):
         elif 'view_log_file' in request.GET:
             if 'view_download' in request.GET:
                 temp_file = TemporaryFile()
-                start = time()
+                start = perf_counter()
                 with open_tar(fileobj=temp_file, mode='w:gz') as archive:
                     for result in results:
                         for log_file in result.campaign.log_file:
@@ -350,7 +354,8 @@ def results_page(request, campaign_id=None):
                                 'campaign-data/{}/results/{}/{}'.format(
                                     result.campaign_id, result.id, log_file),
                                 '{}_{}'.format(result.id, log_file))
-                print('archive created', round(time()-start, 2), 'seconds')
+                print('archive created', round(perf_counter()-start, 2),
+                      'seconds')
                 response = FileResponse(
                     temp_file, content_type='application/x-compressed')
                 response['Content-Disposition'] = \
