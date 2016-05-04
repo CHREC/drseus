@@ -86,9 +86,7 @@ class fault_injector(object):
                         self.db.campaign.output_file))
                 else:
                     self.debugger.dut.get_file(
-                        self.db.campaign.output_file,
-                        'campaign-data/{}/gold/{}'.format(
-                            self.db.campaign.id, gold_folder))
+                        self.db.campaign.output_file, gold_folder)
                     self.debugger.dut.command('rm {}'.format(
                       self.db.campaign.output_file))
             if self.db.campaign.log_file:
@@ -137,26 +135,26 @@ class fault_injector(object):
                     self.db.campaign.id, self.db.result.id)
                 if not exists(result_folder):
                     makedirs(result_folder)
-                output_location = join(result_folder,
-                                       self.db.campaign.output_file)
-                gold_location = 'campaign-data/{}/gold/{}'.format(
-                    self.db.campaign.id, self.db.campaign.output_file)
                 try:
                     if self.db.campaign.aux_output_file:
                         self.debugger.aux.get_file(
-                            self.db.campaign.output_file, output_location)
+                            self.db.campaign.output_file, result_folder)
                     else:
                         self.debugger.dut.get_file(
-                            self.db.campaign.output_file, output_location)
+                            self.db.campaign.output_file, result_folder)
                 except DrSEUsError as error:
                     self.db.result.outcome_category = 'File transfer error'
                     self.db.result.outcome = error.type
                     if not listdir(result_folder):
                         rmtree(result_folder)
                     return
-                with open(gold_location, 'rb') as solution:
+                with open(
+                        'campaign-data/{}/gold/{}'.format(
+                            self.db.campaign.id, self.db.campaign.output_file),
+                        'rb') as solution:
                     solutionContents = solution.read()
-                with open(output_location, 'rb') as result:
+                with open(join(result_folder, self.db.campaign.output_file),
+                          'rb') as result:
                     resultContents = result.read()
                 self.db.result.data_diff = SequenceMatcher(
                     None, solutionContents, resultContents).quick_ratio()

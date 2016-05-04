@@ -1,7 +1,7 @@
 from datetime import datetime
 from io import StringIO
 from os import listdir, makedirs
-from os.path import exists
+from os.path import exists, join
 from paramiko import AutoAddPolicy, RSAKey, SSHClient
 from re import compile as regex
 from re import DOTALL, escape
@@ -354,7 +354,7 @@ class dut(object):
                     else:
                         dut_scp.close()
                         ssh.close()
-                        if exists(local_path):
+                        if exists(join(local_path, file_.split('/')[-1])):
                             if self.options.debug:
                                 print(colored('done', 'blue'))
                             self.db.log_event(
