@@ -41,6 +41,13 @@ parser.add_argument(
     metavar='MSG',
     default=[],
     help='error messages to check for in device console output')
+parser.add_argument(
+    '--log_error_msg',
+    nargs='+',
+    dest='log_error_messages',
+    metavar='MSG',
+    default=[],
+    help='error messages to check for in log file')
 
 dut_settings = parser.add_argument_group('DUT settings')
 dut_settings.add_argument(
@@ -302,13 +309,11 @@ new_campaign.add_argument(
     metavar='FILE',
     help='files to copy to device')
 new_campaign.add_argument(
-    '-o', '--output',
-    dest='output_file',
+    '-o', '--output_file',
     default='',
     help='target application output file')
 new_campaign.add_argument(
-    '-l', '--log',
-    dest='log_file',
+    '-l', '--log_files',
     nargs='+',
     help='target application log file')
 new_campaign.add_argument(

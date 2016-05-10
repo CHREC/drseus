@@ -63,7 +63,7 @@ def new_campaign(options):
             ((' '+' '.join(options.arguments)) if options.arguments else '')),
         description=options.description,
         kill_dut=options.kill_dut,
-        log_file=options.log_file,
+        log_file=options.log_files,
         output_file=options.output_file,
         rsakey=rsakey,
         simics=options.simics)

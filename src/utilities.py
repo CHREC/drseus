@@ -239,16 +239,17 @@ def create_campaign(options):
     if options.simics and not exists('simics-workspace'):
         raise Exception('cannot find simics-workspace, '
                         'trying running "scripts/setup_environment.sh"')
-    options.campaign = new_campaign(options)
+    campaign = new_campaign(options)
+    options.campaign_id = campaign.id
     if options.aux_application is None:
         options.aux_application = options.application
-    campaign_directory = 'campaign-data/{}'.format(options.campaign.id)
+    campaign_directory = 'campaign-data/{}'.format(campaign.id)
     if exists(campaign_directory):
-        raise Exception('directory already exists: campaign-data/{}'.format(
-            options.campaign.id))
+        raise Exception('directory already exists: {}'.format(
+            campaign_directory))
     drseus = fault_injector(options)
     drseus.setup_campaign()
-    print('created campaign {}'.format(options.campaign.id))
+    print('created campaign {}'.format(campaign.id))
 
 
 def inject_campaign(options):

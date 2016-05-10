@@ -2,9 +2,12 @@
 /dev/ttyUSB0
 --prompt
 ubuntu@tegra-ubuntu:~$
+--log_error_msg
+#ABORT amount of errors equals of the last iteration
+#ABORT too many errors per iteration
+#SDC
+--no_rsa
 --user
 ubuntu
 --pass
 ubuntu
---no_rsa
---no_jtag

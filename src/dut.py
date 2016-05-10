@@ -354,13 +354,14 @@ class dut(object):
                     else:
                         dut_scp.close()
                         ssh.close()
-                        if exists(join(local_path, file_.split('/')[-1])):
+                        file_path = join(local_path, file_.split('/')[-1])
+                        if exists(file_path):
                             if self.options.debug:
                                 print(colored('done', 'blue'))
                             self.db.log_event(
                                 'Information', 'DUT' if not self.aux else 'AUX',
                                 'Received file', file_)
-                            break
+                            return file_path
                         else:
                             self.db.log_event(
                                 'Warning' if attempt < attempts-1 else 'Error',

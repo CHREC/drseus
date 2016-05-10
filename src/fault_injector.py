@@ -190,13 +190,25 @@ class fault_injector(object):
             for log_file in self.db.campaign.log_file:
                 try:
                     if self.db.campaign.aux_output_file:
-                        self.debugger.aux.get_file(log_file, result_folder)
+                        file_path = self.debugger.aux.get_file(log_file,
+                                                               result_folder)
                     else:
-                        self.debugger.dut.get_file(log_file, result_folder)
+                        file_path = self.debugger.dut.get_file(log_file,
+                                                               result_folder)
                 except DrSEUsError:
                     if not listdir(result_folder):
                         rmtree(result_folder)
                     return
+                else:
+                    if self.db.result.outcome == 'In progress' and \
+                            self.options.log_error_messages:
+                        with open(file_path, 'r') as log:
+                            log_contents = log.read()
+                        for message in self.options.log_error_messages:
+                            if message in log_contents:
+                                self.db.result.outcome_category = 'Log error'
+                                self.db.result.outcome = message
+                                break
                 try:
                     if self.db.campaign.aux_output_file:
                         self.debugger.aux.command('rm {}'.format(log_file))

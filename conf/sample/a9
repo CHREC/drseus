@@ -5,5 +5,5 @@ arm_fi_2d_conv_fft_omp
 lena.bmp out.bmp
 --files
 lena.bmp
---output
+--output_file
 out.bmp

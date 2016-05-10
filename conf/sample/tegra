@@ -1,0 +1,11 @@
+@conf/new/tegra
+--app
+cudaMxM
+--args
+32 A B C 64
+--files
+A
+B
+C
+--log_files
+cudaMxM.txt
