@@ -331,7 +331,7 @@ class simics(object):
             'Warning' if attempt < attempts-1 else 'Error', 'Simics',
             error_type, self.db.log_exception)
         print(colored('{}: {} (attempt {}/{}): {}'.format(
-            self.serial.port, message, attempt+1, attempts, error), 'red'))
+            self.dut.serial.port, message, attempt+1, attempts, error), 'red'))
         for item in close_items:
             item.close()
         if attempt < attempts-1:

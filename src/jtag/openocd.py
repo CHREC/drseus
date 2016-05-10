@@ -1,6 +1,6 @@
 from json import load
 from os.path import abspath, dirname, exists
-from subprocess import DEVNULL, Popen
+from subprocess import DEVNULL, Popen, TimeoutExpired
 from termcolor import colored
 from time import sleep
 
@@ -83,9 +83,15 @@ class openocd(jtag):
 
     def close(self):
         self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
-        self.openocd.wait()
-        self.db.log_event(
-            'Information', 'Debugger', 'Closed openocd')
+        try:
+            self.openocd.wait(timeout=30)
+        except TimeoutExpired:
+            self.openocd.kill()
+            self.db.log_event(
+                'Warning', 'Debugger', 'Killed unresponsive openocd')
+        else:
+            self.db.log_event(
+                'Information', 'Debugger', 'Closed openocd')
         super().close()
 
     def command(self, command, expected_output=[], error_message=None,

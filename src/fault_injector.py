@@ -231,12 +231,18 @@ class fault_injector(object):
                     except DrSEUsError as error:
                         self.db.result.outcome_category = 'Simics error'
                         self.db.result.outcome = error.type
-                    end_cycles, end_time = self.debugger.get_time()
-                    self.db.result.cycles = \
-                        end_cycles - self.db.campaign.start_cycle
-                    self.db.result.execution_time = (
-                        end_time - self.db.campaign.start_time)
-                    self.debugger.continue_dut()
+                    else:
+                        try:
+                            end_cycles, end_time = self.debugger.get_time()
+                        except DrSEUsError as error:
+                            self.db.result.outcome_category = 'Simics error'
+                            self.db.result.outcome = error.type
+                        else:
+                            self.db.result.cycles = \
+                                end_cycles - self.db.campaign.start_cycle
+                            self.db.result.execution_time = (
+                                end_time - self.db.campaign.start_time)
+                        self.debugger.continue_dut()
                 else:
                     self.db.result.execution_time = \
                         self.debugger.dut.get_timer_value()

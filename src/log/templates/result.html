@@ -308,11 +308,5 @@
                 }, 1000);
             }
         }
-
-        {% if result.outcome == "In progress" %}
-            setTimeout(function () {
-                window.location.reload();
-            }, 5000);
-        {% endif %}
     </script>
 {% endblock %}

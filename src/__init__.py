@@ -3,6 +3,7 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
+# TODO: disable simics a9 injection into CPU: cpsr bits 2-4
 # TODO: fix chart click on campaign overview page
 # TODO: log minicom session (outside supevisor)
 # TODO: add supervisor command to load injected state (simics)
