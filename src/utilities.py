@@ -518,5 +518,20 @@ def launch_minicom(options):
             drseus.debugger.launch_simics(checkpoint)
         drseus.debugger.continue_dut()
     drseus.debugger.dut.close()
-    call(['minicom', '-D', options.dut_serial_port])
-    drseus.close(log=False)
+    capture = 'minicom_capture.{}_{}'.format(
+        '-'.join(['{:02}'.format(unit)
+                  for unit in datetime.now().timetuple()[:3]]),
+        '-'.join(['{:02}'.format(unit)
+                  for unit in datetime.now().timetuple()[3:6]]))
+    call(['minicom', '-D', options.dut_serial_port,
+          '--capturefile={}'.format(capture)])
+    if exists(capture):
+        with open(capture, 'r') as capture_file:
+            drseus.db.result.dut_output += capture_file.read()
+            drseus.db.result.save()
+        remove(capture)
+        drseus.db.result.outcome_category = 'DrSEUs'
+        drseus.db.result.outcome = 'Minicom'
+        drseus.close()
+    else:
+        drseus.close(log=False)

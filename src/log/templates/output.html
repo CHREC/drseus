@@ -59,7 +59,7 @@
                                 Output file: {{ result.campaign.output_file }}
                                 <iframe class="file" frameborder="0" src="/result/{{ result.id }}/file/{{ result.campaign.output_file }}"></iframe>
                             {% elif type == "log_file" %}
-                                {% for log_file in result.campaign.log_file %}
+                                {% for log_file in result.campaign.log_files %}
                                     <p>Log file: {{ log_file }}</p>
                                     <iframe class="file" frameborder="0" src="/result/{{ result.id }}/file/{{ log_file }}"></iframe>
                                 {% endfor %}

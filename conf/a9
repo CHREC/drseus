@@ -6,3 +6,7 @@
 /dev/ttyACM1
 --power_ip
 10.42.0.60
+--pass
+chrec
+--aux_pass
+chrec

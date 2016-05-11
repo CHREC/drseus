@@ -54,110 +54,110 @@ dut_settings.add_argument(
     '--serial',
     metavar='PORT',
     dest='dut_serial_port',
-    help='DUT serial port (overridden by Simics)')
+    help='serial port (overridden by Simics)')
 dut_settings.add_argument(
     '--baud',
     type=int,
     metavar='RATE',
     dest='dut_baud_rate',
     default=115200,
-    help='DUT serial port baud rate [default=115200]')
+    help='baud rate [default=115200]')
 dut_settings.add_argument(
     '--ip',
     metavar='ADDRESS',
     dest='dut_ip_address',
-    help='DUT IP address, automatically discover if not specified')
+    help='IP address, automatically discover if not specified')
 dut_settings.add_argument(
     '--scp',
     type=int,
     metavar='PORT',
     dest='dut_scp_port',
     default=22,
-    help='DUT scp port [default=22] (overridden by Simics)')
+    help='SCP port [default=22] (overridden by Simics)')
 dut_settings.add_argument(
     '--prompt',
     metavar='PROMPT',
     dest='dut_prompt',
-    help='DUT console prompt (overridden by Simics)')
+    help='console prompt (overridden by Simics)')
 dut_settings.add_argument(
     '--user',
     metavar='USERNAME',
     dest='dut_username',
     default='root',
-    help='device username [default=root]')
+    help='username [default=root]')
 dut_settings.add_argument(
     '--pass',
     metavar='PASSWORD',
     dest='dut_password',
-    default='chrec',
-    help='device password [default=chrec]')
+    default='',
+    help='password')
 dut_settings.add_argument(
     '--uboot',
     metavar='COMMAND',
     dest='dut_uboot',
     default='',
-    help='DUT u-boot command')
+    help='u-boot command')
 dut_settings.add_argument(
     '--login',
     metavar='COMMAND',
     dest='dut_login',
     default='',
-    help='DUT post-login command')
+    help='post-login command')
 
 aux_settings = parser.add_argument_group('AUX settings')
 aux_settings.add_argument(
     '--aux_serial',
     metavar='PORT',
     dest='aux_serial_port',
-    help='AUX serial port (overridden by Simics)')
+    help='serial port (overridden by Simics)')
 aux_settings.add_argument(
     '--aux_baud',
     type=int,
     metavar='RATE',
     dest='aux_baud_rate',
     default=115200,
-    help='AUX serial port baud rate [default=115200]')
+    help='baud rate [default=115200]')
 aux_settings.add_argument(
     '--aux_ip',
     metavar='ADDRESS',
     dest='aux_ip_address',
-    help='AUX IP address, automatically discover if not specified')
+    help='IP address, automatically discover if not specified')
 aux_settings.add_argument(
     '--aux_scp',
     type=int,
     metavar='PORT',
     dest='aux_scp_port',
     default=22,
-    help='AUX scp port [default=22] (overridden by Simics)')
+    help='SCP port [default=22] (overridden by Simics)')
 aux_settings.add_argument(
     '--aux_prompt',
     metavar='PROMPT',
     dest='aux_prompt',
-    help='AUX console prompt (overridden by Simics)')
+    help='console prompt (overridden by Simics)')
 aux_settings.add_argument(
     '--aux_user',
     metavar='USERNAME',
     dest='aux_username',
     default='root',
-    help='device username [default=root]')
+    help='username [default=root]')
 aux_settings.add_argument(
     '--aux_pass',
     metavar='PASSWORD',
     dest='aux_password',
-    default='chrec',
-    help='device password [default=chrec]')
+    default='',
+    help='password')
 aux_settings.add_argument(
     '--aux_uboot',
     metavar='COMMAND',
     dest='aux_uboot',
     default='',
-    help='AUX u-boot command')
+    help='u-boot command')
 aux_settings.add_argument(
     '--aux_login',
     metavar='COMMAND',
     dest='aux_login',
     default='',
-    help='AUX post-login command')
+    help='post-login command')
 
 debugger_settings = parser.add_argument_group('debugger settings')
 debugger_settings.add_argument(
@@ -223,6 +223,7 @@ database_settings.add_argument(
     '--db_su_ask',
     action='store_true',
     help='prompt for superuser password')
+
 sqlite_settings = parser.add_argument_group('SQLite settings')
 sqlite_settings.add_argument(
     '--sqlite',
@@ -233,26 +234,26 @@ sqlite_settings.add_argument(
     '--db_file',
     metavar='FILE',
     default='campaign-data/db.sqlite',
-    help='SQLite database file [default=campaign-data/db.sqlite]')
+    help='database file [default=campaign-data/db.sqlite]')
 
 power_settings = parser.add_argument_group('web power switch settings')
 power_settings.add_argument(
     '--power_ip',
     metavar='ADDRESS',
     dest='power_switch_ip_address',
-    help='IP address for web power switch')
+    help='IP address')
 power_settings.add_argument(
     '--power_user',
     metavar='USER',
     dest='power_switch_username',
     default='admin',
-    help='username for web power switch [default=admin]')
+    help='username [default=admin]')
 power_settings.add_argument(
     '--power_pass',
     metavar='PASS',
     dest='power_switch_password',
     default='chrec',
-    help='password for web power switch [default=chrec]')
+    help='password [default=chrec]')
 
 subparsers = parser.add_subparsers(
     title='commands',
@@ -268,7 +269,6 @@ new_campaign.add_argument(
     '-a', '--app',
     metavar='APPLICATION',
     dest='application',
-    default='',
     help='application to run on device')
 new_campaign.add_argument(
     '--no_app_file',
@@ -307,15 +307,14 @@ new_campaign.add_argument(
     '-f', '--files',
     nargs='+',
     metavar='FILE',
-    help='files to copy to device')
+    help='file(s) to copy to device')
 new_campaign.add_argument(
     '-o', '--output_file',
-    default='',
     help='target application output file')
 new_campaign.add_argument(
     '-l', '--log_files',
     nargs='+',
-    help='target application log file')
+    help='target application log file(s)')
 new_campaign.add_argument(
     '-x', '--aux',
     action='store_true',

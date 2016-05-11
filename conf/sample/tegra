@@ -2,7 +2,7 @@
 --app
 cudaMxM
 --args
-32 A B C 64
+64 A B C 64
 --files
 A
 B

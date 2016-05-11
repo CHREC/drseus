@@ -86,8 +86,8 @@
                 </div>
             {% endif %}
 
-            {% if result.campaign.log_file %}
-                {% for log_file in result.campaign.log_file %}
+            {% if result.campaign.log_files %}
+                {% for log_file in result.campaign.log_files %}
                     <div class="col-lg-6">
                         <div class="box">
                             <div class="box-header">
@@ -238,7 +238,7 @@
                 </a>
             </li>
             {% endif %}
-            {% if result.campaign.log_file %}
+            {% if result.campaign.log_files %}
             <li>
                 <a href="javascript:{}" onclick="get_output('log')">
                     <i class="fa fa-file-code-o"></i>

@@ -87,24 +87,22 @@
                 </div>
             {% endif %}
 
-            {% if campaign.log_file %}
-                {% for log_file in campaign.log_file %}
-                    <div class="col-lg-6">
-                        <div class="box">
-                            <div class="box-header">
-                                <h3 class="box-title">Log File: {{ log_file }}</h3>
-                                <div class="box-tools pull-right">
-                                    <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
-                                    <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
-                                </div>
-                            </div>
-                            <div class="box-body">
-                                <iframe class="file" frameborder="0" src="/campaign/{{ campaign.id }}/file/{{ log_file }}"></iframe>
+            {% for log_file in campaign.log_files %}
+                <div class="col-lg-6">
+                    <div class="box">
+                        <div class="box-header">
+                            <h3 class="box-title">Log File: {{ log_file }}</h3>
+                            <div class="box-tools pull-right">
+                                <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                                <button class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
                             </div>
                         </div>
+                        <div class="box-body">
+                            <iframe class="file" frameborder="0" src="/campaign/{{ campaign.id }}/file/{{ log_file }}"></iframe>
+                        </div>
                     </div>
-                {% endfor %}
-            {% endif %}
+                </div>
+            {% endfor %}
 
             <div class="col-lg-6">
                 <div class="box">

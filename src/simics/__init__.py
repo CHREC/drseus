@@ -440,9 +440,8 @@ class simics(object):
             event = self.db.log_event(
                 'Information', 'Simics', 'Timed application', success=False,
                 campaign=True)
-            self.halt_dut()
-            start_cycles, start_time = self.get_time()
-            self.continue_dut()
+            execution_cycles = []
+            execution_times = []
             for i in range(self.options.iterations):
                 if self.db.campaign.aux:
                     aux_process = Thread(
@@ -450,24 +449,40 @@ class simics(object):
                         kwargs={'command': self.db.campaign.aux_command,
                                 'flush': False})
                     aux_process.start()
-                dut_process = Thread(
-                    target=self.dut.command,
-                    kwargs={'command': self.db.campaign.command,
-                            'flush': False})
-                dut_process.start()
+                self.halt_dut()
+                start = self.get_time()
+                self.dut.write('{}\n'.format(self.db.campaign.command))
+                self.continue_dut()
                 if self.db.campaign.aux:
                     aux_process.join()
                 if self.db.campaign.kill_dut:
                     self.dut.write('\x03')
-                dut_process.join()
+                self.dut.read_until()
+                self.halt_dut()
+                end = self.get_time()
+                execution_cycles.append(end[0] - start[0])
+                execution_times.append(end[1] - start[1])
+                self.continue_dut()
+                if self.db.campaign.output_file:
+                    if self.db.campaign.aux_output_file:
+                        self.aux.command('rm {}'.format(
+                            self.db.campaign.output_file))
+                    else:
+                        self.dut.command('rm {}'.format(
+                          self.db.campaign.output_file))
+                for log_file in self.db.campaign.log_files:
+                    if self.db.campaign.aux_output_file:
+                        self.aux.command('rm {}'.format(log_file))
+                    else:
+                        self.dut.command('rm {}'.format(log_file))
             self.halt_dut()
             end_cycles, end_time = self.get_time()
             self.db.campaign.start_cycle = end_cycles
             self.db.campaign.start_time = end_time
             self.db.campaign.cycles = \
-                int((end_cycles - start_cycles) / self.options.iterations)
+                int(sum(execution_cycles) / len(execution_cycles))
             self.db.campaign.execution_time = \
-                (end_time - start_time) / self.options.iterations
+                sum(execution_times) / len(execution_times)
             event.success = True
             event.timestamp = datetime.now()
             event.save()

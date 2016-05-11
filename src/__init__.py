@@ -3,15 +3,11 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
-# TODO: delete output/log files when timing application
-# TODO: add progress bar to copy/send files
+# TODO: add latent iteration logs to log viewer
 # TODO: disable simics a9 injection into CPU: cpsr bits 2-4
-# TODO: fix chart click on campaign overview page
-# TODO: log minicom session (outside supevisor)
 # TODO: add supervisor command to load injected state (simics)
 # TODO: add runtime seconds to inject command
 # TODO: consider generating event filter choices only once at startup
-# TODO: only send files if needed
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add mode to redo injection iteration
 # TODO: add support for injection of multi-bit upsets

@@ -349,7 +349,7 @@ def results_page(request, campaign_id=None):
                 start = perf_counter()
                 with open_tar(fileobj=temp_file, mode='w:gz') as archive:
                     for result in results:
-                        for log_file in result.campaign.log_file:
+                        for log_file in result.campaign.log_files:
                             archive.add(
                                 'campaign-data/{}/results/{}/{}'.format(
                                     result.campaign_id, result.id, log_file),
@@ -436,7 +436,7 @@ def result_page(request, result_id):
         elif 'get_log_file' in request.GET:
             temp_file = TemporaryFile()
             with open_tar(fileobj=temp_file, mode='w:gz') as archive:
-                for log_file in result.campaign.log_file:
+                for log_file in result.campaign.log_files:
                     archive.add(
                         'campaign-data/{}/results/{}/{}'.format(
                             result.campaign_id, result.id, log_file),

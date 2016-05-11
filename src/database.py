@@ -48,25 +48,31 @@ def new_campaign(options):
     RSAKey.generate(1024).write_private_key(rsakey_file)
     rsakey = rsakey_file.getvalue()
     rsakey_file.close()
-    campaign = campaign_model(
-        architecture=options.architecture,
-        aux=options.aux,
-        aux_command=None if not options.aux else (
+    campaign_kwargs = {
+        'architecture': options.architecture,
+        'aux': options.aux,
+        'description': options.description,
+        'kill_dut': options.kill_dut,
+        'rsakey': rsakey,
+        'simics': options.simics
+    }
+    if options.aux:
+        campaign_kwargs['aux_command'] = (
             ('./' if options.application_file else '') +
             (options.aux_application if options.aux_application
                 else options.application) +
             ((' '+' '.join(options.aux_arguments)) if options.aux_arguments
-                else '')),
-        aux_output_file=options.aux and options.aux_output_file,
-        command=(
+                else ''))
+        campaign_kwargs['aux_output_file'] = options.aux_output_file
+    if options.application:
+        campaign_kwargs['command'] = (
             ('./' if options.application_file else '') + options.application +
-            ((' '+' '.join(options.arguments)) if options.arguments else '')),
-        description=options.description,
-        kill_dut=options.kill_dut,
-        log_file=options.log_files,
-        output_file=options.output_file,
-        rsakey=rsakey,
-        simics=options.simics)
+            ((' '+' '.join(options.arguments)) if options.arguments else ''))
+    if options.log_files is not None:
+        campaign_kwargs['log_files'] = options.log_files
+    if options.output_file is not None:
+        campaign_kwargs['output_file'] = options.output_file
+    campaign = campaign_model(**campaign_kwargs)
     try:
         campaign.save()
     except OperationalError:

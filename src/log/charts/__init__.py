@@ -335,7 +335,7 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
                         } else {
                             outcome = this.series.name;
                         }
-                        window.open('/campaign/'+this.series.options.stack+
+                        window.open('/campaign/'+this.series.options.stack +
                                     '/results?__xaxis_model_type__' +
                                     '__xaxis_type__='+this.category+filter);
                     }
@@ -357,10 +357,16 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
                         } else {
                             outcome = this.series.name;
                         }
-                        window.open('/campaign/'+this.series.options.stack+
-                                    '/results?outcome='+outcome+
-                                    '&__xaxis_model_type____xaxis_type__=' +
-                                    this.category+filter);
+                        if (this.series.options.stack == null) {
+                            window.open('/results?outcome='+outcome +
+                                        '&__xaxis_model_type____xaxis_type__=' +
+                                        this.category+filter);
+                        } else {
+                            window.open('/campaign/'+this.series.options.stack +
+                                        '/results?outcome='+outcome +
+                                        '&__xaxis_model_type____xaxis_type__=' +
+                                        this.category+filter);
+                        }
                     }
                 """)
         if pie:
@@ -371,14 +377,14 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
             """).replace('\"__dataLabels_formatter__\"', """
                 function() {
                     var outcomes = __yaxis_items__;
-                    return ''+outcomes[parseInt(this.point.x)]+' '+
+                    return ''+outcomes[parseInt(this.point.x)]+' ' +
                     Highcharts.numberFormat(this.percentage, 1)+'%';
                 }
             """.replace('__yaxis_items__', str(yaxis_items)))
         elif 'campaign_id' in xaxis_type:
             json = json.replace('"__tooltip_formatter__"', """
                 function () {
-                    return this.series.name+': <b>'+this.y+'</b><br/>'+
+                    return this.series.name+': <b>'+this.y+'</b><br/>' +
                            '__xaxis_name__: '+this.x+'<br/>';
                 }
             """).replace('__xaxis_name__', xaxis_name).replace(
@@ -386,8 +392,8 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
         else:
             json = json.replace('"__tooltip_formatter__"', """
                 function () {
-                    return this.series.name+': <b>'+this.y+'</b><br/>'+
-                           '__xaxis_name__: '+this.x+'<br/>'+
+                    return this.series.name+': <b>'+this.y+'</b><br/>' +
+                           '__xaxis_name__: '+this.x+'<br/>' +
                            'Campaign: '+this.series.options.stack;
                 }
             """).replace('__xaxis_name__', xaxis_name).replace(

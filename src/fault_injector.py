@@ -61,10 +61,8 @@ class fault_injector(object):
             result_items += self.db.result.simics_register_diff_set.count()
             if result_items or self.db.result.dut_output or \
                     self.db.result.aux_output or self.db.result.debugger_output:
-                self.db.result.outcome_category = 'DrSEUs'
-                if self.options.command == 'supervise':
-                    self.db.result.outcome = 'Supervisor'
-                else:
+                if self.db.result.outcome == 'In progress':
+                    self.db.result.outcome_category = 'DrSEUs'
                     self.db.result.outcome = 'Exited'
                 self.db.log_result(exit=True)
             else:
@@ -89,14 +87,13 @@ class fault_injector(object):
                         self.db.campaign.output_file, gold_folder)
                     self.debugger.dut.command('rm {}'.format(
                       self.db.campaign.output_file))
-            if self.db.campaign.log_file:
-                for log_file in self.db.campaign.log_file:
-                    if self.db.campaign.aux_output_file:
-                        self.debugger.aux.get_file(log_file, gold_folder)
-                        self.debugger.aux.command('rm {}'.format(log_file))
-                    else:
-                        self.debugger.dut.get_file(log_file, gold_folder)
-                        self.debugger.dut.command('rm {}'.format(log_file))
+            for log_file in self.db.campaign.log_files:
+                if self.db.campaign.aux_output_file:
+                    self.debugger.aux.get_file(log_file, gold_folder)
+                    self.debugger.aux.command('rm {}'.format(log_file))
+                else:
+                    self.debugger.dut.get_file(log_file, gold_folder)
+                    self.debugger.dut.command('rm {}'.format(log_file))
             if not listdir(gold_folder):
                 rmtree(gold_folder)
             self.db.campaign.timestamp = datetime.now()
@@ -104,7 +101,7 @@ class fault_injector(object):
         self.close()
 
     def __monitor_execution(self, latent_faults=0, persistent_faults=False,
-                            log_time=False):
+                            log_time=False, latent_iteration=0):
 
         def check_output():
             local_diff = \
@@ -185,9 +182,11 @@ class fault_injector(object):
         def get_log():
             result_folder = 'campaign-data/{}/results/{}'.format(
                 self.db.campaign.id, self.db.result.id)
+            if latent_iteration:
+                result_folder += '/latent/{}'.format(latent_iteration)
             if not exists(result_folder):
                     makedirs(result_folder)
-            for log_file in self.db.campaign.log_file:
+            for log_file in self.db.campaign.log_files:
                 try:
                     if self.db.campaign.aux_output_file:
                         file_path = self.debugger.aux.get_file(log_file,
@@ -261,7 +260,7 @@ class fault_injector(object):
         if self.db.campaign.output_file and \
                 self.db.result.outcome == 'In progress':
             check_output()
-        if self.db.campaign.log_file:
+        if self.db.campaign.log_files:
             get_log()
         if self.db.result.outcome == 'In progress':
             self.db.result.outcome_category = 'No error'
@@ -317,7 +316,7 @@ class fault_injector(object):
                        self.db.campaign.id, self.db.result.id))
 
         def check_latent_faults():
-            for i in range(self.options.latent_iterations):
+            for i in range(1, self.options.latent_iterations+1):
                 if self.db.result.outcome == 'Latent faults' or \
                     (not self.db.campaign.simics and
                         self.db.result.outcome == 'Masked faults'):
@@ -335,7 +334,7 @@ class fault_injector(object):
                         self.db.campaign.command))
                     outcome_category = self.db.result.outcome_category
                     outcome = self.db.result.outcome
-                    self.__monitor_execution()
+                    self.__monitor_execution(latent_iteration=i)
                     if self.db.result.outcome_category != 'No error':
                         self.db.result.outcome_category = \
                             'Post execution error'
