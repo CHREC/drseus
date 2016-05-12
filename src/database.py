@@ -176,6 +176,10 @@ class database(object):
             aux_serial_port=self.options.aux_serial_port)
 
     def log_result(self, supervisor=False, exit=False):
+        if self.result.dut_serial_port is None:
+            self.result.dut_serial_port = self.options.dut_serial_port
+        if self.result.aux_serial_port is None:
+            self.result.aux_serial_port = self.options.aux_serial_port
         if self.result.outcome_category != 'DrSEUs':
             if self.result.dut_serial_port:
                 out = '{}, '.format(self.result.dut_serial_port)
