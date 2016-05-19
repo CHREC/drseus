@@ -401,6 +401,7 @@ class fault_injector(object):
             elif self.options.command == 'supervise':
                 self.db.result.outcome_category = 'Supervisor'
                 self.db.result.outcome = ''
+                self.db.result.save()
 
     # def inject_campaign(self, iteration_counter):
         try:

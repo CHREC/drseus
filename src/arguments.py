@@ -63,6 +63,11 @@ dut_settings.add_argument(
     default=115200,
     help='baud rate [default=115200]')
 dut_settings.add_argument(
+    '--no_rtscts',
+    action='store_false',
+    dest='dut_rtscts',
+    help='disable hardware flow control (RTS/CTS) for serial port')
+dut_settings.add_argument(
     '--ip',
     metavar='ADDRESS',
     dest='dut_ip_address',
@@ -117,6 +122,11 @@ aux_settings.add_argument(
     dest='aux_baud_rate',
     default=115200,
     help='baud rate [default=115200]')
+aux_settings.add_argument(
+    '--aux_no_rtscts',
+    action='store_false',
+    dest='aux_rtscts',
+    help='disable hardware flow control (RTS/CTS) for serial port')
 aux_settings.add_argument(
     '--aux_ip',
     metavar='ADDRESS',

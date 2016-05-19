@@ -115,8 +115,10 @@ class dut(object):
                        else self.options.aux_serial_port)
         baud_rate = (self.options.dut_baud_rate if not self.aux
                      else self.options.aux_baud_rate)
+        rtscts = (self.options.dut_rtscts if not self.aux
+                  else self.options.aux_rtscts)
         self.serial = Serial(port=None, baudrate=baud_rate,
-                             timeout=self.options.timeout, rtscts=True)
+                             timeout=self.options.timeout, rtscts=rtscts)
         if self.db.campaign.simics:
             # workaround for pyserial 3
             self.serial._dsrdtr = True

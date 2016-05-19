@@ -278,7 +278,7 @@ class supervisor(Cmd):
         set_trace()
 
     def do_shell(self, arg):
-        """Pass command to a system shell when line begins with \"!\""""
+        """Pass command to a system shell when line begins with '!'"""
         event = self.drseus.db.log_event(
             'Information', 'Shell', arg, success=False)
         try:
@@ -294,6 +294,7 @@ class supervisor(Cmd):
 
     def do_exit(self, arg=None):
         """Exit DrSEUs"""
+        self.drseus.db.result.outcome = 'Exited'
         self.drseus.close()
         return True
 
