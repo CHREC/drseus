@@ -6,7 +6,6 @@ from json import dump, load
 from multiprocessing import Process, Value
 from os import getcwd, listdir, mkdir, remove, walk
 from os.path import abspath, dirname, exists, isdir, join
-from pdb import set_trace
 from progressbar import ProgressBar
 from progressbar.widgets import Bar, Percentage, SimpleProgress, Timer
 from shutil import rmtree
@@ -14,7 +13,6 @@ from subprocess import call, check_call
 from sys import argv, stdout
 from tarfile import open as open_tar
 from terminaltables import AsciiTable
-from traceback import print_exc
 
 from .database import (backup_database, delete_database, get_campaign,
                        new_campaign, restore_database)
@@ -259,26 +257,7 @@ def inject_campaign(options):
 
     def perform_injections(iteration_counter, switch):
         drseus = fault_injector(options, switch)
-        try:
-            drseus.inject_campaign(iteration_counter)
-        except KeyboardInterrupt:
-            drseus.db.log_event(
-                'Information', 'User', 'Interrupted', drseus.db.log_exception)
-            drseus.debugger.close()
-            drseus.db.result.outcome_category = 'Incomplete'
-            drseus.db.result.outcome = 'Interrupted'
-            drseus.db.log_result(exit=True)
-        except:
-            print_exc()
-            drseus.db.log_event(
-                'Error', 'DrSEUs', 'Exception', drseus.db.log_exception)
-            drseus.debugger.close()
-            drseus.db.result.outcome_category = 'Incomplete'
-            drseus.db.result.outcome = 'Uncaught exception'
-            drseus.db.log_result(exit=True)
-            if options.processes == 1 and options.debug:
-                print('dropping into python debugger')
-                set_trace()
+        drseus.inject_campaign(iteration_counter)
 
 # def inject_campaign(options):
     if options.iterations is not None:
@@ -379,17 +358,7 @@ def launch_openocd(options):
 
 
 def launch_supervisor(options):
-    drseus = supervisor(options)
-    try:
-        drseus.cmdloop()
-    except:
-        print_exc()
-        drseus.drseus.db.log_event(
-            'Error', 'DrSEUs', 'Exception', drseus.drseus.db.log_exception)
-        drseus.drseus.debugger.close()
-        drseus.drseus.db.result.outcome_category = 'Incomplete'
-        drseus.drseus.db.outcome = 'Uncaught exception'
-        drseus.drseus.db.log_result(exit=True)
+    supervisor(options).cmdloop()
 
 
 def backup(options):
@@ -530,8 +499,8 @@ def launch_minicom(options):
             drseus.db.result.dut_output += capture_file.read()
             drseus.db.result.save()
         remove(capture)
-        drseus.db.result.outcome_category = 'DrSEUs'
-        drseus.db.result.outcome = 'Minicom'
+        drseus.db.result.outcome_category = 'Minicom capture'
+        drseus.db.result.outcome = ''
         drseus.close()
     else:
         drseus.close(log=False)

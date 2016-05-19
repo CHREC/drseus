@@ -170,8 +170,8 @@ class database(object):
 
     def __create_result(self, supervisor=False):
         self.result = self.campaign.result_set.create(
-            outcome_category=('DrSEUs' if supervisor else 'Incomplete'),
-            outcome=('Supervisor' if supervisor else 'In progress'),
+            outcome_category=('Supervisor' if supervisor else 'Incomplete'),
+            outcome=('' if supervisor else 'In progress'),
             dut_serial_port=self.options.dut_serial_port,
             aux_serial_port=self.options.aux_serial_port)
 
@@ -180,7 +180,8 @@ class database(object):
             self.result.dut_serial_port = self.options.dut_serial_port
         if self.result.aux_serial_port is None:
             self.result.aux_serial_port = self.options.aux_serial_port
-        if self.result.outcome_category != 'DrSEUs':
+        if self.result.outcome_category != 'DrSEUs' and \
+                self.result.outcome != 'Exited':
             if self.result.dut_serial_port:
                 out = '{}, '.format(self.result.dut_serial_port)
             else:

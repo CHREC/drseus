@@ -54,6 +54,19 @@ class supervisor(Cmd):
             self.drseus.debugger.launch_simics(checkpoint)
         self.drseus.debugger.continue_dut()
 
+    def cmdloop(self):
+        try:
+            Cmd.cmdloop(self)
+        except:
+            print_exc()
+            self.drseus.db.log_event(
+                'Error', 'Supervisor', 'Exception',
+                self.drseus.db.log_exception)
+            self.drseus.debugger.close()
+            self.drseus.db.result.outcome_category = 'Supervisor'
+            self.drseus.db.result.outcome = 'Uncaught exception'
+            self.drseus.db.log_result(exit=True)
+
     def preloop(self):
         print('Welcome to DrSEUs!\n')
         self.do_info()
@@ -166,32 +179,7 @@ class supervisor(Cmd):
         else:
             self.drseus.debugger.dut.flush()
         self.drseus.db.log_result()
-        try:
-            self.drseus.inject_campaign(iteration_counter, timer)
-            self.drseus.db.result.outcome_category = 'DrSEUs'
-            self.drseus.db.result.outcome = 'Supervisor'
-        except KeyboardInterrupt:
-            if self.drseus.db.campaign.simics:
-                self.drseus.debugger.continue_dut()
-            if self.drseus.debugger.dut:
-                self.drseus.debugger.dut.write('\x03')
-                self.drseus.debugger.dut.flush()
-            if self.drseus.db.campaign.aux and self.drseus.debugger.aux:
-                self.drseus.debugger.aux.write('\x03')
-                self.drseus.debugger.aux.flush()
-            self.drseus.db.log_event(
-                'Information', 'User', 'Interrupted',
-                self.drseus.db.log_exception)
-            self.drseus.db.result.outcome_category = 'Incomplete'
-            self.drseus.db.result.outcome = 'Interrupted'
-            self.drseus.db.log_result(supervisor=True)
-        except:
-            print_exc()
-            self.drseus.db.log_event(
-                'Error', 'DrSEUs', 'Exception', self.drseus.db.log_exception)
-            self.drseus.db.result.outcome_category = 'Incomplete'
-            self.drseus.db.result.outcome = 'Uncaught exception'
-            self.drseus.db.log_result(supervisor=True)
+        self.drseus.inject_campaign(iteration_counter, timer)
         if self.drseus.db.campaign.simics:
             self.drseus.debugger.close()
             self.launch_simics()
@@ -228,48 +216,34 @@ class supervisor(Cmd):
         else:
             self.drseus.debugger.dut.flush()
         self.drseus.db.log_result()
-        try:
-            self.drseus.inject_campaign(iteration_counter)
-        except KeyboardInterrupt:
-            if self.drseus.db.campaign.simics:
-                self.drseus.debugger.continue_dut()
-            if self.drseus.debugger.dut:
-                self.drseus.debugger.dut.write('\x03')
-                self.drseus.debugger.dut.flush()
-            if self.drseus.db.campaign.aux and self.drseus.debugger.aux:
-                self.drseus.debugger.aux.write('\x03')
-                self.drseus.debugger.aux.flush()
-            self.drseus.db.log_event(
-                'Information', 'User', 'Interrupted',
-                self.drseus.db.log_exception)
-            self.drseus.db.result.outcome_category = 'Incomplete'
-            self.drseus.db.result.outcome = 'Interrupted'
-            self.drseus.db.log_result(supervisor=True)
-        except:
-            print_exc()
-            self.drseus.db.log_event(
-                'Error', 'DrSEUs', 'Exception', self.drseus.db.log_exception)
-            self.drseus.db.result.outcome_category = 'Incomplete'
-            self.drseus.db.result.outcome = 'Uncaught exception'
-            self.drseus.db.log_result(supervisor=True)
+        self.drseus.inject_campaign(iteration_counter)
         if self.drseus.db.campaign.simics:
             self.drseus.debugger.close()
             self.launch_simics()
 
-    def do_minicom(self, arg=None):
-        """Launch minicom connected to DUT and includes session in log"""
+    def do_minicom(self, arg=None, aux=False):
+        """Launch minicom connected to DUT and include session in log"""
         capture = 'minicom_capture.{}_{}'.format(
             '-'.join(['{:02}'.format(unit)
                       for unit in datetime.now().timetuple()[:3]]),
             '-'.join(['{:02}'.format(unit)
                       for unit in datetime.now().timetuple()[3:6]]))
-        self.drseus.debugger.dut.close()
-        call(['minicom', '-D', self.drseus.options.dut_serial_port,
-              '--capturefile={}'.format(capture)])
-        self.drseus.debugger.dut.open()
+        if aux:
+            self.drseus.debugger.aux.close()
+            call(['minicom', '-D', self.drseus.options.aux_serial_port,
+                  '--capturefile={}'.format(capture)])
+            self.drseus.debugger.aux.open()
+        else:
+            self.drseus.debugger.dut.close()
+            call(['minicom', '-D', self.drseus.options.dut_serial_port,
+                  '--capturefile={}'.format(capture)])
+            self.drseus.debugger.dut.open()
         if exists(capture):
             with open(capture, 'r') as capture_file:
-                self.drseus.db.result.dut_output += capture_file.read()
+                if aux:
+                    self.drseus.db.result.aux_output += capture_file.read()
+                else:
+                    self.drseus.db.result.dut_output += capture_file.read()
                 self.drseus.db.result.save()
             remove(capture)
 
@@ -279,7 +253,7 @@ class supervisor(Cmd):
 
     def do_log(self, arg):
         """Log current status as a result"""
-        self.drseus.db.result.outcome_category = 'DrSEUs'
+        self.drseus.db.result.outcome_category = 'Supervisor'
         self.drseus.db.result.outcome = arg if arg else 'User'
         self.drseus.db.log_result(supervisor=True)
 
@@ -346,3 +320,7 @@ class aux_supervisor(supervisor):
     def do_get_file_aux(self, arg):
         """Retrieve file from AUX device"""
         self.do_get_dut_file(arg, aux=True)
+
+    def do_minicom_aux(self, arg=None):
+        """Launch minicom connected to AUX and include session in log"""
+        self.do_minicom(arg, aux=True)

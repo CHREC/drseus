@@ -5,6 +5,7 @@ from os.path import exists, join
 from shutil import rmtree
 from threading import Thread
 from time import perf_counter
+from traceback import print_exc
 
 from .database import database
 from .error import DrSEUsError
@@ -342,59 +343,89 @@ class fault_injector(object):
                         self.db.result.outcome_category = outcome_category
                         self.db.result.outcome = outcome
 
-    # def inject_campaign(self, iteration_counter):
-        if self.db.campaign.command:
-            if timer is not None:
-                start = perf_counter()
-            while True:
-                if timer is not None and (perf_counter()-start >= timer):
-                    break
-                if iteration_counter is not None:
-                    with iteration_counter.get_lock():
-                        iteration = iteration_counter.value
-                        if iteration:
-                            iteration_counter.value -= 1
-                        else:
-                            break
-                self.db.result.num_injections = self.options.injections
-                if not self.db.campaign.simics:
-                    if not prepare_dut():
-                        continue
-                    self.db.log_event(
-                        'Information', 'DUT', 'Command',
-                        self.db.campaign.command)
-                    self.debugger.dut.reset_timer()
-                try:
-                    (self.db.result.num_register_diffs,
-                     self.db.result.num_memory_diffs, persistent_faults) = \
-                        self.debugger.inject_faults()
-                except DrSEUsError as error:
-                    self.db.result.outcome = str(error)
-                    if self.db.campaign.simics:
-                        self.db.result.outcome_category = 'Simics error'
-                    else:
-                        self.db.result.outcome_category = 'Debugger error'
-                        continue_dut()
-                else:
-                    self.__monitor_execution(persistent_faults, log_time=True)
-                    check_latent_faults()
-                if self.db.campaign.simics:
-                    close_simics()
-                else:
+        def perform_injections():
+            if self.db.campaign.command:
+                if timer is not None:
+                    start = perf_counter()
+                while True:
+                    if timer is not None and (perf_counter()-start >= timer):
+                        break
+                    if iteration_counter is not None:
+                        with iteration_counter.get_lock():
+                            iteration = iteration_counter.value
+                            if iteration:
+                                iteration_counter.value -= 1
+                            else:
+                                break
+                    self.db.result.num_injections = self.options.injections
+                    if not self.db.campaign.simics:
+                        if not prepare_dut():
+                            continue
+                        self.db.log_event(
+                            'Information', 'DUT', 'Command',
+                            self.db.campaign.command)
+                        self.debugger.dut.reset_timer()
                     try:
-                        self.debugger.dut.flush(check_errors=True)
+                        (self.db.result.num_register_diffs,
+                         self.db.result.num_memory_diffs, persistent_faults) = \
+                            self.debugger.inject_faults()
                     except DrSEUsError as error:
-                        self.db.result.outcome_category = 'Post execution error'
-                        self.db.result.outcome = error.type
-                    if self.db.campaign.aux:
-                        self.debugger.aux.flush()
-                self.db.log_result()
-        elif self.options.injections:
-            print('cannot inject campaign without application')
-        else:
-            print('cannot supervise campaign without application')
-        if self.options.command == 'inject':
-            self.close()
-        elif self.options.command == 'supervise':
-            self.db.result.outcome_category = 'DrSEUs'
-            self.db.result.outcome = 'Supervisor'
+                        self.db.result.outcome = str(error)
+                        if self.db.campaign.simics:
+                            self.db.result.outcome_category = 'Simics error'
+                        else:
+                            self.db.result.outcome_category = 'Debugger error'
+                            continue_dut()
+                    else:
+                        self.__monitor_execution(
+                            persistent_faults, log_time=True)
+                        check_latent_faults()
+                    if self.db.campaign.simics:
+                        close_simics()
+                    else:
+                        try:
+                            self.debugger.dut.flush(check_errors=True)
+                        except DrSEUsError as error:
+                            self.db.result.outcome_category = \
+                                'Post execution error'
+                            self.db.result.outcome = error.type
+                        if self.db.campaign.aux:
+                            self.debugger.aux.flush()
+                    self.db.log_result()
+            elif self.options.injections:
+                print('cannot inject campaign without application')
+            else:
+                print('cannot supervise campaign without application')
+            if self.options.command == 'inject':
+                self.close()
+            elif self.options.command == 'supervise':
+                self.db.result.outcome_category = 'Supervisor'
+                self.db.result.outcome = ''
+
+    # def inject_campaign(self, iteration_counter):
+        try:
+            perform_injections()
+        except KeyboardInterrupt:
+            self.db.log_event(
+                'Information', 'User', 'Interrupted', self.db.log_exception)
+            if self.db.campaign.simics:
+                self.debugger.continue_dut()
+            self.debugger.dut.write('\x03')
+            if self.db.campaign.aux:
+                self.debugger.aux.write('\x03')
+            self.debugger.close()
+            self.db.result.outcome_category = 'Incomplete'
+            self.db.result.outcome = 'Interrupted'
+            self.db.log_result(
+                exit=self.options.command != 'supervise',
+                supervisor=self.options.command == 'supervise')
+        except:
+            print_exc()
+            self.db.log_event(
+                'Error', 'Fault injector', 'Exception', self.db.log_exception)
+            self.debugger.close()
+            self.db.result.outcome_category = 'Incomplete'
+            self.db.result.outcome = 'Uncaught exception'
+            self.db.log_result(
+                exit=self.options.command != 'supervise',
+                supervisor=self.options.command == 'supervise')
