@@ -146,8 +146,8 @@ def delete_database(options):
 
 def backup_database(options, backup_file):
     with open(backup_file, 'w') as backup:
-        __psql(superuser=options.db_host == 'localhost', executable='pg_dump',
-               database=True, args=['-c'], stdout=backup)
+        __psql(options, superuser=options.db_host == 'localhost',
+               executable='pg_dump', database=True, args=['-c'], stdout=backup)
 
 
 def restore_database(options, backup_file):
