@@ -1,53 +1,72 @@
 from django.forms import NumberInput, Select, SelectMultiple, Textarea
 from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             MultipleChoiceFilter, NumberFilter)
-from threading import Thread
 from time import perf_counter
 
 from . import fix_sort_list, models
 
 
+def choices(queryset, attribute):
+    choices = []
+    exclude_kwargs = {'{}__isnull'.format(attribute): True}
+    for item in queryset.exclude(**exclude_kwargs).values_list(
+            attribute, flat=True).distinct():
+        if isinstance(item, list):
+            choice = '{{{}}}'.format(', '.join(map(str, item)))
+            choices.append((choice, choice))
+        else:
+            choices.append((item, item))
+    return sorted(choices, key=fix_sort_list)
+
+
+event_choices = {
+    'level': [],
+    'source': [],
+    'type': []
+}
+injection_choices = {
+    'bit': [],
+    'checkpoint': [],
+    'field': [],
+    'processor_mode': [],
+    'register': [],
+    'register_access': [],
+    'target_name': [],
+    'tlb_entry': []
+}
+result_choices = {
+    'campaign_id': [],
+    'dut_serial_port': [],
+    'num_injections': [],
+    'outcome': [],
+    'outcome_category': []
+}
+
+
+def update_choices():
+    print('generating filter choices...')
+    start = perf_counter()
+    events = models.event.objects.all()
+    for attribute in event_choices:
+        event_choices[attribute] = choices(events, attribute)
+    injections = models.injection.objects.all()
+    for attribute in injection_choices:
+        injection_choices[attribute] = choices(injections, attribute)
+    results = models.result.objects.all()
+    for attribute in result_choices:
+        result_choices[attribute] = choices(results, attribute)
+    print('filter choices', round(perf_counter()-start, 2), 'seconds')
+update_choices()
+
+
 class event(FilterSet):
     def __init__(self, *args, **kwargs):
-        start = perf_counter()
         super().__init__(*args, **kwargs)
-        self.queryset = kwargs['queryset']
-
-        def type_choices():
-            type_choices = self.choices(self.queryset, 'type')
-            self.filters['type'].extra.update(choices=type_choices)
-            self.filters['type'].widget.attrs['size'] = min(
-                len(type_choices), 50)
-
-        def level_choices():
-            level_choices = self.choices(self.queryset, 'level')
-            self.filters['level'].extra.update(choices=level_choices)
-            self.filters['level'].widget.attrs['size'] = min(
-                len(level_choices), 50)
-
-        def source_choices():
-            source_choices = self.choices(self.queryset, 'source')
-            self.filters['source'].extra.update(choices=source_choices)
-            self.filters['source'].widget.attrs['size'] = min(
-                len(source_choices), 50)
-
-        type_thread = Thread(target=type_choices)
-        type_thread.start()
-        level_thread = Thread(target=level_choices)
-        level_thread.start()
-        source_thread = Thread(target=source_choices)
-        source_thread.start()
-        type_thread.join()
-        level_thread.join()
-        source_thread.join()
-        print('event filter', round(perf_counter()-start, 2), 'seconds')
-
-    def choices(self, events, attribute):
-        exclude_kwargs = {'{}__isnull'.format(attribute): True}
-        items = events.exclude(**exclude_kwargs).values_list(
-            attribute, flat=True).distinct()
-        choices = zip(items, items)
-        return sorted(choices, key=fix_sort_list)
+        for attribute in event_choices:
+            self.filters[attribute].extra.update(
+                choices=event_choices[attribute])
+            self.filters[attribute].widget.attrs['size'] = min(
+                len(event_choices[attribute]), 50)
 
     description = CharFilter(
         label='Description', lookup_type='icontains',
@@ -74,57 +93,12 @@ class event(FilterSet):
 
 class injection(FilterSet):
     def __init__(self, *args, **kwargs):
-        start = perf_counter()
         super().__init__(*args, **kwargs)
-        self.queryset = kwargs['queryset']
-
-        bit_choices = self.choices(self.queryset, 'bit')
-        self.filters['bit'].extra.update(choices=bit_choices)
-        self.filters['bit'].widget.attrs['size'] = min(
-            len(bit_choices), 25)
-        checkpoint_choices = self.choices(self.queryset, 'checkpoint')
-        self.filters['checkpoint'].extra.update(choices=checkpoint_choices)
-        self.filters['checkpoint'].widget.attrs['size'] = min(
-            len(checkpoint_choices), 25)
-        field_choices = self.choices(self.queryset, 'field')
-        self.filters['field'].extra.update(choices=field_choices)
-        self.filters['field'].widget.attrs['size'] = min(
-            len(field_choices), 25)
-        processor_mode_choices = self.choices(self.queryset, 'processor_mode')
-        self.filters['processor_mode'].extra.update(
-            choices=processor_mode_choices)
-        self.filters['processor_mode'].widget.attrs['size'] = min(
-            len(processor_mode_choices), 25)
-        register_choices = self.choices(self.queryset, 'register')
-        self.filters['register'].extra.update(choices=register_choices)
-        self.filters['register'].widget.attrs['size'] = min(
-            len(register_choices), 25)
-        register_access_choices = self.choices(self.queryset, 'register_access')
-        self.filters['register_access'].extra.update(
-            choices=register_access_choices)
-        self.filters['register_access'].widget.attrs['size'] = min(
-            len(register_access_choices), 25)
-        target_name_choices = self.choices(self.queryset, 'target_name')
-        self.filters['target_name'].extra.update(choices=target_name_choices)
-        self.filters['target_name'].widget.attrs['size'] = min(
-            len(target_name_choices), 25)
-        tlb_entry_choices = self.choices(self.queryset, 'tlb_entry')
-        self.filters['tlb_entry'].extra.update(choices=tlb_entry_choices)
-        self.filters['tlb_entry'].widget.attrs['size'] = min(
-            len(tlb_entry_choices), 25)
-        print('injection filter', round(perf_counter()-start, 2), 'seconds')
-
-    def choices(self, injections, attribute):
-        choices = []
-        exclude_kwargs = {'{}__isnull'.format(attribute): True}
-        for item in injections.exclude(**exclude_kwargs).values_list(
-                attribute, flat=True).distinct():
-            if isinstance(item, list):
-                choice = '{{{}}}'.format(', '.join(map(str, item)))
-                choices.append((choice, choice))
-            else:
-                choices.append((item, item))
-        return sorted(choices, key=fix_sort_list)
+        for attribute in injection_choices:
+            self.filters[attribute].extra.update(
+                choices=injection_choices[attribute])
+            self.filters[attribute].widget.attrs['size'] = min(
+                len(injection_choices[attribute]), 25)
 
     bit = MultipleChoiceFilter(
         label='Bit',
@@ -170,108 +144,24 @@ class injection(FilterSet):
 
 class result(FilterSet):
     def __init__(self, *args, **kwargs):
-        start = perf_counter()
         super().__init__(*args, **kwargs)
-        self.queryset = kwargs['queryset']
-        events = models.event.objects.filter(
-            result_id__in=self.queryset.values('id'))
-        injections = models.injection.objects.filter(
-            result_id__in=self.queryset.values('id'))
-
-        def event_type_choices():
-            type_choices = event.choices(None, events, 'type')
-            self.filters['event__type'].extra.update(choices=type_choices)
-            self.filters['event__type'].widget.attrs['size'] = min(
-                len(type_choices), 50)
-
-        def event_level_choices():
-            level_choices = event.choices(None, events, 'level')
-            self.filters['event__level'].extra.update(choices=level_choices)
-            self.filters['event__level'].widget.attrs['size'] = min(
-                len(level_choices), 50)
-
-        def event_source_choices():
-            source_choices = event.choices(None, events, 'source')
-            self.filters['event__source'].extra.update(choices=source_choices)
-            self.filters['event__source'].widget.attrs['size'] = min(
-                len(source_choices), 50)
-
-        event_type_thread = Thread(target=event_type_choices)
-        event_type_thread.start()
-        event_level_thread = Thread(target=event_level_choices)
-        event_level_thread.start()
-        event_source_thread = Thread(target=event_source_choices)
-        event_source_thread.start()
-
-        campaign_id_choices = self.choices(self.queryset, 'campaign_id')
-        self.filters['campaign_id'].extra.update(choices=campaign_id_choices)
-        self.filters['campaign_id'].widget.attrs['size'] = min(
-            len(campaign_id_choices), 50)
-        dut_serial_port_choices = self.choices(self.queryset, 'dut_serial_port')
-        self.filters['dut_serial_port'].extra.update(
-            choices=dut_serial_port_choices)
-        self.filters['dut_serial_port'].widget.attrs['size'] = min(
-            len(dut_serial_port_choices), 50)
-        bit_choices = injection.choices(None, injections, 'bit')
-        self.filters['injection__bit'].extra.update(choices=bit_choices)
-        self.filters['injection__bit'].widget.attrs['size'] = min(
-            len(bit_choices), 25)
-        checkpoint_choices = injection.choices(None, injections, 'checkpoint')
-        self.filters['injection__checkpoint'].extra.update(
-            choices=checkpoint_choices)
-        self.filters['injection__checkpoint'].widget.attrs['size'] = min(
-            len(checkpoint_choices), 25)
-        field_choices = injection.choices(None, injections, 'field')
-        self.filters['injection__field'].extra.update(choices=field_choices)
-        self.filters['injection__field'].widget.attrs['size'] = min(
-            len(field_choices), 25)
-        processor_mode_choices = injection.choices(
-            None, injections, 'processor_mode')
-        self.filters['injection__processor_mode'].extra.update(
-            choices=processor_mode_choices)
-        self.filters['injection__processor_mode'].widget.attrs['size'] = min(
-            len(processor_mode_choices), 25)
-        register_choices = injection.choices(None, injections, 'register')
-        self.filters['injection__register'].extra.update(
-            choices=register_choices)
-        self.filters['injection__register'].widget.attrs['size'] = min(
-            len(register_choices), 25)
-        register_access_choices = injection.choices(
-            None, injections, 'register_access')
-        self.filters['injection__register_access'].extra.update(
-            choices=register_access_choices)
-        self.filters['injection__register_access'].widget.attrs['size'] = min(
-            len(register_access_choices), 25)
-        target_name_choices = injection.choices(None, injections, 'target_name')
-        self.filters['injection__target_name'].extra.update(
-            choices=target_name_choices)
-        self.filters['injection__target_name'].widget.attrs['size'] = min(
-            len(target_name_choices), 25)
-        tlb_entry_choices = injection.choices(None, injections, 'tlb_entry')
-        self.filters['injection__tlb_entry'].extra.update(
-            choices=tlb_entry_choices)
-        self.filters['injection__tlb_entry'].widget.attrs['size'] = min(
-            len(tlb_entry_choices), 25)
-        num_injections_choices = self.choices(self.queryset, 'num_injections')
-        self.filters['num_injections'].extra.update(
-            choices=num_injections_choices)
-        self.filters['num_injections'].widget.attrs['size'] = min(
-            len(num_injections_choices), 25)
-        outcome_choices = self.choices(self.queryset, 'outcome')
-        self.filters['outcome'].extra.update(choices=outcome_choices)
-        self.filters['outcome'].widget.attrs['size'] = min(
-            len(outcome_choices), 50)
-        outcome_category_choices = self.choices(
-            self.queryset, 'outcome_category')
-        self.filters['outcome_category'].extra.update(
-            choices=outcome_category_choices)
-        self.filters['outcome_category'].widget.attrs['size'] = min(
-            len(outcome_category_choices), 50)
-
-        event_type_thread.join()
-        event_level_thread.join()
-        event_source_thread.join()
-        print('result filter', round(perf_counter()-start, 2), 'seconds')
+        for attribute in event_choices:
+            self.filters['event__{}'.format(attribute)].extra.update(
+                choices=event_choices[attribute])
+            self.filters[
+                'event__{}'.format(attribute)
+            ].widget.attrs['size'] = min(len(event_choices[attribute]), 50)
+        for attribute in injection_choices:
+            self.filters['injection__{}'.format(attribute)].extra.update(
+                choices=injection_choices[attribute])
+            self.filters[
+                'injection__{}'.format(attribute)
+            ].widget.attrs['size'] = min(len(injection_choices[attribute]), 25)
+        for attribute in result_choices:
+            self.filters[attribute].extra.update(
+                choices=result_choices[attribute])
+            self.filters[attribute].widget.attrs['size'] = min(
+                len(result_choices[attribute]), 50)
 
     def choices(self, results, attribute):
         exclude_kwargs = {'{}__isnull'.format(attribute): True}
@@ -404,23 +294,15 @@ class simics_register_diff(FilterSet):
     def __init__(self, *args, **kwargs):
         start = perf_counter()
         super().__init__(*args, **kwargs)
-        self.queryset = kwargs['queryset']
-        checkpoint_choices = self.choices(self.queryset, 'checkpoint')
+        checkpoint_choices = choices(kwargs['queryset'], 'checkpoint')
         self.filters['checkpoint'].extra.update(choices=checkpoint_choices)
         self.filters['checkpoint'].widget.attrs['size'] = min(
             len(checkpoint_choices), 50)
-        register_choices = self.choices(self.queryset, 'register')
+        register_choices = choices(kwargs['queryset'], 'register')
         self.filters['register'].extra.update(choices=register_choices)
         self.filters['register'].widget.attrs['size'] = min(
             len(register_choices), 50)
         print('register diff filter', round(perf_counter()-start, 2), 'seconds')
-
-    def choices(self, simics_register_diffs, attribute):
-        exclude_kwargs = {'{}__isnull'.format(attribute): True}
-        items = simics_register_diffs.exclude(**exclude_kwargs).values_list(
-            attribute, flat=True).distinct()
-        choices = zip(items, items)
-        return sorted(choices, key=fix_sort_list)
 
     checkpoint = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')

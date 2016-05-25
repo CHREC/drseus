@@ -22,5 +22,6 @@ urlpatterns = [
         views.get_file),
     url(r'^result/(?P<result_id>[0-9]+)$', views.result_page),
     url(r'^result/(?P<result_id>[0-9]+)/file/(?P<filename>.+)$',
-        views.get_file)
+        views.get_file),
+    url(r'^update_filter$', views.update_filter)
 ]

@@ -32,6 +32,7 @@
                                 {% if filter %}
                                     <li><a href="#" data-toggle="control-sidebar"><i class="fa fa-filter"></i> Filter</a></li>
                                     <li><a href="javascript:{}" onclick="apply_filter()"><i class="fa fa-check"></i> Apply</a></li>
+                                    <li><a href="javascript:{}" onclick="update_filter()"><i class="fa fa-refresh"></i> Update</a></li>
                                     <li><a href="javascript:{}" onclick="clear_filter()"><i class="fa fa-close"></i> Clear</a></li>
                                 {% endif %}
                             </ul>
@@ -186,18 +187,38 @@
                 return false;
             });
 
-            function apply_filter(select) {
-                var checkboxes = document.getElementsByName('select_box');
-                for(var i=0, n=checkboxes.length; i<n; i++) {
-                    checkboxes[i].checked = false;
+            {% if filter %}
+                function apply_filter(select) {
+                    var checkboxes = document.getElementsByName('select_box');
+                    for(var i=0, n=checkboxes.length; i<n; i++) {
+                        checkboxes[i].checked = false;
+                    }
+                    document.getElementById('get_form').submit();
+                    return false;
                 }
-                document.getElementById('get_form').submit();
-                return false;
-            }
 
-            function clear_filter() {
-                window.location.assign(window.location.href.replace(/\?.*/g, ''));
-            }
+                function update_filter() {
+                    var form = document.createElement("form");
+                    form.setAttribute("method", "post");
+                    form.setAttribute("action", "/update_filter");
+                    var redirect = document.createElement("input");
+                    redirect.setAttribute("type", "hidden");
+                    redirect.setAttribute("name", "redirect");
+                    redirect.setAttribute("value", window.location.href);
+                    form.appendChild(redirect);
+                    var csrf = document.createElement("input");
+                    csrf.setAttribute("type", "hidden");
+                    csrf.setAttribute("name", "csrfmiddlewaretoken");
+                    csrf.setAttribute("value", "{{ csrf_token }}");
+                    form.appendChild(csrf);
+                    document.body.appendChild(form);
+                    form.submit()
+                }
+
+                function clear_filter() {
+                    window.location.assign(window.location.href.replace(/\?.*/g, ''));
+                }
+            {% endif %}
         </script>
         {% block script %}{% endblock %}
         <script src="{% get_static_prefix %}js/jquery.slimscroll.min.js"></script>

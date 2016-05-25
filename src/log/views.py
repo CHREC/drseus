@@ -524,3 +524,8 @@ def get_file(request, filename, result_id=None, campaign_id=None):
             open(file_, 'rb'), content_type=guess_type(file_))
     else:
         return HttpResponse('File not found')
+
+
+def update_filter(request):
+    filters.update_choices()
+    return redirect(request.POST['redirect'])
