@@ -56,9 +56,9 @@ for device in ['a9', 'p2020']:
 
             for key in [key for key in old_target.keys()
                         if key not in ['registers', 'unused_registers']]:
-                if key in ['base']:
+                if key == 'base':
                     merged_target[key] = old_target[key]
-                if key == 'count':
+                elif key == 'count':
                     if old_target[key] != 1:
                         merged_target[key] = old_target[key]
                 elif key in ['CP', 'memory_mapped']:
@@ -682,6 +682,9 @@ for device in ['a9', 'p2020']:
                     if old_type == 'jtag' or target == 'TLB' or \
                             other_register is None:
                         merged_register['fields'] = old_register['fields']
+                        if 'unused_fields' in old_register:
+                            merged_register['fields'].extend(
+                                old_register['unused_fields'])
                     elif other_register is not None and \
                             'fields' in other_register:
                         other_fields = other_register['fields']
