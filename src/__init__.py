@@ -3,6 +3,8 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
+# TODO: log event for checkpoint merge
+# TODO: log files (new table)
 # TODO: add latent iteration logs to log viewer
 # TODO: disable simics a9 injection into CPU: cpsr bits 2-4
 # TODO: add supervisor command to load injected state (simics)

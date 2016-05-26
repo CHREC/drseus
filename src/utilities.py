@@ -167,7 +167,7 @@ def delete(options):
     if options.selection in ('results', 'r'):
         if input('are you sure you want to delete all results for campaign {}?'
                  ' [y/N]: '.format(options.campaign_id)) not in \
-                ['y', 'Y', 'yes']:
+                ['y', 'Y', 'yes', 'Yes', 'YES']:
             return
         if exists('campaign-data/{}/results'.format(options.campaign_id)):
             rmtree('campaign-data/{}/results'.format(options.campaign_id))

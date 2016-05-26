@@ -151,6 +151,15 @@ def backup_database(options, backup_file):
 
 
 def restore_database(options, backup_file):
+    try:
+        campaign_model.objects.latest('id')
+    except:
+        initialize_database(options)
+    else:
+        if input('database exists, continuing will overwrite it. continue?'
+                 ' [y/N]: '.format(options.campaign_id)) not in \
+                ['y', 'Y', 'yes', 'Yes', 'YES']:
+            return
     with open(backup_file, 'r') as backup:
         __psql(options, superuser=True, database=True,
                args=['--single-transaction'], stdin=backup, stdout=DEVNULL)
@@ -203,12 +212,8 @@ class database(object):
                   success=None, campaign=False):
         if description == self.log_trace:
             description = ''.join(format_stack()[:-2])
-            if success is None:
-                success = False
         elif description == self.log_exception:
             description = ''.join(format_exc())
-            if success is None:
-                success = False
         campaign = campaign or self.result is None
         event = (self.campaign if campaign else self.result).event_set.create(
             description=description,

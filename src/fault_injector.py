@@ -407,6 +407,9 @@ class fault_injector(object):
         try:
             perform_injections()
         except KeyboardInterrupt:
+            self.db.result.outcome_category = 'Incomplete'
+            self.db.result.outcome = 'Interrupted'
+            self.db.result.save()
             self.db.log_event(
                 'Information', 'User', 'Interrupted', self.db.log_exception)
             if self.db.campaign.simics:
@@ -415,18 +418,17 @@ class fault_injector(object):
             if self.db.campaign.aux:
                 self.debugger.aux.write('\x03')
             self.debugger.close()
-            self.db.result.outcome_category = 'Incomplete'
-            self.db.result.outcome = 'Interrupted'
             self.db.log_result(
                 exit=self.options.command != 'supervise',
                 supervisor=self.options.command == 'supervise')
         except:
+            self.db.result.outcome_category = 'Incomplete'
+            self.db.result.outcome = 'Uncaught exception'
+            self.db.result.save()
             print_exc()
             self.db.log_event(
                 'Error', 'Fault injector', 'Exception', self.db.log_exception)
             self.debugger.close()
-            self.db.result.outcome_category = 'Incomplete'
-            self.db.result.outcome = 'Uncaught exception'
             self.db.log_result(
                 exit=self.options.command != 'supervise',
                 supervisor=self.options.command == 'supervise')
