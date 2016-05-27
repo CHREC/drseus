@@ -34,7 +34,7 @@ class dut(object):
 
         ('command not found', 'Invalid command'),
         ('Unknown command', 'Invalid command'),
-        ('No such file or directory', 'Missing file'),
+        ('No such file or directory', 'Missing file on device'),
 
         ('detected stalls on CPU', 'Stall detected'),
         ('detected stall on CPU', 'Stall detected'),
@@ -374,16 +374,16 @@ class dut(object):
                             self.db.log_event(
                                 'Warning' if attempt < attempts-1 else 'Error',
                                 'DUT' if not self.aux else 'AUX',
-                                'Missing file', local_path)
+                                'Received file not found', local_path)
                             print(colored(
                                 '{}: Error receiving file (attempt {}/{}): '
-                                'missing file'.format(
+                                'received file not found'.format(
                                     self.serial.port, attempt+1, attempts),
                                 'red'))
                             if attempt < attempts-1:
                                 sleep(30)
                             else:
-                                raise DrSEUsError('Missing file')
+                                raise DrSEUsError('Received file not found')
 
     def write(self, string):
         self.serial.write(bytes(string, encoding='utf-8'))
@@ -462,8 +462,12 @@ class dut(object):
                 errors += 1
             for message, category in self.error_messages:
                 if buff.endswith(message):
+                    if category == 'Missing file on device' and buff.endswith(
+                            "hwclock: can't open '/dev/misc/rtc': "
+                            "No such file or directory"):
+                        continue
                     if boot:
-                        if category in ('Reboot', 'Missing file'):
+                        if category == 'Reboot':
                             continue
                     elif not continuous:
                         self.serial.timeout = 30
@@ -508,9 +512,10 @@ class dut(object):
             self.db.result.save()
         if errors:
             for message, category in self.error_messages:
-                if not (boot and category in ('Error booting', 'Reboot',
-                                              'Missing file')) and \
-                        message in buff:
+                if not (boot and category in ('Error booting', 'Reboot')) and \
+                        message in buff.replace(
+                            "hwclock: can't open '/dev/misc/rtc': "
+                            "No such file or directory", ''):
                     raise DrSEUsError(category, returned=returned)
         if hanging:
             raise DrSEUsError('Hanging', returned=returned)

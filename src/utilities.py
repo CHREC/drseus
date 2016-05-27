@@ -20,7 +20,6 @@ from .fault_injector import fault_injector
 from .jtag import (find_all_uarts, find_p2020_uarts, find_zedboard_jtag_serials,
                    find_zedboard_uart_serials)
 from .jtag.openocd import openocd
-from .log.filters import update_choices
 from .power_switch import power_switch
 from .simics.config import simics_config
 from .supervisor import supervisor

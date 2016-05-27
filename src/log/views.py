@@ -5,6 +5,7 @@ from io import BytesIO
 from mimetypes import guess_type
 from os.path import exists
 from subprocess import Popen
+from shutil import rmtree
 from sys import argv
 from tarfile import open as open_tar
 from tarfile import TarInfo
@@ -380,8 +381,19 @@ def results_page(request, campaign_id=None):
         elif 'delete' in request.POST and 'results[]' in request.POST:
             result_ids = [int(result_id) for result_id
                           in dict(request.POST)['results[]']]
-            models.result.objects.filter(id__in=result_ids).delete()
+            results_to_delete = models.result.objects.filter(id__in=result_ids)
+            for result in results_to_delete:
+                if exists('campaign-data/{}/results/{}'.format(
+                        result.campaign_id, result.id)):
+                    rmtree('campaign-data/{}/results/{}'.format(
+                        result.campaign_id, result.id))
+            results_to_delete.delete()
         elif 'delete_all' in request.POST:
+            for result in results:
+                if exists('campaign-data/{}/results/{}'.format(
+                        result.campaign_id, result.id)):
+                    rmtree('campaign-data/{}/results/{}'.format(
+                        result.campaign_id, result.id))
             results.delete()
             if campaign_id:
                 return redirect('/campaign/{}/results'.format(campaign_id))

@@ -3,6 +3,7 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
+# TODO: log output from checkpoint merge
 # TODO: log event for checkpoint merge
 # TODO: log files (new table)
 # TODO: add latent iteration logs to log viewer
