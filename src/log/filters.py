@@ -56,7 +56,6 @@ def update_choices():
     for attribute in result_choices:
         result_choices[attribute] = choices(results, attribute)
     print('filter choices', round(perf_counter()-start, 2), 'seconds')
-update_choices()
 
 
 class event(FilterSet):

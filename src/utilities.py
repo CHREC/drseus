@@ -20,6 +20,7 @@ from .fault_injector import fault_injector
 from .jtag import (find_all_uarts, find_p2020_uarts, find_zedboard_jtag_serials,
                    find_zedboard_uart_serials)
 from .jtag.openocd import openocd
+from .log.filters import update_choices
 from .power_switch import power_switch
 from .simics.config import simics_config
 from .supervisor import supervisor
@@ -311,6 +312,11 @@ def regenerate(options):
 
 
 def view_log(options):
+    try:
+        update_choices()
+    except:
+        print('error connecting to database, try creating a new campaign first')
+        return
     django_command([argv[0], 'runserver', ('0.0.0.0:' if options.external
                                            else '')+str(options.port)])
 
@@ -423,7 +429,8 @@ def restore(options):
         if exists('campaign-data') or \
                 exists('simics-workspace/gold-checkpoints'):
             if input('existing data will be deleted before restore '
-                     'operation, continue? [Y/n]: ') in ('n', 'N'):
+                     'operation, continue? [Y/n]: ') in ('n', 'N', 'no', 'No',
+                                                         'NO'):
                 return
             if exists('campaign-data'):
                 rmtree('campaign-data')
@@ -439,6 +446,7 @@ def restore(options):
             print('restoring database from {}...'.format(item))
             restore_database(options, join('campaign-data', item))
             print('database restored')
+            remove(join('campaign-data', item))
             break
     else:
         print('could not find .sql file to restore')

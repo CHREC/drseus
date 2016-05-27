@@ -54,6 +54,7 @@ def run():
         TIME_ZONE='UTC'
     )
     setup()
+    # we can't (indirectly) import anything from log until django is setup
     from . import database
     from . import utilities
     missing_args = []

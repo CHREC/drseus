@@ -1,16 +1,16 @@
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
-from django.db.utils import OperationalError
+from django.db.utils import OperationalError, ProgrammingError
 from getpass import getuser
 from io import StringIO
 from os import mkdir, remove
 from os.path import exists
 from paramiko import RSAKey
-from subprocess import DEVNULL, PIPE, Popen
+from subprocess import check_output, DEVNULL, PIPE, Popen
 from sys import argv
 from sys import stdout as sys_stdout
 from termcolor import colored
-from traceback import format_exc, format_stack
+from traceback import format_exc, format_stack, print_exc
 
 from .log.models import campaign as campaign_model
 
@@ -78,6 +78,10 @@ def new_campaign(options):
     except OperationalError:
         initialize_database(options)
         campaign.save()
+    except ProgrammingError:
+        print_exc()
+        print('the database appears to be corrupted')
+        return
     return campaign
 
 
@@ -151,15 +155,16 @@ def backup_database(options, backup_file):
 
 
 def restore_database(options, backup_file):
-    try:
-        campaign_model.objects.latest('id')
-    except:
-        initialize_database(options)
+    for line in check_output(['sudo', '-u', options.db_superuser, 'psql', '-l'],
+                             universal_newlines=True).split('\n'):
+        if options.db_name in line.split('|')[0]:
+            if input('database exists, continuing will overwrite it. continue? '
+                     '[y/N]: ') not in ['y', 'Y', 'yes', 'Yes', 'YES']:
+                return
+            else:
+                break
     else:
-        if input('database exists, continuing will overwrite it. continue?'
-                 ' [y/N]: '.format(options.campaign_id)) not in \
-                ['y', 'Y', 'yes', 'Yes', 'YES']:
-            return
+        initialize_database(options)
     with open(backup_file, 'r') as backup:
         __psql(options, superuser=True, database=True,
                args=['--single-transaction'], stdin=backup, stdout=DEVNULL)
