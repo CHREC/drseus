@@ -12,12 +12,17 @@ parser = ArgumentParser(
            '"%(prog)s @conf/p2020 inject".')
 # parser.convert_arg_line_to_args = lambda line: line.split()
 parser.add_argument(
-    '-c', '--campaign',
+    '-c', '--campaign_id',
     type=int,
     metavar='ID',
     dest='campaign_id',
     default=0,
     help='campaign to use, defaults to last campaign created')
+parser.add_argument(
+    '-d', '--description',
+    metavar='DESCRIPTION',
+    dest='campaign_description',
+    help='specify campaign to use by description')
 parser.add_argument(
     '--timeout',
     type=int,

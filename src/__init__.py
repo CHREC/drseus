@@ -65,9 +65,9 @@ def run():
     if options.command in ('inject', 'supervise', 'delete', 'regenerate') and \
             not (options.command == 'delete' and
                  options.selection in ('a', 'all')):
+        campaign = database.get_campaign(options)
         if not options.campaign_id:
-            options.campaign_id = database.get_campaign(options).id
-        campaign = utilities.get_campaign(options)
+            options.campaign_id = campaign.id
         if options.command != 'regenerate':
             options.architecture = campaign.architecture
     if options.command in ('new', 'inject', 'supervise'):

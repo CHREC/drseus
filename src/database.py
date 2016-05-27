@@ -37,6 +37,14 @@ def initialize_database(options):
 def get_campaign(options):
     if options == 'all':
         return campaign_model.objects.all().order_by('id')
+    elif options.campaign_description is not None:
+        if campaign_model.objects.filter(
+                description=options.campaign_description).count() > 1:
+            raise Exception(
+                'more than one campaign with the specifed description exists, '
+                'specify a campaign id instead')
+        return campaign_model.objects.get(
+            description=options.campaign_description)
     elif not options.campaign_id:
         return campaign_model.objects.latest('id')
     else:
