@@ -60,6 +60,8 @@ def update_choices():
 
 class event(FilterSet):
     def __init__(self, *args, **kwargs):
+        if not event_choices['level'] and kwargs['queryset'].count():
+            update_choices()
         super().__init__(*args, **kwargs)
         for attribute in event_choices:
             self.filters[attribute].extra.update(
@@ -92,6 +94,8 @@ class event(FilterSet):
 
 class injection(FilterSet):
     def __init__(self, *args, **kwargs):
+        if not injection_choices['register'] and kwargs['queryset'].count():
+            update_choices()
         super().__init__(*args, **kwargs)
         for attribute in injection_choices:
             self.filters[attribute].extra.update(
@@ -143,6 +147,8 @@ class injection(FilterSet):
 
 class result(FilterSet):
     def __init__(self, *args, **kwargs):
+        if not result_choices['campaign_id'] and kwargs['queryset'].count():
+            update_choices()
         super().__init__(*args, **kwargs)
         for attribute in event_choices:
             self.filters['event__{}'.format(attribute)].extra.update(

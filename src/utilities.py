@@ -312,11 +312,6 @@ def regenerate(options):
 
 
 def view_log(options):
-    try:
-        update_choices()
-    except:
-        print('error connecting to database, try creating a new campaign first')
-        return
     django_command([argv[0], 'runserver', ('0.0.0.0:' if options.external
                                            else '')+str(options.port)])
 
