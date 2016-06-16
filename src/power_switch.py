@@ -58,7 +58,7 @@ class power_switch(object):
 
     # def get_status(self):
         response = urlopen(Request(
-            'http://{}/index.html'.format(self.ip_address),
+            'http://{}/index.htm'.format(self.ip_address),
             headers={'Authorization': b'Basic '+b64encode(bytes('{}:{}'.format(
                 self.username, self.password), encoding='utf-8'))}))
         parser = table_parser()
