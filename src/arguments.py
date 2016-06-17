@@ -281,15 +281,10 @@ new_campaign = subparsers.add_parser(
     help='create a new campaign',
     description='create a new campaign')
 new_campaign.add_argument(
-    '-a', '--app',
-    metavar='APPLICATION',
-    dest='application',
-    help='application to run on device')
-new_campaign.add_argument(
-    '--no_app_file',
-    action='store_false',
-    dest='application_file',
-    help='do not send application file')
+    '-c', '--cmd',
+    metavar='COMMAND',
+    dest='dut_command',
+    help='command to run on device')
 new_campaign.add_argument(
     '-D', '--descr',
     metavar='DESCRIPTION',
@@ -308,12 +303,6 @@ new_campaign.add_argument(
     default=5,
     help='number of timing iterations to run [default=5]')
 new_campaign.add_argument(
-    '-A', '--args',
-    nargs='+',
-    metavar='ARGUMENT',
-    dest='arguments',
-    help='arguments for application')
-new_campaign.add_argument(
     '-d', '--dir',
     dest='directory',
     default='fiapps',
@@ -322,43 +311,49 @@ new_campaign.add_argument(
     '-f', '--files',
     nargs='+',
     metavar='FILE',
+    default=[],
     help='file(s) to copy to device')
 new_campaign.add_argument(
     '-o', '--output_file',
-    help='target application output file')
+    help='output file to retrieve from DUT')
 new_campaign.add_argument(
     '-l', '--log_files',
     nargs='+',
-    help='target application log file(s)')
+    help='log file(s) to retrieve from DUT')
 new_campaign.add_argument(
-    '-x', '--aux',
+    '-x', '--aux_dev',
     action='store_true',
+    dest='aux',
     help='use auxiliary device during testing')
 new_campaign.add_argument(
-    '-y', '--aux_app',
-    metavar='APPLICATION',
-    dest='aux_application',
-    help='target application for auxiliary device')
-new_campaign.add_argument(
-    '-z', '--aux_args',
-    nargs='+',
-    metavar='ARGUMENT',
-    dest='aux_arguments',
-    help='arguments for auxiliary application')
+    '-C', '--aux_cmd',
+    metavar='COMMAND',
+    dest='aux_command',
+    default='',
+    help='command to run on auxiliary device')
 new_campaign.add_argument(
     '-F', '--aux_files',
     nargs='+',
     metavar='FILE',
+    default=[],
     help='files to copy to auxiliary device')
 new_campaign.add_argument(
     '-O', '--aux_output',
     action='store_true',
     dest='aux_output_file',
-    help='use output file from auxiliary device')
+    help='retrieve output file from AUX instead of DUT')
+new_campaign.add_argument(
+    '-L', '--aux_log_files',
+    nargs='+',
+    help='log file(s) to retrieve from AUX')
 new_campaign.add_argument(
     '-k', '--kill_dut',
     action='store_true',
-    help='send ctrl-c to DUT after auxiliary device completes execution')
+    help='send ctrl-c to DUT after AUX completes execution')
+new_campaign.add_argument(
+    '-K', '--kill_aux',
+    action='store_true',
+    help='send ctrl-c to AUX after DUT completes execution')
 new_campaign.add_argument(
     '-s', '--simics',
     action='store_true',
@@ -368,9 +363,10 @@ new_simics_campaign = new_campaign.add_argument_group(
     'Simics campaigns',
     'Additional options for Simics campaigns only')
 new_simics_campaign.add_argument(
-    '-c', '--checkpoints',
+    '--ckpts',
     type=int,
     metavar='CHECKPOINTS',
+    dest='checkpoints',
     default=1000,
     help='number of gold checkpoints to target for creation '
          '(actual number of checkpoints may be different) [default=1000]')
@@ -655,8 +651,6 @@ def get_options():
     options = parser.parse_args()
     if not hasattr(options, 'debug'):
         options.debug = True
-    if hasattr(options, 'application') and not options.application:
-        options.application_file = False
     if options.command is None:
         parser.error('no command specified, run with "-h" for help')
     if options.command == 'n':

@@ -1,0 +1,14 @@
+@conf/new/a9
+--cmd
+./arm_fi_socket_echo 65000 -f dut_log.txt
+--files
+arm_fi_socket_echo
+--log_files
+dut_log.txt
+--aux_dev
+--aux_cmd
+./arm_fi_socket_send_recv 10.42.0.210 65000 -i 512 -f aux_log.txt
+--aux_files
+arm_fi_socket_send_recv
+--aux_log_files
+aux_log.txt

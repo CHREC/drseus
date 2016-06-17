@@ -233,21 +233,18 @@ class dut(object):
                 self.db.campaign.id, 'aux' if self.aux else 'dut')
             if exists(location):
                 for item in listdir(location):
-                    files.append('{}/{}'.format(location, item))
+                    files.append(join(location, item))
             else:
-                if self.options.application_file:
-                    files.append('{}/{}'.format(
-                        self.options.directory,
-                        self.options.aux_application if self.aux
-                        else self.options.application))
-                if self.options.files:
-                    for file_ in self.options.files:
-                        files.append('{}/{}'.format(
-                            self.options.directory, file_))
+                if self.aux:
+                    campaign_files = self.options.aux_files
+                else:
+                    campaign_files = self.options.files
+                for file_ in campaign_files:
+                    files.append(join(self.options.directory, file_))
                 makedirs(location)
                 if self.options.debug:
-                    print(colored('copying campaign file(s)...', 'blue'),
-                          end='')
+                    print(colored('copying {} campaign file(s)...'.format(
+                        'AUX' if self.aux else 'DUT'), 'blue'), end='')
                     stdout.flush()
                 for file_ in files:
                     copy(file_, location)
@@ -261,7 +258,8 @@ class dut(object):
         if not files:
             return
         if self.options.debug:
-            print(colored('sending file(s)...', 'blue'), end='')
+            print(colored('sending {} file(s)...'.format(
+                'AUX' if self.aux else 'DUT'), 'blue'), end='')
             stdout.flush()
         ssh = SSHClient()
         ssh.set_missing_host_key_policy(AutoAddPolicy())

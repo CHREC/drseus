@@ -154,18 +154,14 @@ class jtag(object):
         execution_times = []
         for i in range(self.options.iterations):
             if self.db.campaign.aux:
-                aux_process = Thread(
-                    target=self.aux.command,
-                    kwargs={'command': self.db.campaign.aux_command,
-                            'flush': False})
-                aux_process.start()
+                self.aux.write('{}\n'.format(self.db.campaign.aux_command))
             self.dut.reset_timer()
             self.dut.write('{}\n'.format(self.db.campaign.command))
-            if self.db.campaign.aux:
-                aux_process.join()
             if self.db.campaign.kill_dut:
                 self.dut.write('\x03')
             self.dut.read_until()
+            if self.db.campaign.aux:
+                self.aux.read_until()
             execution_times.append(self.dut.get_timer_value())
             if i < self.options.iterations-1:
                 if self.db.campaign.output_file:
@@ -176,10 +172,10 @@ class jtag(object):
                         self.dut.command('rm {}'.format(
                             self.db.campaign.output_file))
                 for log_file in self.db.campaign.log_files:
-                    if self.db.campaign.aux_output_file:
+                    self.dut.command('rm {}'.format(log_file))
+                if self.db.campaign.aux:
+                    for log_file in self.db.campaign.aux_log_files:
                         self.aux.command('rm {}'.format(log_file))
-                    else:
-                        self.dut.command('rm {}'.format(log_file))
         self.db.campaign.execution_time = \
             sum(execution_times) / len(execution_times)
         event.success = True

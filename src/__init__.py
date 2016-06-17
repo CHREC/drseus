@@ -3,6 +3,8 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
+# TODO: handle log files in simics.time_application
+# TODO: check for kill aux and kill dut both specified (invalid)
 # TODO: log output from checkpoint merge
 # TODO: log event for checkpoint merge
 # TODO: log files (new table)

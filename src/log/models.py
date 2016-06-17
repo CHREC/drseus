@@ -10,6 +10,7 @@ class campaign(Model):
     aux_command = TextField(null=True)
     aux_output = TextField(default=str)
     aux_output_file = BooleanField(default=False)
+    aux_log_files = ArrayField(TextField(), default=list)
     checkpoints = IntegerField(null=True)
     command = TextField(default=str)
     cycles = BigIntegerField(null=True)

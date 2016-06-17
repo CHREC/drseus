@@ -59,27 +59,20 @@ def new_campaign(options):
     campaign_kwargs = {
         'architecture': options.architecture,
         'aux': options.aux,
+        'command': options.dut_command,
         'description': options.description,
         'kill_dut': options.kill_dut,
+        'log_files': options.log_files,
+        'output_file': options.output_file,
         'rsakey': rsakey,
         'simics': options.simics
     }
     if options.aux:
-        campaign_kwargs['aux_command'] = (
-            ('./' if options.application_file else '') +
-            (options.aux_application if options.aux_application
-                else options.application) +
-            ((' '+' '.join(options.aux_arguments)) if options.aux_arguments
-                else ''))
-        campaign_kwargs['aux_output_file'] = options.aux_output_file
-    if options.application:
-        campaign_kwargs['command'] = (
-            ('./' if options.application_file else '') + options.application +
-            ((' '+' '.join(options.arguments)) if options.arguments else ''))
-    if options.log_files is not None:
-        campaign_kwargs['log_files'] = options.log_files
-    if options.output_file is not None:
-        campaign_kwargs['output_file'] = options.output_file
+        campaign_kwargs.update({
+            'aux_command': options.aux_command,
+            'aux_log_files': options.aux_log_files,
+            'aux_output_file': options.aux_output_file
+        })
     campaign = campaign_model(**campaign_kwargs)
     try:
         campaign.save()

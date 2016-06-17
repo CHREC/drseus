@@ -13,6 +13,7 @@ from subprocess import call, check_call
 from sys import argv, stdout
 from tarfile import open as open_tar
 from terminaltables import AsciiTable
+from traceback import print_exc
 
 from .database import (backup_database, delete_database, get_campaign,
                        new_campaign, restore_database)
@@ -227,27 +228,39 @@ def create_campaign(options):
     if not exists(options.directory):
         raise Exception('cannot find directory {}'.format(
             options.directory))
-    if options.directory == 'fiapps' and options.application_file:
+    for file_ in options.files + options.aux_files:
         try:
-            check_call(['make', options.application],
-                       cwd=join(getcwd(), 'fiapps'))
-        except Exception as error:
-            if not exists(options.application):
-                raise error
+            check_call(['make', file_],
+                       cwd=join(getcwd(), options.directory))
+        except:
+            if not exists(join(options.directory, file_)):
+                raise Exception('could not find file "{}"'.format(
+                    join(options.directory, file_)))
     if options.simics and not exists('simics-workspace'):
         raise Exception('cannot find simics-workspace, '
                         'trying running "scripts/setup_environment.sh"')
     campaign = new_campaign(options)
     options.campaign_id = campaign.id
-    if options.aux_application is None:
-        options.aux_application = options.application
     campaign_directory = 'campaign-data/{}'.format(campaign.id)
     if exists(campaign_directory):
         raise Exception('directory already exists: {}'.format(
             campaign_directory))
     drseus = fault_injector(options)
-    drseus.setup_campaign()
-    print('created campaign {}'.format(campaign.id))
+    try:
+        drseus.setup_campaign()
+    except:
+        print_exc()
+        print('failed to create campaign')
+        drseus.db.log_event(
+            'Error', 'DrSEUs', 'Exception', drseus.db.log_exception)
+        if drseus.db.campaign.simics:
+            drseus.debugger.continue_dut()
+        drseus.debugger.dut.write('\x03')
+        if drseus.db.campaign.aux:
+            drseus.debugger.aux.write('\x03')
+        drseus.debugger.close()
+    else:
+        print('created campaign {}'.format(campaign.id))
 
 
 def inject_campaign(options):

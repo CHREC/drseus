@@ -89,12 +89,12 @@ class fault_injector(object):
                     self.debugger.dut.command('rm {}'.format(
                       self.db.campaign.output_file))
             for log_file in self.db.campaign.log_files:
-                if self.db.campaign.aux_output_file:
+                self.debugger.dut.get_file(log_file, gold_folder)
+                self.debugger.dut.command('rm {}'.format(log_file))
+            if self.db.campaign.aux:
+                for log_file in self.db.campaign.aux_log_files:
                     self.debugger.aux.get_file(log_file, gold_folder)
                     self.debugger.aux.command('rm {}'.format(log_file))
-                else:
-                    self.debugger.dut.get_file(log_file, gold_folder)
-                    self.debugger.dut.command('rm {}'.format(log_file))
             if not listdir(gold_folder):
                 rmtree(gold_folder)
             self.db.campaign.timestamp = datetime.now()
@@ -189,12 +189,8 @@ class fault_injector(object):
                     makedirs(result_folder)
             for log_file in self.db.campaign.log_files:
                 try:
-                    if self.db.campaign.aux_output_file:
-                        file_path = self.debugger.aux.get_file(log_file,
-                                                               result_folder)
-                    else:
-                        file_path = self.debugger.dut.get_file(log_file,
-                                                               result_folder)
+                    file_path = self.debugger.dut.get_file(
+                        log_file, result_folder)
                 except DrSEUsError:
                     if not listdir(result_folder):
                         rmtree(result_folder)
@@ -210,12 +206,33 @@ class fault_injector(object):
                                 self.db.result.outcome = message
                                 break
                 try:
-                    if self.db.campaign.aux_output_file:
-                        self.debugger.aux.command('rm {}'.format(log_file))
-                    else:
-                        self.debugger.dut.command('rm {}'.format(log_file))
+                    self.debugger.dut.command('rm {}'.format(log_file))
                 except DrSEUsError:
                     pass
+            if self.db.campaign.aux:
+                for log_file in self.db.campaign.aux_log_files:
+                    try:
+                        file_path = self.debugger.aux.get_file(
+                            log_file, result_folder)
+                    except DrSEUsError:
+                        if not listdir(result_folder):
+                            rmtree(result_folder)
+                        return
+                    else:
+                        if self.db.result.outcome == 'In progress' and \
+                                self.options.log_error_messages:
+                            with open(file_path, 'r') as log:
+                                log_contents = log.read()
+                            for message in self.options.log_error_messages:
+                                if message in log_contents:
+                                    self.db.result.outcome_category = \
+                                        'Log error'
+                                    self.db.result.outcome = message
+                                    break
+                    try:
+                        self.debugger.dut.command('rm {}'.format(log_file))
+                    except DrSEUsError:
+                        pass
 
     # def __monitor_execution(self, start_time=None, latent_faults=0,
     #                         persistent_faults=False):
