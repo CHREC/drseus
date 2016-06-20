@@ -1,7 +1,5 @@
 from datetime import datetime
-from difflib import SequenceMatcher
 from os import listdir, makedirs
-from os.path import exists, join
 from shutil import rmtree
 from threading import Thread
 from time import perf_counter
@@ -101,195 +99,6 @@ class fault_injector(object):
             self.db.campaign.save()
         self.close()
 
-    def __monitor_execution(self, latent_faults=0, persistent_faults=False,
-                            log_time=False, latent_iteration=0):
-
-        def check_output():
-            local_diff = \
-                hasattr(self.options, 'local_diff') and self.options.local_diff
-            try:
-                if self.db.campaign.aux_output_file:
-                    directory_listing = self.debugger.aux.command('ls -l')[0]
-                else:
-                    directory_listing = self.debugger.dut.command('ls -l')[0]
-            except DrSEUsError as error:
-                self.db.result.outcome_category = 'Post execution error'
-                self.db.result.outcome = error.type
-                return
-            if local_diff:
-                directory_listing = directory_listing.replace(
-                    'gold_{}'.format(self.db.campaign.output_file), '')
-            if self.db.campaign.output_file not in directory_listing:
-                self.db.result.outcome_category = 'Execution error'
-                self.db.result.outcome = 'Missing output file'
-                return
-            if local_diff:
-                if self.debugger.dut.local_diff():
-                    self.db.result.data_diff = 1.0
-                else:
-                    self.db.result.data_diff = 0
-            if not local_diff or self.db.result.data_diff != 1.0:
-                result_folder = 'campaign-data/{}/results/{}'.format(
-                    self.db.campaign.id, self.db.result.id)
-                if not exists(result_folder):
-                    makedirs(result_folder)
-                try:
-                    if self.db.campaign.aux_output_file:
-                        self.debugger.aux.get_file(
-                            self.db.campaign.output_file, result_folder)
-                    else:
-                        self.debugger.dut.get_file(
-                            self.db.campaign.output_file, result_folder)
-                except DrSEUsError as error:
-                    self.db.result.outcome_category = 'File transfer error'
-                    self.db.result.outcome = error.type
-                    if not listdir(result_folder):
-                        rmtree(result_folder)
-                    return
-                with open(
-                        'campaign-data/{}/gold/{}'.format(
-                            self.db.campaign.id, self.db.campaign.output_file),
-                        'rb') as solution:
-                    solutionContents = solution.read()
-                with open(join(result_folder, self.db.campaign.output_file),
-                          'rb') as result:
-                    resultContents = result.read()
-                self.db.result.data_diff = SequenceMatcher(
-                    None, solutionContents, resultContents).quick_ratio()
-            if self.db.result.data_diff == 1.0:
-                if not local_diff:
-                    rmtree(result_folder)
-                if self.db.result.detected_errors:
-                    self.db.result.outcome_category = 'Data error'
-                    self.db.result.outcome = 'Corrected data error'
-            else:
-                self.db.result.outcome_category = 'Data error'
-                if self.db.result.detected_errors:
-                    self.db.result.outcome = 'Detected data error'
-                else:
-                    self.db.result.outcome = 'Silent data error'
-            try:
-                if self.db.campaign.aux_output_file:
-                    self.debugger.aux.command('rm {}'.format(
-                        self.db.campaign.output_file))
-                else:
-                    self.debugger.dut.command('rm {}'.format(
-                        self.db.campaign.output_file))
-            except DrSEUsError as error:
-                self.db.result.outcome_category = 'Post execution error'
-                self.db.result.outcome = error.type
-                return
-
-        def get_log():
-            result_folder = 'campaign-data/{}/results/{}'.format(
-                self.db.campaign.id, self.db.result.id)
-            if latent_iteration:
-                result_folder += '/latent/{}'.format(latent_iteration)
-            if not exists(result_folder):
-                    makedirs(result_folder)
-            for log_file in self.db.campaign.log_files:
-                try:
-                    file_path = self.debugger.dut.get_file(
-                        log_file, result_folder)
-                except DrSEUsError:
-                    if not listdir(result_folder):
-                        rmtree(result_folder)
-                    return
-                else:
-                    if self.db.result.outcome == 'In progress' and \
-                            self.options.log_error_messages:
-                        with open(file_path, 'r') as log:
-                            log_contents = log.read()
-                        for message in self.options.log_error_messages:
-                            if message in log_contents:
-                                self.db.result.outcome_category = 'Log error'
-                                self.db.result.outcome = message
-                                break
-                try:
-                    self.debugger.dut.command('rm {}'.format(log_file))
-                except DrSEUsError:
-                    pass
-            if self.db.campaign.aux:
-                for log_file in self.db.campaign.aux_log_files:
-                    try:
-                        file_path = self.debugger.aux.get_file(
-                            log_file, result_folder)
-                    except DrSEUsError:
-                        if not listdir(result_folder):
-                            rmtree(result_folder)
-                        return
-                    else:
-                        if self.db.result.outcome == 'In progress' and \
-                                self.options.log_error_messages:
-                            with open(file_path, 'r') as log:
-                                log_contents = log.read()
-                            for message in self.options.log_error_messages:
-                                if message in log_contents:
-                                    self.db.result.outcome_category = \
-                                        'Log error'
-                                    self.db.result.outcome = message
-                                    break
-                    try:
-                        self.debugger.dut.command('rm {}'.format(log_file))
-                    except DrSEUsError:
-                        pass
-
-    # def __monitor_execution(self, start_time=None, latent_faults=0,
-    #                         persistent_faults=False):
-        if self.db.campaign.aux:
-            try:
-                self.debugger.aux.read_until()
-            except DrSEUsError as error:
-                self.debugger.dut.write('\x03')
-                self.db.result.outcome_category = 'AUX execution error'
-                self.db.result.outcome = error.type
-            else:
-                if self.db.campaign.kill_dut:
-                    self.debugger.dut.write('\x03')
-        try:
-            self.db.result.returned = self.debugger.dut.read_until()[1]
-        except DrSEUsError as error:
-            self.db.result.outcome_category = 'Execution error'
-            self.db.result.outcome = error.type
-            self.db.result.returned = error.returned
-        finally:
-            if log_time:
-                if self.db.campaign.simics:
-                    try:
-                        self.debugger.halt_dut()
-                    except DrSEUsError as error:
-                        self.db.result.outcome_category = 'Simics error'
-                        self.db.result.outcome = error.type
-                    else:
-                        try:
-                            end_cycles, end_time = self.debugger.get_time()
-                        except DrSEUsError as error:
-                            self.db.result.outcome_category = 'Simics error'
-                            self.db.result.outcome = error.type
-                        else:
-                            self.db.result.cycles = \
-                                end_cycles - self.db.campaign.start_cycle
-                            self.db.result.execution_time = (
-                                end_time - self.db.campaign.start_time)
-                        self.debugger.continue_dut()
-                else:
-                    self.db.result.execution_time = \
-                        self.debugger.dut.get_timer_value()
-        if self.db.campaign.output_file and \
-                self.db.result.outcome == 'In progress':
-            check_output()
-        if self.db.campaign.log_files:
-            get_log()
-        if self.db.result.outcome == 'In progress':
-            self.db.result.outcome_category = 'No error'
-            if persistent_faults:
-                self.db.result.outcome = 'Persistent faults'
-            elif self.db.result.num_register_diffs or \
-                    self.db.result.num_memory_diffs:
-                self.db.result.outcome = 'Latent faults'
-            else:
-                self.db.result.outcome = 'Masked faults'
-
     def inject_campaign(self, iteration_counter=None, timer=None):
 
         def prepare_dut():
@@ -333,6 +142,68 @@ class fault_injector(object):
                 rmtree('simics-workspace/injected-checkpoints/{}/{}'.format(
                        self.db.campaign.id, self.db.result.id))
 
+        def monitor_execution(persistent_faults=False, log_time=False,
+                              latent_iteration=0):
+            if self.db.campaign.aux:
+                try:
+                    self.debugger.aux.read_until()
+                except DrSEUsError as error:
+                    self.debugger.dut.write('\x03')
+                    self.db.result.outcome_category = 'AUX execution error'
+                    self.db.result.outcome = error.type
+                else:
+                    if self.db.campaign.kill_dut:
+                        self.debugger.dut.write('\x03')
+            try:
+                self.db.result.returned = self.debugger.dut.read_until()[1]
+            except DrSEUsError as error:
+                self.db.result.outcome_category = 'Execution error'
+                self.db.result.outcome = error.type
+                self.db.result.returned = error.returned
+            finally:
+                if log_time:
+                    if self.db.campaign.simics:
+                        try:
+                            self.debugger.halt_dut()
+                        except DrSEUsError as error:
+                            self.db.result.outcome_category = 'Simics error'
+                            self.db.result.outcome = error.type
+                        else:
+                            try:
+                                end_cycles, end_time = self.debugger.get_time()
+                            except DrSEUsError as error:
+                                self.db.result.outcome_category = 'Simics error'
+                                self.db.result.outcome = error.type
+                            else:
+                                self.db.result.cycles = \
+                                    end_cycles - self.db.campaign.start_cycle
+                                self.db.result.execution_time = (
+                                    end_time - self.db.campaign.start_time)
+                            self.debugger.continue_dut()
+                    else:
+                        self.db.result.execution_time = \
+                            self.debugger.dut.get_timer_value()
+            if self.db.campaign.output_file and \
+                    self.db.result.outcome == 'In progress':
+                if hasattr(self.debugger, 'aux') and \
+                        self.db.campaign.aux_output_file:
+                    self.debugger.aux.check_output()
+                else:
+                    self.debugger.dut.check_output()
+            if self.db.campaign.log_files:
+                self.debugger.dut.get_logs(latent_iteration)
+            if self.db.campaign.aux_log_files:
+                self.debugger.aux.get_logs(latent_iteration)
+            if self.db.result.outcome == 'In progress':
+                self.db.result.outcome_category = 'No error'
+                if persistent_faults:
+                    self.db.result.outcome = 'Persistent faults'
+                elif self.db.result.num_register_diffs or \
+                        self.db.result.num_memory_diffs:
+                    self.db.result.outcome = 'Latent faults'
+                else:
+                    self.db.result.outcome = 'Masked faults'
+
         def check_latent_faults():
             for i in range(1, self.options.latent_iterations+1):
                 if self.db.result.outcome == 'Latent faults' or \
@@ -352,7 +223,7 @@ class fault_injector(object):
                         self.db.campaign.command))
                     outcome_category = self.db.result.outcome_category
                     outcome = self.db.result.outcome
-                    self.__monitor_execution(latent_iteration=i)
+                    monitor_execution(latent_iteration=i)
                     if self.db.result.outcome_category != 'No error':
                         self.db.result.outcome_category = \
                             'Post execution error'
@@ -394,8 +265,7 @@ class fault_injector(object):
                             self.db.result.outcome_category = 'Debugger error'
                             continue_dut()
                     else:
-                        self.__monitor_execution(
-                            persistent_faults, log_time=True)
+                        monitor_execution(persistent_faults, True)
                         check_latent_faults()
                     if self.db.campaign.simics:
                         close_simics()

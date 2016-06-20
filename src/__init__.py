@@ -3,16 +3,15 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
+# TODO: put AUX files/logs into subdirectory (in case named same as dut files)
+# TODO: display AUX log files in log browser
 # TODO: handle log files in simics.time_application
 # TODO: check for kill aux and kill dut both specified (invalid)
-# TODO: log output from checkpoint merge
-# TODO: log event for checkpoint merge
-# TODO: log files (new table)
+# TODO: log event for checkpoint merge (including output)
 # TODO: add latent iteration logs to log viewer
 # TODO: disable simics a9 injection into CPU: cpsr bits 2-4
 # TODO: add supervisor command to load injected state (simics)
 # TODO: add runtime seconds to inject command
-# TODO: consider generating event filter choices only once at startup
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add mode to redo injection iteration
 # TODO: add support for injection of multi-bit upsets

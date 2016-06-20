@@ -1,4 +1,5 @@
 from datetime import datetime
+from difflib import SequenceMatcher
 from io import StringIO
 from os import listdir, makedirs
 from os.path import exists, join
@@ -8,7 +9,7 @@ from re import DOTALL, escape
 from scp import SCPClient
 from serial import Serial
 from serial.serialutil import SerialException
-from shutil import copy
+from shutil import copy, rmtree
 from sys import stdout
 from termcolor import colored
 from time import perf_counter, sleep
@@ -315,7 +316,8 @@ class dut(object):
 
     def get_file(self, file_, local_path='', attempts=10):
         if self.options.debug:
-            print(colored('getting file...', 'blue'), end='')
+            print(colored('getting file from {}...'.format(
+                'AUX' if self.aux else 'DUT'), 'blue'), end='')
             stdout.flush()
         ssh = SSHClient()
         ssh.set_missing_host_key_policy(AutoAddPolicy())
@@ -597,12 +599,99 @@ class dut(object):
                     break
         self.send_files()
 
-    def local_diff(self):
-        command = 'diff gold_{0} {0}'.format(self.db.campaign.output_file)
-        buff = self.command(command)[0].replace('\r\n', '\n')
-        buff = buff.replace('{}\n'.format(command), '')
-        buff = buff.replace(self.prompt, '')
-        if buff != '':
-            return False
+    def check_output(self):
+        local_diff = \
+            hasattr(self.options, 'local_diff') and self.options.local_diff
+        try:
+            directory_listing = self.command('ls -l')[0]
+        except DrSEUsError as error:
+            self.db.result.outcome_category = 'Post execution error'
+            self.db.result.outcome = error.type
+            return
+        if local_diff:
+            directory_listing = directory_listing.replace(
+                'gold_{}'.format(self.db.campaign.output_file), '')
+        if self.db.campaign.output_file not in directory_listing:
+            self.db.result.outcome_category = 'Execution error'
+            self.db.result.outcome = 'Missing output file'
+            return
+        if local_diff:
+            command = 'diff gold_{0} {0}'.format(self.db.campaign.output_file)
+            buff = self.command(command)[0].replace('\r\n', '\n')
+            buff = buff.replace('{}\n'.format(command), '')
+            buff = buff.replace(self.prompt, '')
+            if buff != '':
+                self.db.result.data_diff = 0
+            else:
+                self.db.result.data_diff = 1.0
+        if not local_diff or self.db.result.data_diff != 1.0:
+            result_folder = 'campaign-data/{}/results/{}'.format(
+                self.db.campaign.id, self.db.result.id)
+            if not exists(result_folder):
+                makedirs(result_folder)
+            try:
+                self.get_file(self.db.campaign.output_file, result_folder)
+            except DrSEUsError as error:
+                self.db.result.outcome_category = 'File transfer error'
+                self.db.result.outcome = error.type
+                if not listdir(result_folder):
+                    rmtree(result_folder)
+                return
+            with open(
+                    'campaign-data/{}/gold/{}'.format(
+                        self.db.campaign.id, self.db.campaign.output_file),
+                    'rb') as solution:
+                solutionContents = solution.read()
+            with open(join(result_folder, self.db.campaign.output_file),
+                      'rb') as result:
+                resultContents = result.read()
+            self.db.result.data_diff = SequenceMatcher(
+                None, solutionContents, resultContents).quick_ratio()
+        if self.db.result.data_diff == 1.0:
+            if not local_diff:
+                rmtree(result_folder)
+            if self.db.result.detected_errors:
+                self.db.result.outcome_category = 'Data error'
+                self.db.result.outcome = 'Corrected data error'
         else:
-            return True
+            self.db.result.outcome_category = 'Data error'
+            if self.db.result.detected_errors:
+                self.db.result.outcome = 'Detected data error'
+            else:
+                self.db.result.outcome = 'Silent data error'
+        try:
+            self.command('rm {}'.format(self.db.campaign.output_file))
+        except DrSEUsError as error:
+            self.db.result.outcome_category = 'Post execution error'
+            self.db.result.outcome = error.type
+
+    def get_logs(self, latent_iteration):
+        result_folder = 'campaign-data/{}/results/{}'.format(
+            self.db.campaign.id, self.db.result.id)
+        if latent_iteration:
+            result_folder += '/latent/{}'.format(latent_iteration)
+        if not exists(result_folder):
+                makedirs(result_folder)
+        for log_file in self.db.campaign.aux_log_files if self.aux \
+                else self.db.campaign.log_files:
+            try:
+                file_path = self.get_file(log_file, result_folder)
+            except DrSEUsError:
+                if not listdir(result_folder):
+                    rmtree(result_folder)
+                return
+            else:
+                if self.db.result.outcome == 'In progress' and \
+                        self.options.log_error_messages:
+                    with open(file_path, 'r') as log:
+                        log_contents = log.read()
+                    for message in self.options.log_error_messages:
+                        if message in log_contents:
+                            self.db.result.outcome_category = 'Log error'
+                            self.db.result.outcome = message
+                            break
+            try:
+                self.command('rm {}'.format(log_file))
+            except DrSEUsError as error:
+                self.db.result.outcome_category = 'Post execution error'
+                self.db.result.outcome = error.type
