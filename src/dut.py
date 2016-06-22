@@ -111,6 +111,9 @@ class dut(object):
     def get_timer_value(self):
         return self.__timer_value
 
+    def set_time(self):
+        self.command('date {}'.format(datetime.now().strftime('%m%d%H%M%Y.%S')))
+
     def open(self, attempts=10):
         serial_port = (self.options.dut_serial_port if not self.aux
                        else self.options.aux_serial_port)
@@ -390,6 +393,7 @@ class dut(object):
         self.start_timer()
 
     def read_until(self, string=None, continuous=False, boot=False, flush=True):
+        start_time = perf_counter()
         if string is None:
             string = self.prompt
         buff = ''
@@ -478,6 +482,9 @@ class dut(object):
                         'DUT' if not self.aux else 'AUX', category, event_buff)
                     event_buff_logged += event_buff
             if not continuous and errors > 10:
+                break
+            if not continuous and errors and \
+                    perf_counter() - start_time > self.options.timeout:
                 break
             if not boot and buff and buff.endswith('\n'):
                 if self.db.result is None:
@@ -568,6 +575,7 @@ class dut(object):
             self.read_until()
         if self.login_command:
             self.command(self.login_command, flush=flush)
+        self.set_time()
         if self.options.rsa:
             self.command('mkdir ~/.ssh', flush=flush)
             self.command('touch ~/.ssh/authorized_keys', flush=flush)

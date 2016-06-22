@@ -87,8 +87,12 @@ class supervisor(Cmd):
         """Print information about the current campaign"""
         print(self.drseus)
 
-    def do_update_dut_timeout(self, arg, aux=False):
+    def do_update_timeout_dut(self, arg, aux=False):
         """Update DUT serial timeout (in seconds)"""
+        if aux:
+            device = self.drseus.debugger.aux
+        else:
+            device = self.drseus.debugger.dut
         try:
             new_timeout = int(arg)
         except ValueError:
@@ -96,44 +100,43 @@ class supervisor(Cmd):
             return
         if self.drseus.db.campaign.simics:
             self.drseus.debugger.timeout = new_timeout
-        if aux:
-            self.drseus.debugger.aux.default_timeout = new_timeout
-            self.drseus.debugger.aux.serial.timeout = new_timeout
-        else:
-            self.drseus.debugger.dut.default_timeout = new_timeout
-            self.drseus.debugger.dut.serial.timeout = new_timeout
+        device.default_timeout = new_timeout
+        device.serial.timeout = new_timeout
 
     def do_command_dut(self, arg, aux=False):
         """Send DUT device a command and interact, interrupt with ctrl-c"""
-        read_thread = Thread(target=(self.drseus.debugger.aux.command if aux
-                                     else self.drseus.debugger.dut.command),
-                             args=[arg])
+        if aux:
+            device = self.drseus.debugger.aux
+        else:
+            device = self.drseus.debugger.dut
+        read_thread = Thread(target=device.command, args=[arg])
         read_thread.start()
         try:
             while read_thread.is_alive():
                 if select([stdin], [], [], 0.1)[0]:
-                    if aux:
-                        self.drseus.debugger.aux.write('{}\n'.format(
-                            stdin.readline()))
-                    else:
-                        self.drseus.debugger.dut.write('{}\n'.format(
-                            stdin.readline()))
+                    device.write('{}\n'.format(stdin.readline()))
         except KeyboardInterrupt:
             if self.drseus.db.campaign.simics:
                 self.drseus.debugger.continue_dut()
-            if aux:
-                self.drseus.debugger.aux.write('\x03')
-            else:
-                self.drseus.debugger.dut.write('\x03')
+            device.write('\x03')
             read_thread.join()
+
+    def do_set_time_dut(self, arg=None, aux=False):
+        """Set the time on the DUT using the current time on the host"""
+        if aux:
+            device = self.drseus.debugger.aux
+        else:
+            device = self.drseus.debugger.dut
+        device.set_time()
 
     def do_read_dut(self, arg=None, aux=False):
         """Read from DUT, interrupt with ctrl-c"""
+        if aux:
+            device = self.drseus.debugger.aux
+        else:
+            device = self.drseus.debugger.dut
         try:
-            if aux:
-                self.drseus.debugger.aux.read_until(continuous=True)
-            else:
-                self.drseus.debugger.dut.read_until(continuous=True)
+            device.read_until(continuous=True)
         except KeyboardInterrupt:
             if self.drseus.db.campaign.simics:
                 self.drseus.debugger.continue_dut()
@@ -141,20 +144,22 @@ class supervisor(Cmd):
     def do_send_file_dut(self, arg, aux=False):
         """Send file to DUT, defaults to sending campaign files"""
         if aux:
-            self.drseus.debugger.aux.send_files(arg, attempts=1)
+            device = self.drseus.debugger.aux
         else:
-            self.drseus.debugger.dut.send_files(arg, attempts=1)
+            device = self.drseus.debugger.dut
+        device.send_files(arg, attempts=1)
 
     def do_get_file_dut(self, arg, aux=False):
         """Retrieve file from DUT device"""
+        if aux:
+            device = self.drseus.debugger.aux
+        else:
+            device = self.drseus.debugger.dut
         output = 'campaign-data/{}/results/{}/'.format(
             self.drseus.db.campaign.id, self.drseus.result.id)
         makedirs(output)
         output += arg
-        if aux:
-            self.drseus.debugger.aux.get_file(arg, output, attempts=1)
-        else:
-            self.drseus.debugger.dut.get_file(arg, output, attempts=1)
+        device.get_file(arg, output, attempts=1)
         print('File saved to {}'.format(output))
 
     def do_supervise(self, arg):
@@ -221,23 +226,21 @@ class supervisor(Cmd):
             self.drseus.debugger.close()
             self.launch_simics()
 
-    def do_minicom(self, arg=None, aux=False):
+    def do_minicom_dut(self, arg=None, aux=False):
         """Launch minicom connected to DUT and include session in log"""
+        if aux:
+            device = self.drseus.debugger.aux
+        else:
+            device = self.drseus.debugger.dut
         capture = 'minicom_capture.{}_{}'.format(
             '-'.join(['{:02}'.format(unit)
                       for unit in datetime.now().timetuple()[:3]]),
             '-'.join(['{:02}'.format(unit)
                       for unit in datetime.now().timetuple()[3:6]]))
-        if aux:
-            self.drseus.debugger.aux.close()
-            call(['minicom', '-D', self.drseus.options.aux_serial_port,
-                  '--capturefile={}'.format(capture)])
-            self.drseus.debugger.aux.open()
-        else:
-            self.drseus.debugger.dut.close()
-            call(['minicom', '-D', self.drseus.options.dut_serial_port,
-                  '--capturefile={}'.format(capture)])
-            self.drseus.debugger.dut.open()
+        device.close()
+        call(['minicom', '-D', self.drseus.options.aux_serial_port,
+              '--capturefile={}'.format(capture)])
+        device.open()
         if exists(capture):
             with open(capture, 'r') as capture_file:
                 if aux:
@@ -302,13 +305,17 @@ class supervisor(Cmd):
 
 
 class aux_supervisor(supervisor):
-    def do_update_aux_timeout(self, arg):
+    def do_update_timeout_aux(self, arg):
         """Update AUX serial timeout (in seconds)"""
-        self.do_update_dut_timeout(arg, aux=True)
+        self.do_update_timeout_dut(arg, aux=True)
 
     def do_command_aux(self, arg):
         """Send AUX device a command and interact, interrupt with ctrl-c"""
-        self.do_dut_command(arg, aux=True)
+        self.do_command_dut(arg, aux=True)
+
+    def do_set_time_aux(self, arg):
+        """Set the time on the AUX using the current time on the host"""
+        self.do_set_time_dut(arg, aux=True)
 
     def do_read_aux(self, arg):
         """Read from AUX, interrupt with ctrl-c"""
@@ -316,12 +323,12 @@ class aux_supervisor(supervisor):
 
     def do_send_file_aux(self, arg):
         """Send (comma-seperated) files to AUX, defaults to campaign files"""
-        self.do_send_dut_files(arg, aux=True)
+        self.do_send_file_dut(arg, aux=True)
 
     def do_get_file_aux(self, arg):
         """Retrieve file from AUX device"""
-        self.do_get_dut_file(arg, aux=True)
+        self.do_get_file_dut(arg, aux=True)
 
-    def do_minicom_aux(self, arg=None):
+    def do_minicom_aux(self, arg):
         """Launch minicom connected to AUX and include session in log"""
-        self.do_minicom(arg, aux=True)
+        self.do_minicom_dut(arg, aux=True)

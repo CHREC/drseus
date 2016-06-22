@@ -331,7 +331,8 @@ class simics(object):
             'Warning' if attempt < attempts-1 else 'Error', 'Simics',
             error_type, self.db.log_exception)
         print(colored('{}: {} (attempt {}/{}): {}'.format(
-            self.dut.serial.port, message, attempt+1, attempts, error), 'red'))
+            self.options.dut_serial_port, message, attempt+1, attempts, error),
+            'red'))
         for item in close_items:
             item.close()
         if attempt < attempts-1:
@@ -728,9 +729,17 @@ class simics(object):
             def log_diffs(config_object, register, gold_value, monitored_value):
                 if isinstance(gold_value, list):
                     for index in range(len(gold_value)):
-                        log_diffs(
-                            config_object, '{}:{}'.format(register, index),
-                            gold_value[index], monitored_value[index])
+                        try:
+                            log_diffs(
+                                config_object, '{}:{}'.format(register, index),
+                                gold_value[index], monitored_value[index])
+                        except IndexError:  # TODO: remove this debug statement
+                            self.drseus.db.log_event(
+                                'DEBUG', 'DrSEUs', 'IndexError',
+                                'config object: {}\nregister: {}:{}\n gold: {}'
+                                '\nmonitored: {}'.format(
+                                    config_object, register, index, gold_value,
+                                    monitored_value))
                 else:
                     if int(monitored_value, base=0) != int(gold_value, base=0):
                         self.db.result.simics_register_diff_set.create(

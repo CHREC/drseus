@@ -120,7 +120,23 @@ class openocd(jtag):
         with self.power_switch as ps:
             ps.set_outlet(self.device_info['outlet'], 'off')
             ps.set_outlet(self.device_info['outlet'], 'on')
-        for serial_port, uart_serial in find_zedboard_uart_serials().items():
+        attempts = 5
+        for attempt in range(attempts):
+            try:
+                devices = find_zedboard_uart_serials().items()
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
+            except Exception:
+                self.db.log_event(
+                    'Warning' if attempt < attempts-1 else 'Error', 'DrSEUs',
+                    'Error getting ZedBoard information', self.db.log_exception)
+                if attempt < attempts-1:
+                    sleep(30)
+                else:
+                    raise Exception('Error getting ZedBoard information')
+            else:
+                break
+        for serial_port, uart_serial in devices:
             if uart_serial == self.device_info['uart']:
                 self.options.dut_serial_port = serial_port
                 self.db.result.dut_serial_port = serial_port
