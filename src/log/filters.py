@@ -88,7 +88,7 @@ class event(FilterSet):
                       attrs={'class': 'form-control'}), help_text='')
 
     class Meta:
-        exclude = ('campaign', 'result')
+        exclude = ('campaign', 'result', 'timestamp')
         model = models.event
 
 

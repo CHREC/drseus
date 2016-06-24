@@ -3,7 +3,6 @@ from random import uniform
 from socket import AF_INET, SOCK_STREAM, socket
 from telnetlib import Telnet
 from termcolor import colored
-from threading import Thread
 from time import sleep
 
 from ..dut import dut
@@ -144,40 +143,6 @@ class jtag(object):
         self.command(continue_command, error_message='Error continuing DUT',
                      log_event=False)
         self.dut.start_timer()
-        event.success = True
-        event.save()
-
-    def time_application(self):
-        event = self.db.log_event(
-            'Information', 'Debugger', 'Timed application', success=False,
-            campaign=True)
-        execution_times = []
-        for i in range(self.options.iterations):
-            if self.db.campaign.aux:
-                self.aux.write('{}\n'.format(self.db.campaign.aux_command))
-            self.dut.reset_timer()
-            self.dut.write('{}\n'.format(self.db.campaign.command))
-            if self.db.campaign.kill_dut:
-                self.dut.write('\x03')
-            self.dut.read_until()
-            if self.db.campaign.aux:
-                self.aux.read_until()
-            execution_times.append(self.dut.get_timer_value())
-            if i < self.options.iterations-1:
-                if self.db.campaign.output_file:
-                    if self.db.campaign.aux_output_file:
-                        self.aux.command('rm {}'.format(
-                            self.db.campaign.output_file))
-                    else:
-                        self.dut.command('rm {}'.format(
-                            self.db.campaign.output_file))
-                for log_file in self.db.campaign.log_files:
-                    self.dut.command('rm {}'.format(log_file))
-                if self.db.campaign.aux:
-                    for log_file in self.db.campaign.aux_log_files:
-                        self.aux.command('rm {}'.format(log_file))
-        self.db.campaign.execution_time = \
-            sum(execution_times) / len(execution_times)
         event.success = True
         event.save()
 

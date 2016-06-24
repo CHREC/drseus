@@ -319,49 +319,54 @@ new_campaign.add_argument(
 new_campaign.add_argument(
     '-l', '--log_files',
     nargs='+',
+    default=[],
     help='log file(s) to retrieve from DUT')
-new_campaign.add_argument(
+new_aux_campaign = new_campaign.add_argument_group(
+    'AUX campaigns',
+    'Additional options for campaigns using an AUX device')
+new_aux_campaign.add_argument(
     '-x', '--aux_dev',
     action='store_true',
     dest='aux',
     help='use auxiliary device during testing')
-new_campaign.add_argument(
+new_aux_campaign.add_argument(
     '-C', '--aux_cmd',
     metavar='COMMAND',
     dest='aux_command',
     default='',
     help='command to run on auxiliary device')
-new_campaign.add_argument(
+new_aux_campaign.add_argument(
     '-F', '--aux_files',
     nargs='+',
     metavar='FILE',
     default=[],
     help='files to copy to auxiliary device')
-new_campaign.add_argument(
+new_aux_campaign.add_argument(
     '-O', '--aux_output',
     action='store_true',
     dest='aux_output_file',
     help='retrieve output file from AUX instead of DUT')
-new_campaign.add_argument(
+new_aux_campaign.add_argument(
     '-L', '--aux_log_files',
     nargs='+',
+    default=[],
     help='log file(s) to retrieve from AUX')
-new_campaign.add_argument(
+new_aux_campaign.add_argument(
     '-k', '--kill_dut',
     action='store_true',
     help='send ctrl-c to DUT after AUX completes execution')
-new_campaign.add_argument(
+new_aux_campaign.add_argument(
     '-K', '--kill_aux',
     action='store_true',
     help='send ctrl-c to AUX after DUT completes execution')
-new_campaign.add_argument(
+new_simics_campaign = new_campaign.add_argument_group(
+    'Simics campaigns',
+    'Additional options for Simics campaigns only')
+new_simics_campaign.add_argument(
     '-s', '--simics',
     action='store_true',
     dest='simics',
     help='use Simics simulation')
-new_simics_campaign = new_campaign.add_argument_group(
-    'Simics campaigns',
-    'Additional options for Simics campaigns only')
 new_simics_campaign.add_argument(
     '--ckpts',
     type=int,

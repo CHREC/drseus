@@ -366,128 +366,75 @@ class simics(object):
         time_data = self.__command('print-time').split('\n')[-2].split()
         return int(time_data[2]), float(time_data[3])
 
-    def time_application(self):
-
-        def create_checkpoints():
-            event = self.db.log_event(
-                'Information', 'Simics', 'Created gold checkpoints',
-                success=False, campaign=True)
-            makedirs('simics-workspace/gold-checkpoints/{}'.format(
-                self.db.campaign.id))
-            if self.db.campaign.command:
-                self.db.campaign.cycles_between = \
-                    int(self.db.campaign.cycles / self.options.checkpoints)
-                if self.db.campaign.aux:
-                    self.db.log_event(
-                        'Information', 'AUX', 'Command',
-                        self.db.campaign.aux_command)
-                    aux_process = Thread(
-                        target=self.aux.command,
-                        kwargs={'command': self.db.campaign.aux_command,
-                                'flush': False})
-                    aux_process.start()
-                self.db.log_event(
-                    'Information', 'DUT', 'Command', self.db.campaign.command)
-                self.dut.write('{}\n'.format(self.db.campaign.command))
-                length = len(self.db.campaign.dut_output)
-                read_thread = Thread(target=self.dut.read_until,
-                                     kwargs={'flush': False})
-                read_thread.start()
-                checkpoint = 1
-                while True:
-                    self.__command('run-cycles {}'.format(
-                        self.db.campaign.cycles_between), time=300)
-                    old_length = length
-                    length = len(self.db.campaign.dut_output)
-                    if length - old_length:
-                        self.db.campaign.dut_output += \
-                            '{}{:*^80}\n\n'.format(
-                                '\n'
-                                if self.db.campaign.dut_output.endswith('\n')
-                                else '\n\n',
-                                ' Checkpoint {} '.format(checkpoint))
-                        length = len(self.db.campaign.dut_output)
-                    incremental_checkpoint = 'gold-checkpoints/{}/{}'.format(
-                        self.db.campaign.id, checkpoint)
-                    self.__command('write-configuration {}'.format(
-                        incremental_checkpoint), time=300)
-                    if not read_thread.is_alive() or \
-                        (self.db.campaign.aux and
-                            self.db.campaign.kill_dut and
-                            not aux_process.is_alive()):
-                        self.__merge_checkpoint(incremental_checkpoint)
-                        break
-                    else:
-                        checkpoint += 1
-                self.db.campaign.checkpoints = checkpoint
-                event.success = True
-                event.timestamp = datetime.now()
-                event.save()
-                self.continue_dut()
-                if self.db.campaign.aux:
-                    aux_process.join()
-                if self.db.campaign.kill_dut:
-                    self.dut.write('\x03')
-                read_thread.join()
-            else:
-                self.db.campaign.checkpoints = 1
-                self.halt_dut()
-                self.__command(
-                    'write-configuration gold-checkpoints/{}/1'.format(
-                        self.db.campaign.id), time=300)
-
-    # def time_application(self):
+    def create_checkpoints(self):
+        event = self.db.log_event(
+            'Information', 'Simics', 'Created gold checkpoints',
+            success=False, campaign=True)
+        makedirs('simics-workspace/gold-checkpoints/{}'.format(
+            self.db.campaign.id))
         if self.db.campaign.command:
-            event = self.db.log_event(
-                'Information', 'Simics', 'Timed application', success=False,
-                campaign=True)
-            execution_cycles = []
-            execution_times = []
-            for i in range(self.options.iterations):
-                if self.db.campaign.aux:
-                    aux_process = Thread(
-                        target=self.aux.command,
-                        kwargs={'command': self.db.campaign.aux_command,
-                                'flush': False})
-                    aux_process.start()
-                self.halt_dut()
-                start = self.get_time()
-                self.dut.write('{}\n'.format(self.db.campaign.command))
-                self.continue_dut()
-                if self.db.campaign.aux:
-                    aux_process.join()
-                if self.db.campaign.kill_dut:
-                    self.dut.write('\x03')
-                self.dut.read_until()
-                self.halt_dut()
-                end = self.get_time()
-                execution_cycles.append(end[0] - start[0])
-                execution_times.append(end[1] - start[1])
-                self.continue_dut()
-                if self.db.campaign.output_file:
-                    if self.db.campaign.aux_output_file:
-                        self.aux.command('rm {}'.format(
-                            self.db.campaign.output_file))
-                    else:
-                        self.dut.command('rm {}'.format(
-                          self.db.campaign.output_file))
-                for log_file in self.db.campaign.log_files:
-                    if self.db.campaign.aux_output_file:
-                        self.aux.command('rm {}'.format(log_file))
-                    else:
-                        self.dut.command('rm {}'.format(log_file))
-            self.halt_dut()
-            end_cycles, end_time = self.get_time()
-            self.db.campaign.start_cycle = end_cycles
-            self.db.campaign.start_time = end_time
-            self.db.campaign.cycles = \
-                int(sum(execution_cycles) / len(execution_cycles))
-            self.db.campaign.execution_time = \
-                sum(execution_times) / len(execution_times)
+            self.db.campaign.cycles_between = \
+                int(self.db.campaign.cycles / self.options.checkpoints)
+            if self.db.campaign.aux:
+                self.db.log_event(
+                    'Information', 'AUX', 'Command',
+                    self.db.campaign.aux_command)
+                aux_process = Thread(
+                    target=self.aux.command,
+                    kwargs={'command': self.db.campaign.aux_command,
+                            'flush': False})
+                aux_process.start()
+            self.db.log_event(
+                'Information', 'DUT', 'Command', self.db.campaign.command)
+            self.dut.write('{}\n'.format(self.db.campaign.command))
+            length = len(self.db.campaign.dut_output)
+            read_thread = Thread(target=self.dut.read_until,
+                                 kwargs={'flush': False})
+            read_thread.start()
+            checkpoint = 1
+            while True:
+                self.__command('run-cycles {}'.format(
+                    self.db.campaign.cycles_between), time=300)
+                old_length = length
+                length = len(self.db.campaign.dut_output)
+                if length - old_length:
+                    self.db.campaign.dut_output += \
+                        '{}{:*^80}\n\n'.format(
+                            '\n'
+                            if self.db.campaign.dut_output.endswith('\n')
+                            else '\n\n',
+                            ' Checkpoint {} '.format(checkpoint))
+                    length = len(self.db.campaign.dut_output)
+                incremental_checkpoint = 'gold-checkpoints/{}/{}'.format(
+                    self.db.campaign.id, checkpoint)
+                self.__command('write-configuration {}'.format(
+                    incremental_checkpoint), time=300)
+                if not read_thread.is_alive() or \
+                    (self.db.campaign.aux and
+                        self.db.campaign.kill_dut and
+                        not aux_process.is_alive()):
+                    self.__merge_checkpoint(incremental_checkpoint)
+                    break
+                else:
+                    checkpoint += 1
+            self.db.campaign.checkpoints = checkpoint
             event.success = True
             event.timestamp = datetime.now()
             event.save()
-        create_checkpoints()
+            self.continue_dut()
+            if self.db.campaign.kill_aux:
+                self.aux.write('\x03')
+            if self.db.campaign.aux:
+                aux_process.join()
+            if self.db.campaign.kill_dut:
+                self.dut.write('\x03')
+            read_thread.join()
+        else:
+            self.db.campaign.checkpoints = 1
+            self.halt_dut()
+            self.__command(
+                'write-configuration gold-checkpoints/{}/1'.format(
+                    self.db.campaign.id), time=300)
 
     def inject_faults(self):
 

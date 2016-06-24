@@ -229,6 +229,7 @@ def create_campaign(options):
         raise Exception('cannot find directory {}'.format(
             options.directory))
     for file_ in options.files + options.aux_files:
+        # TODO: check for makefile
         try:
             check_call(['make', file_],
                        cwd=join(getcwd(), options.directory))
@@ -259,6 +260,7 @@ def create_campaign(options):
         if drseus.db.campaign.aux:
             drseus.debugger.aux.write('\x03')
         drseus.debugger.close()
+        return -1
     else:
         print('created campaign {}'.format(campaign.id))
 

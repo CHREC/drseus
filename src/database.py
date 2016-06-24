@@ -61,7 +61,6 @@ def new_campaign(options):
         'aux': options.aux,
         'command': options.dut_command,
         'description': options.description,
-        'kill_dut': options.kill_dut,
         'log_files': options.log_files,
         'output_file': options.output_file,
         'rsakey': rsakey,
@@ -71,7 +70,9 @@ def new_campaign(options):
         campaign_kwargs.update({
             'aux_command': options.aux_command,
             'aux_log_files': options.aux_log_files,
-            'aux_output_file': options.aux_output_file
+            'aux_output_file': options.aux_output_file,
+            'kill_aux': options.kill_aux,
+            'kill_dut': options.kill_dut
         })
     campaign = campaign_model(**campaign_kwargs)
     try:
