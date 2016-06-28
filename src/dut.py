@@ -112,7 +112,9 @@ class dut(object):
         return self.__timer_value
 
     def set_time(self):
-        self.command('date {}'.format(datetime.now().strftime('%m%d%H%M%Y.%S')))
+        self.command('{}date {}'.format(
+            'sudo' if self.username != 'root' else '',
+            datetime.now().strftime('%m%d%H%M%Y.%S')))
 
     def open(self, attempts=10):
         serial_port = (self.options.dut_serial_port if not self.aux
@@ -377,7 +379,7 @@ class dut(object):
                             self.db.log_event(
                                 'Warning' if attempt < attempts-1 else 'Error',
                                 'DUT' if not self.aux else 'AUX',
-                                'Received file not found', local_path)
+                                'Received file not found', file_path)
                             print(colored(
                                 '{}: Error receiving file (attempt {}/{}): '
                                 'received file not found'.format(

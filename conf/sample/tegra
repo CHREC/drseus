@@ -1,5 +1,5 @@
 @conf/new/tegra
---app
+--cmd
 ./cudaMxM 32 A B C 64
 --files
 cudaMxM
