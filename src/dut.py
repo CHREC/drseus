@@ -113,7 +113,7 @@ class dut(object):
 
     def set_time(self):
         self.command('{}date {}'.format(
-            'sudo' if self.username != 'root' else '',
+            'sudo ' if self.username != 'root' else '',
             datetime.now().strftime('%m%d%H%M%Y.%S')))
 
     def open(self, attempts=10):
