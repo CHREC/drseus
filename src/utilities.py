@@ -364,7 +364,7 @@ def update_dependencies(*args):
 
 
 def launch_openocd(options):
-    debugger = openocd(None, options)
+    debugger = openocd(None, options, None)
     print('Launched {}\n'.format(debugger))
     try:
         debugger.openocd.wait()

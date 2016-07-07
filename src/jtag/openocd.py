@@ -5,7 +5,8 @@ from termcolor import colored
 from time import sleep
 
 from ..error import DrSEUsError
-from . import find_open_port, find_zedboard_uart_serials, jtag
+from . import (find_open_port, find_zedboard_jtag_serials,
+               find_zedboard_uart_serials, jtag)
 
 
 class openocd(jtag):
@@ -22,7 +23,7 @@ class openocd(jtag):
 
     def __init__(self, database, options, power_switch):
         self.power_switch = power_switch
-        if exists('devices.json'):
+        if len(find_zedboard_jtag_serials()) > 1 and exists('devices.json'):
             with open('devices.json', 'r') as device_file:
                 device_info = load(device_file)
             for device in device_info:
