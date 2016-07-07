@@ -460,6 +460,9 @@ class dut(object):
                     errors += 1
             elif buff.endswith('Password: '):
                 self.write('{}\n'.format(self.password))
+            elif buff.endswith('[sudo] password for {}: '.format(
+                    self.username)):
+                self.write('{}\n'.format(self.password))
             elif buff.endswith('can\'t get kernel image'):
                 self.write('reset\n')
                 self.db.log_event(

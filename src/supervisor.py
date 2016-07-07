@@ -238,7 +238,9 @@ class supervisor(Cmd):
             '-'.join(['{:02}'.format(unit)
                       for unit in datetime.now().timetuple()[3:6]]))
         device.close()
-        call(['minicom', '-D', self.drseus.options.aux_serial_port,
+        call(['minicom', '-D',
+              self.drseus.options.aux_serial_port if aux
+              else self.drseus.options.dut_serial_port,
               '--capturefile={}'.format(capture)])
         device.open()
         if exists(capture):

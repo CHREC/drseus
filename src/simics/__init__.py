@@ -681,7 +681,7 @@ class simics(object):
                                 config_object, '{}:{}'.format(register, index),
                                 gold_value[index], monitored_value[index])
                         except IndexError:  # TODO: remove this debug statement
-                            self.drseus.db.log_event(
+                            self.db.log_event(
                                 'DEBUG', 'DrSEUs', 'IndexError',
                                 'config object: {}\nregister: {}:{}\n gold: {}'
                                 '\nmonitored: {}'.format(
