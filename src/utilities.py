@@ -317,7 +317,8 @@ def regenerate(options):
     campaign = get_campaign(options)
     if not campaign.simics:
         raise Exception('this feature is only available for Simics campaigns')
-    injections = campaign.result_set.get(id=options.result_id).injection_set
+    injections = campaign.result_set.get(
+        id=options.result_id).injection_set.all()
     drseus = fault_injector(options)
     checkpoint = drseus.debugger.regenerate_checkpoints(injections)
     drseus.debugger.launch_simics_gui(checkpoint)

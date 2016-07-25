@@ -471,7 +471,8 @@ def result_page(request, result_id):
     else:
         output_file = False
     result_table = tables.result(models.result.objects.filter(id=result_id))
-    event_table = tables.event(result.event_set.all())
+    events = result.event_set.all()
+    event_table = tables.event(events)
     if request.method == 'POST' and 'launch' in request.POST:
         Popen([argv[0], 'regenerate', result_id])
     if request.method == 'POST' and 'save' in request.POST:
@@ -490,18 +491,22 @@ def result_page(request, result_id):
         register_diffs = result.simics_register_diff_set.all()
         register_filter = filters.simics_register_diff(
             request.GET, queryset=register_diffs)
+        register_diff_count = register_filter.qs.count()
         register_table = tables.simics_register_diff(register_filter.qs)
         RequestConfig(
             request,
             paginate={'per_page': table_length}).configure(register_table)
         memory_diffs = result.simics_memory_diff_set.all()
+        memory_diff_count = memory_diffs.count()
         memory_table = tables.simics_memory_diff(memory_diffs)
         RequestConfig(
             request,
             paginate={'per_page': table_length}).configure(memory_table)
     else:
         register_filter = None
+        memory_diff_count = 0
         memory_table = None
+        register_diff_count = 0
         register_table = None
         if injections.count():
             injection_table = tables.injection(injections)
@@ -513,12 +518,15 @@ def result_page(request, result_id):
         RequestConfig(request, paginate=False).configure(injection_table)
     return render(request, 'result.html', {
         'campaign_items': campaign_items_,
+        'event_count':  '{:,}'.format(events.count()),
         'event_table': event_table,
         'filter': register_filter,
         'injection_table': injection_table,
+        'memory_diff_count': '{:,}'.format(memory_diff_count),
         'memory_table': memory_table,
         'navigation_items': navigation_items,
         'output_file': output_file,
+        'register_diff_count': '{:,}'.format(register_diff_count),
         'register_table': register_table,
         'result': result,
         'result_table': result_table})

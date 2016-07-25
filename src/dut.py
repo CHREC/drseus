@@ -56,6 +56,7 @@ class dut(object):
         ('????????', 'Kernel error'),
         ('Backtrace:', 'Kernel error'),
         ('Exception stack', 'Kernel error'),
+        ('-[ cut here ]-', 'Kernel error'),
 
         ('Hit any key to stop autoboot:', 'Reboot'),
         ('Booting Linux', 'Reboot'),

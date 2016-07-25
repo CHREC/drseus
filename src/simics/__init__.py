@@ -562,6 +562,8 @@ class simics(object):
                         for index in injection.register_index:
                             gold_value = gold_value[index]
                         injected_value = flip_bit(gold_value, injection.bit)
+                    else:
+                        injected_value = injection.injected_value
                     for index in range(len(injection.register_index)-1):
                         register_list_ = \
                             register_list_[injection.register_index[index]]
