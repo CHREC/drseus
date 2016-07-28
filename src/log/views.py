@@ -4,6 +4,8 @@ from django_tables2 import RequestConfig
 from io import BytesIO
 from mimetypes import guess_type
 from os.path import exists
+from progressbar import ProgressBar
+from progressbar.widgets import Bar, Percentage, SimpleProgress, Timer
 from subprocess import Popen
 from shutil import rmtree
 from sys import argv
@@ -163,9 +165,26 @@ def injections_page(request, campaign_id=None):
         error_title = 'Filter Error'
         error_message = 'Filter did not return any injections and was ignored.'
         injection_filter = filters.injection(None, queryset=injections)
-    else:
-        injections = injection_filter.qs
     injections = injection_filter.qs
+
+    print('filtering for failed registers...')
+    failed_registers = []
+    all_regs = injections.values_list('register', flat=True).distinct()
+    progress_bar = ProgressBar(max_value=all_regs.count(), widgets=[
+        Percentage(), ' (', SimpleProgress(format='%(value)d/%(max_value)d'),
+        ') ', Bar(), ' ', Timer()])
+    for count, register in enumerate(all_regs, start=1):
+        progress_bar.update(count)
+        reg_injections = injections.filter(register=register)
+        if reg_injections.filter(success=True).count():
+            continue
+        failed_bits = reg_injections.values_list('bit', flat=True).distinct()
+        if len(failed_bits) != max(failed_bits)-1:
+            continue
+        failed_registers.append(register)
+    print()
+    injections = injections.filter(register__in=failed_registers)
+
     if injections.count() > 0:
         chart_data, chart_list = injections_charts(injections)
         chart_list = sorted(chart_list, key=lambda x: x['order'])

@@ -1,6 +1,8 @@
 from django.forms import NumberInput, Select, SelectMultiple, Textarea
 from django_filters import (BooleanFilter, CharFilter, FilterSet,
                             MultipleChoiceFilter, NumberFilter)
+from progressbar import ProgressBar
+from progressbar.widgets import Bar, Percentage, SimpleProgress, Timer
 from time import perf_counter
 
 from . import fix_sort_list, models
@@ -45,17 +47,28 @@ result_choices = {
 
 def update_choices():
     print('generating filter choices...')
-    start = perf_counter()
     events = models.event.objects.all()
+    choice_count = len(event_choices) + len(injection_choices) + \
+        len(result_choices)
+    progress_bar = ProgressBar(max_value=choice_count, widgets=[
+        Percentage(), ' (', SimpleProgress(format='%(value)d/%(max_value)d'),
+        ') ', Bar(), ' ', Timer()])
+    count = 0
     for attribute in event_choices:
+        count += 1
+        progress_bar.update(count)
         event_choices[attribute] = choices(events, attribute)
     injections = models.injection.objects.all()
     for attribute in injection_choices:
+        count += 1
+        progress_bar.update(count)
         injection_choices[attribute] = choices(injections, attribute)
     results = models.result.objects.all()
     for attribute in result_choices:
+        count += 1
+        progress_bar.update(count)
         result_choices[attribute] = choices(results, attribute)
-    print('filter choices', round(perf_counter()-start, 2), 'seconds')
+    print()
 
 
 class event(FilterSet):

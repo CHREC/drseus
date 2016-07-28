@@ -78,6 +78,7 @@ class simics(object):
                 self.db.log_event(
                     'Information', 'Simics', 'Launched Simics')
                 break
+        # TODO: Simics fails down there if no license \/
         if checkpoint is None:
             self.__command('$drseus=TRUE')
             buff = self.__command(
