@@ -1,5 +1,6 @@
 from datetime import datetime
 from difflib import SequenceMatcher
+from ftplib import FTP
 from io import StringIO
 from os import listdir, makedirs
 from os.path import exists, join
@@ -76,6 +77,7 @@ class dut(object):
         self.prompt = '{} '.format(
             options.dut_prompt if not aux or not options.aux_prompt
             else options.aux_prompt)
+        self.prompt = self.prompt.replace('"', '')
         self.username = options.dut_username if not aux \
             else options.aux_username
         self.password = options.dut_password if not aux \
@@ -113,9 +115,12 @@ class dut(object):
         return self.__timer_value
 
     def set_time(self):
-        self.command('{}date {}'.format(
-            'sudo ' if self.username != 'root' else '',
-            datetime.now().strftime('%m%d%H%M%Y.%S')))
+        if self.options.vxworks:
+            pass
+        else:
+            self.command('{}date {}'.format(
+                'sudo ' if self.username != 'root' else '',
+                datetime.now().strftime('%m%d%H%M%Y.%S')))
 
     def open(self, attempts=10):
         serial_port = (self.options.dut_serial_port if not self.aux
@@ -233,6 +238,71 @@ class dut(object):
             raise DrSEUsError(error_type)
 
     def send_files(self, files=None, attempts=10):
+
+        def send_ftp():
+            ftp = FTP(self.ip_address, timeout=30)
+            ftp.set_debuglevel(level=2)
+            ftp.login(self.username, self.password)
+            ftp.cwd('/ram0')
+            for file_ in files:
+                with open(file_, 'rb') as file_to_send:
+                    ftp.storbinary('STOR {}'.format(file_.split('/')[-1]),
+                                   file_to_send)
+            ftp.quit()
+
+        def send_scp():
+            ssh = SSHClient()
+            ssh.set_missing_host_key_policy(AutoAddPolicy())
+            for attempt in range(attempts):
+                try:
+                    with timeout(30):
+                        if self.options.rsa:
+                            ssh.connect(self.ip_address, port=self.scp_port,
+                                        username=self.username,
+                                        pkey=self.rsakey, allow_agent=False,
+                                        look_for_keys=False)
+                        else:
+                            ssh.connect(self.ip_address, port=self.scp_port,
+                                        username=self.username,
+                                        password=self.password,
+                                        allow_agent=False, look_for_keys=False)
+                except KeyboardInterrupt:
+                    raise KeyboardInterrupt
+                except Exception as error:
+                    self.__attempt_exception(
+                        attempt, attempts, error, 'SSH error',
+                        'Error sending file(s)')
+                else:
+                    try:
+                        with timeout(30):
+                            dut_scp = SCPClient(ssh.get_transport())
+                    except KeyboardInterrupt:
+                        raise KeyboardInterrupt
+                    except Exception as error:
+                        self.__attempt_exception(
+                            attempt, attempts, error, 'SCP error',
+                            'Error sending file(s)', [ssh])
+                    else:
+                        try:
+                            with timeout(300):
+                                dut_scp.put(files)
+                        except KeyboardInterrupt:
+                            raise KeyboardInterrupt
+                        except Exception as error:
+                            self.__attempt_exception(
+                                attempt, attempts, error, 'SCP error',
+                                'Error sending file(s)', [dut_scp, ssh])
+                        else:
+                            dut_scp.close()
+                            ssh.close()
+                            if self.options.debug:
+                                print(colored('done', 'blue'))
+                            self.db.log_event(
+                                'Information', 'DUT' if not self.aux else 'AUX',
+                                'Sent files', ', '.join(files))
+                            break
+
+        # def send_files(self, files=None, attempts=10):
         rename_gold = False
         if not files:
             files = []
@@ -268,128 +338,104 @@ class dut(object):
             print(colored('sending {} file(s)...'.format(
                 'AUX' if self.aux else 'DUT'), 'blue'), end='')
             stdout.flush()
-        ssh = SSHClient()
-        ssh.set_missing_host_key_policy(AutoAddPolicy())
-        for attempt in range(attempts):
-            try:
-                with timeout(30):
-                    if self.options.rsa:
-                        ssh.connect(self.ip_address, port=self.scp_port,
-                                    username=self.username, pkey=self.rsakey,
-                                    allow_agent=False, look_for_keys=False)
-                    else:
-                        ssh.connect(self.ip_address, port=self.scp_port,
-                                    username=self.username,
-                                    password=self.password, allow_agent=False,
-                                    look_for_keys=False)
-            except KeyboardInterrupt:
-                raise KeyboardInterrupt
-            except Exception as error:
-                self.__attempt_exception(
-                    attempt, attempts, error, 'SSH error',
-                    'Error sending file(s)')
-            else:
-                try:
-                    with timeout(30):
-                        dut_scp = SCPClient(ssh.get_transport())
-                except KeyboardInterrupt:
-                    raise KeyboardInterrupt
-                except Exception as error:
-                    self.__attempt_exception(
-                        attempt, attempts, error, 'SCP error',
-                        'Error sending file(s)', [ssh])
-                else:
-                    try:
-                        with timeout(300):
-                            dut_scp.put(files)
-                    except KeyboardInterrupt:
-                        raise KeyboardInterrupt
-                    except Exception as error:
-                        self.__attempt_exception(
-                            attempt, attempts, error, 'SCP error',
-                            'Error sending file(s)', [dut_scp, ssh])
-                    else:
-                        dut_scp.close()
-                        ssh.close()
-                        if self.options.debug:
-                            print(colored('done', 'blue'))
-                        self.db.log_event(
-                            'Information', 'DUT' if not self.aux else 'AUX',
-                            'Sent files', ', '.join(files))
-                        break
+        if self.options.vxworks:
+            send_ftp()
+        else:
+            send_scp()
         if rename_gold:
             self.command('mv {0} gold_{0}'.format(self.db.campaign.output_file))
 
     def get_file(self, file_, local_path='', attempts=10):
-        if self.options.debug:
-            print(colored('getting file from {}...'.format(
-                'AUX' if self.aux else 'DUT'), 'blue'), end='')
-            stdout.flush()
-        ssh = SSHClient()
-        ssh.set_missing_host_key_policy(AutoAddPolicy())
-        for attempt in range(attempts):
-            try:
-                with timeout(60):
-                    if self.options.rsa:
-                        ssh.connect(self.ip_address, port=self.scp_port,
-                                    username=self.username, pkey=self.rsakey,
-                                    allow_agent=False, look_for_keys=False)
-                    else:
-                        ssh.connect(self.ip_address, port=self.scp_port,
-                                    username=self.username,
-                                    password=self.password, allow_agent=False,
-                                    look_for_keys=False)
-            except KeyboardInterrupt:
-                raise KeyboardInterrupt
-            except Exception as error:
-                self.__attempt_exception(
-                    attempt, attempts, error, 'SSH error',
-                    'Error receiving file')
-            else:
+
+        def get_ftp():
+            ftp = FTP(self.ip_address, timeout=30)
+            ftp.set_debuglevel(level=2)
+            ftp.login(self.username, self.password)
+            ftp.cwd('/ram0')
+            with open(join(local_path, file_), 'wb') as file_to_receive:
+                ftp.retrbinary('RETR {}'.format(file_.split('/')[-1]),
+                               lambda data: file_to_receive.write(data))
+            ftp.quit()
+
+        def get_scp():
+            ssh = SSHClient()
+            ssh.set_missing_host_key_policy(AutoAddPolicy())
+            for attempt in range(attempts):
                 try:
                     with timeout(60):
-                        dut_scp = SCPClient(ssh.get_transport())
+                        if self.options.rsa:
+                            ssh.connect(self.ip_address, port=self.scp_port,
+                                        username=self.username,
+                                        pkey=self.rsakey, allow_agent=False,
+                                        look_for_keys=False)
+                        else:
+                            ssh.connect(self.ip_address, port=self.scp_port,
+                                        username=self.username,
+                                        password=self.password,
+                                        allow_agent=False, look_for_keys=False)
                 except KeyboardInterrupt:
                     raise KeyboardInterrupt
                 except Exception as error:
                     self.__attempt_exception(
-                        attempt, attempts, error, 'SCP error',
-                        'Error receiving file', [ssh])
+                        attempt, attempts, error, 'SSH error',
+                        'Error receiving file')
                 else:
                     try:
-                        with timeout(300):
-                            dut_scp.get(file_, local_path=local_path)
+                        with timeout(60):
+                            dut_scp = SCPClient(ssh.get_transport())
                     except KeyboardInterrupt:
                         raise KeyboardInterrupt
                     except Exception as error:
                         self.__attempt_exception(
                             attempt, attempts, error, 'SCP error',
-                            'Error receiving file', [dut_scp, ssh])
+                            'Error receiving file', [ssh])
                     else:
-                        dut_scp.close()
-                        ssh.close()
-                        file_path = join(local_path, file_.split('/')[-1])
-                        if exists(file_path):
-                            if self.options.debug:
-                                print(colored('done', 'blue'))
-                            self.db.log_event(
-                                'Information', 'DUT' if not self.aux else 'AUX',
-                                'Received file', file_)
-                            return file_path
+                        try:
+                            with timeout(300):
+                                dut_scp.get(file_, local_path=local_path)
+                        except KeyboardInterrupt:
+                            raise KeyboardInterrupt
+                        except Exception as error:
+                            self.__attempt_exception(
+                                attempt, attempts, error, 'SCP error',
+                                'Error receiving file', [dut_scp, ssh])
                         else:
-                            self.db.log_event(
-                                'Warning' if attempt < attempts-1 else 'Error',
-                                'DUT' if not self.aux else 'AUX',
-                                'Received file not found', file_path)
-                            print(colored(
-                                '{}: Error receiving file (attempt {}/{}): '
-                                'received file not found'.format(
-                                    self.serial.port, attempt+1, attempts),
-                                'red'))
-                            if attempt < attempts-1:
-                                sleep(30)
+                            dut_scp.close()
+                            ssh.close()
+                            file_path = join(local_path, file_.split('/')[-1])
+                            if exists(file_path):
+                                if self.options.debug:
+                                    print(colored('done', 'blue'))
+                                self.db.log_event(
+                                    'Information',
+                                    'DUT' if not self.aux else 'AUX',
+                                    'Received file', file_)
+                                return file_path
                             else:
-                                raise DrSEUsError('Received file not found')
+                                self.db.log_event(
+                                    'Warning' if attempt < attempts-1
+                                    else 'Error',
+                                    'DUT' if not self.aux else 'AUX',
+                                    'Received file not found', file_path)
+                                print(colored(
+                                    '{}: Error receiving file (attempt {}/{}): '
+                                    'received file not found'.format(
+                                        self.serial.port, attempt+1, attempts),
+                                    'red'))
+                                if attempt < attempts-1:
+                                    sleep(30)
+                                else:
+                                    raise DrSEUsError('Received file not found')
+
+    # def get_file(self, file_, local_path='', attempts=10):
+        if self.options.debug:
+            print(colored('getting file from {}...'.format(
+                'AUX' if self.aux else 'DUT'), 'blue'), end='')
+            stdout.flush()
+        if self.options.vxworks:
+            get_ftp()
+        else:
+            get_scp()
 
     def write(self, string):
         self.serial.write(bytes(string, encoding='utf-8'))
@@ -574,7 +620,7 @@ class dut(object):
             self.close()
             self.open()
         self.read_until(boot=True, flush=flush)
-        if change_prompt:
+        if change_prompt and not self.options.vxworks:
             self.write('export PS1=\"DrSEUs# \"\n')
             self.read_until('export PS1=\"DrSEUs# \"')
             self.prompt = 'DrSEUs# '
@@ -582,18 +628,18 @@ class dut(object):
         if self.login_command:
             self.command(self.login_command, flush=flush)
         self.set_time()
-        if self.options.rsa:
+        if self.options.rsa and not self.options.vxworks:
             self.command('mkdir ~/.ssh', flush=flush)
             self.command('touch ~/.ssh/authorized_keys', flush=flush)
             self.command('echo "ssh-rsa {}" > ~/.ssh/authorized_keys'.format(
                 self.rsakey.get_base64()), flush=flush)
-        if self.db.campaign.simics:
+        if self.db.campaign.simics and not self.options.vxworks:
             self.command('ip addr add {}/24 dev eth0'.format(self.ip_address),
                          flush=flush)
             self.command('ip link set eth0 up', flush=flush)
             self.command('ip addr show', flush=flush)
             self.ip_address = '127.0.0.1'
-        if self.ip_address is None:
+        if self.ip_address is None and not self.options.vxworks:
             attempts = 10
             for attempt in range(attempts):
                 for line in self.command('ip addr show',

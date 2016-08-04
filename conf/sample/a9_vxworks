@@ -1,0 +1,7 @@
+@conf/new/a9_vxworks
+--cmd
+rtpSp "app.vxe"
+--files
+app.vxe
+--output_file
+app.vxe

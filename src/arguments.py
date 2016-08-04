@@ -40,6 +40,11 @@ parser.add_argument(
     dest='rsa',
     help='use username/password for SCP authentication instead of RSA key')
 parser.add_argument(
+    '--vxworks',
+    action='store_true',
+    dest='vxworks',
+    help='device runs vxworks instead of linux')
+parser.add_argument(
     '--error_msg',
     nargs='+',
     dest='error_messages',
