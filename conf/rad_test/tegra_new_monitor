@@ -1,0 +1,17 @@
+--serial
+/dev/ttyUSB0
+--prompt
+ubuntu@tegra-ubuntu:~$
+--no_rsa
+--user
+ubuntu
+--pass
+ubuntu
+--no_rtscts
+new
+--arch
+tegra
+--delay
+4.5
+--log_files
+persistent_file.txt

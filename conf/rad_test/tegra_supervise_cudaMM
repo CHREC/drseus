@@ -1,5 +1,5 @@
 --serial
-/dev/ttyUSB6
+/dev/ttyUSB0
 --prompt
 ubuntu@tegra-ubuntu:~$
 --log_error_msg
@@ -12,3 +12,5 @@ ubuntu
 --pass
 ubuntu
 --no_rtscts
+supervise
+--local_diff

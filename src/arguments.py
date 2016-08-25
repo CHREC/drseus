@@ -289,7 +289,14 @@ new_campaign.add_argument(
     '-c', '--cmd',
     metavar='COMMAND',
     dest='dut_command',
+    default='',
     help='command to run on device')
+new_campaign.add_argument(
+    '--delay',
+    metavar='DELAY',
+    type=float,
+    help='time (in seconds) to sleep before retrieving output and log files '
+         '(only used for campaigns without a command)')
 new_campaign.add_argument(
     '-D', '--descr',
     metavar='DESCRIPTION',

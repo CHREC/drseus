@@ -352,7 +352,7 @@ class dut(object):
             ftp.set_debuglevel(level=2)
             ftp.login(self.username, self.password)
             ftp.cwd('/ram0')
-            with open(join(local_path, file_), 'wb') as file_to_receive:
+            with open(file_path, 'wb') as file_to_receive:
                 ftp.retrbinary('RETR {}'.format(file_.split('/')[-1]),
                                lambda data: file_to_receive.write(data))
             ftp.quit()
@@ -402,7 +402,6 @@ class dut(object):
                         else:
                             dut_scp.close()
                             ssh.close()
-                            file_path = join(local_path, file_.split('/')[-1])
                             if exists(file_path):
                                 if self.options.debug:
                                     print(colored('done', 'blue'))
@@ -432,10 +431,12 @@ class dut(object):
             print(colored('getting file from {}...'.format(
                 'AUX' if self.aux else 'DUT'), 'blue'), end='')
             stdout.flush()
+        file_path = join(local_path, file_.split('/')[-1])
         if self.options.vxworks:
             get_ftp()
         else:
             get_scp()
+        return file_path
 
     def write(self, string):
         self.serial.write(bytes(string, encoding='utf-8'))

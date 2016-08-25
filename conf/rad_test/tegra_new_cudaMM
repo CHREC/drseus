@@ -1,0 +1,26 @@
+--serial
+/dev/ttyUSB0
+--prompt
+ubuntu@tegra-ubuntu:~$
+--log_error_msg
+#ABORT amount of errors equals of the last iteration
+#ABORT too many errors per iteration
+#SDC
+--no_rsa
+--user
+ubuntu
+--pass
+ubuntu
+--no_rtscts
+new
+--arch
+tegra
+--cmd
+./cudaMxM 32 A B C 64
+--files
+cudaMxM
+A
+B
+C
+--log_files
+cudaMxM.txt
