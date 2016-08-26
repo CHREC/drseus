@@ -70,6 +70,10 @@ def run():
         campaign = database.get_campaign(options)
         if not options.campaign_id:
             options.campaign_id = campaign.id
+            if input('no campaign was specified, continue with campaign id {}?'
+                     ' [Y/n]: '.format(options.campaign_id)) not in \
+                    ['y', 'Y', 'yes', 'Yes', 'YES', '']:
+                return
         if options.command != 'regenerate':
             options.architecture = campaign.architecture
     if options.command in ('new', 'inject', 'supervise'):

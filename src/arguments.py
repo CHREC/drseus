@@ -15,7 +15,6 @@ parser.add_argument(
     '-c', '--campaign_id',
     type=int,
     metavar='ID',
-    dest='campaign_id',
     default=0,
     help='campaign to use, defaults to last campaign created')
 parser.add_argument(
