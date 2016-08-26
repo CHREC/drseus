@@ -212,8 +212,6 @@ class jtag(object):
                         'Error', 'Debugger', 'Injection failed')
                 self.set_mode(injection.processor_mode)
             self.continue_dut()
-        if not self.db.campaign.command:
-            sleep(self.db.campaign.execution_time-previous_injection_time)
         return None, None, False
 
     def command(self, command, expected_output, error_message,

@@ -148,7 +148,7 @@ class fault_injector(object):
             time_application()
         if not self.db.campaign.command:
             self.db.campaign.execution_time = self.options.delay
-            sleep(self.options.delay)
+            sleep(self.db.campaign.execution_time)
         gold_folder = 'campaign-data/{}/gold'.format(self.db.campaign.id)
         makedirs(gold_folder)
         if self.db.campaign.output_file:
@@ -303,6 +303,7 @@ class fault_injector(object):
                         'Information', 'DUT', 'Command',
                         self.db.campaign.command)
                     self.debugger.dut.reset_timer()
+                start = perf_counter()
                 try:
                     (self.db.result.num_register_diffs,
                      self.db.result.num_memory_diffs, persistent_faults) = \
@@ -326,6 +327,9 @@ class fault_injector(object):
                         except DrSEUsError:
                             pass
                 else:
+                    if not self.db.campaign.command:
+                        sleep(self.db.campaign.execution_time -
+                              (perf_counter()-start))
                     monitor_execution(persistent_faults, True)
                     check_latent_faults()
                 if self.db.campaign.simics:
