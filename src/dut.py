@@ -319,14 +319,15 @@ class dut(object):
                 for file_ in campaign_files:
                     files.append(join(self.options.directory, file_))
                 makedirs(location)
-                if self.options.debug:
-                    print(colored('copying {} campaign file(s)...'.format(
-                        'AUX' if self.aux else 'DUT'), 'blue'), end='')
-                    stdout.flush()
-                for file_ in files:
-                    copy(file_, location)
-                if self.options.debug:
-                    print(colored('done', 'blue'))
+                if files:
+                    if self.options.debug:
+                        print(colored('copying {} campaign file(s)...'.format(
+                            'AUX' if self.aux else 'DUT'), 'blue'), end='')
+                        stdout.flush()
+                    for file_ in files:
+                        copy(file_, location)
+                    if self.options.debug:
+                        print(colored('done', 'blue'))
             if hasattr(self.options, 'local_diff') and \
                     self.options.local_diff and self.db.campaign.output_file:
                 files.append('campaign-data/{}/gold/{}'.format(
