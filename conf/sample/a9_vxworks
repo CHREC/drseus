@@ -1,7 +1,7 @@
 @conf/new/a9_vxworks
 --cmd
-rtpSp "app.vxe"
+./mm_pth_vxworks
 --files
-app.vxe
+mm_pth_vxworks
 --output_file
-app.vxe
+result.dat

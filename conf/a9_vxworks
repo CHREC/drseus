@@ -4,16 +4,12 @@ target
 --uboot
 run vxworks
 --login
-cd "/ram0"
+cd /ram0
 --serial
 /dev/ttyACM0
 --ip
 10.42.0.200
 --prompt
-"->"
+[vxWorks *]#
 --power_ip
 10.42.0.60
---pass
-chrec
---aux_pass
-chrec

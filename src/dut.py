@@ -77,7 +77,6 @@ class dut(object):
         self.prompt = '{} '.format(
             options.dut_prompt if not aux or not options.aux_prompt
             else options.aux_prompt)
-        self.prompt = self.prompt.replace('"', '')
         self.username = options.dut_username if not aux \
             else options.aux_username
         self.password = options.dut_password if not aux \
@@ -241,7 +240,6 @@ class dut(object):
 
         def send_ftp():
             ftp = FTP(self.ip_address, timeout=30)
-            ftp.set_debuglevel(level=2)
             ftp.login(self.username, self.password)
             ftp.cwd('/ram0')
             for file_ in files:
@@ -350,7 +348,6 @@ class dut(object):
 
         def get_ftp():
             ftp = FTP(self.ip_address, timeout=30)
-            ftp.set_debuglevel(level=2)
             ftp.login(self.username, self.password)
             ftp.cwd('/ram0')
             with open(file_path, 'wb') as file_to_receive:
@@ -446,7 +443,10 @@ class dut(object):
     def read_until(self, string=None, continuous=False, boot=False, flush=True):
         start_time = perf_counter()
         if string is None:
-            string = self.prompt
+            if boot and self.options.vxworks:
+                string = '->'
+            else:
+                string = self.prompt
         buff = ''
         event_buff = ''
         event_buff_logged = ''
@@ -622,7 +622,9 @@ class dut(object):
             self.close()
             self.open()
         self.read_until(boot=True, flush=flush)
-        if change_prompt and not self.options.vxworks:
+        if self.options.vxworks:
+            self.command('cmd', flush=flush)
+        elif change_prompt:
             self.write('export PS1=\"DrSEUs# \"\n')
             self.read_until('export PS1=\"DrSEUs# \"')
             self.prompt = 'DrSEUs# '
