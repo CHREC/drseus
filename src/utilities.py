@@ -365,6 +365,13 @@ def update_dependencies(*args):
 
 
 def launch_openocd(options):
+    if options.dut_serial_port is None:
+        if len(find_zedboard_uart_serials()) == 1:
+            options.dut_serial_port = list(
+                find_zedboard_uart_serials().keys()).pop()
+        else:
+            raise Exception('multiple ZedBoards detected, please specify a '
+                            'device with "--serial"')
     debugger = openocd(None, options, None)
     print('Launched {}\n'.format(debugger))
     try:

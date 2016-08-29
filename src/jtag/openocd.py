@@ -23,7 +23,7 @@ class openocd(jtag):
 
     def __init__(self, database, options, power_switch):
         self.power_switch = power_switch
-        if len(find_zedboard_jtag_serials()) > 1 and exists('devices.json'):
+        if exists('devices.json'):
             with open('devices.json', 'r') as device_file:
                 device_info = load(device_file)
             for device in device_info:
@@ -36,14 +36,17 @@ class openocd(jtag):
                                 'device at {}'.format(options.dut_serial_port))
         else:
             self.device_info = None
-            print('could not find device information file, unpredictable '
-                  'behavior if multiple ZedBoards are connected')
-            if options.command == 'inject' and options.processes > 1:
-                raise Exception('could not find device information file '
-                                '"devices.json", which is required when using'
-                                'multiple ZedBoards. try running command '
-                                '"detect" (or "power detect" if using a web '
-                                'power switch')
+            if len(find_zedboard_jtag_serials()) > 1:
+                if options.command == 'inject' and options.processes > 1:
+                    raise Exception('could not find device information file '
+                                    '"devices.json", which is required when '
+                                    'using multiple ZedBoards. try running '
+                                    'command "detect" (or "power detect" if '
+                                    'using a web power switch')
+                else:
+                    print('could not find device information file, '
+                          'unpredictable behavior if multiple ZedBoards are '
+                          'connected')
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.port = find_open_port()

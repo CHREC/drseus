@@ -28,10 +28,10 @@ def find_zedboard_jtag_serials():
     return sorted(
         {dev['ID_SERIAL_SHORT']
          for dev in Context().list_devices(ID_VENDOR_ID='0403')
-         if 'DEVLINKS' in dev} &
+         if 'DEVLINKS' not in dev} &
         {dev['ID_SERIAL_SHORT']
          for dev in Context().list_devices(ID_MODEL_ID='6014')
-         if 'DEVLINKS' in dev})
+         if 'DEVLINKS' not in dev})
 
 
 def find_zedboard_uart_serials():
