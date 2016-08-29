@@ -34,6 +34,8 @@ class dut(object):
         ('Segmentation fault', 'Segmentation fault'),
         ('Illegal instruction', 'Illegal instruction'),
 
+        ('has been deleted due to signal 11', 'Segmentation fault'),  # VxWorks
+
         ('command not found', 'Invalid command'),
         ('Unknown command', 'Invalid command'),
         ('No such file or directory', 'Missing file on device'),
@@ -62,7 +64,9 @@ class dut(object):
         ('Hit any key to stop autoboot:', 'Reboot'),
         ('Booting Linux', 'Reboot'),
 
-        ('can\'t get kernel image', 'Error booting')]
+        ('can\'t get kernel image', 'Error booting'),
+        ('Waiting for PHY auto negotiation to complete......... TIMEOUT !',
+         'Error booting')]
 
     def __init__(self, database, options, aux=False):
         self.db = database
@@ -239,14 +243,24 @@ class dut(object):
     def send_files(self, files=None, attempts=10):
 
         def send_ftp():
-            ftp = FTP(self.ip_address, timeout=30)
-            ftp.login(self.username, self.password)
-            ftp.cwd('/ram0')
-            for file_ in files:
-                with open(file_, 'rb') as file_to_send:
-                    ftp.storbinary('STOR {}'.format(file_.split('/')[-1]),
-                                   file_to_send)
-            ftp.quit()
+            for attempt in range(attempts):
+                try:
+                    with timeout(30):
+                        ftp = FTP(self.ip_address, timeout=30)
+                        ftp.login(self.username, self.password)
+                        ftp.cwd('/ram0')
+                        for file_ in files:
+                            with open(file_, 'rb') as file_to_send:
+                                ftp.storbinary(
+                                    'STOR {}'.format(file_.split('/')[-1]),
+                                    file_to_send)
+                        ftp.quit()
+                except KeyboardInterrupt:
+                    raise KeyboardInterrupt
+                except Exception as error:
+                    self.__attempt_exception(
+                        attempt, attempts, error, 'FTP error',
+                        'Error sending file(s)')
 
         def send_scp():
             ssh = SSHClient()
@@ -347,13 +361,23 @@ class dut(object):
     def get_file(self, file_, local_path='', attempts=10):
 
         def get_ftp():
-            ftp = FTP(self.ip_address, timeout=30)
-            ftp.login(self.username, self.password)
-            ftp.cwd('/ram0')
-            with open(file_path, 'wb') as file_to_receive:
-                ftp.retrbinary('RETR {}'.format(file_.split('/')[-1]),
-                               lambda data: file_to_receive.write(data))
-            ftp.quit()
+            for attempt in range(attempts):
+                try:
+                    with timeout(60):
+                        ftp = FTP(self.ip_address, timeout=30)
+                        ftp.login(self.username, self.password)
+                        ftp.cwd('/ram0')
+                        with open(file_path, 'wb') as file_to_receive:
+                            ftp.retrbinary(
+                                'RETR {}'.format(file_.split('/')[-1]),
+                                lambda data: file_to_receive.write(data))
+                        ftp.quit()
+                except KeyboardInterrupt:
+                    raise KeyboardInterrupt
+                except Exception as error:
+                    self.__attempt_exception(
+                        attempt, attempts, error, 'FTP error',
+                        'Error receiving file')
 
         def get_scp():
             ssh = SSHClient()
