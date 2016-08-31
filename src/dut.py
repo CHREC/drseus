@@ -20,7 +20,7 @@ from .timeout import timeout, TimeoutException
 
 
 class dut(object):
-    error_messages = [
+    linux_signal_messages = [
         ('drseus_sighandler: SIGSEGV', 'Signal SIGSEGV'),
         ('drseus_sighandler: SIGILL', 'Signal SIGILL'),
         ('drseus_sighandler: SIGBUS', 'Signal SIGBUS'),
@@ -29,12 +29,63 @@ class dut(object):
         ('drseus_sighandler: SIGIOT', 'Signal SIGIOT'),
         ('drseus_sighandler: SIGTRAP', 'Signal SIGTRAP'),
         ('drseus_sighandler: SIGSYS', 'Signal SIGSYS'),
-        ('drseus_sighandler: SIGEMT', 'Signal SIGEMT'),
+        ('drseus_sighandler: SIGEMT', 'Signal SIGEMT')
+    ]
 
+    vxworks_signal_messages = [
+        ('has been deleted due to signal 11', 'Signal SIGSEGV'),
+        ('has been deleted due to signal 4', 'Signal SIGILL'),
+        ('has been deleted due to signal 10', 'Signal SIGBUS'),
+        ('has been deleted due to signal 8', 'Signal SIGFPE'),
+        ('has been deleted due to signal 6', 'Signal SIGABRT'),
+        ('has been deleted due to signal 5', 'Signal SIGTRAP'),
+        ('has been deleted due to signal 34', 'Signal SIGSYS'),
+        ('has been deleted due to signal 7', 'Signal SIGEMT'),
+        ('has been deleted due to signal', 'Signal')
+    ]
+
+    # define SIGHUP     1    /* hangup */
+    # define SIGINT     2    /* interrupt */
+    # define SIGQUIT    3    /* quit */
+    # define SIGKILL    9    /* kill */
+    # define SIGFMT     12   /* STACK FORMAT ERROR (not posix) */
+    # define SIGPIPE    13   /* write on a pipe with no one to read it */
+    # define SIGALRM    14   /* alarm clock */
+    # define SIGTERM    15   /* software termination signal from kill */
+    # define SIGCNCL    16   /* pthreads cancellation signal */
+    # define SIGSTOP    17   /* sendable stop signal not from tty */
+    # define SIGTSTP    18   /* stop signal from tty */
+    # define SIGCONT    19   /* continue a stopped process */
+    # define SIGCHLD    20   /* to parent on child stop or exit */
+    # define SIGTTIN    21   /* to readers pgrp upon background tty read */
+    # define SIGTTOU    22   /* like TTIN for output if (tp->t_local&LTOSTOP) */
+    # define SIGRES1    23   /* reserved signal number (Not POSIX) */
+    # define SIGRES2    24   /* reserved signal number (Not POSIX) */
+    # define SIGRES3    25   /* reserved signal number (Not POSIX) */
+    # define SIGRES4    26   /* reserved signal number (Not POSIX) */
+    # define SIGRES5    27   /* reserved signal number (Not POSIX) */
+    # define SIGRES6    28   /* reserved signal number (Not POSIX) */
+    # define SIGRES7    29   /* reserved signal number (Not POSIX) */
+    # define SIGUSR1    30   /* user defined signal 1 */
+    # define SIGUSR2    31   /* user defined signal 2 */
+    # define SIGPOLL    32   /* pollable event */
+    # define SIGPROF    33   /* profiling timer expired */
+    # define SIGURG     35   /* high bandwidth data is available at socket */
+    # define SIGVTALRM  36   /* virtual timer expired */
+    # define SIGXCPU    37   /* CPU time limit exceeded */
+    # define SIGXFSZ    38   /* file size time limit exceeded */
+    # define SIGEVTS    39   /* signal event thread send */
+    # define SIGEVTD    40   /* signal event thread delete */
+    # define SIGRTMIN   48   /* Realtime signal min */
+    # define SIGRTMAX   63   /* Realtime signal max */
+
+    error_messages = [
         ('Segmentation fault', 'Segmentation fault'),
         ('Illegal instruction', 'Illegal instruction'),
 
-        ('has been deleted due to signal 11', 'Segmentation fault'),  # VxWorks
+        # VxWorks
+        ('has had a failure and has been deleted', 'Failure'),
+        ('Copyright Wind River Systems, Inc.', 'Reboot'),
 
         ('command not found', 'Invalid command'),
         ('Unknown command', 'Invalid command'),
@@ -61,6 +112,7 @@ class dut(object):
         ('Exception stack', 'Kernel error'),
         ('-[ cut here ]-', 'Kernel error'),
 
+        # uboot
         ('Hit any key to stop autoboot:', 'Reboot'),
         ('Booting Linux', 'Reboot'),
 
@@ -92,6 +144,9 @@ class dut(object):
             else options.aux_uboot
         self.login_command = options.dut_login if not aux \
             else options.aux_login
+        for message in reversed(self.vxworks_signal_messages if options.vxworks
+                                else self.linux_signal_messages):
+            self.error_messages.insert(0, message)
         for message in reversed(options.error_messages):
             self.error_messages.insert(0, (message, message))
         self.open()
@@ -667,10 +722,11 @@ class dut(object):
             self.command('ip link set eth0 up', flush=flush)
             self.command('ip addr show', flush=flush)
             self.ip_address = '127.0.0.1'
-        if self.ip_address is None and not self.options.vxworks:
+        if self.ip_address is None:
             attempts = 10
             for attempt in range(attempts):
-                for line in self.command('ip addr show',
+                for line in self.command('ifconfig -a' if self.options.vxworks
+                                         else 'ip addr show',
                                          flush=flush)[0].split('\n'):
                     line = line.strip().split()
                     if len(line) > 0 and line[0] == 'inet':

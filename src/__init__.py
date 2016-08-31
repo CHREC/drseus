@@ -3,6 +3,7 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
+# TODO: fix rename outcome on results page filter update
 # TODO: put AUX files/logs into subdirectory (in case named same as dut files)
 # TODO: display AUX log files in log browser
 # TODO: handle log files in simics.time_application

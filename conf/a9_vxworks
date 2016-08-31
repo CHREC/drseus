@@ -7,8 +7,6 @@ run vxworks
 cd /ram0
 --serial
 /dev/ttyACM0
---ip
-10.42.0.200
 --prompt
 [vxWorks *]#
 --power_ip
