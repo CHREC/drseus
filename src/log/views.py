@@ -555,12 +555,16 @@ def get_file(request, filename, result_id=None, campaign_id=None):
     if result_id is not None:
         result = models.result.objects.get(id=result_id)
         file_ = 'campaign-data/{}/results/{}/{}'.format(
-            result.campaign_id, result_id, filename)
+            result.campaign_id, result_id, filename.split('/')[-1])
     elif campaign_id is not None:
-        file_ = 'campaign-data/{}/gold/{}'.format(campaign_id, filename)
+        file_ = 'campaign-data/{}/gold/{}'.format(
+            campaign_id, filename.split('/')[-1])
     if exists(file_):
         return FileResponse(
             open(file_, 'rb'), content_type=guess_type(file_))
+    elif exists(file_.split('/')[-1]):
+        return FileResponse(
+            open(file_.split('/')[-1], 'rb'), content_type=guess_type(file_))
     else:
         return HttpResponse('File not found')
 

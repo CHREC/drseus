@@ -120,11 +120,14 @@ class fault_injector(object):
                                 self.debugger.dut.command('rm {}'.format(
                                     self.db.campaign.output_file))
                         for log_file in self.db.campaign.log_files:
-                            self.debugger.dut.command('rm {}'.format(log_file))
+                            if not log_file.startswith('/'):
+                                self.debugger.dut.command(
+                                    'rm {}'.format(log_file))
                         if self.db.campaign.aux:
                             for log_file in self.db.campaign.aux_log_files:
-                                self.debugger.aux.command(
-                                    'rm {}'.format(log_file))
+                                if not log_file.startswith('/'):
+                                    self.debugger.aux.command(
+                                        'rm {}'.format(log_file))
                 if self.db.campaign.simics:
                     self.debugger.halt_dut()
                     end_cycles, end_time = self.debugger.get_time()
@@ -164,11 +167,13 @@ class fault_injector(object):
                   self.db.campaign.output_file))
         for log_file in self.db.campaign.log_files:
             self.debugger.dut.get_file(log_file, gold_folder)
-            self.debugger.dut.command('rm {}'.format(log_file))
+            if not log_file.startswith('/'):
+                self.debugger.dut.command('rm {}'.format(log_file))
         if self.db.campaign.aux:
             for log_file in self.db.campaign.aux_log_files:
                 self.debugger.aux.get_file(log_file, gold_folder)
-                self.debugger.aux.command('rm {}'.format(log_file))
+                if not log_file.startswith('/'):
+                    self.debugger.aux.command('rm {}'.format(log_file))
         if not listdir(gold_folder):
             rmtree(gold_folder)
         self.db.campaign.timestamp = datetime.now()
@@ -197,6 +202,8 @@ class fault_injector(object):
                     self.db.result.outcome = error.type
                     self.db.result.returned = error.returned
                 finally:
+                    global incomplete
+                    incomplete = False
                     if log_time:
                         if self.db.campaign.simics:
                             try:
@@ -269,6 +276,15 @@ class fault_injector(object):
                         self.db.result.outcome_category = outcome_category
                         self.db.result.outcome = outcome
 
+        def background_log():
+            global incomplete
+            while incomplete:
+                start = perf_counter
+                self.debugger.dut.get_logs(0, True)
+                sleep_time = self.options.log_delay - (perf_counter()-start)
+                if sleep_time > 0:
+                    sleep(sleep_time)
+
         def perform_injections():
             if timer is not None:
                 start = perf_counter()
@@ -304,10 +320,14 @@ class fault_injector(object):
                         self.db.campaign.command)
                     self.debugger.dut.reset_timer()
                 start = perf_counter()
+                global incomplete
+                incomplete = True
+                log_thread = Thread(target=background_log)
                 try:
                     (self.db.result.num_register_diffs,
                      self.db.result.num_memory_diffs, persistent_faults) = \
                         self.debugger.inject_faults()
+                    log_thread.start()
                 except DrSEUsError as error:
                     self.db.result.outcome = str(error)
                     if self.db.campaign.simics:
@@ -328,9 +348,13 @@ class fault_injector(object):
                             pass
                 else:
                     if not self.db.campaign.command:
-                        sleep(self.db.campaign.execution_time -
-                              (perf_counter()-start))
+                        sleep_time = (self.db.campaign.execution_time -
+                                      (perf_counter()-start))
+                        if sleep_time > 0:
+                            sleep(sleep_time)
                     monitor_execution(persistent_faults, True)
+                    incomplete = False
+                    log_thread.join()
                     check_latent_faults()
                 if self.db.campaign.simics:
                     try:

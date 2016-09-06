@@ -41,7 +41,7 @@ class dut(object):
         ('has been deleted due to signal 5', 'Signal SIGTRAP'),
         ('has been deleted due to signal 34', 'Signal SIGSYS'),
         ('has been deleted due to signal 7', 'Signal SIGEMT'),
-        ('has been deleted due to signal', 'Signal')
+        # ('has been deleted due to signal', 'Signal')
     ]
 
     # define SIGHUP     1    /* hangup */
@@ -809,7 +809,7 @@ class dut(object):
             self.db.result.outcome_category = 'Post execution error'
             self.db.result.outcome = error.type
 
-    def get_logs(self, latent_iteration):
+    def get_logs(self, latent_iteration, background=False):
         result_folder = 'campaign-data/{}/results/{}'.format(
             self.db.campaign.id, self.db.result.id)
         if latent_iteration:
@@ -834,8 +834,9 @@ class dut(object):
                             self.db.result.outcome_category = 'Log error'
                             self.db.result.outcome = message
                             break
-            try:
-                self.command('rm {}'.format(log_file))
-            except DrSEUsError as error:
-                self.db.result.outcome_category = 'Post execution error'
-                self.db.result.outcome = error.type
+            if not log_file.startswith('/') and not background:
+                try:
+                    self.command('rm {}'.format(log_file))
+                except DrSEUsError as error:
+                    self.db.result.outcome_category = 'Post execution error'
+                    self.db.result.outcome = error.type

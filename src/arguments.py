@@ -435,6 +435,10 @@ inject.add_argument(
     help='execution iterations to perform if latent faults are detected '
          '[default=1]')
 inject.add_argument(
+    '--log_delay',
+    type=float,
+    help='periodically retrieve log files from DUT every X seconds')
+inject.add_argument(
     '-p', '--processes',
     type=int,
     default=1,
@@ -464,6 +468,10 @@ supervise.add_argument(
     '-l', '--local_diff',
     action='store_true',
     help='perform output file diff on device and do not retrieve output file')
+supervise.add_argument(
+    '--log_delay',
+    type=float,
+    help='periodically retrieve log files from DUT every X seconds')
 supervise.add_argument(
     '-p', '--power_outlet',
     type=int,
