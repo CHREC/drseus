@@ -279,7 +279,7 @@ class fault_injector(object):
         def background_log():
             global incomplete
             while incomplete:
-                start = perf_counter
+                start = perf_counter()
                 self.debugger.dut.get_logs(0, True)
                 sleep_time = self.options.log_delay - (perf_counter()-start)
                 if sleep_time > 0:
