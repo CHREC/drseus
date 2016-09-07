@@ -164,7 +164,7 @@ class fault_injector(object):
                 self.debugger.dut.get_file(
                     self.db.campaign.output_file, gold_folder)
                 self.debugger.dut.command('rm {}'.format(
-                  self.db.campaign.output_file))
+                    self.db.campaign.output_file))
         for log_file in self.db.campaign.log_files:
             self.debugger.dut.get_file(log_file, gold_folder)
             if not log_file.startswith('/'):

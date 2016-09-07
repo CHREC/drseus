@@ -11,6 +11,7 @@ from scp import SCPClient
 from serial import Serial
 from serial.serialutil import SerialException
 from shutil import copy, rmtree
+from socket import AF_INET, SOCK_STREAM, socket
 from sys import stdout
 from termcolor import colored
 from time import perf_counter, sleep
@@ -413,7 +414,27 @@ class dut(object):
         if rename_gold:
             self.command('mv {0} gold_{0}'.format(self.db.campaign.output_file))
 
-    def get_file(self, file_, local_path='', attempts=10):
+    def get_file(self, file_, local_path='', attempts=10, background=False,
+                 netcat=False):
+
+        def get_netcat():
+            with open(file_path, 'wb') as file_to_receive:
+                with socket(AF_INET, SOCK_STREAM) as sock:
+                    sock.connect((self.ip_address, 5555))
+                    sock.sendall('{}{}'.format(
+                        file_,
+                        '' if background or file_.startswith('/') else ' -r'
+                    ).encode(
+                        'utf-8'))
+                    data = sock.recv(8192)
+                    while data:
+                        file_to_receive.write(data)
+                        data = sock.recv(8192)
+            if self.options.debug:
+                print(colored('done', 'blue'))
+            self.db.log_event('Information', 'DUT' if not self.aux else 'AUX',
+                              'Received file', file_)
+            return file_path
 
         def get_ftp():
             for attempt in range(attempts):
@@ -509,7 +530,9 @@ class dut(object):
                 'AUX' if self.aux else 'DUT'), 'blue'), end='')
             stdout.flush()
         file_path = join(local_path, file_.split('/')[-1])
-        if self.options.vxworks:
+        if netcat:
+            get_netcat()
+        elif self.options.vxworks:
             get_ftp()
         else:
             get_scp()
@@ -819,7 +842,9 @@ class dut(object):
         for log_file in self.db.campaign.aux_log_files if self.aux \
                 else self.db.campaign.log_files:
             try:
-                file_path = self.get_file(log_file, result_folder)
+                file_path = self.get_file(log_file, result_folder,
+                                          background=background,
+                                          netcat=self.options.netcat)
             except DrSEUsError:
                 if not listdir(result_folder):
                     rmtree(result_folder)
@@ -834,7 +859,8 @@ class dut(object):
                             self.db.result.outcome_category = 'Log error'
                             self.db.result.outcome = message
                             break
-            if not log_file.startswith('/') and not background:
+            if not log_file.startswith('/') and not background and \
+                    not self.options.netcat:
                 try:
                     self.command('rm {}'.format(log_file))
                 except DrSEUsError as error:
