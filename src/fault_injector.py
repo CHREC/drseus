@@ -327,7 +327,8 @@ class fault_injector(object):
                     (self.db.result.num_register_diffs,
                      self.db.result.num_memory_diffs, persistent_faults) = \
                         self.debugger.inject_faults()
-                    log_thread.start()
+                    if self.options.log_delay is not None:
+                        log_thread.start()
                 except DrSEUsError as error:
                     self.db.result.outcome = str(error)
                     if self.db.campaign.simics:
@@ -354,7 +355,8 @@ class fault_injector(object):
                             sleep(sleep_time)
                     monitor_execution(persistent_faults, True)
                     incomplete = False
-                    log_thread.join()
+                    if self.options.log_delay is not None:
+                        log_thread.join()
                     check_latent_faults()
                 if self.db.campaign.simics:
                     try:
