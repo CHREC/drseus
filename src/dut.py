@@ -154,9 +154,11 @@ class dut(object):
 
     def __str__(self):
         return ('Serial Port: {}\n\tTimeout: {} seconds\n\tPrompt: "{}"\n\t'
-                'IP Address: {}\n\tSCP Port: {}').format(
+                'IP Address: {}\n\t{}: {}').format(
                     self.serial.port, self.serial.timeout, self.prompt,
-                    self.ip_address, self.scp_port)
+                    self.ip_address,
+                    'Socket Port' if self.options.socket else 'SCP Port',
+                    60123 if self.options.socket else self.scp_port)
 
     def start_timer(self):
         self.__start_time = perf_counter()
@@ -401,6 +403,8 @@ class dut(object):
                 files.append('campaign-data/{}/gold/{}'.format(
                     self.db.campaign.id, self.db.campaign.output_file))
                 rename_gold = True
+        elif not isinstance(files, list):
+            files = [files]
         if not files:
             return
         if self.options.debug:
@@ -414,26 +418,22 @@ class dut(object):
         if rename_gold:
             self.command('mv {0} gold_{0}'.format(self.db.campaign.output_file))
 
-    def get_file(self, file_, local_path='', attempts=10, background=False,
-                 netcat=False):
+    def get_file(self, file_, local_path='', delete=False, attempts=10):
 
-        def get_netcat():
+        def get_socket():
             with open(file_path, 'wb') as file_to_receive:
                 with socket(AF_INET, SOCK_STREAM) as sock:
-                    sock.connect((self.ip_address, 5555))
-                    sock.sendall('{}{}'.format(
-                        file_,
-                        '' if background or file_.startswith('/') else ' -r'
-                    ).encode(
-                        'utf-8'))
-                    data = sock.recv(8192)
+                    sock.connect((self.ip_address, 60123))
+                    sock.sendall('{}{}\n'.format(
+                        file_, ' -r' if delete else '').encode('utf-8'))
+                    data = sock.recv(4096)
                     while data:
                         file_to_receive.write(data)
-                        data = sock.recv(8192)
+                        data = sock.recv(4096)
             if self.options.debug:
                 print(colored('done', 'blue'))
             self.db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                              'Received file', file_)
+                              'Received file using socket file server', file_)
             return file_path
 
         def get_ftp():
@@ -454,6 +454,13 @@ class dut(object):
                     self.__attempt_exception(
                         attempt, attempts, error, 'FTP error',
                         'Error receiving file')
+                else:
+                    if self.options.debug:
+                        print(colored('done', 'blue'))
+                    self.db.log_event(
+                        'Information', 'DUT' if not self.aux else 'AUX',
+                        'Received file using FTP', file_)
+                    return file_path
 
         def get_scp():
             ssh = SSHClient()
@@ -506,7 +513,7 @@ class dut(object):
                                 self.db.log_event(
                                     'Information',
                                     'DUT' if not self.aux else 'AUX',
-                                    'Received file', file_)
+                                    'Received file using SCP', file_)
                                 return file_path
                             else:
                                 self.db.log_event(
@@ -524,14 +531,14 @@ class dut(object):
                                 else:
                                     raise DrSEUsError('Received file not found')
 
-    # def get_file(self, file_, local_path='', attempts=10):
+    # def get_file(self, file_, local_path='', delete=False, attempts=10):
         if self.options.debug:
             print(colored('getting file from {}...'.format(
                 'AUX' if self.aux else 'DUT'), 'blue'), end='')
             stdout.flush()
         file_path = join(local_path, file_.split('/')[-1])
-        if netcat:
-            get_netcat()
+        if self.options.socket:
+            get_socket()
         elif self.options.vxworks:
             get_ftp()
         else:
@@ -765,6 +772,10 @@ class dut(object):
                 if self.ip_address is not None:
                     break
         self.send_files()
+        if self.options.socket:
+            self.send_files('scripts/socket_file_server.py')
+            if 'socket_file_server.py' not in self.command('ps a')[0]:
+                self.command('./socket_file_server.py &')
 
     def check_output(self):
         local_diff = \
@@ -842,9 +853,9 @@ class dut(object):
         for log_file in self.db.campaign.aux_log_files if self.aux \
                 else self.db.campaign.log_files:
             try:
-                file_path = self.get_file(log_file, result_folder,
-                                          background=background,
-                                          netcat=self.options.netcat)
+                file_path = self.get_file(
+                    log_file, result_folder,
+                    delete=not background and not log_file.startswith('/'))
             except DrSEUsError:
                 if not listdir(result_folder):
                     rmtree(result_folder)
@@ -860,7 +871,7 @@ class dut(object):
                             self.db.result.outcome = message
                             break
             if not log_file.startswith('/') and not background and \
-                    not self.options.netcat:
+                    not self.options.socket:
                 try:
                     self.command('rm {}'.format(log_file))
                 except DrSEUsError as error:

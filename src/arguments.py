@@ -39,9 +39,9 @@ parser.add_argument(
     dest='rsa',
     help='use username/password for SCP authentication instead of RSA key')
 parser.add_argument(
-    '--netcat',
+    '--socket',
     action='store_true',
-    help='retrieve log files using raw sockets (netcat)')
+    help='retrieve files using "scripts/socket_file_server.py"')
 parser.add_argument(
     '--vxworks',
     action='store_true',
