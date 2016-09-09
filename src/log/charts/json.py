@@ -9,6 +9,7 @@ from . import charts, create_chart
 
 
 def campaigns_chart(results):
+    results = results.exclude(outcome_category='Supervisor')
     outcomes = list(results.values_list(
         'outcome_category', flat=True).distinct(
                 ).order_by('outcome_category'))

@@ -499,8 +499,12 @@ def result_page(request, result_id):
         result.outcome_category = request.POST['outcome_category']
         result.save()
     elif request.method == 'POST' and 'delete' in request.POST:
+        if exists('campaign-data/{}/results/{}'.format(
+                result.campaign_id, result.id)):
+            rmtree('campaign-data/{}/results/{}'.format(
+                result.campaign_id, result.id))
         result.delete()
-        return redirect('/campaign/{}/results'.format(result.campaign_id))
+        return HttpResponse('Result deleted')
     injections = result.injection_set.all()
     if result.campaign.simics:
         if injections.count():
