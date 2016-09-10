@@ -157,8 +157,9 @@ class dut(object):
                 'IP Address: {}\n\t{}: {}').format(
                     self.serial.port, self.serial.timeout, self.prompt,
                     self.ip_address,
-                    'Socket Port' if self.options.socket else 'SCP Port',
-                    60123 if self.options.socket else self.scp_port)
+                    'Socket File Server Ports' if self.options.socket
+                    else 'SCP Port', '60123, 60124' if self.options.socket
+                    else self.scp_port)
 
     def start_timer(self):
         self.__start_time = perf_counter()
@@ -442,7 +443,8 @@ class dut(object):
         if rename_gold:
             self.command('mv {0} gold_{0}'.format(self.db.campaign.output_file))
 
-    def get_file(self, file_, local_path='', delete=False, attempts=10):
+    def get_file(self, file_, local_path='', delete=False, attempts=10,
+                 quiet=False):
 
         def get_socket():
             with open(file_path, 'wb') as file_to_receive:
@@ -454,7 +456,7 @@ class dut(object):
                     while data:
                         file_to_receive.write(data)
                         data = sock.recv(4096)
-            if self.options.debug:
+            if self.options.debug and not quiet:
                 print(colored('done', 'blue'))
             self.db.log_event('Information', 'DUT' if not self.aux else 'AUX',
                               'Received file using socket file server', file_)
@@ -479,7 +481,7 @@ class dut(object):
                         attempt, attempts, error, 'FTP error',
                         'Error receiving file')
                 else:
-                    if self.options.debug:
+                    if self.options.debug and not quiet:
                         print(colored('done', 'blue'))
                     self.db.log_event(
                         'Information', 'DUT' if not self.aux else 'AUX',
@@ -532,7 +534,7 @@ class dut(object):
                             dut_scp.close()
                             ssh.close()
                             if exists(file_path):
-                                if self.options.debug:
+                                if self.options.debug and not quiet:
                                     print(colored('done', 'blue'))
                                 self.db.log_event(
                                     'Information',
@@ -556,7 +558,7 @@ class dut(object):
                                     raise DrSEUsError('Received file not found')
 
     # def get_file(self, file_, local_path='', delete=False, attempts=10):
-        if self.options.debug:
+        if self.options.debug and not quiet:
             print(colored('getting file from {}...'.format(
                 'AUX' if self.aux else 'DUT'), 'blue'), end='')
             stdout.flush()
@@ -883,7 +885,8 @@ class dut(object):
             try:
                 file_path = self.get_file(
                     log_file, result_folder,
-                    delete=not background and not log_file.startswith('/'))
+                    delete=not background and not log_file.startswith('/'),
+                    quiet=background)
             except DrSEUsError:
                 if not listdir(result_folder):
                     rmtree(result_folder)

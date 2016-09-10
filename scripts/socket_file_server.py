@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from socket import AF_INET, SOCK_STREAM, socket
-from multiprocessing import Process
+from threading import Thread
 from os import remove
 
 
@@ -58,5 +58,5 @@ def send_server():
             finally:
                 connection.close()
 
-Process(target=receive_server).start()
-Process(target=send_server).start()
+Thread(target=receive_server).start()
+Thread(target=send_server).start()
