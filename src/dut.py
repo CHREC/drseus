@@ -300,6 +300,22 @@ class dut(object):
 
     def send_files(self, files=None, attempts=10):
 
+        def send_socket():
+            for file_ in files:
+                with socket(AF_INET, SOCK_STREAM) as sock:
+                    sock.connect((self.ip_address, 60124))
+                    sock.sendall('{}\n'.format(
+                        file_.split('/')[-1]).encode('utf-8'))
+                with socket(AF_INET, SOCK_STREAM) as sock:
+                    sock.connect((self.ip_address, 60124))
+                    with open(file_, 'rb') as file_to_send:
+                        sock.sendall(file_to_send.read())
+            if self.options.debug:
+                print(colored('done', 'blue'))
+            self.db.log_event(
+                'Information', 'DUT' if not self.aux else 'AUX',
+                'Sent files using socket file server', ', '.join(files))
+
         def send_ftp():
             for attempt in range(attempts):
                 try:
@@ -319,6 +335,12 @@ class dut(object):
                     self.__attempt_exception(
                         attempt, attempts, error, 'FTP error',
                         'Error sending file(s)')
+                else:
+                    if self.options.debug:
+                        print(colored('done', 'blue'))
+                    self.db.log_event(
+                        'Information', 'DUT' if not self.aux else 'AUX',
+                        'Sent files using FTP', ', '.join(files))
 
         def send_scp():
             ssh = SSHClient()
@@ -369,7 +391,7 @@ class dut(object):
                                 print(colored('done', 'blue'))
                             self.db.log_event(
                                 'Information', 'DUT' if not self.aux else 'AUX',
-                                'Sent files', ', '.join(files))
+                                'Sent files using SCP', ', '.join(files))
                             break
 
         # def send_files(self, files=None, attempts=10):
@@ -411,7 +433,9 @@ class dut(object):
             print(colored('sending {} file(s)...'.format(
                 'AUX' if self.aux else 'DUT'), 'blue'), end='')
             stdout.flush()
-        if self.options.vxworks:
+        if self.options.socket:
+            send_socket()
+        elif self.options.vxworks:
             send_ftp()
         else:
             send_scp()
@@ -771,11 +795,15 @@ class dut(object):
                         raise DrSEUsError('Error finding device ip address')
                 if self.ip_address is not None:
                     break
-        self.send_files()
         if self.options.socket:
-            self.send_files('scripts/socket_file_server.py')
-            if 'socket_file_server.py' not in self.command('ps a')[0]:
+            if 'socket_file_server.py' not in self.command('ls -l')[0]:
+                self.options.socket = False
+                self.send_files('scripts/socket_file_server.py')
+                self.options.socket = True
                 self.command('./socket_file_server.py &')
+            elif 'socket_file_server.py' not in self.command('ps a')[0]:
+                self.command('./socket_file_server.py &')
+        self.send_files()
 
     def check_output(self):
         local_diff = \
