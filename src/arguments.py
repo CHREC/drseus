@@ -188,7 +188,7 @@ aux_settings.add_argument(
     dest='aux_login',
     default='',
     help='post-login command')
-dut_settings.add_argument(
+aux_settings.add_argument(
     '--aux_persistent',
     nargs='+',
     metavar='EXECUTABLE',
