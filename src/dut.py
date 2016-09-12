@@ -447,22 +447,34 @@ class dut(object):
                  quiet=False):
 
         def get_socket():
-            with open('{}.tmp'.format(file_path), 'wb') as file_to_receive:
-                with socket(AF_INET, SOCK_STREAM) as sock:
-                    sock.connect((self.ip_address, 60123))
-                    sock.sendall('{}{}\n'.format(
-                        file_, ' -r' if delete else '').encode('utf-8'))
-                    data = sock.recv(4096)
-                    while data:
-                        file_to_receive.write(data)
+            for attempt in range(attempts):
+                try:
+                    with timeout(60), \
+                            open('{}.tmp'.format(file_path), 'wb') \
+                            as file_to_receive, \
+                            socket(AF_INET, SOCK_STREAM) as sock:
+                        sock.connect((self.ip_address, 60123))
+                        sock.sendall('{}{}\n'.format(
+                            file_, ' -r' if delete else '').encode('utf-8'))
                         data = sock.recv(4096)
-            if exists('{}.tmp'.format(file_path)):
-                rename('{}.tmp'.format(file_path), file_path)
-            if self.options.debug and not quiet:
-                print(colored('done', 'blue'))
-            self.db.log_event('Information', 'DUT' if not self.aux else 'AUX',
-                              'Received file using socket file server', file_)
-            return file_path
+                        while data:
+                            file_to_receive.write(data)
+                            data = sock.recv(4096)
+                except KeyboardInterrupt:
+                    raise KeyboardInterrupt
+                except Exception as error:
+                    self.__attempt_exception(
+                        attempt, attempts, error, 'Socket file server error',
+                        'Error receiving file')
+                else:
+                    if exists('{}.tmp'.format(file_path)):
+                        rename('{}.tmp'.format(file_path), file_path)
+                    if self.options.debug and not quiet:
+                        print(colored('done', 'blue'))
+                    self.db.log_event(
+                        'Information', 'DUT' if not self.aux else 'AUX',
+                        'Received file using socket file server', file_)
+                    return file_path
 
         def get_ftp():
             for attempt in range(attempts):
