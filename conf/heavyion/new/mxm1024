@@ -14,9 +14,9 @@ ubuntu
 --pass
 ubuntu
 --no_rtscts
---socket
 --persistent
 hardware_config_dut.py
+--socket
 new
 --arch
 tegra

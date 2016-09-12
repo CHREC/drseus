@@ -8,5 +8,10 @@ ubuntu
 --pass
 ubuntu
 --no_rtscts
+--persistent
+hardware_config_dut.py
+--socket
 supervise
 --local_diff
+--log_delay
+0.01
