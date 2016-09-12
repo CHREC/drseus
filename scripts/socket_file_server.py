@@ -52,6 +52,8 @@ def send_server():
                 try:
                     if delete:
                         remove(file_to_send)
+                        print('socket_file_server.py: deleted file:',
+                              file_to_send)
                 except:
                     print('socket_file_server.py: could not delete file:',
                           file_to_send)

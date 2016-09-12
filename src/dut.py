@@ -2,7 +2,7 @@ from datetime import datetime
 from difflib import SequenceMatcher
 from ftplib import FTP
 from io import StringIO
-from os import listdir, makedirs
+from os import listdir, makedirs, rename
 from os.path import exists, join
 from paramiko import AutoAddPolicy, RSAKey, SSHClient
 from re import compile as regex
@@ -447,7 +447,7 @@ class dut(object):
                  quiet=False):
 
         def get_socket():
-            with open(file_path, 'wb') as file_to_receive:
+            with open('{}.tmp'.format(file_path), 'wb') as file_to_receive:
                 with socket(AF_INET, SOCK_STREAM) as sock:
                     sock.connect((self.ip_address, 60123))
                     sock.sendall('{}{}\n'.format(
@@ -456,6 +456,7 @@ class dut(object):
                     while data:
                         file_to_receive.write(data)
                         data = sock.recv(4096)
+            rename('{}.tmp'.format(file_path), file_path)
             if self.options.debug and not quiet:
                 print(colored('done', 'blue'))
             self.db.log_event('Information', 'DUT' if not self.aux else 'AUX',
