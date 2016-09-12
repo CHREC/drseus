@@ -1,0 +1,28 @@
+--serial
+/dev/ttyUSB0
+--prompt
+ubuntu@tegra-ubuntu:~$
+--log_error_msg
+ERR*
+#ABORT amount of errors equals of the last iteration
+#ABORT too many errors per iteration
+#SDC
+#SEFI
+--no_rsa
+--user
+ubuntu
+--pass
+ubuntu
+--no_rtscts
+--socket
+new
+--arch
+tegra
+--cmd
+./SWwatchdog.sh cacheSM 1000
+--files
+SWwatchdog.sh
+--log_files
+cacheSM.txt
+SEL_monitor_log.yaml
+/var/log/kern.log
