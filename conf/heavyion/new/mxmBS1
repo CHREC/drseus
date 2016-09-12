@@ -15,6 +15,8 @@ ubuntu
 ubuntu
 --no_rtscts
 --socket
+--persistent
+hardware_config_dut.py
 new
 --arch
 tegra
@@ -25,6 +27,7 @@ SWwatchdog.sh
 A_32
 B_32
 Gold_32
+hardware_config_dut.py
 --log_files
 cudaMxM-BS1.txt
 SEL_monitor_log.yaml

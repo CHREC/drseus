@@ -17,6 +17,8 @@ ubuntu
 ubuntu
 --no_rtscts
 --socket
+--persistent
+hardware_config_dut.py
 supervise
 --local_diff
 --log_delay
