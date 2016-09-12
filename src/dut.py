@@ -826,7 +826,7 @@ class dut(object):
         for persistent_executable in self.options.aux_persistent_executables \
                 if self.aux else self.options.dut_persistent_executables:
             if persistent_executable not in process_list:
-                self.command('./{} &'.format(persistent_executable))
+                self.command('sudo ./{} &'.format(persistent_executable))
 
     def check_output(self):
         local_diff = \
