@@ -803,8 +803,10 @@ class dut(object):
                 self.send_files('scripts/socket_file_server.py')
                 self.options.socket = True
                 self.command('./socket_file_server.py &')
+                sleep(1)
             elif 'socket_file_server.py' not in self.command('ps a')[0]:
                 self.command('./socket_file_server.py &')
+                sleep(1)
         self.send_files()
 
     def check_output(self):
