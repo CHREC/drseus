@@ -456,7 +456,8 @@ class dut(object):
                     while data:
                         file_to_receive.write(data)
                         data = sock.recv(4096)
-            rename('{}.tmp'.format(file_path), file_path)
+            if exists('{}.tmp'.format(file_path)):
+                rename('{}.tmp'.format(file_path), file_path)
             if self.options.debug and not quiet:
                 print(colored('done', 'blue'))
             self.db.log_event('Information', 'DUT' if not self.aux else 'AUX',
