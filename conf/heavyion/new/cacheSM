@@ -22,6 +22,8 @@ new
 tegra
 --cmd
 ./SWwatchdog.sh cacheSM 1000
+--timing
+1
 --files
 SWwatchdog.sh
 hardware_config_dut.py

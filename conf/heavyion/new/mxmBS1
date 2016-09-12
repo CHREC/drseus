@@ -22,6 +22,8 @@ new
 tegra
 --cmd
 ./SWwatchdog.sh cudaMxM-BS1 32 1000
+--timing
+1
 --files
 SWwatchdog.sh
 A_32
