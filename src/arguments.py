@@ -121,6 +121,13 @@ dut_settings.add_argument(
     dest='dut_login',
     default='',
     help='post-login command')
+dut_settings.add_argument(
+    '--persistent',
+    nargs='+',
+    metavar='EXECUTABLE',
+    dest='dut_persistent_executables',
+    default=[],
+    help='executable(s) to run in the background')
 
 aux_settings = parser.add_argument_group('AUX settings')
 aux_settings.add_argument(
@@ -181,6 +188,13 @@ aux_settings.add_argument(
     dest='aux_login',
     default='',
     help='post-login command')
+dut_settings.add_argument(
+    '--persistent',
+    nargs='+',
+    metavar='EXECUTABLE',
+    dest='aux_persistent_executables',
+    default=[],
+    help='executable(s) to run in the background')
 
 debugger_settings = parser.add_argument_group('debugger settings')
 debugger_settings.add_argument(

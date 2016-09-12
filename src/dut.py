@@ -799,6 +799,7 @@ class dut(object):
                         raise DrSEUsError('Error finding device ip address')
                 if self.ip_address is not None:
                     break
+        process_list = self.command('ps a')[0]
         if self.options.socket:
             if 'socket_file_server.py' not in self.command('ls -l')[0]:
                 self.options.socket = False
@@ -806,10 +807,14 @@ class dut(object):
                 self.options.socket = True
                 self.command('./socket_file_server.py &')
                 sleep(1)
-            elif 'socket_file_server.py' not in self.command('ps a')[0]:
+            elif 'socket_file_server.py' not in process_list:
                 self.command('./socket_file_server.py &')
                 sleep(1)
         self.send_files()
+        for persistent_executable in self.options.aux_persistent_executables \
+                if self.aux else self.options.dut_persistent_executables:
+            if persistent_executable not in process_list:
+                self.command('./{} &'.format(persistent_executable))
 
     def check_output(self):
         local_diff = \
