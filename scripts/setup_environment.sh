@@ -21,8 +21,8 @@ if [ ! -d simics-workspace ]; then
             cd simics-workspace
             simics=$(find /opt/simics/ -name "simics-4.8.*" | tail -n 1)
             "$simics"/bin/workspace-setup
-            git clone git@gitlab.hcs.ufl.edu:F4/simics-a9x2
-            git clone git@gitlab.hcs.ufl.edu:F4/simics-p2020rdb
+            git clone git@github.com:CHREC/simics-a9x2
+            git clone git@github.com:CHREC/simics-p2020rdb
         )
     fi
 fi
@@ -31,6 +31,6 @@ if [ ! -d fiapps ]; then
     printf 'clone fiapps git repo? [Y/n]: '
     read fiapps
     if [ "$fiapps" != "n" ]; then
-       git clone git@gitlab.hcs.ufl.edu:F4/fiapps.git
+       git clone git@github.com:CHREC/fiapps.git
     fi
 fi
