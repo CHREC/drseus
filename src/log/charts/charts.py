@@ -14,6 +14,17 @@ def overview(**kwargs):
                  **kwargs)
 
 
+def outcomes_by_target_combined(**kwargs):
+    create_chart(order=2,
+                 chart_title='Targets (Combined)',
+                 xaxis_title='Injected Target',
+                 xaxis_name='Target',
+                 xaxis_type='target',
+                 log=True,
+                 percent=True,
+                 **kwargs)
+
+
 def outcomes_by_target(**kwargs):
     create_chart(order=3,
                  chart_title='Targets',
@@ -57,6 +68,7 @@ def outcomes_by_registers(**kwargs):
                  xaxis_name='Register',
                  xaxis_type='register',
                  rotate_labels=True,
+                 percent=True,
                  **kwargs)
 
 
@@ -69,6 +81,7 @@ def outcomes_by_register_fields(**kwargs):
                  xaxis_name='Field',
                  xaxis_type='field',
                  rotate_labels=True,
+                 percent=True,
                  **kwargs)
 
 
@@ -79,6 +92,7 @@ def outcomes_by_register_bits(**kwargs):
                  xaxis_title='Injected Bit',
                  xaxis_name='Bit',
                  xaxis_type='bit',
+                 percent=True,
                  **kwargs)
 
 
@@ -90,6 +104,7 @@ def outcomes_by_register_access(**kwargs):
                  xaxis_title='Injected Register Acces',
                  xaxis_name='Access',
                  xaxis_type='register_access',
+                 percent=True,
                  **kwargs)
 
 
@@ -101,6 +116,7 @@ def outcomes_by_tlb_entries(**kwargs):
                  xaxis_name='Entry',
                  xaxis_type='tlb_entry',
                  rotate_labels=True,
+                 percent=True,
                  **kwargs)
 
 
@@ -112,6 +128,7 @@ def outcomes_by_tlb_fields(**kwargs):
                  xaxis_name='Field',
                  xaxis_type='field',
                  rotate_labels=True,
+                 percent=True,
                  **kwargs)
 
 

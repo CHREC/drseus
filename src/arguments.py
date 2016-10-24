@@ -619,7 +619,7 @@ backup = subparsers.add_parser(
     help='backup campaign-data, gold-checkpoints, and database',
     description='backup campaign-data, gold-checkpoints, and database')
 backup.add_argument(
-    '-d', '--db',
+    '-d', '--db_only',
     action='store_false',
     dest='files',
     help='dump database only')

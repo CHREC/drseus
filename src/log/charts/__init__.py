@@ -181,6 +181,9 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
     if smooth:
         chart_smooth = deepcopy(chart)
         chart_smooth['chart']['type'] = 'area'
+        chart_smooth['plotOptions']['area'] = {
+            'stacking': 'normal'
+        }
         chart_smooth['chart']['renderTo'] = '{}_smooth'.format(chart_id)
 
     if success:

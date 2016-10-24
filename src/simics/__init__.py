@@ -446,11 +446,13 @@ class simics(object):
             register_diffs = self.db.result.simics_register_diff_set.all()
             for register_diff in register_diffs:
                 for injection in injections:
-                    if injection.register_index is None:
+                    if injection.register_alias is None:
                         injected_register = injection.register
                     else:
+                        injected_register = injection.register_alias
+                    if injection.register_index is not None:
                         injected_register = '{}:{}'.format(
-                            injection.register,
+                            injected_register,
                             ':'.join(map(str, injection.register_index)))
                     if register_diff.config_object == \
                         injection.config_object and \
