@@ -493,7 +493,8 @@ def result_page(request, result_id):
     events = result.event_set.all()
     event_table = tables.event(events)
     if request.method == 'POST' and 'launch' in request.POST:
-        Popen([argv[0], 'regenerate', result_id])
+        Popen([argv[0], '--campaign_id', str(result.campaign_id),
+               'regenerate', result_id])
     if request.method == 'POST' and 'save' in request.POST:
         result.outcome = request.POST['outcome']
         result.outcome_category = request.POST['outcome_category']

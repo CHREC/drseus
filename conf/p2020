@@ -1,5 +1,5 @@
 --serial
-/dev/ttyUSB3
+/dev/ttyUSB0
 --prompt
 root@p2020rdb:~#
 --aux_serial

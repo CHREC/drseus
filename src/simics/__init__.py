@@ -558,6 +558,8 @@ class simics(object):
                 if injection.register_index is None:
                     if not injection.injected_value:
                         injected_value = flip_bit(gold_value, injection.bit)
+                    else:
+                        injected_value = injection.injected_value
                     config.set(config_object, register, injected_value)
                 else:
                     register_list_ = register_list = gold_value
