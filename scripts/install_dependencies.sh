@@ -9,7 +9,7 @@ printf 'install simics? [y/N]: '
 read -r simics
 case "$simics" in
     Y*|y*)
-        git clone git@gitlab.hcs.ufl.edu:F4/setup-simics.git
+        git clone git@github.com:CHREC/setup-simics
         (
             cd setup-simics
             ./setup_simics.sh
