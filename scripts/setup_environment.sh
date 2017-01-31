@@ -8,8 +8,8 @@ if [ ! -d python ]; then
     virtualenv python
 fi
 
-python/bin/pip3 install --upgrade django django-filter django_tables2 numpy \
-                                  paramiko pip ply progressbar2 psycopg2 \
+python/bin/pip3 install --upgrade django django-filter==0.15 django_tables2 \
+                                  numpy paramiko pip ply progressbar2 psycopg2 \
                                   pyserial pyudev scp termcolor terminaltables
 
 if [ ! -d simics-workspace ]; then
