@@ -111,9 +111,9 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
         },
         'exporting': {
             'filename': chart_id,
-            'sourceWidth': 960 if export_wide else 480,
-            'sourceHeight': 540 if export_wide else 360,
-            'scale': 2
+            'sourceWidth': 640 if export_wide else 320,
+            'sourceHeight': 480 if export_wide else 240,
+            'scale': 4
         },
         'plotOptions': {},
         'series': [],
@@ -165,13 +165,32 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
                 }
             }
         }
-    if rotate_labels:
+    if rotate_labels or (xaxis_items is not None and len(xaxis_items) > 10):
         chart['xAxis']['labels'] = {
             'align': 'right',
             'rotation': -60,
             'step': 1,
             'x': 5,
             'y': 15
+        }
+        chart['exporting']['chartOptions'] = {
+            'xAxis': {
+                'labels': {
+                    'step': 1,
+                    'style': {
+                        'fontSize': '7px'
+                    },
+                    'x': 0
+                }
+            }
+        }
+    if len(yaxis_items) > 6:
+        if 'chartOptions' not in chart['exporting']:
+            chart['exporting']['chartOptions'] = {}
+        chart['exporting']['chartOptions']['legend'] = {
+            'itemStyle': {
+                'fontSize': '7px'
+            }
         }
     if average and 'data_diff' in average:
         chart['yAxis']['labels'] = {

@@ -260,3 +260,32 @@ def memory_propagation(**kwargs):
                  average='result__num_memory_diffs',
                  log=True,
                  **kwargs)
+
+
+def register_propagation_combined(**kwargs):
+    kwargs['injections'] = kwargs['injections'].exclude(
+        result__num_register_diffs__isnull=True)
+    create_chart(order=20,
+                 chart_title='Fault Propagation (Registers, Combined Targets)',
+                 xaxis_title='Injection Target',
+                 xaxis_name='Target',
+                 xaxis_type='target',
+                 yaxis_items=['Average Registers Affected'],
+                 average='result__num_register_diffs',
+                 log=True,
+                 **kwargs)
+
+
+def memory_propagation_combined(**kwargs):
+    kwargs['injections'] = kwargs['injections'].exclude(
+        result__num_memory_diffs__isnull=True)
+    create_chart(order=21,
+                 chart_title='Fault Propagation '
+                             '(Memory Blocks, Combined Targets)',
+                 xaxis_title='Injection Target',
+                 xaxis_name='Target',
+                 xaxis_type='target',
+                 yaxis_items=['Average Memory Blocks Affected'],
+                 average='result__num_memory_diffs',
+                 log=True,
+                 **kwargs)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!python/bin/python3
 
 # TODO: add key verification
 
@@ -16,6 +16,7 @@ save_targets = targets.save_targets
 
 def tree():
     return defaultdict(tree)
+
 
 missing_total = 0
 for device in ['a9', 'p2020']:
