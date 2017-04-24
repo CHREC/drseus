@@ -285,7 +285,7 @@ def memory_propagation_combined(**kwargs):
                  xaxis_title='Injection Target',
                  xaxis_name='Target',
                  xaxis_type='target',
-                 yaxis_items=['Average Memory Blocks Affected'],
+                 yaxis_items=['Avg Memory Blocks Affected'],
                  average='result__num_memory_diffs',
                  log=True,
                  **kwargs)

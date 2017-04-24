@@ -11,6 +11,7 @@
         <link rel="stylesheet" href="{% get_static_prefix %}css/AdminLTE.css">
         <link rel="stylesheet" href="{% get_static_prefix %}css/AdminLTE-skin-blue.min.css">
         <link rel="stylesheet" href="{% get_static_prefix %}css/font-awesome.min.css">
+        <link rel="stylesheet" href="{% get_static_prefix %}css/highcharts.css">
         <link rel="stylesheet" href="{% get_static_prefix %}css/drseus.css">
     </head>
 
@@ -259,6 +260,9 @@
                 $('#error-modal').modal('show')
             {% endif %}
         </script>
+        <script src="{% get_static_prefix %}js/highcharts/jspdf.js" type="text/javascript"></script>
+        <script src="{% get_static_prefix %}js/highcharts/svg2pdf.js" type="text/javascript"></script>
+        <script src="{% get_static_prefix %}js/highcharts/rgbcolor.js" type="text/javascript"></script>
         <script src="{% get_static_prefix %}js/highcharts/highcharts.js" type="text/javascript"></script>
         <script src="{% get_static_prefix %}js/highcharts/exporting.js" type="text/javascript"></script>
         <script src="{% get_static_prefix %}js/highcharts/offline-exporting.js" type="text/javascript"></script>

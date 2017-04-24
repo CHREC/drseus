@@ -111,8 +111,8 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
         },
         'exporting': {
             'filename': chart_id,
-            'sourceWidth': 640 if export_wide else 320,
-            'sourceHeight': 480 if export_wide else 240,
+            'sourceWidth': 640 if export_wide or pie else 320,
+            'sourceHeight': 480 if export_wide or pie else 240,
             'scale': 4
         },
         'plotOptions': {},
@@ -136,6 +136,9 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
         chart['plotOptions']['pie'] = {
             'dataLabels': {
                 'formatter': '__dataLabels_formatter__',
+                'style': {
+                    'fontSize': '20px'
+                }
             }
         }
         chart['series'].append({'data': []})
@@ -153,34 +156,35 @@ def create_chart(chart_list, chart_data, chart_title, order=0, injections=None,
             chart['legend'] = {
                 'enabled': False
             }
-    if intervals:
-        chart['xAxis']['labels'] = {
-            'formatter': '__label_formatter__'
-        }
-    else:
-        chart['plotOptions']['series'] = {
-            'point': {
-                'events': {
-                    'click': '__series_click__'
-                }
-            }
-        }
     if rotate_labels or (xaxis_items is not None and len(xaxis_items) > 10):
         chart['xAxis']['labels'] = {
             'align': 'right',
             'rotation': -60,
-            'step': 1,
             'x': 5,
             'y': 15
         }
         chart['exporting']['chartOptions'] = {
             'xAxis': {
                 'labels': {
-                    'step': 1,
                     'style': {
                         'fontSize': '7px'
                     },
                     'x': 0
+                }
+            }
+        }
+        if len(xaxis_items) < 50:
+            chart['xAxis']['labels']['step'] = 1
+            chart['exporting']['chartOptions']['xAxis']['labels']['step'] = 1
+    if intervals:
+        if 'labels' not in chart['xAxis']:
+            chart['xAxis']['labels'] = {}
+        chart['xAxis']['labels']['formatter'] = '__label_formatter__'
+    else:
+        chart['plotOptions']['series'] = {
+            'point': {
+                'events': {
+                    'click': '__series_click__'
                 }
             }
         }
