@@ -484,8 +484,8 @@ supervise = subparsers.add_parser(
     description='run interactive supervisor')
 supervise.add_argument(
     '-l', '--local_diff',
-    action='store_true',
-    help='perform output file diff on device and do not retrieve output file')
+    action='store_false',
+    help='always retrieve output file to perform diff')
 supervise.add_argument(
     '--log_delay',
     type=float,

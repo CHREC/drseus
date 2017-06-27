@@ -811,7 +811,10 @@ class dut(object):
                         raise DrSEUsError('Error finding device ip address')
                 if self.ip_address is not None:
                     break
-        process_list = self.command('ps a')[0]
+        if self.options.socket or len(
+                self.options.aux_persistent_executables if self.aux
+                else self.options.dut_persistent_executables):
+            process_list = self.command('ps a')[0]
         if self.options.socket:
             if 'socket_file_server.py' not in self.command('ls -l')[0]:
                 self.options.socket = False

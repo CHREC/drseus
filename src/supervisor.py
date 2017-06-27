@@ -27,7 +27,8 @@ class supervisor(Cmd):
         options.latent_iterations = 0
         options.compare_all = False
         options.extract_blocks = False
-        if options.power_switch_outlet is not None:
+        if options.power_switch_outlet is not None or \
+                options.power_switch_ip_address:
             switch = power_switch(options)
         else:
             switch = None
@@ -275,6 +276,7 @@ class supervisor(Cmd):
             self.drseus.debugger.power_switch is not None and \
                 hasattr(self.drseus.debugger, 'power_cycle_dut'):
             self.drseus.debugger.power_cycle_dut()
+            self.drseus.debugger.reset_dut()
         else:
             print('Web power switch not configured, unable to power cycle')
 

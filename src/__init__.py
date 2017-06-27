@@ -64,7 +64,7 @@ def run():
     missing_args = []
     campaign = None
     if options.command == 'power' and not options.power_switch_ip_address:
-        options.power_switch_ip_address = '10.42.0.60'
+        options.power_switch_ip_address = '192.168.0.60'
     if options.command in ('inject', 'supervise', 'delete', 'regenerate') and \
             not (options.command == 'delete' and
                  options.selection in ('a', 'all')):
