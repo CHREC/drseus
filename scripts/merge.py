@@ -47,6 +47,9 @@ for device in ['a9', 'p2020']:
             if target == 'TLB':
                 merged_target['type'] = 'tlb'
 
+            if 'is_gcache' in old_target and old_target['is_gcache']:
+                merged_target['type'] = 'gcache'
+
             if target not in other_targets:
                 other_target = None
                 merged_targets[other_type]['unused_targets'].append(target)
@@ -673,7 +676,7 @@ for device in ['a9', 'p2020']:
                     elif key == 'count' and old_type == 'simics' and \
                             other_register is None:
                         merged_register[key] = old_register[key]
-                    elif key == 'is_tlb':
+                    elif key in ['is_tlb', 'is_gcache']:
                         pass
                     else:
                         print('* key:', key, 'value:', old_register[key],
@@ -732,7 +735,8 @@ for device in ['a9', 'p2020']:
                         unused_fields.append(field[0])
                     unused_fields.sort()
 
-                if 'fields' in merged_register and target != 'TLB':
+                if 'fields' in merged_register and \
+                        target not in ['TLB', 'L1CACHE', 'L2CACHE']:
                     merged_register['fields'].sort(key=lambda x: x[1][0],
                                                    reverse=True)
                     if 'bits' in merged_register:

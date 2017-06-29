@@ -17,6 +17,10 @@
 # SBZ: Should-Be-Zero
 # SBZP: Should-Be-Zero-or-Preserved
 
+
+# TODO: cache opposite tag?
+# TODO: cache tag should be less than 64 bits
+
 from json import dump, load
 from os.path import abspath, dirname, join
 from random import choice, randrange
@@ -290,6 +294,9 @@ def choose_injection(targets, selected_target_indices):
         injection['tlb_entry'] = injection['register']
         for index in injection['register_index'][:-1]:
             injection['tlb_entry'] += '[{}]'.format(index)
+    elif 'type' in target and target['type'] == 'gcache':
+        pass
+        # TODO: update for cache target
     else:
         if 'bits' in register:
             injection['bit'] = randrange(register['bits'])
