@@ -19,14 +19,15 @@ from .database import (backup_database, delete_database, get_campaign,
                        new_campaign, restore_database)
 from .fault_injector import fault_injector
 from .jtag import (find_all_uarts, find_p2020_uarts, find_zedboard_jtag_serials,
-                   find_zedboard_uart_serials)
+                   find_zedboard_uart_serials, find_pynq_uart_serials,
+                   find_pynq_jtag_ports)
 from .jtag.openocd import openocd
 from .power_switch import power_switch
 from .simics.config import simics_config
 from .supervisor import supervisor
 
 
-def detect_power_switch_devices(options):
+def detect_power_switch_devices(options):  # TODO: add PYNQ boards
     if exists('devices.json'):
         with open('devices.json', 'r') as device_file:
             devices = load(device_file)
@@ -107,13 +108,24 @@ def list_devices(none=None, only_uart=False):
         print('ZedBoard UART serial numbers:')
         for uart, serial in sorted(zedboard_uarts.items()):
             print('\t{}: {}'.format(uart, serial))
+    pynq_jtags = find_pynq_jtag_ports()
+    if pynq_jtags:
+        print('PYNQ JTAG serial numbers:')
+        for uart, serial in sorted(pynq_jtags.items()):
+            print('\t{}: {}'.format(uart, serial))
+    pynq_uarts = find_pynq_uart_serials()
+    if pynq_uarts:
+        print('PYNQ UART serial numbers:')
+        for uart, serial in sorted(pynq_uarts.items()):
+            print('\t{}: {}'.format(uart, serial))
     p2020_uarts = find_p2020_uarts()
     if p2020_uarts:
         print('P2020 UART devices:')
         for serial in p2020_uarts:
             print('\t{}'.format(serial))
     other_uarts = [uart for uart in find_all_uarts()
-                   if uart not in zedboard_uarts and uart not in p2020_uarts]
+                   if uart not in zedboard_uarts and uart not in p2020_uarts
+                   and uart not in pynq_uarts and uart not in pynq_jtags]
     if other_uarts:
         print('Other UART devices:')
         for serial in other_uarts:

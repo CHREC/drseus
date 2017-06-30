@@ -40,6 +40,20 @@ def find_zedboard_uart_serials():
             if 'DEVLINKS' in dev}
 
 
+def find_pynq_uart_serials():
+    return {dev['DEVNAME']: dev['ID_SERIAL_SHORT'] for dev in
+            Context().list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6010')
+            if 'DEVLINKS' in dev and 'ID_USB_INTERFACE_NUM' in dev and
+               dev['ID_USB_INTERFACE_NUM'] == '01'}
+
+
+def find_pynq_jtag_ports():
+    return {dev['DEVNAME']: dev['ID_SERIAL_SHORT'] for dev in
+            Context().list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6010')
+            if 'DEVLINKS' in dev and 'ID_USB_INTERFACE_NUM' in dev and
+               dev['ID_USB_INTERFACE_NUM'] == '00'}
+
+
 def find_open_port():
             sock = socket(AF_INET, SOCK_STREAM)
             sock.bind(('', 0))
