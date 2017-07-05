@@ -8,9 +8,10 @@ if [ ! -d python ]; then
     virtualenv python
 fi
 
-python/bin/pip3 install --upgrade django django-filter==0.15 django_tables2 \
-                                  numpy paramiko pip ply progressbar2 psycopg2 \
-                                  pyserial pyudev scp termcolor terminaltables
+python/bin/pip3 install --upgrade django==1.10.5 django-filter==0.15
+                                  django_tables2 numpy paramiko pip ply \
+                                  progressbar2 psycopg2 pyserial pyudev scp \
+                                  termcolor terminaltables
 
 if [ ! -d simics-workspace ]; then
     printf 'setup simics workspace? [Y/n]: '
