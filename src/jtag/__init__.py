@@ -10,48 +10,34 @@ from ..error import DrSEUsError
 from ..targets import choose_injection, get_targets
 
 
-def find_all_uarts():
-    return sorted(
-        dev['DEVNAME'] for dev in Context().list_devices(subsystem='tty')
-        if 'DEVLINKS' in dev and not (dev['ID_VENDOR_ID'] == '0403' and
-                                      dev['ID_MODEL_ID'] == '6014'))
-
-
-def find_p2020_uarts():
-    return sorted(
-        dev['DEVNAME'] for dev in
-        Context().list_devices(ID_VENDOR_ID='067b', ID_MODEL_ID='2303')
-        if 'DEVLINKS' in dev)
-
-
-def find_zedboard_jtag_serials():
-    return sorted(
-        {dev['ID_SERIAL_SHORT']
-         for dev in Context().list_devices(ID_VENDOR_ID='0403')
-         if 'DEVLINKS' not in dev} &
-        {dev['ID_SERIAL_SHORT']
-         for dev in Context().list_devices(ID_MODEL_ID='6014')
-         if 'DEVLINKS' not in dev})
-
-
-def find_zedboard_uart_serials():
-    return {dev['DEVNAME']: dev['ID_SERIAL_SHORT'] for dev in
-            Context().list_devices(ID_VENDOR_ID='04b4', ID_MODEL_ID='0008')
-            if 'DEVLINKS' in dev}
-
-
-def find_pynq_uart_serials():
-    return {dev['DEVNAME']: dev['ID_SERIAL_SHORT'] for dev in
-            Context().list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6010')
-            if 'DEVLINKS' in dev and 'ID_USB_INTERFACE_NUM' in dev and
-               dev['ID_USB_INTERFACE_NUM'] == '01'}
-
-
-def find_pynq_jtag_ports():
-    return {dev['DEVNAME']: dev['ID_SERIAL_SHORT'] for dev in
-            Context().list_devices(ID_VENDOR_ID='0403', ID_MODEL_ID='6010')
-            if 'DEVLINKS' in dev and 'ID_USB_INTERFACE_NUM' in dev and
-               dev['ID_USB_INTERFACE_NUM'] == '00'}
+def find_devices():
+    devices = {'jtag': {}, 'uart': {}}
+    for dev in Context().list_devices():
+        if 'ID_VENDOR_ID' not in dev or 'ID_MODEL_ID' not in dev:
+            continue
+        if 'DEVLINKS' in dev:
+            if dev['ID_VENDOR_ID'] == '067b' and dev['ID_MODEL_ID'] == '2303':
+                devices['uart'][dev['DEVNAME']] = {'type': 'p2020'}
+            elif dev['ID_VENDOR_ID'] == '04b4' and dev['ID_MODEL_ID'] == '0008':
+                devices['uart'][dev['DEVNAME']] = {
+                    'type': 'zedboard', 'serial': dev['ID_SERIAL_SHORT']}
+            elif dev['ID_VENDOR_ID'] == '0403' and dev['ID_MODEL_ID'] == '6010':
+                if dev['ID_USB_INTERFACE_NUM'] == '00':
+                    devices['jtag'][dev['ID_SERIAL_SHORT']] = {'type': 'pynq'}
+                elif dev['ID_USB_INTERFACE_NUM'] == '01':
+                    devices['uart'][dev['DEVNAME']] = {
+                        'type': 'pynq', 'serial': dev['ID_SERIAL_SHORT']}
+        else:
+            if dev['ID_VENDOR_ID'] == '0403' and dev['ID_MODEL_ID'] == '6014':
+                devices['jtag'][dev['ID_SERIAL_SHORT']] = {'type': 'zedboard'}
+    # TODO: return other devices in previous loop
+    # for dev in Context().list_devices(subsystem='tty'):
+    #     if 'DEVLINKS' in dev and dev['DEVNAME'] not in devices['uart'] and \
+    #             not(dev['ID_VENDOR_ID'] == '0403' and
+    #                 dev['ID_MODEL_ID'] == '6010' and
+    #                 dev['ID_USB_INTERFACE_NUM'] == '00'):
+    #         devices['uart'][dev['DEVNAME']] = {'type': 'other'}
+    return devices
 
 
 def find_open_port():

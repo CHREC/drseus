@@ -3,6 +3,8 @@ from termcolor import colored
 from ..dut import dut
 from . import jtag
 
+# TODO: set outlet if power_switch supplied
+
 
 class dummy(jtag):
     def __init__(self, database, options, power_switch=None):

@@ -18,48 +18,104 @@ from traceback import print_exc
 from .database import (backup_database, delete_database, get_campaign,
                        new_campaign, restore_database)
 from .fault_injector import fault_injector
-from .jtag import (find_all_uarts, find_p2020_uarts, find_zedboard_jtag_serials,
-                   find_zedboard_uart_serials, find_pynq_uart_serials,
-                   find_pynq_jtag_ports)
+from .jtag import find_devices
 from .jtag.openocd import openocd
 from .power_switch import power_switch
 from .simics.config import simics_config
 from .supervisor import supervisor
 
 
-def detect_power_switch_devices(options):  # TODO: add PYNQ boards
+def detect_power_switch_devices(options):
+    detect_devices(options, use_power_switch=True)
+
+
+def detect_devices(options, use_power_switch=False):
+    def detect_new_devices(preexisting_devices):
+        connected_devices = find_devices()
+        if 'uart' in preexisting_devices:
+            preexiting_uart_serials = [
+                preexisting_devices['uart'][dev]['serial'] for
+                dev in preexisting_devices['uart']
+                if 'serial' in preexisting_devices['uart'][dev]]
+        else:
+            preexiting_uart_serials = []
+        new_devices = {}
+        if 'jtag' in connected_devices:
+            for dev in connected_devices['jtag']:
+                if 'jtag' not in preexisting_devices or \
+                        dev not in preexisting_devices['jtag']:
+                    if 'jtag' not in new_devices:
+                        new_devices['jtag'] = {}
+                    new_devices['jtag'][dev] = connected_devices['jtag'][dev]
+        if 'uart' in connected_devices:
+            for dev in connected_devices['uart']:
+                if 'serial' in connected_devices['uart'][dev] and \
+                        connected_devices['uart'][dev]['serial'] not in \
+                        preexiting_uart_serials:
+                    if 'uart' not in new_devices:
+                        new_devices['uart'] = {}
+                    new_devices['uart'][dev] = connected_devices['uart'][dev]
+        return new_devices
+
     if exists('devices.json'):
         with open('devices.json', 'r') as device_file:
             devices = load(device_file)
     else:
         devices = []
-    uarts = [device['uart'] for device in devices]
-    with power_switch(options) as ps:
-        status = ps.get_status()
-        ps.set_outlet('all', 'off', 1)
-        ftdi_serials_pre = find_zedboard_jtag_serials()
-        uart_serials_pre = find_zedboard_uart_serials().values()
-        for outlet in ps.outlets:
-            ps.set_outlet(outlet, 'on', 5)
-            ftdi_serials = [serial for serial in find_zedboard_jtag_serials()
-                            if serial not in ftdi_serials_pre]
-            uart_serials = [serial for serial
-                            in find_zedboard_uart_serials().values()
-                            if serial not in uart_serials_pre]
-            ps.set_outlet(outlet, 'off', 1)
-            if len(ftdi_serials) > 1 or len(uart_serials) > 1:
-                print('too many devices detected on outlet', outlet)
-                continue
-            if not len(ftdi_serials) or not len(uart_serials):
-                print('no devices detected on outlet', outlet)
-                continue
-            print('found zedboard on outlet', outlet)
-            if uart_serials[0] in uarts:
-                print('device already in "devices.json"')
+    if use_power_switch:
+        with power_switch(options) as ps:
+            status = ps.get_status()
+            outlets = iter(ps.outlets)
+            ps.set_outlet('all', 'off', 1)
+    else:
+        input(
+            'ensure all devices to assosciate are disconnected and press enter')
+    while True:
+        preexisting_devices = find_devices()
+        if use_power_switch:
+            try:
+                outlet = next(outlets)
+            except:
+                break
             else:
-                devices.append({'outlet': outlet,
-                                'ftdi': ftdi_serials[0],
-                                'uart': uart_serials[0]})
+                with power_switch(options) as ps:
+                    ps.set_outlet(outlet, 'on')
+                    new_devices = detect_new_devices(preexisting_devices)
+                    ps.set_outlet(outlet, 'off', 1)
+        else:
+            outlet = None
+            input('connect a new device and press enter')
+            new_devices = detect_new_devices(preexisting_devices)
+        if not len(new_devices) or 'uart' not in new_devices:
+            print('no devices detected on outlet', outlet)
+        else:
+            for dev_type in new_devices:
+                if len(new_devices[dev_type]) > 1:
+                    print('too many devices detected{}'.format(
+                        ' on outlet {}'.format(outlet)
+                        if use_power_switch else ''))
+                    break
+            else:
+                new_device = new_devices['uart'].popitem()[1]
+                new_device['outlet'] = outlet
+                if 'serial' not in new_device:
+                    print('unsupported device does not have a serial number')
+                    continue
+                else:
+                    new_device['uart'] = new_device.pop('serial')
+                if 'jtag' in new_devices:
+                    new_device['jtag'] = new_devices['jtag'].popitem()[0]
+                devices = [dev for dev in devices if dev['outlet'] != outlet]
+                devices = [dev for dev in devices
+                           if dev['uart'] != new_device['uart']]
+                devices.append(new_device)
+                print('added {} device{}'.format(
+                    new_device['type'],
+                    ' on outlet {}'.format(outlet) if use_power_switch else ''))
+        if not use_power_switch and \
+                input('continue detecting devices? [Y/n]: ') in ('N', 'n'):
+            break
+    if use_power_switch:
         for outlet in status:
             ps.set_outlet(outlet['outlet'], outlet['status'], 1)
     with open('devices.json', 'w') as device_file:
@@ -67,69 +123,16 @@ def detect_power_switch_devices(options):  # TODO: add PYNQ boards
     print('saved device information to "devices.json"')
 
 
-def detect_devices(options):
-    if exists('devices.json'):
-        with open('devices.json', 'r') as device_file:
-            devices = load(device_file)
-    else:
-        devices = []
-    uarts = [device['uart'] for device in devices]
-    while True:
-        ftdi_serials = find_zedboard_jtag_serials()
-        uart_serials = find_zedboard_uart_serials().values()
-        if len(ftdi_serials) > 1 or len(uart_serials) > 1:
-            print('too many devices detected, disconnect all but one device')
-        elif not len(ftdi_serials) or not len(uart_serials):
-            print('no devices detected')
-        else:
-            print('found zedboard')
-            if uart_serials[0] in uarts:
-                print('device already in "devices.json"')
-            else:
-                devices.append({'ftdi': ftdi_serials[0],
-                                'uart': uart_serials[0]})
-        if input('continue detecting devices? [Y/n]') in ('N', 'n'):
-            break
-        else:
-            input('press enter after connecting next device')
-    with open('devices.json', 'w') as device_file:
-        dump(devices, device_file, indent=4)
-    print('saved device information to "devices.json"')
-
-
 def list_devices(none=None, only_uart=False):
-    zedboard_jtags = find_zedboard_jtag_serials() if not only_uart else []
-    if zedboard_jtags:
-        print('ZedBoard JTAG serial numbers: ')
-        for serial in zedboard_jtags:
-            print('\t{}'.format(serial))
-    zedboard_uarts = find_zedboard_uart_serials()
-    if zedboard_uarts:
-        print('ZedBoard UART serial numbers:')
-        for uart, serial in sorted(zedboard_uarts.items()):
-            print('\t{}: {}'.format(uart, serial))
-    pynq_jtags = find_pynq_jtag_ports()
-    if pynq_jtags:
-        print('PYNQ JTAG serial numbers:')
-        for uart, serial in sorted(pynq_jtags.items()):
-            print('\t{}: {}'.format(uart, serial))
-    pynq_uarts = find_pynq_uart_serials()
-    if pynq_uarts:
-        print('PYNQ UART serial numbers:')
-        for uart, serial in sorted(pynq_uarts.items()):
-            print('\t{}: {}'.format(uart, serial))
-    p2020_uarts = find_p2020_uarts()
-    if p2020_uarts:
-        print('P2020 UART devices:')
-        for serial in p2020_uarts:
-            print('\t{}'.format(serial))
-    other_uarts = [uart for uart in find_all_uarts()
-                   if uart not in zedboard_uarts and uart not in p2020_uarts
-                   and uart not in pynq_uarts and uart not in pynq_jtags]
-    if other_uarts:
-        print('Other UART devices:')
-        for serial in other_uarts:
-            print('\t{}'.format(serial))
+    devices = find_devices()
+    for dev_type in sorted(devices.keys()):
+        print(dev_type, 'devices:')
+        for dev in sorted(devices[dev_type].keys()):
+            print('\t{} - {}type: {}'.format(
+                dev,
+                'serial: {}, '.format(devices[dev_type][dev]['serial'])
+                if 'serial' in devices[dev_type][dev] else '',
+                devices[dev_type][dev]['type']))
 
 
 def set_outlet(options):

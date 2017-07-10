@@ -5,8 +5,10 @@ from termcolor import colored
 from time import sleep
 
 from ..error import DrSEUsError
-from . import (find_open_port, find_zedboard_jtag_serials,
-               find_zedboard_uart_serials, jtag)
+from . import find_open_port, find_devices, jtag
+
+
+# TODO update pynq devices have same serial, use find_devices
 
 
 class openocd(jtag):
@@ -27,8 +29,9 @@ class openocd(jtag):
             with open('devices.json', 'r') as device_file:
                 device_info = load(device_file)
             for device in device_info:
-                if device['uart'] == \
-                        find_zedboard_uart_serials()[options.dut_serial_port]:
+                if device['uart'] == (find_devices()['uart']
+                                                    [options.dut_serial_port]
+                                                    ['serial']):
                     self.device_info = device
                     break
             else:
@@ -36,7 +39,7 @@ class openocd(jtag):
                                 'device at {}'.format(options.dut_serial_port))
         else:
             self.device_info = None
-            if len(find_zedboard_jtag_serials()) > 1:
+            if len(find_devices()['jtag']) > 1:
                 if options.command == 'inject' and options.processes > 1:
                     raise Exception('could not find device information file '
                                     '"devices.json", which is required when '
@@ -72,7 +75,7 @@ class openocd(jtag):
             'openocd', '-c',
             'gdb_port {}; tcl_port 0; telnet_port {}; interface ftdi;'.format(
                 self.gdb_port, self.port) +
-            (' ftdi_serial {};'.format(self.device_info['ftdi'])
+            (' ftdi_serial {};'.format(self.device_info['jtag'])
              if self.device_info is not None else ''),
             '-f', '{}/openocd_zedboard_{}.cfg'.format(
                 dirname(abspath(__file__)),
@@ -127,7 +130,7 @@ class openocd(jtag):
         attempts = 5
         for attempt in range(attempts):
             try:
-                devices = find_zedboard_uart_serials().items()
+                devices = find_devices()['uart'].items()
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except Exception:

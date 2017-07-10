@@ -522,8 +522,8 @@ log_viewer.set_defaults(func='view_log')
 
 detect_devices = subparsers.add_parser(
     'detect', aliases=['d'],
-    help='detect devices attached to web power switch',
-    description='detect devices attached to web power switch')
+    help='assosciate jtag and uart ports on attached devices',
+    description='assosciate jtag and uart ports on attached devices')
 detect_devices.set_defaults(func='detect_devices')
 
 power = subparsers.add_parser(
