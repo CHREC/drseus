@@ -304,7 +304,10 @@ def inject_campaign(options):
         connection.close()
         if not simics and \
                 architecture == 'a9':
-            uarts = list(find_zedboard_uart_serials().keys())
+            uarts = find_devices()['uart']
+            dev_type = uarts[options.dut_serial_port]['type']
+            uarts = [dev for dev in uarts
+                     if uarts[dev]['type'] == dev_type]
         processes = []
         for i in range(options.processes):
             if not simics and \
@@ -380,13 +383,6 @@ def update_dependencies(*args):
 
 
 def launch_openocd(options):
-    if options.dut_serial_port is None:
-        if len(find_zedboard_uart_serials()) == 1:
-            options.dut_serial_port = list(
-                find_zedboard_uart_serials().keys()).pop()
-        else:
-            raise Exception('multiple ZedBoards detected, please specify a '
-                            'device with "--serial"')
     debugger = openocd(None, options, None)
     print('Launched {}\n'.format(debugger))
     try:

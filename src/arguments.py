@@ -79,7 +79,8 @@ dut_settings.add_argument(
     '--no_rtscts',
     action='store_false',
     dest='dut_rtscts',
-    help='disable hardware flow control (RTS/CTS) for serial port')
+    help='disable hardware flow control (RTS/CTS) for serial port '
+         '(required for pynq)')
 dut_settings.add_argument(
     '--ip',
     metavar='ADDRESS',
@@ -201,7 +202,7 @@ debugger_settings.add_argument(
     '--jtag_ip',
     metavar='ADDRESS',
     dest='debugger_ip_address',
-    help='debugger ip address (ignored by Simics and ZedBoards)')
+    help='debugger ip address (ignored by Simics and openocd)')
 debugger_settings.add_argument(
     '--no_jtag',
     action='store_false',
@@ -211,7 +212,7 @@ debugger_settings.add_argument(
     '--no_smp',
     action='store_false',
     dest='smp',
-    help='do not use SMP mode in openocd (only supported for ZedBoards')
+    help='do not use SMP mode in openocd')
 
 database_settings = parser.add_argument_group('PostgreSQL settings')
 database_settings.add_argument(
@@ -461,7 +462,7 @@ inject.add_argument(
     type=int,
     default=1,
     help='number of injections to perform in parallel '
-         '(only supported for ZedBoards and Simics)')
+         '(only supported for openocd and Simics)')
 inject_simics = inject.add_argument_group(
     'Simics campaigns',
     'Additional options for Simics campaigns only')
@@ -586,8 +587,8 @@ delete.set_defaults(func='delete')
 
 openocd = subparsers.add_parser(
     'openocd', aliases=['o'],
-    help='launch openocd for DUT (only supported for ZedBoards)',
-    description='launch openocd for DUT (only supported for ZedBoards)')
+    help='launch openocd for DUT (only supported for openocd)',
+    description='launch openocd for DUT (only supported for openocd)')
 openocd.add_argument(
     '-g', '--gdb',
     action='store_true',

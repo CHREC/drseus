@@ -57,10 +57,14 @@ class power_switch(object):
                     self.__current_table = []
 
     # def get_status(self):
-        response = urlopen(Request(
-            'http://{}/index.htm'.format(self.ip_address),
-            headers={'Authorization': b'Basic '+b64encode(bytes('{}:{}'.format(
-                self.username, self.password), encoding='utf-8'))}))
+        try:
+            response = urlopen(Request(
+                'http://{}/index.htm'.format(self.ip_address),
+                headers={'Authorization': b'Basic ' +
+                         b64encode(bytes('{}:{}'.format(
+                            self.username, self.password), encoding='utf-8'))}))
+        except:
+            raise Exception('Error connecting to power switch')
         parser = table_parser()
         parser.feed(response.read().decode())
         for table in parser.tables:
@@ -94,10 +98,14 @@ class power_switch(object):
             raise Exception('invalid state: {}'.format(state))
         if delay < 1:
             delay = 1
-        urlopen(Request(
-            'http://{}/outlet?{}={}'.format(self.ip_address, outlet, state),
-            headers={'Authorization': b'Basic '+b64encode(bytes('{}:{}'.format(
-                self.username, self.password), encoding='utf-8'))}))
+        try:
+            urlopen(Request(
+                'http://{}/outlet?{}={}'.format(self.ip_address, outlet, state),
+                headers={'Authorization': b'Basic ' +
+                         b64encode(bytes('{}:{}'.format(
+                            self.username, self.password), encoding='utf-8'))}))
+        except:
+            raise Exception('Error connecting to power switch')
         if exists('power_switch_log.txt'):
             log = open('power_switch_log.txt', 'a')
         else:

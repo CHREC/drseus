@@ -38,18 +38,10 @@ class openocd(jtag):
                 raise Exception('could not find entry in "devices.json" for '
                                 'device at {}'.format(options.dut_serial_port))
         else:
-            self.device_info = None
-            if len(find_devices()['jtag']) > 1:
-                if options.command == 'inject' and options.processes > 1:
-                    raise Exception('could not find device information file '
-                                    '"devices.json", which is required when '
-                                    'using multiple ZedBoards. try running '
-                                    'command "detect" (or "power detect" if '
-                                    'using a web power switch')
-                else:
-                    print('could not find device information file, '
-                          'unpredictable behavior if multiple ZedBoards are '
-                          'connected')
+            raise Exception(
+                'could not find device information file "devices.json", use '
+                'command "detect" (or "power detect" if using a web power '
+                'switch) to detect devices and generate the file')
         options.debugger_ip_address = '127.0.0.1'
         self.prompts = ['>']
         self.port = find_open_port()
@@ -73,11 +65,17 @@ class openocd(jtag):
     def open(self):
         self.openocd = Popen([
             'openocd', '-c',
-            'gdb_port {}; tcl_port 0; telnet_port {}; interface ftdi;'.format(
-                self.gdb_port, self.port) +
-            (' ftdi_serial {};'.format(self.device_info['jtag'])
-             if self.device_info is not None else ''),
-            '-f', '{}/openocd_zedboard_{}.cfg'.format(
+            'gdb_port {}; '
+            'tcl_port 0; '
+            'telnet_port {}; '
+            'interface ftdi; '
+            'ftdi_serial {}; '
+            'ftdi_vid_pid 0x0403 0x601{};'.format(
+                self.gdb_port,
+                self.port,
+                self.device_info['jtag'],
+                '0' if self.device_info['type'] == 'pynq' else '4'),
+            '-f', '{}/openocd_{}.cfg'.format(
                 dirname(abspath(__file__)),
                 'smp' if self.options.smp else 'amp')],
             stderr=(DEVNULL if self.options.command != 'openocd' else None))
@@ -121,6 +119,8 @@ class openocd(jtag):
                 ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], attempts)
 
     def power_cycle_dut(self):
+        if self.device_info['outlet'] is None:
+            raise Exception('Device is not associated with a power outlet')
         event = self.db.log_event(
             'Information', 'Debugger', 'Power cycled DUT', success=False)
         self.close()
@@ -136,11 +136,11 @@ class openocd(jtag):
             except Exception:
                 self.db.log_event(
                     'Warning' if attempt < attempts-1 else 'Error', 'DrSEUs',
-                    'Error getting ZedBoard information', self.db.log_exception)
+                    'Error getting device information', self.db.log_exception)
                 if attempt < attempts-1:
                     sleep(30)
                 else:
-                    raise Exception('Error getting ZedBoard information')
+                    raise Exception('Error getting device information')
             else:
                 break
         for serial_port, uart_serial in devices:
