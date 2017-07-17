@@ -120,7 +120,10 @@ class openocd(jtag):
 
     def power_cycle_dut(self):
         if self.device_info['outlet'] is None:
-            raise Exception('Device is not associated with a power outlet')
+            print(colored(
+                'Could not power cycle device at {}, it is not associated with'
+                ' a power outlet'.format(self.dut.serial.port), 'red'))
+            return
         event = self.db.log_event(
             'Information', 'Debugger', 'Power cycled DUT', success=False)
         self.close()
