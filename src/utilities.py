@@ -13,6 +13,7 @@ from subprocess import call, check_call
 from sys import argv, stdout
 from tarfile import open as open_tar
 from terminaltables import AsciiTable
+from time import sleep
 from traceback import print_exc
 
 from .database import (backup_database, delete_database, get_campaign,
@@ -85,6 +86,7 @@ def detect_devices(options, use_power_switch=False):
         else:
             outlet = None
             input('connect a new device and press enter')
+            sleep(5)
             new_devices = detect_new_devices(preexisting_devices)
         if not len(new_devices) or 'uart' not in new_devices:
             print('no devices detected on outlet', outlet)

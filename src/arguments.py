@@ -69,6 +69,11 @@ dut_settings.add_argument(
     dest='dut_serial_port',
     help='serial port (overridden by Simics)')
 dut_settings.add_argument(
+    '--dev',
+    metavar='SERIAL',
+    dest='dut_dev_serial',
+    help='UART device serial number')
+dut_settings.add_argument(
     '--baud',
     type=int,
     metavar='RATE',
@@ -136,6 +141,11 @@ aux_settings.add_argument(
     metavar='PORT',
     dest='aux_serial_port',
     help='serial port (overridden by Simics)')
+dut_settings.add_argument(
+    '--aux_dev',
+    metavar='SERIAL',
+    dest='aux_dev_serial',
+    help='UART device serial number')
 aux_settings.add_argument(
     '--aux_baud',
     type=int,
@@ -279,6 +289,7 @@ power_settings.add_argument(
     '--power_ip',
     metavar='ADDRESS',
     dest='power_switch_ip_address',
+    default='192.168.0.60',
     help='IP address')
 power_settings.add_argument(
     '--power_user',

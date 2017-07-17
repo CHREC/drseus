@@ -1,4 +1,4 @@
 @conf/lansce/common
---serial
-/dev/ttyUSB1
+--dev
+003017A4CF0C
 --no_rtscts

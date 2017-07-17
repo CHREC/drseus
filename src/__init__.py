@@ -17,6 +17,7 @@ from .arguments import get_options, parser
 # TODO: use regular expressions in telnet expect in jtag
 # TODO: add mode to redo injection iteration
 # TODO: add support for injection of multi-bit upsets
+# TODO: add documentation on system design, including module interaction
 
 
 def run():
@@ -61,10 +62,9 @@ def run():
     # we can't (indirectly) import anything from log until django is setup
     from . import database
     from . import utilities
+    from .jtag import find_devices
     missing_args = []
     campaign = None
-    if options.command == 'power' and not options.power_switch_ip_address:
-        options.power_switch_ip_address = '192.168.0.60'
     if options.command in ('inject', 'supervise', 'delete', 'regenerate') and \
             not (options.command == 'delete' and
                  options.selection in ('a', 'all')):
@@ -78,6 +78,17 @@ def run():
                 return
         if options.command != 'regenerate':
             options.architecture = campaign.architecture
+    uarts = find_devices()['uart']
+    if not options.dut_serial_port and options.dut_dev_serial:
+        for uart in uarts:
+            if 'serial' in uarts[uart] and \
+                    options.dut_dev_serial == uarts[uart]['serial']:
+                options.dut_serial_port = uart
+    if not options.aux_serial_port and options.aux_dev_serial:
+        for uart in uarts:
+            if 'serial' in uarts[uart] and \
+                    options.aux_dev_serial == uarts[uart]['serial']:
+                options.aux_serial_port = uart
     if options.command in ('new', 'inject', 'supervise'):
         if (hasattr(options, 'simics') and not options.simics) or \
                 (campaign and not campaign.simics):
