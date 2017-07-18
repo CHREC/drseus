@@ -8,9 +8,6 @@ from ..error import DrSEUsError
 from . import find_open_port, find_devices, jtag
 
 
-# TODO update pynq devices have same serial, use find_devices
-
-
 class openocd(jtag):
     error_messages = ['Timeout', 'Target not examined yet']
     modes = {'10000': 'usr',
@@ -64,17 +61,15 @@ class openocd(jtag):
 
     def open(self):
         self.openocd = Popen([
-            'openocd', '-c',
+            'openocd/src/openocd', '-c',
             'gdb_port {}; '
             'tcl_port 0; '
             'telnet_port {}; '
             'interface ftdi; '
-            'ftdi_serial {}; '
-            'ftdi_vid_pid 0x0403 0x601{};'.format(
+            'ftdi_serial {};'.format(
                 self.gdb_port,
                 self.port,
-                self.device_info['jtag'],
-                '0' if self.device_info['type'] == 'pynq' else '4'),
+                self.device_info['jtag']),
             '-f', '{}/openocd_{}.cfg'.format(
                 dirname(abspath(__file__)),
                 'smp' if self.options.smp else 'amp')],
@@ -160,7 +155,7 @@ class openocd(jtag):
         event.save()
 
     def halt_dut(self):
-        super().halt_dut('halt', ['target state: halted']*2)
+        super().halt_dut('halt', ['target halted']*2)
 
     def continue_dut(self):
         super().continue_dut('resume')

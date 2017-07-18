@@ -85,11 +85,15 @@ def run():
             if 'serial' in uarts[uart] and \
                     options.dut_dev_serial == uarts[uart]['serial']:
                 options.dut_serial_port = uart
+                if uarts[uart]['type'] == 'pynq':
+                    options.dut_rtscts = False
     if not options.aux_serial_port and options.aux_dev_serial:
         for uart in uarts:
             if 'serial' in uarts[uart] and \
                     options.aux_dev_serial == uarts[uart]['serial']:
                 options.aux_serial_port = uart
+                if uarts[uart]['type'] == 'pynq':
+                    options.aux_rtscts = False
     if options.command in ('new', 'inject', 'supervise'):
         if (hasattr(options, 'simics') and not options.simics) or \
                 (campaign and not campaign.simics):
