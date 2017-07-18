@@ -5,6 +5,7 @@ Fault injection framework and application for performing CPU fault injection on:
 
 * P2020RDB (Using BDI3000 JTAG debugger)
 * ZedBoard (Using BDI3000 or Integrated JTAG debugger)
+* PYNQ (Using Integrated JTAG debugger)
 * Simics simulation of P2020RDB
 * Simics simulation of CoreTile Express A9x4 (Only two cores simulated)
 
