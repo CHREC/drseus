@@ -23,6 +23,7 @@ from .arguments import get_options, parser
 def run():
     options = get_options()
     settings.configure(
+        ALLOWED_HOSTS=['*'],
         DATABASES={
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
