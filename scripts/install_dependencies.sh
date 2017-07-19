@@ -1,10 +1,11 @@
 #!/bin/sh -e
 
 sudo apt-get update
-sudo apt-get install --yes libpq-dev libssl-dev libusb-1.0-0-dev minicom \
-                           postgresql python3-dev python3-pip
+sudo apt-get install --yes libpq-dev libssl-dev minicom postgresql python3-dev \
+                           python3-pip
 sudo pip3 install --upgrade virtualenv
 
+sudo apt-get install --yes automake libtool libusb-1.0-0-dev pkg-config
 git clone git://git.code.sf.net/p/openocd/code openocd
 (
     cd openocd
