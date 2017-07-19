@@ -14,6 +14,11 @@ git clone git://git.code.sf.net/p/openocd/code openocd
     ./configure --enable-ftdi
     make
 )
+sudo groupadd usb
+echo 'SUBSYSTEMS=="usb", ACTION=="add", MODE="0664", GROUP="usb"' | \
+    sudo tee -a /etc/udev/rules.d/99-usbftdi.rules
+sudo /etc/init.d/udev reload
+sudo usermod -a -G usb "$USER"
 
 printf 'install simics? [y/N]: '
 read -r simics

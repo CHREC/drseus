@@ -78,7 +78,6 @@ class openocd(jtag):
             self.db.log_event(
                 'Information', 'Debugger', 'Launched openocd')
             sleep(1)
-        if self.options.command != 'openocd':
             super().open()
 
     def close(self):

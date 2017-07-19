@@ -323,7 +323,6 @@ def inject_campaign(options):
                               args=[iteration_counter, switch])
             processes.append(process)
             process.start()
-            sleep(5)
         try:
             for process in processes:
                 process.join()
