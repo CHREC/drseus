@@ -81,7 +81,10 @@ class openocd(jtag):
             super().open()
 
     def close(self):
-        self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
+        try:
+            self.telnet.write(bytes('shutdown\n', encoding='utf-8'))
+        except:
+            pass
         try:
             self.openocd.wait(timeout=30)
         except TimeoutExpired:
@@ -121,10 +124,24 @@ class openocd(jtag):
         event = self.db.log_event(
             'Information', 'Debugger', 'Power cycled DUT', success=False)
         self.close()
-        with self.power_switch as ps:
-            ps.set_outlet(self.device_info['outlet'], 'off')
-            ps.set_outlet(self.device_info['outlet'], 'on')
         attempts = 5
+        for attempt in range(attempts):
+            try:
+                with self.power_switch as ps:
+                    ps.set_outlet(self.device_info['outlet'], 'off')
+                    ps.set_outlet(self.device_info['outlet'], 'on')
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
+            except Exception:
+                self.db.log_event(
+                    'Warning' if attempt < attempts-1 else 'Error', 'DrSEUs',
+                    'Error power cycling DUT', self.db.log_exception)
+                if attempt < attempts-1:
+                    sleep(30)
+                else:
+                    raise Exception('Error power cycling DUT')
+            else:
+                break
         for attempt in range(attempts):
             try:
                 devices = find_devices()['uart'].items()
