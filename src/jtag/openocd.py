@@ -144,9 +144,9 @@ class openocd(jtag):
                 break
         for attempt in range(attempts):
             try:
-                devices = find_devices()['uart'].items()
-                for serial_port, uart_serial in devices:
-                    if uart_serial == self.device_info['uart']:
+                for serial_port, info in find_devices()['uart'].items():
+                    if 'serial' in info and \
+                            info['serial'] == self.device_info['uart']:
                         self.options.dut_serial_port = serial_port
                         self.db.result.dut_serial_port = serial_port
                         break
