@@ -150,6 +150,8 @@ class openocd(jtag):
                         self.options.dut_serial_port = serial_port
                         self.db.result.dut_serial_port = serial_port
                         break
+                else:
+                    raise Exception('Could not find uart device')
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except Exception:

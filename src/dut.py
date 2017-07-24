@@ -243,7 +243,8 @@ class dut(object):
                 if in_bytes:
                     buff = ''
                     for b in range(in_bytes):
-                        char = self.serial.read().decode('utf-8', 'replace')
+                        char = self.serial.read().decode(
+                            'utf-8', 'replace').replace('\x00', '')
                         buff += char
                         if self.options.debug:
                             print(
