@@ -178,7 +178,10 @@ class supervisor(Cmd):
             except ValueError:
                 print('Invalid value entered')
                 return
-            iteration_counter = Value('L', supervise_iterations)
+            if supervise_iterations:
+                iteration_counter = Value('L', supervise_iterations)
+            else:
+                iteration_counter = None
             timer = None
         if self.drseus.db.campaign.simics:
             self.drseus.debugger.close()

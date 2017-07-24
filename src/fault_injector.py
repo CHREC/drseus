@@ -286,10 +286,11 @@ class fault_injector(object):
                     sleep(sleep_time)
 
         def perform_injections():
+            rebooted = False
             if timer is not None:
-                start = perf_counter()
+                timer_start = perf_counter()
             while True:
-                if timer is not None and (perf_counter()-start >= timer):
+                if timer is not None and (perf_counter()-timer_start >= timer):
                     break
                 if iteration_counter is not None:
                     with iteration_counter.get_lock():
@@ -309,6 +310,10 @@ class fault_injector(object):
                             self.db.result.outcome = str(error)
                             self.db.log_result()
                             continue
+                    elif rebooted:
+                        self.debugger.dut.write('\n')
+                        self.debugger.dut.do_login()
+                        rebooted = False
                     if self.db.campaign.aux:
                         self.db.log_event(
                             'Information', 'AUX', 'Command',
@@ -377,6 +382,9 @@ class fault_injector(object):
                         self.db.result.outcome = error.type
                     if self.db.campaign.aux:
                         self.debugger.aux.flush()
+                if self.options.command == 'supervise' and \
+                        self.db.result.outcome == 'Reboot':
+                    rebooted = True
                 self.db.log_result()
             if self.options.command == 'inject':
                 self.close()
@@ -385,7 +393,7 @@ class fault_injector(object):
                 self.db.result.outcome = ''
                 self.db.result.save()
 
-    # def inject_campaign(self, iteration_counter):
+    # def inject_campaign(self, iteration_counter=None, timer=None):
         try:
             perform_injections()
         except KeyboardInterrupt:

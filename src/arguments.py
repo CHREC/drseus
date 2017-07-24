@@ -92,6 +92,11 @@ dut_settings.add_argument(
     dest='dut_ip_address',
     help='IP address, automatically discover if not specified')
 dut_settings.add_argument(
+    '--set_ip',
+    action='store_true',
+    dest='dut_set_ip',
+    help='manually set IP address on device')
+dut_settings.add_argument(
     '--scp',
     type=int,
     metavar='PORT',
@@ -163,6 +168,11 @@ aux_settings.add_argument(
     metavar='ADDRESS',
     dest='aux_ip_address',
     help='IP address, automatically discover if not specified')
+aux_settings.add_argument(
+    '--aux_set_ip',
+    action='store_true',
+    dest='aux_set_ip',
+    help='manually set IP address on device')
 aux_settings.add_argument(
     '--aux_scp',
     type=int,

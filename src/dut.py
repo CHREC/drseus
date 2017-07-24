@@ -129,6 +129,8 @@ class dut(object):
         self.__timer_value = 0
         self.ip_address = options.dut_ip_address if not aux \
             else options.aux_ip_address
+        self.set_ip = options.dut_set_ip if not aux \
+            else options.aux_set_ip
         self.scp_port = options.dut_scp_port if not aux \
             else options.aux_scp_port
         self.prompt = '{} '.format(
@@ -788,12 +790,13 @@ class dut(object):
             self.command('touch ~/.ssh/authorized_keys', flush=flush)
             self.command('echo "ssh-rsa {}" > ~/.ssh/authorized_keys'.format(
                 self.rsakey.get_base64()), flush=flush)
-        if self.db.campaign.simics and not self.options.vxworks:
+        if self.set_ip or self.db.campaign.simics and not self.options.vxworks:
             self.command('ip addr add {}/24 dev eth0'.format(self.ip_address),
                          flush=flush)
             self.command('ip link set eth0 up', flush=flush)
             self.command('ip addr show', flush=flush)
-            self.ip_address = '127.0.0.1'
+            if self.db.campaign.simics:
+                self.ip_address = '127.0.0.1'
         if self.ip_address is None:
             attempts = 10
             for attempt in range(attempts):
@@ -851,7 +854,12 @@ class dut(object):
             return
         if local_diff:
             command = 'diff gold_{0} {0}'.format(self.db.campaign.output_file)
-            buff = self.command(command)[0].replace('\r\n', '\n')
+            try:
+                buff = self.command(command)[0].replace('\r\n', '\n')
+            except DrSEUsError as error:
+                self.db.result.outcome_category = 'Post execution error'
+                self.db.result.outcome = error.type
+                return
             buff = buff.replace('{}\n'.format(command), '')
             buff = buff.replace(self.prompt, '')
             if buff != '':

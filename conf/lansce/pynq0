@@ -1,3 +1,6 @@
 @conf/lansce/common
 --dev
 003017A4CF0C
+--ip
+10.42.0.20
+--set_ip
