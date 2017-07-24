@@ -245,11 +245,13 @@ class supervisor(Cmd):
               '--capturefile={}'.format(capture)])
         device.open()
         if exists(capture):
-            with open(capture, 'r') as capture_file:
+            with open(capture, 'rb') as capture_file:
                 if aux:
-                    self.drseus.db.result.aux_output += capture_file.read()
+                    self.drseus.db.result.aux_output += \
+                        capture_file.read().decode('utf8', 'replace')
                 else:
-                    self.drseus.db.result.dut_output += capture_file.read()
+                    self.drseus.db.result.dut_output += \
+                        capture_file.read().decode('utf8', 'replace')
                 self.drseus.db.result.save()
             remove(capture)
 

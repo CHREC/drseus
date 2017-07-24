@@ -605,7 +605,8 @@ class dut(object):
         while True:
             try:
                 with timeout(self.options.timeout+5):
-                    char = self.serial.read().decode('utf-8', 'replace')
+                    char = self.serial.read().decode(
+                        'utf-8', 'replace').replace('\x00', '')
             except SerialException:
                 errors += 1
                 self.db.log_event(

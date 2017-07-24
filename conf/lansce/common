@@ -1,6 +1,8 @@
 --prompt
 root@buildroot:~#
 --power_ip
-192.168.0.60
+10.42.0.2
 --pass
 chrec
+--uboot
+run netboot

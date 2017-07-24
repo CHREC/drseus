@@ -145,6 +145,11 @@ class openocd(jtag):
         for attempt in range(attempts):
             try:
                 devices = find_devices()['uart'].items()
+                for serial_port, uart_serial in devices:
+                    if uart_serial == self.device_info['uart']:
+                        self.options.dut_serial_port = serial_port
+                        self.db.result.dut_serial_port = serial_port
+                        break
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except Exception:
@@ -154,16 +159,10 @@ class openocd(jtag):
                 if attempt < attempts-1:
                     sleep(30)
                 else:
-                    raise Exception('Error getting device information')
+                    raise Exception(
+                        'Error finding uart device after power cycle')
             else:
                 break
-        for serial_port, uart_serial in devices:
-            if uart_serial == self.device_info['uart']:
-                self.options.dut_serial_port = serial_port
-                self.db.result.dut_serial_port = serial_port
-                break
-        else:
-            raise Exception('Error finding uart device after power cycle')
         self.open()
         print(colored('Power cycled device: {}'.format(self.dut.serial.port),
                       'red'))
