@@ -7,7 +7,7 @@
 --aux_prompt
 [root@ZED]#
 --power_ip
-10.42.0.60
+192.168.0.60
 --pass
 chrec
 --aux_pass

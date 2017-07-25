@@ -64,7 +64,8 @@ class power_switch(object):
                          b64encode(bytes('{}:{}'.format(
                             self.username, self.password), encoding='utf-8'))}))
         except:
-            raise Exception('Error connecting to power switch')
+            raise Exception('Error connecting to power switch at {}'.format(
+                self.ip_address))
         parser = table_parser()
         parser.feed(response.read().decode())
         for table in parser.tables:
@@ -105,14 +106,16 @@ class power_switch(object):
                          b64encode(bytes('{}:{}'.format(
                             self.username, self.password), encoding='utf-8'))}))
         except:
-            raise Exception('Error connecting to power switch')
+            raise Exception('Error connecting to power switch at {}'.format(
+                self.ip_address))
         if exists('power_switch_log.txt'):
             log = open('power_switch_log.txt', 'a')
         else:
             log = open('power_switch_log.txt', 'w')
-            log.write('Outlet\tState\tTimestamp\n')
-        log.write('{}\t\t{}\t\t{}\n'.format(
-            outlet, state, datetime.now().strftime('%b %d, %Y %I:%M:%S %p')))
+            log.write('IP Address\t\tOutlet\tState\tTimestamp\n')
+        log.write('{}\t{}\t\t{}\t\t{}\n'.format(
+            self.ip_address, outlet, state,
+            datetime.now().strftime('%b %d, %Y %I:%M:%S %p')))
         log.close()
         sleep(delay)
 
