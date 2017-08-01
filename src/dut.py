@@ -649,7 +649,9 @@ class dut(object):
                 returned = True
                 break
             elif buff.endswith('autoboot: ') and self.uboot_command:
-                self.write('\n{}\n'.format(self.uboot_command))
+                self.write('\n')
+                sleep(1)
+                self.write('{}\n'.format(self.uboot_command))
                 self.db.log_event(
                     'Information', 'DUT' if not self.aux else 'AUX', 'Command',
                     self.uboot_command)
