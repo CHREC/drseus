@@ -505,6 +505,12 @@ supervise = subparsers.add_parser(
     help='run interactive supervisor',
     description='run interactive supervisor')
 supervise.add_argument(
+    '--cmd',
+    nargs='+',
+    metavar='COMMAND',
+    dest='command_list',
+    help='supervisor commands to queue')
+supervise.add_argument(
     '-l', '--local_diff',
     action='store_false',
     help='always retrieve output file to perform diff')

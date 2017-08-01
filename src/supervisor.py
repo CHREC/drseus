@@ -39,6 +39,8 @@ class supervisor(Cmd):
             self.drseus.debugger.reset_dut()
         self.prompt = 'DrSEUs> '
         Cmd.__init__(self)
+        if options.command_list:
+            self.cmdqueue = options.command_list
         if exists('.supervisor_history'):
             read_history_file('.supervisor_history')
         set_history_length(options.history_length)

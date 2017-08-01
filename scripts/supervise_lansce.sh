@@ -60,13 +60,13 @@ else
 fi
 
 tmux new-session -d -s supervise
-tmux send-keys -t supervise:0 "./drseus.py -c $campaign0 @conf/lansce/supervise/pynq0_cache_$cache0" ENTER
+tmux send-keys -t supervise:0 "./drseus.py -c $campaign0 @conf/lansce/supervise/pynq0_cache_$cache0 --cmd 'supervise 0'" ENTER
 tmux new-window -t supervise:1
-tmux send-keys -t supervise:1  "./drseus.py -c $campaign1 @conf/lansce/supervise/pynq1_cache_$cache1" ENTER
+tmux send-keys -t supervise:1  "./drseus.py -c $campaign1 @conf/lansce/supervise/pynq1_cache_$cache1 --cmd 'supervise 0'" ENTER
 tmux new-window -t supervise:2
-tmux send-keys -t supervise:2  "./drseus.py -c $campaign2 @conf/lansce/supervise/pynq2_cache_$cache2" ENTER
+tmux send-keys -t supervise:2  "./drseus.py -c $campaign2 @conf/lansce/supervise/pynq2_cache_$cache2 --cmd 'supervise 0'" ENTER
 tmux new-window -t supervise:3
-tmux send-keys -t supervise:3  "./drseus.py -c $campaign3 @conf/lansce/supervise/pynq3_cache_$cache3" ENTER
+tmux send-keys -t supervise:3  "./drseus.py -c $campaign3 @conf/lansce/supervise/pynq3_cache_$cache3 --cmd 'supervise 0'" ENTER
 tmux join-pane -s supervise:1 -t supervise:0
 tmux join-pane -s supervise:2 -t supervise:0
 tmux join-pane -s supervise:3 -t supervise:0
