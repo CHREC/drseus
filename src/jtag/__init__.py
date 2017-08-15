@@ -21,23 +21,23 @@ def find_devices():
             elif dev['ID_VENDOR_ID'] == '04b4' and dev['ID_MODEL_ID'] == '0008':
                 devices['uart'][dev['DEVNAME']] = {
                     'type': 'zedboard', 'serial': dev['ID_SERIAL_SHORT']}
-            elif dev['ID_VENDOR_ID'] == '0403' and \
-                    dev['ID_MODEL_ID'] == '6010' and \
-                    dev['ID_USB_INTERFACE_NUM'] == '01':
+            elif dev['ID_VENDOR_ID'] == '0403' and dev['ID_MODEL_ID'] == '6010':
+                if dev['ID_USB_INTERFACE_NUM'] == '01':
+                    devices['uart'][dev['DEVNAME']] = {
+                        'type': 'pynq', 'serial': dev['ID_SERIAL_SHORT']}
+            elif dev['ID_VENDOR_ID'] == '0403' and dev['ID_MODEL_ID'] == '6001':
                 devices['uart'][dev['DEVNAME']] = {
-                    'type': 'pynq', 'serial': dev['ID_SERIAL_SHORT']}
+                    'type': 'pmod', 'serial': dev['ID_SERIAL_SHORT']}
+            elif dev['SUBSYSTEM'] == 'tty':
+                devices['uart'][dev['DEVNAME']] = {'type': 'other'}
+                if 'ID_SERIAL_SHORT' in dev:
+                    devices['uart'][dev['DEVNAME']]['serial'] = \
+                        dev['ID_SERIAL_SHORT']
         else:
             if dev['ID_VENDOR_ID'] == '0403' and dev['ID_MODEL_ID'] == '6014':
                 devices['jtag'][dev['ID_SERIAL_SHORT']] = {'type': 'zedboard'}
             elif dev['ID_VENDOR_ID'] == '0403' and dev['ID_MODEL_ID'] == '6010':
                 devices['jtag'][dev['ID_SERIAL_SHORT']] = {'type': 'pynq'}
-    # TODO: return other devices in previous loop
-    # for dev in Context().list_devices(subsystem='tty'):
-    #     if 'DEVLINKS' in dev and dev['DEVNAME'] not in devices['uart'] and \
-    #             not(dev['ID_VENDOR_ID'] == '0403' and
-    #                 dev['ID_MODEL_ID'] == '6010' and
-    #                 dev['ID_USB_INTERFACE_NUM'] == '00'):
-    #         devices['uart'][dev['DEVNAME']] = {'type': 'other'}
     return devices
 
 
