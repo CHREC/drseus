@@ -244,11 +244,11 @@ class supervisor(Cmd):
             '-'.join(['{:02}'.format(unit)
                       for unit in datetime.now().timetuple()[3:6]]))
         device.close()
+        self.drseus.db.log_result()
         call(['minicom', '-D',
               self.drseus.options.aux_serial_port if aux
               else self.drseus.options.dut_serial_port,
               '--capturefile={}'.format(capture)])
-        device.open()
         if exists(capture):
             with open(capture, 'rb') as capture_file:
                 if aux:
@@ -259,6 +259,10 @@ class supervisor(Cmd):
                         capture_file.read().decode('utf8', 'replace')
                 self.drseus.db.result.save()
             remove(capture)
+        self.drseus.db.result.outcome_category = 'DrSEUs'
+        self.drseus.db.result.outcome = 'minicom'
+        self.drseus.db.log_result()
+        device.open()
 
     def help_inject(self):
         inject.prog = 'inject'

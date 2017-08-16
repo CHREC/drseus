@@ -146,7 +146,7 @@ aux_settings.add_argument(
     metavar='PORT',
     dest='aux_serial_port',
     help='serial port (overridden by Simics)')
-dut_settings.add_argument(
+aux_settings.add_argument(
     '--aux_dev',
     metavar='SERIAL',
     dest='aux_dev_serial',
@@ -180,6 +180,11 @@ aux_settings.add_argument(
     dest='aux_scp_port',
     default=22,
     help='SCP port [default=22] (overridden by Simics)')
+aux_settings.add_argument(
+    '--aux_readonly',
+    action='store_true',
+    dest='aux_readonly',
+    help='auxiliary device is read only')
 aux_settings.add_argument(
     '--aux_prompt',
     metavar='PROMPT',

@@ -26,7 +26,8 @@ class fault_injector(object):
             self.debugger = bdi(self.db, options)
         else:
             self.debugger = dummy(self.db, options, power_switch)
-        if self.db.campaign.aux and not self.db.campaign.simics:
+        if self.db.campaign.aux and not self.options.aux_readonly and \
+                not self.db.campaign.simics:
             self.debugger.aux.write('\x03')
             self.debugger.aux.do_login()
 
@@ -77,7 +78,7 @@ class fault_injector(object):
                 execution_cycles = []
                 execution_times = []
                 for i in range(self.options.iterations):
-                    if self.db.campaign.aux:
+                    if self.db.campaign.aux and not self.options.aux_readonly:
                         self.debugger.aux.write('{}\n'.format(
                             self.db.campaign.aux_command))
                     if self.db.campaign.simics:
@@ -99,7 +100,10 @@ class fault_injector(object):
                         self.debugger.aux.read_until()
                     elif self.db.campaign.aux:
                         self.debugger.dut.read_until()
-                        self.debugger.aux.read_until()
+                        if self.options.aux_readonly:
+                            self.debugger.aux.flush()
+                        else:
+                            self.debugger.aux.read_until()
                     else:
                         self.debugger.dut.read_until()
                     if self.db.campaign.simics:
@@ -176,6 +180,8 @@ class fault_injector(object):
                     self.debugger.aux.command('rm {}'.format(log_file))
         if not listdir(gold_folder):
             rmtree(gold_folder)
+        if self.db.campaign.aux and self.options.aux_readonly:
+            self.debugger.aux.flush()
         self.db.campaign.timestamp = datetime.now()
         self.db.campaign.save()
         self.close()
@@ -184,7 +190,7 @@ class fault_injector(object):
 
         def monitor_execution(persistent_faults=False, log_time=False,
                               latent_iteration=0):
-            if self.db.campaign.aux:
+            if self.db.campaign.aux and not self.options.aux_readonly:
                 try:
                     self.debugger.aux.read_until()
                 except DrSEUsError as error:
@@ -261,7 +267,7 @@ class fault_injector(object):
                     self.db.log_event(
                         'Information', 'DUT', 'Command',
                         self.db.campaign.command)
-                    if self.db.campaign.aux:
+                    if self.db.campaign.aux and not self.options.aux_readonly:
                         self.debugger.aux.write('{}\n'.format(
                             self.db.campaign.aux_command))
                     self.debugger.dut.write('{}\n'.format(
@@ -314,7 +320,7 @@ class fault_injector(object):
                         self.debugger.dut.write('\n')
                         self.debugger.dut.do_login()
                         rebooted = False
-                    if self.db.campaign.aux:
+                    if self.db.campaign.aux and not self.options.aux_readonly:
                         self.db.log_event(
                             'Information', 'AUX', 'Command',
                             self.db.campaign.aux_command)
@@ -342,13 +348,15 @@ class fault_injector(object):
                         self.db.result.outcome_category = 'Debugger error'
                         try:
                             self.debugger.continue_dut()
-                            if self.db.campaign.aux:
+                            if self.db.campaign.aux and \
+                                    not self.options.aux_readonly:
                                 aux_process = Thread(
                                     target=self.debugger.aux.read_until,
                                     kwargs={'flush': False})
                                 aux_process.start()
                             self.debugger.dut.read_until(flush=False)
-                            if self.db.campaign.aux:
+                            if self.db.campaign.aux and \
+                                    not self.options.aux_readonly:
                                 aux_process.join()
                         except DrSEUsError:
                             pass
@@ -405,7 +413,7 @@ class fault_injector(object):
             if self.db.campaign.simics:
                 self.debugger.continue_dut()
             self.debugger.dut.write('\x03')
-            if self.db.campaign.aux:
+            if self.db.campaign.aux and not self.options.aux_readonly:
                 self.debugger.aux.write('\x03')
             self.debugger.close()
             self.db.log_result(

@@ -106,7 +106,7 @@ def run():
                     (campaign and campaign.aux):
                 if not options.aux_serial_port:
                     missing_args.append('--aux_serial')
-                if not options.aux_prompt:
+                if not options.aux_readonly and not options.aux_prompt:
                     missing_args.append('--aux_prompt')
             if not options.debugger_ip_address and (
                     (hasattr(options, 'architecture') and

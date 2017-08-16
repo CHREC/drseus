@@ -1,0 +1,7 @@
+--prompt
+root@z7harft:~#
+--aux_readonly
+--power_ip
+10.42.0.2
+--pass
+root
