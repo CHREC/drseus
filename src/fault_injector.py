@@ -390,9 +390,11 @@ class fault_injector(object):
                         self.db.result.outcome = error.type
                     if self.db.campaign.aux:
                         self.debugger.aux.flush()
-                if self.options.command == 'supervise' and \
-                        self.db.result.outcome == 'Reboot':
-                    rebooted = True
+                if self.options.command == 'supervise':
+                    if self.db.result.outcome == 'Reboot':
+                        rebooted = True
+                    elif self.db.result.outcome == 'Hanging':
+                        self.debugger.reset_dut()
                 self.db.log_result()
             if self.options.command == 'inject':
                 self.close()
