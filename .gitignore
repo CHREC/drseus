@@ -1,6 +1,7 @@
 *.pyc
 .DS_Store
 .supervisor_history
+.tags*
 backups
 campaign-data
 devices.json
