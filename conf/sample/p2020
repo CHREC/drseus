@@ -1,8 +1,8 @@
 @conf/new/p2020
 --cmd
-./ppc_fi_2d_conv_fft_omp lena.bmp out.bmp
+./ppc_fi_2d_conv_fft_omp lena_512.bmp out.bmp
 --files
 ppc_fi_2d_conv_fft_omp
-lena.bmp
+lena_512.bmp
 --output_file
 out.bmp

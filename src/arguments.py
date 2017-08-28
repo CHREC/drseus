@@ -26,7 +26,7 @@ parser.add_argument(
     '--timeout',
     type=int,
     metavar='SECONDS',
-    default=300,
+    default=1200,
     help='device read timeout [default=300]')
 parser.add_argument(
     '--reset_ip',
@@ -238,6 +238,11 @@ debugger_settings.add_argument(
     action='store_false',
     dest='smp',
     help='do not use SMP mode in openocd')
+# TODO: move into campaign info
+debugger_settings.add_argument(
+    '--cache',
+    action='store_true',
+    help='use cache models')
 
 database_settings = parser.add_argument_group('PostgreSQL settings')
 database_settings.add_argument(
@@ -421,7 +426,6 @@ new_simics_campaign = new_campaign.add_argument_group(
 new_simics_campaign.add_argument(
     '-s', '--simics',
     action='store_true',
-    dest='simics',
     help='use Simics simulation')
 new_simics_campaign.add_argument(
     '--ckpts',

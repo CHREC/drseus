@@ -62,7 +62,8 @@ class simics(object):
         attempts = 10
         for attempt in range(attempts):
             self.simics = Popen(
-                ['{}/simics'.format(cwd), '-no-win', '-no-gui', '-q'],
+                ['{}/simics'.format(cwd), '-no-win', '-no-gui', '-q',
+                 '-stall' if self.options.cache else ''],
                 bufsize=0, cwd=cwd, universal_newlines=True,
                 stdin=PIPE, stdout=PIPE)
             try:
@@ -84,6 +85,9 @@ class simics(object):
             buff = self.__command(
                 'run-command-file simics-{0}/{0}-linux{1}.simics'.format(
                     self.board, '-ethernet' if self.db.campaign.aux else ''))
+            if self.options.cache:
+                self.__command('dstc-disable')
+                self.__command('run-python-file simics-p2020rdb/cache.py')
         else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
             buff += self.__command('connect-real-network-port-in ssh '
@@ -91,6 +95,8 @@ class simics(object):
             if self.db.campaign.aux:
                 buff += self.__command('connect-real-network-port-in ssh '
                                        'ethernet_switch0 target-ip=10.10.0.104')
+            if self.options.cache:
+                self.__command('dstc-disable')
         self.__command('enable-real-time-mode')
         found_settings = 0
         if checkpoint is None:

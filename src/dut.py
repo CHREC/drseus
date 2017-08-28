@@ -766,16 +766,16 @@ class dut(object):
         return buff, returned
 
     def do_login(self, change_prompt=False, flush=True):
-        try:
-            self.serial.timeout = 60
-        except KeyboardInterrupt:
-            raise KeyboardInterrupt
-        except:
-            self.db.log_event(
-                'Error', 'DUT' if not self.aux else 'AUX',
-                'Error setting timeout', self.db.log_exception)
-            self.close()
-            self.open()
+        # try:
+        #     self.serial.timeout = 60
+        # except KeyboardInterrupt:
+        #     raise KeyboardInterrupt
+        # except:
+        #     self.db.log_event(
+        #         'Error', 'DUT' if not self.aux else 'AUX',
+        #         'Error setting timeout', self.db.log_exception)
+        #     self.close()
+        #     self.open()
         self.read_until(boot=True, flush=flush)
         if self.options.vxworks:
             self.command('cmd', flush=flush)
