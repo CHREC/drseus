@@ -85,9 +85,9 @@ class simics(object):
             buff = self.__command(
                 'run-command-file simics-{0}/{0}-linux{1}.simics'.format(
                     self.board, '-ethernet' if self.db.campaign.aux else ''))
-            if self.options.cache:
-                self.__command('dstc-disable')
-                self.__command('run-python-file simics-p2020rdb/cache.py')
+            # if self.options.cache:
+            #     self.__command('dstc-disable')
+            #     self.__command('run-python-file simics-p2020rdb/cache.py')
         else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
             buff += self.__command('connect-real-network-port-in ssh '
@@ -196,6 +196,11 @@ class simics(object):
             self.dut.do_login(change_prompt=(self.board == 'a9x2'), flush=False)
             if self.db.campaign.aux:
                 aux_process.join()
+            if self.options.cache:
+                self.halt_dut()
+                self.__command('dstc-disable')
+                self.__command('run-python-file simics-p2020rdb/cache.py')
+                self.continue_dut()
         else:
             self.dut.ip_address = '127.0.0.1'
             if self.board == 'a9x2':
@@ -273,7 +278,7 @@ class simics(object):
     def reset_dut(self):
         pass
 
-    def __command(self, command=None, time=10):
+    def __command(self, command=None, time=60):
 
         def read_until():
             buff = ''
