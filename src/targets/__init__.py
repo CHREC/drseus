@@ -49,12 +49,18 @@ def calculate_target_bits(targets):
             if 'bits' in targets[target]['registers'][register]:
                 bits = (targets[target]['registers'][register]
                                ['bits'])
+            elif 'type' in targets[target] and \
+                    targets[target]['type'] in ['gcache', 'tlb']:
+                bits = 0
+                for field in (targets[target]['registers'][register]
+                                     ['fields']).values():
+                    bits += field['bits']
             else:
                 bits = 32
             if 'count' in targets[target]['registers'][register]:
                 count = 1
                 if 'type' in targets[target] and \
-                        targets[target]['type'] == 'tlb':
+                        targets[target]['type'] in ['gcache', 'tlb']:
                     dimensions = (targets[target]['registers']
                                          [register]['count'][:-1])
                 else:
@@ -93,6 +99,8 @@ def calculate_target_bits(targets):
                 else:
                     (targets[target]['registers'][register]
                             ['adjust_bit']) = sorted(adjust_bit)
+        if 'count' in targets[target]:
+            total_bits *= targets[target]['count']
         targets[target]['total_bits'] = total_bits
 
 
@@ -296,7 +304,24 @@ def choose_injection(targets, selected_target_indices):
             injection['tlb_entry'] += '[{}]'.format(index)
     elif 'type' in target and target['type'] == 'gcache':
         pass
-        # TODO: update for cache target
+        fields_list = []
+        total_bits = 0
+        for field in register['fields']:
+            bits = register['fields'][field]['bits']
+            fields_list.append((field, bits))
+            total_bits += bits
+        random_bit = randrange(total_bits)
+        bit_sum = 0
+        for field in fields_list:
+            bit_sum += field[1]
+            if random_bit < bit_sum:
+                injection['field'] = field[0]
+                field = register['fields'][field[0]]
+                break
+        else:
+            raise Exception('Error choosing cache field to inject')
+        injection['register_index'][-1] = field['index']
+        injection['bit'] = randrange(field['bits'])
     else:
         if 'bits' in register:
             injection['bit'] = randrange(register['bits'])
@@ -318,9 +343,12 @@ def choose_injection(targets, selected_target_indices):
     return injection
 
 
-def get_num_bits(register, target, targets):
+def get_num_bits(field, register, target, targets):
     register = targets[target]['registers'][register]
-    if 'actual_bits' in register:
+    if 'type' in targets[target] and \
+            targets[target]['type'] in ['gcache', 'tlb']:
+        num_bits = register['fields'][field]['bits']
+    elif 'actual_bits' in register:
         num_bits = register['actual_bits']
     elif 'bits' in register:
         num_bits = register['bits']

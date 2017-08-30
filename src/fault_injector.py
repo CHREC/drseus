@@ -159,6 +159,8 @@ class fault_injector(object):
         gold_folder = 'campaign-data/{}/gold'.format(self.db.campaign.id)
         makedirs(gold_folder)
         if self.db.campaign.output_file:
+            if self.db.campaign.simics and self.options.cache:
+                self.debugger.disable_cache()
             if self.db.campaign.aux_output_file:
                 self.debugger.aux.get_file(
                     self.db.campaign.output_file, gold_folder)
@@ -236,6 +238,8 @@ class fault_injector(object):
                                 self.debugger.dut.get_timer_value()
             if self.db.campaign.output_file and \
                     self.db.result.outcome == 'In progress':
+                if self.db.campaign.simics and self.options.cache:
+                    self.debugger.disable_cache()
                 if hasattr(self.debugger, 'aux') and \
                         self.db.campaign.aux_output_file:
                     self.debugger.aux.check_output()

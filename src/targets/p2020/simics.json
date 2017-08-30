@@ -25,36 +25,6 @@
             }
         }
     },
-    "L1CACHE": {
-        "OBJECT": [
-            "l1_cache_cpu0",
-            "l1_cache_cpu1"
-        ],
-        "is_gcache": true,
-        "count": 2,
-        "registers": {
-            "lines": {
-                "count": [
-                    128,
-                    5
-                ],
-                "fields": {
-                    "status": {
-                        "bits": 2,
-                        "index": 0
-                    },
-                    "tag": {
-                        "bits": 64,
-                        "index": 1
-                    },
-                    "data": {
-                        "bits": 256,
-                        "index": 4
-                    }
-                }
-            }
-        }
-    },
     "CCSR": {
         "OBJECT": "soc.ccsr",
         "limitations": "ALTCBAR and ALTCAR registers are unsupported. Interleaved SDRAM mappings are instead mapped sequentially.",

@@ -15,7 +15,7 @@ from ..dut import dut
 from ..error import DrSEUsError
 from ..targets import choose_injection, get_num_bits, get_targets
 from ..timeout import timeout, TimeoutException
-from .config import simics_config
+from .config import data_list, simics_config
 
 
 class simics(object):
@@ -277,6 +277,12 @@ class simics(object):
 
     def reset_dut(self):
         pass
+
+    def disable_cache(self):
+        self.halt_dut()
+        self.__command('run-python-file simics-p2020rdb/disable-cache.py')
+        self.__command('dstc-enable')
+        self.continue_dut()
 
     def __command(self, command=None, time=60):
 
@@ -544,7 +550,8 @@ class simics(object):
 
             def flip_bit(value, bit):
                 num_bits = get_num_bits(
-                    injection.register, injection.target, self.targets)
+                    injection.field, injection.register, injection.target,
+                    self.targets)
                 if bit >= num_bits or bit < 0:
                     raise Exception('invalid bit: {} for num_bits: {}'.format(
                         bit, num_bits))
@@ -573,19 +580,47 @@ class simics(object):
                         injected_value = injection.injected_value
                     config.set(config_object, register, injected_value)
                 else:
+                    target = self.targets[injection.target]
+                    if 'type' in target and target['type'] == 'gcache' and \
+                            injection.field == 'data':
+                        cache_data = True
+                    else:
+                        cache_data = False
                     register_list_ = register_list = gold_value
                     if not injection.injected_value:
                         for index in injection.register_index:
                             gold_value = gold_value[index]
+                        if cache_data:
+                            if isinstance(gold_value, data_list):
+                                gold_value = '0x'+gold_value[0]
+                            elif isinstance(gold_value, str) and \
+                                    gold_value[0] == '[' \
+                                    and gold_value[-1] == ']':
+                                # for some reason we might get
+                                # string '[000...000]' instead of a data_list
+                                gold_value = '0x'+gold_value[1:-1]
+                            else:
+                                raise Exception('got unexpected cache data')
                         injected_value = flip_bit(gold_value, injection.bit)
+                        if cache_data:
+                            bits = int(get_num_bits(
+                                injection.field, injection.register,
+                                injection.target, self.targets) / 4)  # hex bits
+                            injected_value = data_list(
+                                [injected_value.replace('0x', '').zfill(bits)])
                     else:
                         injected_value = injection.injected_value
+                        if cache_data:
+                            injected_value = data_list(
+                                [injected_value.replace('0x', '')])
                     for index in range(len(injection.register_index)-1):
                         register_list_ = \
                             register_list_[injection.register_index[index]]
                     register_list_[injection.register_index[-1]] = \
                         injected_value
                     config.set(config_object, register, register_list)
+                    if cache_data:
+                        injected_value = '0x'+injected_value[0]
                 config.save()
             return gold_value, injected_value
 
@@ -611,8 +646,13 @@ class simics(object):
                                          self.options.selected_target_indices)
             injection = self.db.result.injection_set.create(
                 checkpoint=checkpoint, success=False, **injection)
-            injection.config_object = 'DUT_{}.{}'.format(
-                self.board, self.targets[injection.target]['object'])
+            target = self.targets[injection.target]
+            if 'type' in target and target['type'] == 'gcache':
+                injection.config_object = \
+                    self.targets[injection.target]['object']
+            else:
+                injection.config_object = 'DUT_{}.{}'.format(
+                    self.board, self.targets[injection.target]['object'])
             if injection.target_index is not None:
                 injection.config_object += '[{}]'.format(injection.target_index)
             injection.save()
@@ -634,11 +674,11 @@ class simics(object):
             if self.options.debug:
                 print(colored(
                     'result id: {}\ncheckpoint number: {}\ntarget: {}\n'
-                    'register: {}\nbit: {}\ngold value: {}\ninjected value: {}'
-                    ''.format(
+                    'register: {}\nfield: {}\nbit: {}\ngold value: {}\n'
+                    'injected value: {}'.format(
                         self.db.result.id, checkpoint,  injection.target_name,
-                        injection.register, injection.bit, injection.gold_value,
-                        injection.injected_value),
+                        injection.register, injection.field, injection.bit,
+                        injection.gold_value, injection.injected_value),
                     'magenta'))
                 if injection.register_index is not None:
                     print(colored('register index: {}'.format(
@@ -671,8 +711,12 @@ class simics(object):
                         else:
                             count = 1
                         for target_index in range(count):
-                            config_object = 'DUT_{}.{}'.format(
-                                self.board, self.targets[target]['object'])
+                            if 'type' in self.targets[target] and \
+                                    self.targets[target]['type'] == 'gcache':
+                                config_object = self.targets[target]['object']
+                            else:
+                                config_object = 'DUT_{}.{}'.format(
+                                    self.board, self.targets[target]['object'])
                             if count > 1:
                                 config_object += '[{}]'.format(target_index)
                             if config_object not in registers:
@@ -692,7 +736,14 @@ class simics(object):
             # watch out! we're gonna use recursion
             # keep your arms and legs inside the stack frame at all times
             def log_diffs(config_object, register, gold_value, monitored_value):
-                if isinstance(gold_value, list):
+                if isinstance(gold_value, data_list):
+                    gold_value = '0x'+gold_value[0]
+                elif isinstance(gold_value, str) and gold_value[0] == '[' \
+                        and gold_value[-1] == ']':
+                    # for some reason we might get
+                    # string '[000...000]' instead of a data_list
+                    gold_value = '0x'+gold_value[1:-1]
+                elif isinstance(gold_value, list):
                     for index in range(len(gold_value)):
                         try:
                             log_diffs(
