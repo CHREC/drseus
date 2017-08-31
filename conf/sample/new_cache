@@ -1,0 +1,12 @@
+--cache
+--timeout
+5000
+@conf/new/p2020
+--cmd
+./ppc_fi_2d_conv_fft_omp lena_128.bmp out.bmp
+--files
+ppc_fi_2d_conv_fft_omp
+lena_128.bmp
+--output_file
+out.bmp
+--simics

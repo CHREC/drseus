@@ -85,18 +85,18 @@ class simics(object):
             buff = self.__command(
                 'run-command-file simics-{0}/{0}-linux{1}.simics'.format(
                     self.board, '-ethernet' if self.db.campaign.aux else ''))
-            # if self.options.cache:
-            #     self.__command('dstc-disable')
-            #     self.__command('run-python-file simics-p2020rdb/cache.py')
         else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
-            buff += self.__command('connect-real-network-port-in ssh '
-                                   'ethernet_switch0 target-ip=10.10.0.100')
-            if self.db.campaign.aux:
-                buff += self.__command('connect-real-network-port-in ssh '
-                                       'ethernet_switch0 target-ip=10.10.0.104')
             if self.options.cache:
                 self.__command('dstc-disable')
+                self.__command('istc-disable')
+            else:
+                buff += self.__command('connect-real-network-port-in ssh '
+                                       'ethernet_switch0 target-ip=10.10.0.100')
+                if self.db.campaign.aux:
+                    buff += self.__command('connect-real-network-port-in ssh '
+                                           'ethernet_switch0 '
+                                           'target-ip=10.10.0.104')
         self.__command('enable-real-time-mode')
         found_settings = 0
         if checkpoint is None:
@@ -117,10 +117,16 @@ class simics(object):
             elif 'Host TCP port' in line:
                 ssh_ports.append(int(line.split('->')[0].split()[-1]))
                 found_settings += 1
-            if not self.db.campaign.aux and found_settings == 2:
-                break
-            elif self.db.campaign.aux and found_settings == 4:
-                break
+            if self.options.cache and checkpoint is not None:
+                if not self.db.campaign.aux and found_settings == 1:
+                    break
+                elif self.db.campaign.aux and found_settings == 2:
+                    break
+            else:
+                if not self.db.campaign.aux and found_settings == 2:
+                    break
+                elif self.db.campaign.aux and found_settings == 4:
+                    break
         else:
             self.close()
             raise DrSEUsError('Error finding port or pseudoterminal')
@@ -159,12 +165,12 @@ class simics(object):
                                        'bootm 0x40800000 0x70000000')
         self.options.dut_serial_port = serial_ports[0]
         self.options.dut_ip_address = '10.10.0.100'
-        self.options.dut_scp_port = ssh_ports[0]
+        self.options.dut_scp_port = ssh_ports[0] if ssh_ports else None
         self.dut = dut(self.db, self.options)
         if self.db.campaign.aux:
             self.options.aux_serial_port = serial_ports[1]
             self.options.aux_ip_address = '10.10.0.104'
-            self.options.aux_scp_port = ssh_ports[1]
+            self.options.aux_scp_port = ssh_ports[1] if ssh_ports else None
             self.aux = dut(self.db, self.options, aux=True)
         if checkpoint is None:
             self.continue_dut()
@@ -197,10 +203,7 @@ class simics(object):
             if self.db.campaign.aux:
                 aux_process.join()
             if self.options.cache:
-                self.halt_dut()
-                self.__command('dstc-disable')
-                self.__command('run-python-file simics-p2020rdb/cache.py')
-                self.continue_dut()
+                self.enable_cache()
         else:
             self.dut.ip_address = '127.0.0.1'
             if self.board == 'a9x2':
@@ -278,10 +281,28 @@ class simics(object):
     def reset_dut(self):
         pass
 
+    def enable_cache(self):
+        self.halt_dut()
+        self.__command('dstc-disable')
+        self.__command('istc-disable')
+        self.__command('disconnect-real-network-port-in ssh '
+                       'ethernet_switch0 target-ip=10.10.0.100')
+        self.__command('disconnect "DUT_p2020rdb.eth[0]" '
+                       'ethernet_switch0.device1')
+        self.__command('run-python-file simics-p2020rdb/cache.py')
+        self.continue_dut()
+
     def disable_cache(self):
         self.halt_dut()
-        self.__command('run-python-file simics-p2020rdb/disable-cache.py')
+        self.__command('@conf.DUT_p2020rdb.soc.phys_mem.snoop_device = None')
+        self.__command('@conf.DUT_p2020rdb.soc.phys_mem.timing_model = None')
         self.__command('dstc-enable')
+        self.__command('istc-enable')
+        self.__command('connect "DUT_p2020rdb.eth[0]" ethernet_switch0.device2')
+        buff = self.__command('connect-real-network-port-in ssh '
+                              'ethernet_switch0 target-ip=10.10.0.100')
+        ssh_port = int(buff.split('->')[0].split()[-1])
+        self.dut.scp_port = ssh_port
         self.continue_dut()
 
     def __command(self, command=None, time=60):
