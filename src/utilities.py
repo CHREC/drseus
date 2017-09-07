@@ -535,7 +535,7 @@ def launch_minicom(options):
     if exists(capture):
         with open(capture, 'r') as capture_file:
             drseus.db.result.dut_output += capture_file.read()
-            drseus.db.result.save()
+            drseus.db.save()
         remove(capture)
         drseus.db.result.outcome_category = 'Minicom capture'
         drseus.db.result.outcome = ''

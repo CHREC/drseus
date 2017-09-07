@@ -257,7 +257,7 @@ class supervisor(Cmd):
                 else:
                     self.drseus.db.result.dut_output += \
                         capture_file.read().decode('utf8', 'replace')
-                self.drseus.db.result.save()
+                self.drseus.db.save()
             remove(capture)
         self.drseus.db.result.outcome_category = 'DrSEUs'
         self.drseus.db.result.outcome = 'minicom'

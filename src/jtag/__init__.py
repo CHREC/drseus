@@ -275,10 +275,7 @@ class jtag(object):
         return_buffer += buff
         if self.options.debug:
             print(colored(buff, 'yellow'))
-        if self.db.result is None:
-            self.db.campaign.save()
-        else:
-            self.db.result.save()
+        self.db.save()
         if index < 0:
             raise DrSEUsError(error_message)
         for message in self.error_messages:

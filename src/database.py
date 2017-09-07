@@ -10,6 +10,7 @@ from subprocess import check_output, DEVNULL, PIPE, Popen
 from sys import argv
 from sys import stdout as sys_stdout
 from termcolor import colored
+from time import sleep
 from traceback import format_exc, format_stack, print_exc
 
 from .log.models import campaign as campaign_model
@@ -229,3 +230,26 @@ class database(object):
             source=source,
             success=success)
         return event
+
+    def save(self, attempts=10):
+        for attempt in range(attempts):
+            try:
+                if self.result is None:
+                    self.campaign.save()
+                else:
+                    self.result.save()
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
+            except Exception as error:
+                self.log_event(
+                    'Warning' if attempt < attempts-1 else 'Error', 'Database',
+                    'Error saving database', self.db.log_exception)
+                print(colored(
+                    'Error saving database (attempt {}/{}): {}'.format(
+                        attempt+1, attempts, error), 'red'))
+                if attempt < attempts-1:
+                    sleep(30)
+                else:
+                    raise Exception('Error saving database')
+            else:
+                break

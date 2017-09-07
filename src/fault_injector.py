@@ -185,7 +185,7 @@ class fault_injector(object):
         if self.db.campaign.aux and self.options.aux_readonly:
             self.debugger.aux.flush()
         self.db.campaign.timestamp = datetime.now()
-        self.db.campaign.save()
+        self.db.save()
         self.close()
 
     def inject_campaign(self, iteration_counter=None, timer=None):
@@ -405,7 +405,7 @@ class fault_injector(object):
             elif self.options.command == 'supervise':
                 self.db.result.outcome_category = 'Supervisor'
                 self.db.result.outcome = ''
-                self.db.result.save()
+                self.db.save()
 
     # def inject_campaign(self, iteration_counter=None, timer=None):
         try:
@@ -413,7 +413,7 @@ class fault_injector(object):
         except KeyboardInterrupt:
             self.db.result.outcome_category = 'Incomplete'
             self.db.result.outcome = 'Interrupted'
-            self.db.result.save()
+            self.db.save()
             self.db.log_event(
                 'Information', 'User', 'Interrupted', self.db.log_exception)
             if self.db.campaign.simics:
@@ -428,7 +428,7 @@ class fault_injector(object):
         except:
             self.db.result.outcome_category = 'Incomplete'
             self.db.result.outcome = 'Uncaught exception'
-            self.db.result.save()
+            self.db.save()
             print_exc()
             self.db.log_event(
                 'Error', 'Fault injector', 'Exception', self.db.log_exception)

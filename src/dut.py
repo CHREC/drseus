@@ -260,14 +260,12 @@ class dut(object):
                             self.db.campaign.aux_output += buff
                         else:
                             self.db.campaign.dut_output += buff
-                        self.db.campaign.save()
                     else:
                         if self.aux:
                             self.db.result.aux_output += buff
                         else:
                             self.db.result.dut_output += buff
-                        self.db.result.save()
-
+                    self.db.save()
                     if check_errors:
                         for message, category in self.error_messages:
                             if message in buff:
@@ -695,11 +693,8 @@ class dut(object):
             if not continuous and errors and \
                     perf_counter() - start_time > self.options.timeout:
                 break
-            if not boot and buff and buff.endswith('\n'):
-                if self.db.result is None:
-                    self.db.campaign.save()
-                else:
-                    self.db.result.save()
+            # if not boot and buff and buff.endswith('\n'):
+            #     self.db.save()
         self.stop_timer()
         if self.serial.timeout != self.options.timeout:
             try:
@@ -722,10 +717,7 @@ class dut(object):
                     # TODO: use regular expression
                     self.db.result.detected_errors += \
                         int(line.replace('drseus_detected_errors:', ''))
-        if self.db.result is None:
-            self.db.campaign.save()
-        else:
-            self.db.result.save()
+        self.db.save()
         if errors:
             for message, category in self.error_messages:
                 if not (boot and category in ('Error booting', 'Reboot')) and \

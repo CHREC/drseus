@@ -223,7 +223,7 @@ def results_page(request, campaign_id=None):
     else:
         if campaign_id is not None:
             campaign_items_ = campaign_items
-            output_file = 'campaign-data/{}/gold_{}'.format(
+            output_file = 'campaign-data/{}/gold/{}'.format(
                 campaign_id, campaign.output_file)
             if exists(output_file) and guess_type(output_file)[0] is not None:
                 output_file = True

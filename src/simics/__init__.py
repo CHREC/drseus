@@ -65,7 +65,7 @@ class simics(object):
                 ['{}/simics'.format(cwd), '-no-win', '-no-gui', '-q',
                  '-stall' if self.options.cache else ''],
                 bufsize=0, cwd=cwd, universal_newlines=True,
-                stdin=PIPE, stdout=PIPE)
+                stdin=PIPE, stdout=PIPE, stderr=PIPE)
             try:
                 self.__command()
             except KeyboardInterrupt:
@@ -249,12 +249,17 @@ class simics(object):
                 self.__command('quit')
             except DrSEUsError as error:
                 if error.type == 'Timeout reading from Simics':
+                    self.db.result.debugger_output += self.simics.stderr.read()
+                    self.db.save()
                     self.simics.kill()
                     self.db.log_event(
                         'Warning', 'Simics', 'Killed unresponsive Simics',
                         self.db.log_exception)
                     self.simics = None
                     return
+            else:
+                self.db.result.debugger_output += self.simics.stderr.read()
+                self.db.save()
             self.simics.wait()
             self.db.log_event('Information', 'Simics', 'Closed Simics')
             self.simics = None
@@ -304,15 +309,16 @@ class simics(object):
         ssh_port = int(buff.split('->')[0].split()[-1])
         self.dut.scp_port = ssh_port
         self.continue_dut()
+        sleep(5)
 
-    def __command(self, command=None, time=60):
+    def __command(self, command=None, timeout_=300):
 
         def read_until():
             buff = ''
             hanging = False
             while True:
                 try:
-                    with timeout(time):
+                    with timeout(timeout_):
                         char = self.simics.stdout.read(1)
                 except TimeoutException:
                     char = ''
@@ -334,10 +340,7 @@ class simics(object):
                     break
             if self.options.debug:
                 print()
-            if self.db.result is None:
-                self.db.campaign.save()
-            else:
-                self.db.result.save()
+            self.db.save()
             for message in self.error_messages:
                 if message in buff:
                     self.db.log_event('Error', 'Simics', message, buff)
@@ -346,7 +349,7 @@ class simics(object):
                 raise DrSEUsError('Timeout reading from Simics')
             return buff
 
-    # def __command(self, command=None, time=10):
+    # def __command(self, command=None, timeout_=300):
         if command:
             event = self.db.log_event(
                 'Information', 'Simics', 'Command', command, success=False)
@@ -433,7 +436,7 @@ class simics(object):
             checkpoint = 1
             while True:
                 self.__command('run-cycles {}'.format(
-                    self.db.campaign.cycles_between), time=300)
+                    self.db.campaign.cycles_between), timeout_=300)
                 old_length = length
                 length = len(self.db.campaign.dut_output)
                 if length - old_length:
@@ -447,7 +450,7 @@ class simics(object):
                 incremental_checkpoint = 'gold-checkpoints/{}/{}'.format(
                     self.db.campaign.id, checkpoint)
                 self.__command('write-configuration {}'.format(
-                    incremental_checkpoint), time=300)
+                    incremental_checkpoint), timeout_=300)
                 if not read_thread.is_alive() or \
                     (self.db.campaign.aux and
                         self.db.campaign.kill_dut and
@@ -473,7 +476,7 @@ class simics(object):
             self.halt_dut()
             self.__command(
                 'write-configuration gold-checkpoints/{}/1'.format(
-                    self.db.campaign.id), time=300)
+                    self.db.campaign.id), timeout_=300)
 
     def inject_faults(self):
 
@@ -557,11 +560,11 @@ class simics(object):
                 for j in range(injection.checkpoint,
                                injections[injection_number].checkpoint):
                     self.__command('run-cycles {}'.format(
-                        self.db.campaign.cycles_between), time=300)
+                        self.db.campaign.cycles_between), timeout_=300)
                 self.__command(
                     'write-configuration injected-checkpoints/{}/{}/{}'.format(
                         self.db.campaign.id, self.options.result_id,
-                        injections[injection_number].checkpoint), time=300)
+                        injections[injection_number].checkpoint), timeout_=300)
                 self.close()
         return injected_checkpoint
 
@@ -920,14 +923,14 @@ class simics(object):
                 (last_checkpoint-checkpoint)
         for checkpoint in checkpoints:
             self.__command('run-cycles {}'.format(cycles_between),
-                           time=300 if self.options.compare_all else 600)
+                           timeout_=300 if self.options.compare_all else 600)
             incremental_checkpoint = 'injected-checkpoints/{}/{}/{}'.format(
                 self.db.campaign.id, self.db.result.id, checkpoint)
             monitor = self.options.compare_all or \
                 checkpoint == self.db.campaign.checkpoints
             if monitor or checkpoint == last_checkpoint:
                 self.__command('write-configuration {}'.format(
-                    incremental_checkpoint), time=300)
+                    incremental_checkpoint), timeout_=300)
             if monitor:
                 monitored_checkpoint = \
                     self.__merge_checkpoint(incremental_checkpoint)
