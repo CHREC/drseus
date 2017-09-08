@@ -33,6 +33,7 @@ injection_choices = {
     'processor_mode': [],
     'register': [],
     'register_access': [],
+    'register_index': [],
     'target_name': [],
     'tlb_entry': []
 }
@@ -83,7 +84,7 @@ class event(FilterSet):
                 len(event_choices[attribute]), 50)
 
     description = CharFilter(
-        label='Description', lookup_type='icontains',
+        label='Description', lookup_expr='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
         help_text='')
     type = MultipleChoiceFilter(
@@ -134,6 +135,9 @@ class injection(FilterSet):
     register_access = MultipleChoiceFilter(
         label='Register access',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    register_index = MultipleChoiceFilter(
+        label='Register index',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     success = BooleanFilter(
         label='Success',
         widget=Select(choices=(('3', 'Unknown'), ('1', 'True'), ('0', 'False')),
@@ -142,10 +146,10 @@ class injection(FilterSet):
         label='Target',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     time_gt = NumberFilter(
-        name='time', label='Time (>)', lookup_type='gt',
+        name='time', label='Time (>)', lookup_expr='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     time_lt = NumberFilter(
-        name='time', label='Time (<)', lookup_type='lt',
+        name='time', label='Time (<)', lookup_expr='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     tlb_entry = MultipleChoiceFilter(
         label='TLB entry',
@@ -189,43 +193,43 @@ class result(FilterSet):
         return sorted(choices, key=fix_sort_list)
 
     aux_output = CharFilter(
-        label='AUX console output', lookup_type='icontains',
+        label='AUX console output', lookup_expr='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
         help_text='')
     campaign_id = MultipleChoiceFilter(
         label='Campaign ID',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     data_diff_gt = NumberFilter(
-        name='data_diff', label='Data diff (>)', lookup_type='gt',
+        name='data_diff', label='Data diff (>)', lookup_expr='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     data_diff_lt = NumberFilter(
-        name='data_diff', label='Data diff (<)', lookup_type='lt',
+        name='data_diff', label='Data diff (<)', lookup_expr='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     debugger_output = CharFilter(
-        lookup_type='icontains',
+        lookup_expr='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
         help_text='')
     detected_errors_gt = NumberFilter(
-        name='detected_errors', label='Detected errors (>)', lookup_type='gt',
+        name='detected_errors', label='Detected errors (>)', lookup_expr='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     detected_errors_lt = NumberFilter(
-        name='detected_errors', label='Detected errors (<)', lookup_type='lt',
+        name='detected_errors', label='Detected errors (<)', lookup_expr='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     dut_output = CharFilter(
-        label='DUT console output', lookup_type='icontains',
+        label='DUT console output', lookup_expr='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
         help_text='')
     dut_serial_port = MultipleChoiceFilter(
         label='DUT serial port',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     execution_time_gt = NumberFilter(
-        name='execution_time', label='Execution time (>)', lookup_type='gt',
+        name='execution_time', label='Execution time (>)', lookup_expr='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     execution_time_lt = NumberFilter(
-        name='execution_time', label='Execution time (<)', lookup_type='lt',
+        name='execution_time', label='Execution time (<)', lookup_expr='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     event__description = CharFilter(
-        label='Description', lookup_type='icontains',
+        label='Description', lookup_expr='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),
         help_text='')
     event__type = MultipleChoiceFilter(
@@ -242,10 +246,10 @@ class result(FilterSet):
         widget=Select(choices=(('3', 'Unknown'), ('1', 'True'), ('0', 'False')),
                       attrs={'class': 'form-control'}), help_text='')
     id_gt = NumberFilter(
-        name='id', label='Result ID (>)', lookup_type='gt',
+        name='id', label='Result ID (>)', lookup_expr='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     id_lt = NumberFilter(
-        name='id', label='Result ID (<)', lookup_type='lt',
+        name='id', label='Result ID (<)', lookup_expr='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     injection__bit = MultipleChoiceFilter(
         label='Bit',
@@ -265,6 +269,9 @@ class result(FilterSet):
     injection__register_access = MultipleChoiceFilter(
         label='Register access',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    injection__register_index = MultipleChoiceFilter(
+        label='Register index',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__success = BooleanFilter(
         label='Success',
         widget=Select(choices=(('3', 'Unknown'), ('1', 'True'), ('0', 'False')),
@@ -273,10 +280,10 @@ class result(FilterSet):
         label='Target',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     injection__time_gt = NumberFilter(
-        name='time', label='Time (>)', lookup_type='gt',
+        name='time', label='Time (>)', lookup_expr='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     injection__time_lt = NumberFilter(
-        name='time', label='Time (<)', lookup_type='lt',
+        name='time', label='Time (<)', lookup_expr='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     injection__tlb_entry = MultipleChoiceFilter(
         label='TLB entry',
@@ -285,16 +292,16 @@ class result(FilterSet):
         label='Injection quantity',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     num_memory_diffs_gt = NumberFilter(
-        name='num_memory_diffs', label='Register diffs (>)', lookup_type='gt',
+        name='num_memory_diffs', label='Register diffs (>)', lookup_expr='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     num_memory_diffs_lt = NumberFilter(
-        name='num_memory_diffs', label='Register diffs (<)', lookup_type='lt',
+        name='num_memory_diffs', label='Register diffs (<)', lookup_expr='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     num_register_diffs_gt = NumberFilter(
-        name='num_register_diffs', label='Memory diffs (>)', lookup_type='gt',
+        name='num_register_diffs', label='Memory diffs (>)', lookup_expr='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     num_register_diffs_lt = NumberFilter(
-        name='num_register_diffs', label='Memory diffs (<)', lookup_type='lt',
+        name='num_register_diffs', label='Memory diffs (<)', lookup_expr='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
     outcome = MultipleChoiceFilter(
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')

@@ -3,6 +3,7 @@ from django.conf import settings
 
 from .arguments import get_options, parser
 
+# TODO: do we need to worry about g-cache otag?
 # TODO: improve execution timing in Simics
 # TODO: fix rename outcome on results page filter update
 # TODO: put AUX files/logs into subdirectory (in case named same as dut files)

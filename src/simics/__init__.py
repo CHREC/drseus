@@ -1,10 +1,10 @@
 from datetime import datetime
-from os import getcwd, listdir, makedirs, mkdir
+from os import getcwd, kill, listdir, makedirs, mkdir
 from os.path import exists, join
 from random import choice
 from re import findall
 from shutil import copyfile
-from signal import SIGINT
+from signal import SIGINT, SIGKILL
 from subprocess import call, check_call, check_output, DEVNULL, PIPE, Popen
 from sys import stdout
 from termcolor import colored
@@ -251,25 +251,35 @@ class simics(object):
                 if error.type == 'Timeout reading from Simics':
                     self.db.result.debugger_output += self.simics.stderr.read()
                     self.db.save()
-                    self.simics.kill()
-                    self.db.log_event(
-                        'Warning', 'Simics', 'Killed unresponsive Simics',
-                        self.db.log_exception)
+                    try:
+                        with timeout(30):
+                            self.simics.kill()
+                    except TimeoutException:
+                        kill(self.simics.pid, SIGKILL)
+                        self.db.log_event(
+                            'Warning', 'Simics',
+                            'Killed unresponsive Simics (os)',
+                            self.db.log_exception)
+                    else:
+                        self.db.log_event(
+                            'Warning', 'Simics',
+                            'Killed unresponsive Simics (subprocess)',
+                            self.db.log_exception)
+                    self.simics.wait(5)
                     self.simics = None
-                    return
             else:
                 self.db.result.debugger_output += self.simics.stderr.read()
                 self.db.save()
-            self.simics.wait()
-            self.db.log_event('Information', 'Simics', 'Closed Simics')
-            self.simics = None
+                self.simics.wait()
+                self.db.log_event('Information', 'Simics', 'Closed Simics')
+                self.simics = None
 
     def halt_dut(self):
         if self.running:
             self.db.log_event('Information', 'Simics', 'Halt DUT')
             self.simics.send_signal(SIGINT)
-            self.running = False
             self.__command()
+            self.running = False
 
     def continue_dut(self):
         if not self.running:
