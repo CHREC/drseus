@@ -15,7 +15,7 @@
     <section class="content">
         <div class="row">
             {% for chart in chart_list %}
-                <div class="col-lg-6 col-md-6 connectedSortable">
+                <div class="col-lg-6 col-md-6">
                     <div class="box">
                         <div class="box-header">
                             <h3 class="box-title">{{ chart.title }}</h3>
@@ -138,14 +138,5 @@
                 window.location.assign(window.location.href.replace('/category_charts', '/outcome_charts'));
             }
         }
-
-        $(".connectedSortable").sortable({
-            placeholder: "sort-highlight",
-            connectWith: ".connectedSortable",
-            handle: ".box-header, .nav-tabs",
-            forcePlaceholderSize: true,
-            zIndex: 999999
-        });
-        $(".connectedSortable .box-header, .connectedSortable .nav-tabs-custom").css("cursor", "move");
     </script>
 {% endblock %}
