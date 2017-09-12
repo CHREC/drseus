@@ -27,6 +27,21 @@ if [ ! -d simics-workspace ]; then
     fi
 fi
 
+if [ -d simics-workspace ]; then
+    printf 'setup simics g-cache2? [Y/n]: '
+    read -r cache
+    if [ "$cache" != "n" ]; then
+        (
+            cd simics-workspace
+            (
+                cd modules
+                git clone git@github.com:CHREC/g-cache2
+            )
+            make
+        )
+    fi
+fi
+
 if [ ! -d fiapps ]; then
     printf 'clone fiapps git repo? [Y/n]: '
     read -r fiapps
