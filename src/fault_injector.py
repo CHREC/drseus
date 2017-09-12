@@ -73,7 +73,7 @@ class fault_injector(object):
         def time_application():
             if self.db.campaign.command:
                 event = self.db.log_event(
-                    'Information', 'Fault Injector', 'Timed application',
+                    'Information', 'Fault injector', 'Timed application',
                     success=False, campaign=True)
                 execution_cycles = []
                 execution_times = []
@@ -219,6 +219,7 @@ class fault_injector(object):
                             except DrSEUsError as error:
                                 self.db.result.outcome_category = 'Simics error'
                                 self.db.result.outcome = error.type
+                                return
                             else:
                                 try:
                                     end_cycles, end_time = \
@@ -239,7 +240,12 @@ class fault_injector(object):
             if self.db.campaign.output_file and \
                     self.db.result.outcome == 'In progress':
                 if self.db.campaign.simics and self.options.cache:
-                    self.debugger.disable_cache()
+                    try:
+                        self.debugger.disable_cache()
+                    except DrSEUsError as error:
+                        self.db.result.outcome_category = 'Simics error'
+                        self.db.result.outcome = error.type
+                        return
                 if hasattr(self.debugger, 'aux') and \
                         self.db.campaign.aux_output_file:
                     self.debugger.aux.check_output()
