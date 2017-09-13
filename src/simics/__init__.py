@@ -249,7 +249,12 @@ class simics(object):
                 self.__command('quit')
             except DrSEUsError as error:
                 if error.type == 'Timeout reading from Simics':
-                    self.db.result.debugger_output += self.simics.stderr.read()
+                    if self.db.result:
+                        self.db.result.debugger_output += \
+                            self.simics.stderr.read()
+                    else:
+                        self.db.campaign.debugger_output += \
+                            self.simics.stderr.read()
                     self.db.save()
                     try:
                         with timeout(30):
@@ -268,7 +273,11 @@ class simics(object):
                     self.simics.wait(5)
                     self.simics = None
             else:
-                self.db.result.debugger_output += self.simics.stderr.read()
+                if self.db.result:
+                    self.db.result.debugger_output += self.simics.stderr.read()
+                else:
+                    self.db.campaign.debugger_output += \
+                        self.simics.stderr.read()
                 self.db.save()
                 self.simics.wait()
                 self.db.log_event('Information', 'Simics', 'Closed Simics')
