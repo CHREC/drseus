@@ -96,7 +96,7 @@ class jtag(object):
         else:
             selected_registers = None
         self.targets = get_targets(architecture, 'jtag', selected_targets,
-                                   selected_registers)
+                                   selected_registers, False)
 
     def reset_dut(self, expected_output, attempts):
 

@@ -236,8 +236,8 @@ def delete(options):
         connection.close()
         delete_database(options)
         print('deleted database')
-        if exists('log/migrations'):
-            rmtree('log/migrations')
+        if exists('src/log/migrations'):
+            rmtree('src/log/migrations')
             print('deleted django migrations')
 
 

@@ -104,10 +104,18 @@ def calculate_target_bits(targets):
         targets[target]['total_bits'] = total_bits
 
 
-def get_targets(architecture, type_, selected_targets, selected_registers):
+def get_targets(architecture, type_, selected_targets, selected_registers,
+                caches):
     targets = load_targets('', architecture)
     targets_info = targets[type_]
     targets = targets['targets']
+    if not caches:
+        if 'unused_targets' not in targets_info:
+            targets_info['unused_targets'] = []
+        for target in targets:
+            if 'type' in targets[target] and \
+                    targets[target]['type'] == 'gcache':
+                targets_info['unused_targets'].append(target)
     if selected_targets is not None:
         temp = selected_targets
         selected_targets = []

@@ -159,7 +159,7 @@ class fault_injector(object):
         gold_folder = 'campaign-data/{}/gold'.format(self.db.campaign.id)
         makedirs(gold_folder)
         if self.db.campaign.output_file:
-            if self.db.campaign.simics and self.options.cache:
+            if self.db.campaign.simics and self.db.campaign.caches:
                 self.debugger.disable_cache()
             if self.db.campaign.aux_output_file:
                 self.debugger.aux.get_file(
@@ -239,7 +239,7 @@ class fault_injector(object):
                                 self.debugger.dut.get_timer_value()
             if self.db.campaign.output_file and \
                     self.db.result.outcome == 'In progress':
-                if self.db.campaign.simics and self.options.cache:
+                if self.db.campaign.simics and self.db.campaign.caches:
                     try:
                         self.debugger.disable_cache()
                     except DrSEUsError as error:

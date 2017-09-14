@@ -60,6 +60,7 @@ def new_campaign(options):
     campaign_kwargs = {
         'architecture': options.architecture,
         'aux': options.aux,
+        'caches': options.caches,
         'command': options.dut_command,
         'description': options.description,
         'log_files': options.log_files,

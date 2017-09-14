@@ -32,16 +32,16 @@ class simics(object):
         self.running = False
         self.db = database
         self.options = options
-        if database.campaign.architecture == 'p2020':
+        if self.db.campaign.architecture == 'p2020':
             self.board = 'p2020rdb'
-        elif database.campaign.architecture == 'a9':
+        elif self.db.campaign.architecture == 'a9':
             self.board = 'a9x2'
-        self.set_targets()
+        self.set_targets(self.db.campaign.architecture)
 
     def __str__(self):
         return 'Simics simulation of {}'.format(self.board)
 
-    def set_targets(self):
+    def set_targets(self, architecture):
         if hasattr(self.options, 'selected_targets'):
             selected_targets = self.options.selected_targets
         else:
@@ -50,12 +50,8 @@ class simics(object):
             selected_registers = self.options.selected_registers
         else:
             selected_registers = None
-        if self.db.campaign.architecture == 'p2020':
-            self.targets = get_targets('p2020', 'simics', selected_targets,
-                                       selected_registers)
-        elif self.db.campaign.architecture == 'a9':
-            self.targets = get_targets('a9', 'simics', selected_targets,
-                                       selected_registers)
+        self.targets = get_targets(architecture, 'simics', selected_targets,
+                                   selected_registers, self.db.campaign.caches)
 
     def launch_simics(self, checkpoint=None):
         cwd = '{}/simics-workspace'.format(getcwd())
@@ -63,7 +59,7 @@ class simics(object):
         for attempt in range(attempts):
             self.simics = Popen(
                 ['{}/simics'.format(cwd), '-no-win', '-no-gui', '-q',
-                 '-stall' if self.options.cache else ''],
+                 '-stall' if self.db.campaign.caches else ''],
                 bufsize=0, cwd=cwd, universal_newlines=True,
                 stdin=PIPE, stdout=PIPE, stderr=PIPE)
             try:
@@ -87,7 +83,7 @@ class simics(object):
                     self.board, '-ethernet' if self.db.campaign.aux else ''))
         else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
-            if self.options.cache:
+            if self.db.campaign.caches:
                 self.__command('dstc-disable')
                 self.__command('istc-disable')
                 self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
@@ -121,7 +117,7 @@ class simics(object):
             elif 'Host TCP port' in line:
                 ssh_ports.append(int(line.split('->')[0].split()[-1]))
                 found_settings += 1
-            if self.options.cache and checkpoint is not None:
+            if self.db.campaign.caches and checkpoint is not None:
                 if not self.db.campaign.aux and found_settings == 1:
                     break
                 elif self.db.campaign.aux and found_settings == 2:
@@ -206,7 +202,7 @@ class simics(object):
             self.dut.do_login(change_prompt=(self.board == 'a9x2'), flush=False)
             if self.db.campaign.aux:
                 aux_process.join()
-            if self.options.cache:
+            if self.db.campaign.caches:
                 self.enable_cache()
         else:
             self.dut.ip_address = '127.0.0.1'

@@ -43,7 +43,7 @@ def target_bits_chart(campaign):
         return None
     injection_targets = get_targets(campaign.architecture,
                                     'simics' if campaign.simics else 'jtag',
-                                    None, None)
+                                    None, None, campaign.caches)
     target_list = sorted(injection_targets.keys())
     chart = {
         'chart': {

@@ -25,6 +25,7 @@ class campaign(Model):
     output_file = TextField(null=True)
     rsakey = TextField()
     simics = BooleanField()
+    caches = BooleanField()
     start_cycle = BigIntegerField(null=True)
     start_time = FloatField(null=True)
     timestamp = DateTimeField(auto_now_add=True)
