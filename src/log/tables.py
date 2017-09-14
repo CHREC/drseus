@@ -33,7 +33,7 @@ class campaigns(Table):
 
     class Meta:
         fields = ('links', 'id', 'results', 'command', 'architecture', 'simics',
-                  'execution_time', 'cycles', 'timestamp')
+                  'caches', 'execution_time', 'cycles', 'timestamp')
         model = models.campaign
         order_by = 'id'
         template = 'django_tables2/bootstrap.html'
@@ -61,7 +61,7 @@ class campaign(Table):
 
     class Meta:
         fields = ('id', 'timestamp', 'results', 'command', 'aux_command',
-                  'description', 'architecture', 'simics', 'aux',
+                  'description', 'architecture', 'simics', 'caches', 'aux',
                   'execution_time', 'cycles', 'output_file', 'checkpoints',
                   'cycles_between')
         model = models.campaign
