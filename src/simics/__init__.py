@@ -332,6 +332,10 @@ class simics(object):
                        'conf.DUT_p2020rdb.soc.phys_mem')
         self.__command('@conf.DUT_p2020rdb.soc.cpu[1].physical_memory = '
                        'conf.DUT_p2020rdb.soc.phys_mem')
+        self.__command('@conf.DUT_p2020rdb.soc.cpu[0].dcache = None')
+        self.__command('@conf.DUT_p2020rdb.soc.cpu[0].icache = None')
+        self.__command('@conf.DUT_p2020rdb.soc.cpu[1].dcache = None')
+        self.__command('@conf.DUT_p2020rdb.soc.cpu[1].icache = None')
         self.__command('dstc-enable')
         self.__command('istc-enable')
         self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
