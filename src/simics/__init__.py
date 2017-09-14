@@ -90,6 +90,10 @@ class simics(object):
             if self.options.cache:
                 self.__command('dstc-disable')
                 self.__command('istc-disable')
+                self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
+                               'mode = instruction-fetch-trace')
+                self.__command('DUT_p2020rdb.soc.cpu[1].instruction-fetch-mode '
+                               'mode = instruction-fetch-trace')
             else:
                 buff += self.__command('connect-real-network-port-in ssh '
                                        'ethernet_switch0 target-ip=10.10.0.100')
@@ -313,15 +317,27 @@ class simics(object):
                        'ethernet_switch0 target-ip=10.10.0.100')
         self.__command('disconnect "DUT_p2020rdb.eth[0]" '
                        'ethernet_switch0.device1')
-        self.__command('run-python-file simics-p2020rdb/cache.py')
+        self.__command('run-python-file simics-p2020rdb/caches.py')
+        self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
+                       'mode = instruction-fetch-trace')
+        self.__command('DUT_p2020rdb.soc.cpu[1].instruction-fetch-mode '
+                       'mode = instruction-fetch-trace')
         self.continue_dut()
 
     def disable_cache(self):
         self.halt_dut()
         self.__command('@conf.DUT_p2020rdb.soc.phys_mem.snoop_device = None')
         self.__command('@conf.DUT_p2020rdb.soc.phys_mem.timing_model = None')
+        self.__command('@conf.DUT_p2020rdb.soc.cpu[0].physical_memory = '
+                       'conf.DUT_p2020rdb.soc.phys_mem')
+        self.__command('@conf.DUT_p2020rdb.soc.cpu[1].physical_memory = '
+                       'conf.DUT_p2020rdb.soc.phys_mem')
         self.__command('dstc-enable')
         self.__command('istc-enable')
+        self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
+                       'mode = no-instruction-fetch')
+        self.__command('DUT_p2020rdb.soc.cpu[1].instruction-fetch-mode '
+                       'mode = no-instruction-fetch')
         self.__command('connect "DUT_p2020rdb.eth[0]" ethernet_switch0.device2')
         buff = self.__command('connect-real-network-port-in ssh '
                               'ethernet_switch0 target-ip=10.10.0.100')

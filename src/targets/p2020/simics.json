@@ -5,7 +5,111 @@
         "registers": {
             "lines": {
                 "count": [
-                    2048,
+                    16384,
+                    5
+                ],
+                "fields": {
+                    "status": {
+                        "bits": 2,
+                        "index": 0
+                    },
+                    "tag": {
+                        "bits": 64,
+                        "index": 1
+                    },
+                    "data": {
+                        "bits": 256,
+                        "index": 4
+                    }
+                }
+            }
+        }
+    },
+    "L1DCACHE0": {
+        "OBJECT": "l1_data_cache_cpu0",
+        "is_gcache": true,
+        "registers": {
+            "lines": {
+                "count": [
+                    1024,
+                    5
+                ],
+                "fields": {
+                    "status": {
+                        "bits": 2,
+                        "index": 0
+                    },
+                    "tag": {
+                        "bits": 64,
+                        "index": 1
+                    },
+                    "data": {
+                        "bits": 256,
+                        "index": 4
+                    }
+                }
+            }
+        }
+    },
+    "L1ICACHE0": {
+        "OBJECT": "l1_instr_cache_cpu0",
+        "is_gcache": true,
+        "registers": {
+            "lines": {
+                "count": [
+                    1024,
+                    5
+                ],
+                "fields": {
+                    "status": {
+                        "bits": 2,
+                        "index": 0
+                    },
+                    "tag": {
+                        "bits": 64,
+                        "index": 1
+                    },
+                    "data": {
+                        "bits": 256,
+                        "index": 4
+                    }
+                }
+            }
+        }
+    },
+    "L1DCACHE1": {
+        "OBJECT": "l1_data_cache_cpu1",
+        "is_gcache": true,
+        "registers": {
+            "lines": {
+                "count": [
+                    1024,
+                    5
+                ],
+                "fields": {
+                    "status": {
+                        "bits": 2,
+                        "index": 0
+                    },
+                    "tag": {
+                        "bits": 64,
+                        "index": 1
+                    },
+                    "data": {
+                        "bits": 256,
+                        "index": 4
+                    }
+                }
+            }
+        }
+    },
+    "L1ICACHE1": {
+        "OBJECT": "l1_instr_cache_cpu1",
+        "is_gcache": true,
+        "registers": {
+            "lines": {
+                "count": [
+                    1024,
                     5
                 ],
                 "fields": {

@@ -272,6 +272,10 @@
             }
         },
         "unused_targets": [
+            "L1DCACHE0",
+            "L1DCACHE1",
+            "L1ICACHE0",
+            "L1ICACHE1",
             "L2CACHE",
             "RAPIDIO",
             "TLB"
@@ -3329,6 +3333,18 @@
             "I2C": {
                 "limitations": "Slave mode not supported Arbitration lost not supported/detectable",
                 "object": "soc.i2c"
+            },
+            "L1DCACHE0": {
+                "object": "l1_data_cache_cpu0"
+            },
+            "L1DCACHE1": {
+                "object": "l1_data_cache_cpu1"
+            },
+            "L1ICACHE0": {
+                "object": "l1_instr_cache_cpu0"
+            },
+            "L1ICACHE1": {
+                "object": "l1_instr_cache_cpu1"
             },
             "L2CACHE": {
                 "object": "l2_cache"
@@ -34781,11 +34797,111 @@
             },
             "type": "memory_mapped"
         },
+        "L1DCACHE0": {
+            "registers": {
+                "lines": {
+                    "count": [
+                        1024,
+                        5
+                    ],
+                    "fields": {
+                        "data": {
+                            "bits": 256,
+                            "index": 4
+                        },
+                        "status": {
+                            "bits": 2,
+                            "index": 0
+                        },
+                        "tag": {
+                            "bits": 64,
+                            "index": 1
+                        }
+                    }
+                }
+            },
+            "type": "gcache"
+        },
+        "L1DCACHE1": {
+            "registers": {
+                "lines": {
+                    "count": [
+                        1024,
+                        5
+                    ],
+                    "fields": {
+                        "data": {
+                            "bits": 256,
+                            "index": 4
+                        },
+                        "status": {
+                            "bits": 2,
+                            "index": 0
+                        },
+                        "tag": {
+                            "bits": 64,
+                            "index": 1
+                        }
+                    }
+                }
+            },
+            "type": "gcache"
+        },
+        "L1ICACHE0": {
+            "registers": {
+                "lines": {
+                    "count": [
+                        1024,
+                        5
+                    ],
+                    "fields": {
+                        "data": {
+                            "bits": 256,
+                            "index": 4
+                        },
+                        "status": {
+                            "bits": 2,
+                            "index": 0
+                        },
+                        "tag": {
+                            "bits": 64,
+                            "index": 1
+                        }
+                    }
+                }
+            },
+            "type": "gcache"
+        },
+        "L1ICACHE1": {
+            "registers": {
+                "lines": {
+                    "count": [
+                        1024,
+                        5
+                    ],
+                    "fields": {
+                        "data": {
+                            "bits": 256,
+                            "index": 4
+                        },
+                        "status": {
+                            "bits": 2,
+                            "index": 0
+                        },
+                        "tag": {
+                            "bits": 64,
+                            "index": 1
+                        }
+                    }
+                }
+            },
+            "type": "gcache"
+        },
         "L2CACHE": {
             "registers": {
                 "lines": {
                     "count": [
-                        2048,
+                        16384,
                         5
                     ],
                     "fields": {

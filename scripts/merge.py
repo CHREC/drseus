@@ -736,7 +736,8 @@ for device in ['a9', 'p2020']:
                     unused_fields.sort()
 
                 if 'fields' in merged_register and \
-                        target not in ['TLB', 'L1CACHE', 'L2CACHE']:
+                        target not in ['TLB', 'L1DCACHE0', 'L1ICACHE0',
+                                       'L1DCACHE1', 'L1ICACHE1', 'L2CACHE']:
                     merged_register['fields'].sort(key=lambda x: x[1][0],
                                                    reverse=True)
                     if 'bits' in merged_register:
