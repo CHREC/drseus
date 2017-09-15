@@ -3,10 +3,15 @@
 
 {% block body %}
     <section class="content-header">
-        <h1>Results ({{ result_count }})</h1>
+        <h1>
+            {% if campaign %}
+                Campaign {{ campaign.id }}
+            {% endif %}
+            Results ({{ result_count }})
+        </h1>
         <ol class="breadcrumb">
             <li><a href="/"> Campaigns </a></li>
-            {%if campaign %}
+            {% if campaign %}
                 <li><a href="info"> Campaign {{ campaign.id }} </a></li>
             {% endif %}
             <li class="active"><a href=""> Results </a></li>
@@ -31,7 +36,7 @@
             <i class="fa fa-angle-left pull-right"></i>
         </a>
         <ul class="treeview-menu">
-            <li>
+            <li class="treeview">
                 <a href="#">
                     <i class="fa fa-clone"></i>
                     <span>Results</span>
@@ -52,7 +57,7 @@
                     </li>
                 </ul>
             </li>
-            <li>
+            <li class="treeview">
                 <a href="#">
                     <i class="fa fa-terminal"></i>
                     <span>DUT Console</span>
@@ -74,7 +79,7 @@
                 </ul>
             </li>
             {% if not campaign or campaign.aux %}
-                <li>
+                <li class="treeview">
                     <a href="#">
                         <i class="fa fa-terminal"></i>
                         <span>AUX Console</span>
@@ -96,7 +101,7 @@
                     </ul>
                 </li>
             {% endif %}
-            <li>
+            <li class="treeview">
                 <a href="#">
                     <i class="fa fa-terminal"></i>
                     <span>Debugger</span>
@@ -118,7 +123,7 @@
                 </ul>
             </li>
             {% if output_file %}
-                <li>
+                <li class="treeview">
                     <a href="#">
                         <i class="fa fa-file-image-o"></i>
                         <span>Output File</span>
@@ -141,7 +146,7 @@
                 </li>
             {% endif %}
             {% if not campaign or campaign.log_files %}
-                <li>
+                <li class="treeview">
                     <a href="#">
                         <i class="fa fa-file-code-o"></i>
                         <span>Log File</span>
@@ -173,7 +178,7 @@
             <i class="fa fa-angle-left pull-right"></i>
         </a>
         <ul class="treeview-menu">
-            <li>
+            <li class="treeview">
                 <a href="#">
                     <i class="fa fa-terminal"></i>
                     <span>DUT Console</span>
@@ -195,7 +200,7 @@
                 </ul>
             </li>
             {% if not campaign or campaign.aux %}
-                <li>
+                <li class="treeview">
                     <a href="#">
                         <i class="fa fa-terminal"></i>
                         <span>AUX Console</span>
@@ -217,7 +222,7 @@
                     </ul>
                 </li>
             {% endif %}
-            <li>
+            <li class="treeview">
                 <a href="#">
                     <i class="fa fa-terminal"></i>
                     <span>Debugger</span>
@@ -239,7 +244,7 @@
                 </ul>
             </li>
             {% if not campaign or campaign.output_file %}
-                <li>
+                <li class="treeview">
                     <a href="#">
                         <i class="fa fa-file-image-o"></i>
                         <span>Output File</span>
@@ -262,7 +267,7 @@
                 </li>
             {% endif %}
             {% if not campaign or campaign.log_files %}
-                <li>
+                <li class="treeview">
                     <a href="#">
                         <i class="fa fa-file-code-o"></i>
                         <span>Log File</span>

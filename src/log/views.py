@@ -418,7 +418,10 @@ def results_page(request, campaign_id=None):
                 return redirect('/campaign/{}/results'.format(campaign_id))
             else:
                 return redirect('/results')
-    result_table = tables.results(results)
+    if campaign_id is None:
+        result_table = tables.all_results(results)
+    else:
+        result_table = tables.results(results)
     RequestConfig(
         request, paginate={'per_page': table_length}).configure(result_table)
     return render(request, 'results.html', {

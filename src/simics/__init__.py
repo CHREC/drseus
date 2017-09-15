@@ -23,7 +23,7 @@ class simics(object):
                       'Illegal instruction', 'Illegal memory mapping',
                       'Illegal Memory Mapping', 'Error setting attribute',
                       'dropping memop (peer attribute not set)',
-                      'where nothing is mapped', 'Error']
+                      'where nothing is mapped', 'Error', 'error']
 
     def __init__(self, database, options):
         self.simics = None
@@ -76,21 +76,28 @@ class simics(object):
                     'Information', 'Simics', 'Launched Simics')
                 break
         # TODO: Simics fails down there if no license \/
+        if self.db.campaign.caches:
+                self.__command('disable-multithreading')
+                self.__command('dstc-disable')
+                self.__command('istc-disable')
         if checkpoint is None:
             self.__command('$drseus=TRUE')
             buff = self.__command(
                 'run-command-file simics-{0}/{0}-linux{1}.simics'.format(
                     self.board, '-ethernet' if self.db.campaign.aux else ''))
-        else:
             if self.db.campaign.caches:
-                self.__command('disable-multithreading')
-                self.__command('dstc-disable')
-                self.__command('istc-disable')
                 self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
                                'mode = instruction-fetch-trace')
                 self.__command('DUT_p2020rdb.soc.cpu[1].instruction-fetch-mode '
                                'mode = instruction-fetch-trace')
+                self.__command('run-python-file simics-p2020rdb/caches.py')
+        else:
             buff = self.__command('read-configuration {}'.format(checkpoint))
+            if self.db.campaign.caches:
+                self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
+                               'mode = instruction-fetch-trace')
+                self.__command('DUT_p2020rdb.soc.cpu[1].instruction-fetch-mode '
+                               'mode = instruction-fetch-trace')
             buff += self.__command('connect-real-network-port-in ssh '
                                    'ethernet_switch0 target-ip=10.10.0.100')
             if self.db.campaign.aux:
@@ -187,26 +194,14 @@ class simics(object):
                     self.__command('AUX_a9x2_1.coretile.mpcore.phys_mem.'
                                    'load-file $initrd_image $initrd_addr')
             self.continue_dut()
-            if self.db.campaign.caches:
-                self.dut.read_until(boot=True, flush=False)
-                self.halt_dut()
-                self.__command('disable-multithreading')
-                self.__command('dstc-disable')
-                self.__command('istc-disable')
-                self.__command('DUT_p2020rdb.soc.cpu[0].instruction-fetch-mode '
-                               'mode = instruction-fetch-trace')
-                self.__command('DUT_p2020rdb.soc.cpu[1].instruction-fetch-mode '
-                               'mode = instruction-fetch-trace')
-                self.__command('run-python-file simics-p2020rdb/caches.py')
-                self.continue_dut()
-                self.dut.write('\n')
             if self.db.campaign.aux:
                 aux_process = Thread(
                     target=self.aux.do_login,
                     kwargs={'change_prompt': self.board == 'a9x2',
                             'flush': False})
                 aux_process.start()
-            self.dut.do_login(change_prompt=(self.board == 'a9x2'), flush=False)
+            self.dut.do_login(change_prompt=(self.board == 'a9x2'),
+                              flush=self.db.campaign.caches)
             if self.db.campaign.aux:
                 aux_process.join()
         else:
@@ -290,10 +285,16 @@ class simics(object):
 
     def halt_dut(self):
         if self.running:
-            self.db.log_event('Information', 'Simics', 'Halt DUT')
+            event = self.db.log_event('Information', 'Simics', 'Halt DUT',
+                                      success=False)
             self.simics.send_signal(SIGINT)
             self.__command()
             self.running = False
+            event.success = True
+            event.save()
+        else:
+            self.db.log_event('Warning', 'Simics', 'Halt DUT',
+                              'Simulation already paused', success=False)
 
     def continue_dut(self):
         if not self.running:
@@ -305,7 +306,10 @@ class simics(object):
                 self.db.result.debugger_output += 'run\n'
             if self.options.debug:
                 print(colored('run', 'yellow'))
-            self.db.log_event('Information', 'Simics', 'Continue DUT')
+            self.db.log_event('Warning', 'Simics', 'Continue DUT', success=True)
+        else:
+            self.db.log_event('Warning', 'Simics', 'Continue DUT',
+                              'Simulation already running', success=False)
 
     def reset_dut(self):
         pass
@@ -341,7 +345,7 @@ class simics(object):
                 print()
             self.db.save()
             for message in self.error_messages:
-                if message in buff:
+                if message in buff and 'sn_port_forward_in error' not in buff:
                     self.db.log_event('Error', 'Simics', message, buff)
                     raise DrSEUsError(message)
             if hanging:

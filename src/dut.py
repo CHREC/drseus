@@ -401,7 +401,8 @@ class dut(object):
                                 print(colored('done', 'blue'))
                             self.db.log_event(
                                 'Information', 'DUT' if not self.aux else 'AUX',
-                                'Sent files using SCP', ', '.join(files))
+                                'Sent files using SCP', ', '.join(files),
+                                success=True)
                             break
 
         # def send_files(self, files=None, attempts=10):
@@ -570,7 +571,8 @@ class dut(object):
                                 self.db.log_event(
                                     'Information',
                                     'DUT' if not self.aux else 'AUX',
-                                    'Received file using SCP', file_)
+                                    'Received file using SCP', file_,
+                                    success=True)
                                 return file_path
                             else:
                                 self.db.log_event(

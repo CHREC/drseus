@@ -75,3 +75,11 @@ td .console {
         padding-top: 100px;
     }
 }
+
+/*Fixes sidebar divider when collapsed */
+.sidebar-mini.sidebar-collapse .sidebar-menu li.header {
+    display: block !important;
+    text-indent: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+}

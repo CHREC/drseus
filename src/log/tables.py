@@ -127,6 +127,15 @@ class results(Table):
         template = 'django_tables2/bootstrap.html'
 
 
+class all_results(results):
+    class Meta:
+        fields = ('select_box', 'id_', 'campaign_id', 'dut_serial_port',
+                  'timestamp', 'outcome_category', 'outcome', 'execution_time',
+                  'cycles', 'data_diff', 'targets', 'registers')
+        model = models.result
+        order_by = '-id_'
+        template = 'django_tables2/bootstrap.html'
+
 class result(Table):
     outcome = TemplateColumn(
         '<input id="edit_outcome" type="text" value="{{ value }}" />')
