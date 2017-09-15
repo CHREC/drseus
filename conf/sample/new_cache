@@ -10,3 +10,5 @@ lena_128.bmp
 out.bmp
 --simics
 --caches
+--ckpts
+50

@@ -345,21 +345,28 @@ class dut(object):
                         'Sent files using FTP', ', '.join(files))
 
         def send_scp():
+            if self.db.campaign.caches:
+                timeout_ = 1200
+            else:
+                timeout_ = 300
+            connect_kwargs = {
+                'hostname': self.ip_address,
+                'port': self.scp_port,
+                'username': self.username,
+                'password': self.password if not self.options.rsa else None,
+                'pkey': self.rsakey if self.options.rsa else None,
+                'allow_agent': False,
+                'look_for_keys': False,
+                'timeout': timeout_,
+                'banner_timeout': timeout_,
+                'auth_timeout': timeout_,
+            }
             ssh = SSHClient()
             ssh.set_missing_host_key_policy(AutoAddPolicy())
             for attempt in range(attempts):
                 try:
-                    with timeout(30):
-                        if self.options.rsa:
-                            ssh.connect(self.ip_address, port=self.scp_port,
-                                        username=self.username,
-                                        pkey=self.rsakey, allow_agent=False,
-                                        look_for_keys=False)
-                        else:
-                            ssh.connect(self.ip_address, port=self.scp_port,
-                                        username=self.username,
-                                        password=self.password,
-                                        allow_agent=False, look_for_keys=False)
+                    with timeout(timeout_):
+                        ssh.connect(**connect_kwargs)
                 except KeyboardInterrupt:
                     raise KeyboardInterrupt
                 except Exception as error:
@@ -368,8 +375,9 @@ class dut(object):
                         'Error sending file(s)')
                 else:
                     try:
-                        with timeout(30):
-                            dut_scp = SCPClient(ssh.get_transport())
+                        with timeout(timeout_):
+                            dut_scp = SCPClient(ssh.get_transport(),
+                                                socket_timeout=timeout_)
                     except KeyboardInterrupt:
                         raise KeyboardInterrupt
                     except Exception as error:
@@ -378,7 +386,7 @@ class dut(object):
                             'Error sending file(s)', [ssh])
                     else:
                         try:
-                            with timeout(300):
+                            with timeout(timeout_):
                                 dut_scp.put(files)
                         except KeyboardInterrupt:
                             raise KeyboardInterrupt
@@ -504,21 +512,28 @@ class dut(object):
                     return file_path
 
         def get_scp():
+            if self.db.campaign.caches:
+                timeout_ = 1200
+            else:
+                timeout_ = 300
+            connect_kwargs = {
+                'hostname': self.ip_address,
+                'port': self.scp_port,
+                'username': self.username,
+                'password': self.password if not self.options.rsa else None,
+                'pkey': self.rsakey if self.options.rsa else None,
+                'allow_agent': False,
+                'look_for_keys': False,
+                'timeout': timeout_,
+                'banner_timeout': timeout_,
+                'auth_timeout': timeout_,
+            }
             ssh = SSHClient()
             ssh.set_missing_host_key_policy(AutoAddPolicy())
             for attempt in range(attempts):
                 try:
-                    with timeout(60):
-                        if self.options.rsa:
-                            ssh.connect(self.ip_address, port=self.scp_port,
-                                        username=self.username,
-                                        pkey=self.rsakey, allow_agent=False,
-                                        look_for_keys=False)
-                        else:
-                            ssh.connect(self.ip_address, port=self.scp_port,
-                                        username=self.username,
-                                        password=self.password,
-                                        allow_agent=False, look_for_keys=False)
+                    with timeout(timeout_):
+                        ssh.connect(**connect_kwargs)
                 except KeyboardInterrupt:
                     raise KeyboardInterrupt
                 except Exception as error:
@@ -527,8 +542,9 @@ class dut(object):
                         'Error receiving file')
                 else:
                     try:
-                        with timeout(60):
-                            dut_scp = SCPClient(ssh.get_transport())
+                        with timeout(timeout_):
+                            dut_scp = SCPClient(ssh.get_transport(),
+                                                socket_timeout=timeout_)
                     except KeyboardInterrupt:
                         raise KeyboardInterrupt
                     except Exception as error:
@@ -537,7 +553,7 @@ class dut(object):
                             'Error receiving file', [ssh])
                     else:
                         try:
-                            with timeout(300):
+                            with timeout(timeout_):
                                 dut_scp.get(file_, local_path=local_path)
                         except KeyboardInterrupt:
                             raise KeyboardInterrupt
