@@ -251,12 +251,15 @@ class simics(object):
                 self.__command('quit')
             except DrSEUsError as error:
                 if error.type == 'Timeout reading from Simics':
+                    try:
+                        with timeout(30):
+                            buff = self.simics.stderr.read()
+                    except TimeoutException:
+                        buff = ''
                     if self.db.result:
-                        self.db.result.debugger_output += \
-                            self.simics.stderr.read()
+                        self.db.result.debugger_output += buff
                     else:
-                        self.db.campaign.debugger_output += \
-                            self.simics.stderr.read()
+                        self.db.campaign.debugger_output += buff
                     self.db.save()
                     try:
                         with timeout(30):
@@ -931,8 +934,17 @@ class simics(object):
             cycles_between = self.db.campaign.cycles_between * \
                 (last_checkpoint-checkpoint)
         for checkpoint in checkpoints:
-            self.__command('run-cycles {}'.format(cycles_between),
-                           timeout_=300 if self.options.compare_all else 600)
+            self.running = True
+            try:
+                self.__command('run-cycles {}'.format(cycles_between),
+                               timeout_=1200 if self.db.campaign.caches
+                               else 300 if self.options.compare_all else 600)
+            except DrSEUsError as error:
+                self.db.log_event(
+                        'Error', 'Simics', error.type, self.db.log_exception)
+                raise DrSEUsError('Error continuing simulation')
+            else:
+                self.running = False
             incremental_checkpoint = 'injected-checkpoints/{}/{}/{}'.format(
                 self.db.campaign.id, self.db.result.id, checkpoint)
             monitor = self.options.compare_all or \
