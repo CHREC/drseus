@@ -181,9 +181,8 @@ class database(object):
     def __init__(self, options):
         self.options = options
         self.campaign = get_campaign(options)
-        if options.command == 'new':
-            self.result = None
-        else:
+        self.result = None
+        if options.command != 'new':
             self.__create_result(supervisor=options.command == 'supervise')
 
     def __create_result(self, supervisor=False):
@@ -191,7 +190,8 @@ class database(object):
             outcome_category=('Supervisor' if supervisor else 'Incomplete'),
             outcome=('' if supervisor else 'In progress'),
             dut_serial_port=self.options.dut_serial_port,
-            aux_serial_port=self.options.aux_serial_port)
+            aux_serial_port=self.options.aux_serial_port,
+            previous_result=self.result)
 
     def log_result(self, supervisor=False, exit=False):
         if self.result.dut_serial_port is None:

@@ -238,6 +238,8 @@ class simics(object):
 
     def close(self):
         if self.simics:
+            event = self.db.log_event('Information', 'Simics', 'Closed Simics',
+                                      success=False)
             if self.dut:
                 self.dut.close()
                 self.dut = None
@@ -280,8 +282,12 @@ class simics(object):
                         self.simics.stderr.read()
                 self.db.save()
                 self.simics.wait()
-                self.db.log_event('Information', 'Simics', 'Closed Simics')
+                event.success = True
+                event.save()
                 self.simics = None
+        else:
+            self.db.log_event('Warning', 'Simics', 'Closed Simics',
+                              'Simics already closed', success=False)
 
     def halt_dut(self):
         if self.running:
@@ -327,7 +333,7 @@ class simics(object):
                     char = ''
                     hanging = True
                     self.db.log_event(
-                        'Warning', 'Simics', 'Read timeout',
+                        'Error', 'Simics', 'Read timeout',
                         self.db.log_exception)
                 if not char:
                     break

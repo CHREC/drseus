@@ -136,12 +136,20 @@ class all_results(results):
         order_by = '-id_'
         template = 'django_tables2/bootstrap.html'
 
+
 class result(Table):
     outcome = TemplateColumn(
         '<input id="edit_outcome" type="text" value="{{ value }}" />')
     outcome_category = TemplateColumn(
         '<input id="edit_outcome_category" type="text" value="{{ value }}" />')
     timestamp = DateTimeColumn(format=datetime_format)
+    next_result = TemplateColumn(
+        '{% if value %}<a href="/result/{{ value.id }}">{{ value.id }}</a>'
+        '{% else %}None{% endif %}', accessor='next_result',
+        verbose_name='Next Result')
+    previous_result = TemplateColumn(
+        '{% if value %}<a href="/result/{{ value }}">{{ value }}</a>'
+        '{% else %}None{% endif %}', accessor='previous_result_id')
 
     def render_cycles(self, record):
         return '{:,}'.format(record.cycles)
@@ -157,7 +165,7 @@ class result(Table):
     class Meta:
         fields = ('dut_serial_port', 'timestamp', 'outcome_category', 'outcome',
                   'execution_time', 'cycles', 'num_injections', 'data_diff',
-                  'detected_errors')
+                  'detected_errors', 'previous_result', 'next_result')
         model = models.result
         orderable = False
         template = 'django_tables2/bootstrap.html'

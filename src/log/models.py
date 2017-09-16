@@ -1,7 +1,8 @@
 from django.contrib.postgres.fields import ArrayField
 from django.db.models import (BooleanField, BigIntegerField, DateTimeField,
                               FloatField, ForeignKey, IntegerField, Model,
-                              NullBooleanField, TextField)
+                              NullBooleanField, OneToOneField, SET_NULL,
+                              TextField)
 
 
 class campaign(Model):
@@ -48,6 +49,9 @@ class result(Model):
     num_memory_diffs = IntegerField(null=True)
     outcome = TextField()
     outcome_category = TextField()
+    previous_result = OneToOneField('self', null=True,
+                                    related_name='next_result',
+                                    on_delete=SET_NULL)
     timestamp = DateTimeField(auto_now_add=True)
 
 
