@@ -24,11 +24,11 @@ printf 'install simics? [y/N]: '
 read -r simics
 case "$simics" in
     Y*|y*)
-        git clone git@github.com:CHREC/setup-simics
         (
+            cd ~
+            git clone git@github.com:CHREC/setup-simics
             cd setup-simics
             ./setup_simics.sh
         )
-        rm -rf setup-simics
         ;;
 esac
