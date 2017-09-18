@@ -232,6 +232,28 @@ class database(object):
             success=success)
         return event
 
+    def log_diff(self, checkpoint, config_object, register, gold_value,
+                 monitored_value, attempts=10):
+        for attempt in range(attempts):
+            try:
+                self.result.simics_register_diff_set.create(
+                    checkpoint=checkpoint, config_object=config_object,
+                    register=register, gold_value=gold_value,
+                    monitored_value=monitored_value)
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
+            except Exception as error:
+                print_exc()
+                print(colored(
+                    'Error saving diff to database (attempt {}/{}): {}'.format(
+                        attempt+1, attempts, error), 'red'))
+                if attempt < attempts-1:
+                    sleep(30)
+                else:
+                    raise Exception('Error saving diff to database')
+            else:
+                break
+
     def save(self, attempts=10):
         for attempt in range(attempts):
             try:
@@ -242,15 +264,15 @@ class database(object):
             except KeyboardInterrupt:
                 raise KeyboardInterrupt
             except Exception as error:
-                self.log_event(
-                    'Warning' if attempt < attempts-1 else 'Error', 'Database',
-                    'Error saving database', self.db.log_exception)
+                print_exc()
                 print(colored(
-                    'Error saving database (attempt {}/{}): {}'.format(
+                    'Error saving {} (attempt {}/{}): {}'.format(
+                        'result' if self.result is not None else 'campaign',
                         attempt+1, attempts, error), 'red'))
                 if attempt < attempts-1:
                     sleep(30)
                 else:
-                    raise Exception('Error saving database')
+                    raise Exception('Error saving {}'.format(
+                        'result' if self.result is not None else 'campaign'))
             else:
                 break

@@ -794,12 +794,8 @@ class simics(object):
                                     monitored_value))
                 else:
                     if int(monitored_value, base=0) != int(gold_value, base=0):
-                        self.db.result.simics_register_diff_set.create(
-                            checkpoint=checkpoint,
-                            config_object=config_object,
-                            register=register,
-                            gold_value=gold_value,
-                            monitored_value=monitored_value)
+                        self.db.log_diff(checkpoint, config_object, register,
+                                         gold_value, monitored_value)
 
         # def compare_registers(checkpoint, gold_checkpoint,
         #                       monitored_checkpoint):
