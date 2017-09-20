@@ -28,6 +28,12 @@ if [ ! -d simics-workspace ]; then
 fi
 
 if [ -d simics-workspace ]; then
+    printf 'run simics-gui to setup license? [Y/n]: '
+    read -r license
+    if [ "$license" != "n" ]; then
+        echo 'simics license located at ssoe-vlic-01.engr.pitt.edu:4800'
+        simics-workspace/simics-gui
+    fi
     printf 'setup simics g-cache2? [Y/n]: '
     read -r cache
     if [ "$cache" != "n" ]; then
