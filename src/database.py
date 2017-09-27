@@ -213,7 +213,7 @@ class database(object):
                                               99.990))
             print(colored(out, 'blue'))
         self.result.timestamp = datetime.now()
-        self.result.save()
+        self.save()
         if not exit:
             self.__create_result(supervisor)
 

@@ -423,13 +423,12 @@ class fault_injector(object):
                 exit=self.options.command != 'supervise',
                 supervisor=self.options.command == 'supervise')
         except:
+            self.debugger.close()
             self.db.result.outcome_category = 'Incomplete'
             self.db.result.outcome = 'Uncaught exception'
-            self.db.save()
             print_exc()
             self.db.log_event(
                 'Error', 'Fault injector', 'Exception', self.db.log_exception)
-            self.debugger.close()
             self.db.log_result(
                 exit=self.options.command != 'supervise',
                 supervisor=self.options.command == 'supervise')
