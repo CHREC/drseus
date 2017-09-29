@@ -22,15 +22,15 @@
                             <div class="box-tools pull-right">
                                 {% if chart.smooth or chart.percent or chart.log %}
                                     <div class="btn-group" id="raw-data" data-toggle="btn-toggle">
-                                        <button type="button" class="btn btn-default btn-xs active" data-toggle="raw">{% if chart.smooth %}Raw{% else %}Magnitude{% endif %}</button>
+                                        <button type="button" class="btn btn-default btn-xs raw-btn active" data-toggle="raw">{% if chart.smooth %}Raw{% else %}Magnitude{% endif %}</button>
                                         {% if chart.smooth %}
-                                            <button type="button" class="btn btn-default btn-xs" data-toggle="smooth">Smoothed</button>
+                                            <button type="button" class="btn btn-default btn-xs smooth-btn" data-toggle="smooth">Smoothed</button>
                                         {% endif %}
                                         {% if chart.percent %}
-                                            <button type="button" class="btn btn-default btn-xs" data-toggle="percent">Percentage</button>
+                                            <button type="button" class="btn btn-default btn-xs percent-btn" data-toggle="percent">Percentage</button>
                                         {% endif %}
                                         {% if chart.log %}
-                                            <button type="button" class="btn btn-default btn-xs" data-toggle="log">Log</button>
+                                            <button type="button" class="btn btn-default btn-xs log-btn" data-toggle="log">Log</button>
                                         {% endif %}
                                     </div>
                                 {% endif %}
@@ -97,6 +97,10 @@
 
         $("#raw-data .btn").click(function () {
             if ($(this).data("toggle") === "raw") {
+                $(this).parents('.btn-group').children('.raw-btn').addClass('active')
+                $(this).parents('.btn-group').children('.smooth-btn').removeClass('active')
+                $(this).parents('.btn-group').children('.percent-btn').removeClass('active')
+                $(this).parents('.btn-group').children('.log-btn').removeClass('active')
                 $(this).parents('.box').children('.box-body').children('.raw-chart').removeClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.smooth-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.percent-chart').addClass('hidden')
@@ -104,21 +108,33 @@
                 $(this).parents('.box').children('.box-body').children('.raw-chart').highcharts().reflow();
             }
             else if ($(this).data("toggle") === "smooth") {
-               $(this).parents('.box').children('.box-body').children('.smooth-chart').removeClass('hidden')
+                $(this).parents('.btn-group').children('.smooth-btn').addClass('active')
+                $(this).parents('.btn-group').children('.raw-btn').removeClass('active')
+                $(this).parents('.btn-group').children('.percent-btn').removeClass('active')
+                $(this).parents('.btn-group').children('.log-btn').removeClass('active')
+                $(this).parents('.box').children('.box-body').children('.smooth-chart').removeClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.raw-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.percent-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.log-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.smooth-chart').highcharts().reflow();
             }
             else if ($(this).data("toggle") === "percent") {
-               $(this).parents('.box').children('.box-body').children('.percent-chart').removeClass('hidden')
+                $(this).parents('.btn-group').children('.percent-btn').addClass('active')
+                $(this).parents('.btn-group').children('.raw-btn').removeClass('active')
+                $(this).parents('.btn-group').children('.smooth-btn').removeClass('active')
+                $(this).parents('.btn-group').children('.log-btn').removeClass('active')
+                $(this).parents('.box').children('.box-body').children('.percent-chart').removeClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.raw-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.smooth-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.log-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.percent-chart').highcharts().reflow();
             }
             else if ($(this).data("toggle") === "log") {
-               $(this).parents('.box').children('.box-body').children('.log-chart').removeClass('hidden')
+                $(this).parents('.btn-group').children('.log-btn').addClass('active')
+                $(this).parents('.btn-group').children('.raw-btn').removeClass('active')
+                $(this).parents('.btn-group').children('.percent-btn').removeClass('active')
+                $(this).parents('.btn-group').children('.smooth-btn').removeClass('active')
+                $(this).parents('.box').children('.box-body').children('.log-chart').removeClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.raw-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.smooth-chart').addClass('hidden')
                 $(this).parents('.box').children('.box-body').children('.percent-chart').addClass('hidden')
