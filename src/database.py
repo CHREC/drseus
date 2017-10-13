@@ -189,6 +189,7 @@ class database(object):
         self.result = self.campaign.result_set.create(
             outcome_category=('Supervisor' if supervisor else 'Incomplete'),
             outcome=('' if supervisor else 'In progress'),
+            dut_dev_serial=self.options.dut_dev_serial,
             dut_serial_port=self.options.dut_serial_port,
             aux_serial_port=self.options.aux_serial_port,
             previous_result=self.result)
@@ -196,6 +197,8 @@ class database(object):
     def log_result(self, supervisor=False, exit=False):
         if self.result.dut_serial_port is None:
             self.result.dut_serial_port = self.options.dut_serial_port
+        if self.result.dut_dev_serial is None:
+            self.result.dut_dev_serial = self.options.dut_dev_serial
         if self.result.aux_serial_port is None:
             self.result.aux_serial_port = self.options.aux_serial_port
         if self.result.outcome_category != 'DrSEUs' and \

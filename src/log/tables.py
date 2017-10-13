@@ -119,9 +119,9 @@ class results(Table):
             return '-'
 
     class Meta:
-        fields = ('select_box', 'id_', 'dut_serial_port', 'timestamp',
-                  'outcome_category', 'outcome', 'execution_time', 'cycles',
-                  'data_diff', 'targets', 'registers')
+        fields = ('select_box', 'id_', 'dut_dev_serial', 'dut_serial_port',
+                  'timestamp', 'outcome_category', 'outcome', 'execution_time',
+                  'cycles', 'data_diff', 'targets', 'registers')
         model = models.result
         order_by = '-id_'
         template = 'django_tables2/bootstrap.html'
@@ -163,9 +163,10 @@ class result(Table):
         return '{0:.4f}'.format(record.execution_time)
 
     class Meta:
-        fields = ('dut_serial_port', 'timestamp', 'outcome_category', 'outcome',
-                  'execution_time', 'cycles', 'num_injections', 'data_diff',
-                  'detected_errors', 'previous_result', 'next_result')
+        fields = ('dut_dev_serial', 'dut_serial_port', 'timestamp',
+                  'outcome_category', 'outcome', 'execution_time', 'cycles',
+                  'num_injections', 'data_diff', 'detected_errors',
+                  'previous_result', 'next_result')
         model = models.result
         orderable = False
         template = 'django_tables2/bootstrap.html'
