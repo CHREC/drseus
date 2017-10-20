@@ -275,10 +275,11 @@ class dut(object):
                 'Flushed serial buffers', buff)
         except KeyboardInterrupt:
             raise KeyboardInterrupt
-        except:
+        except Exception as error:
             self.db.log_event(
                 'Error', 'DUT' if not self.aux else 'AUX',
                 'Error flushing serial buffers', self.db.log_exception)
+            raise error
 
     def reset_ip(self):
         if self.options.reset_ip and (
@@ -300,7 +301,9 @@ class dut(object):
         else:
             raise DrSEUsError(error_type)
 
-    def send_files(self, files=None, attempts=10):
+    def send_files(self, files=None, attempts=None):
+        if attempts is None:
+            attempts = self.options.attempts
 
         def send_socket():
             for file_ in files:
@@ -348,7 +351,7 @@ class dut(object):
             if self.db.campaign.caches:
                 timeout_ = 1200
             else:
-                timeout_ = 300
+                timeout_ = self.options.timeout
             connect_kwargs = {
                 'hostname': self.ip_address,
                 'port': self.scp_port,
@@ -453,8 +456,10 @@ class dut(object):
         if rename_gold:
             self.command('mv {0} gold_{0}'.format(self.db.campaign.output_file))
 
-    def get_file(self, file_, local_path='', delete=False, attempts=10,
+    def get_file(self, file_, local_path='', delete=False, attempts=None,
                  quiet=False):
+        if attempts is None:
+            attempts = self.options.attempts
 
         def get_socket():
             for attempt in range(attempts):
@@ -516,7 +521,7 @@ class dut(object):
             if self.db.campaign.caches:
                 timeout_ = 1200
             else:
-                timeout_ = 300
+                timeout_ = self.options.timeout
             connect_kwargs = {
                 'hostname': self.ip_address,
                 'port': self.scp_port,
@@ -874,9 +879,7 @@ class dut(object):
                 return
             buff = buff.replace('{}\n'.format(command), '')
             buff = buff.replace(self.prompt, '')
-            if buff != '':
-                self.db.result.data_diff = 0
-            else:
+            if buff == '':
                 self.db.result.data_diff = 1.0
         if not local_diff or self.db.result.data_diff != 1.0:
             result_folder = 'campaign-data/{}/results/{}'.format(
@@ -890,7 +893,7 @@ class dut(object):
                 self.db.result.outcome = error.type
                 if not listdir(result_folder):
                     rmtree(result_folder)
-                return
+                    return
             with open(
                     'campaign-data/{}/gold/{}'.format(
                         self.db.campaign.id, self.db.campaign.output_file),
@@ -907,7 +910,7 @@ class dut(object):
             if self.db.result.detected_errors:
                 self.db.result.outcome_category = 'Data error'
                 self.db.result.outcome = 'Corrected data error'
-        else:
+        elif self.db.result.outcome_category != 'File transfer error':
             self.db.result.outcome_category = 'Data error'
             if self.db.result.detected_errors:
                 self.db.result.outcome = 'Detected data error'

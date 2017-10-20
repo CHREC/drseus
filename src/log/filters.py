@@ -39,6 +39,7 @@ injection_choices = {
 }
 result_choices = {
     'campaign_id': [],
+    'dut_dev_serial': [],
     'dut_serial_port': [],
     'num_injections': [],
     'outcome': [],
@@ -222,6 +223,9 @@ class result(FilterSet):
     dut_serial_port = MultipleChoiceFilter(
         label='DUT serial port',
         widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
+    dut_dev_serial = MultipleChoiceFilter(
+        label='DUT serial number',
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     execution_time_gt = NumberFilter(
         name='execution_time', label='Execution time (>)', lookup_expr='gt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
@@ -312,7 +316,8 @@ class result(FilterSet):
         model = models.result
         exclude = ('aux_serial_port', 'campaign', 'cycles', 'data_diff',
                    'detected_errors', 'execution_time', 'num_memory_diffs',
-                   'num_register_diffs', 'returned', 'timestamp')
+                   'num_register_diffs', 'previous_result', 'returned',
+                   'timestamp')
 
 
 class simics_register_diff(FilterSet):

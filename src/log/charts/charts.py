@@ -289,3 +289,25 @@ def memory_propagation_combined(**kwargs):
                  average='result__num_memory_diffs',
                  log=True,
                  **kwargs)
+
+
+def outcomes_by_device(**kwargs):
+    create_chart(order=22,
+                 chart_title='Devices (Serial Numbers)',
+                 xaxis_title='Serial Number',
+                 xaxis_name='Serial',
+                 xaxis_model='results',
+                 xaxis_type='dut_dev_serial',
+                 percent=True,
+                 **kwargs)
+
+
+def outcomes_by_port(**kwargs):
+    create_chart(order=23,
+                 chart_title='Devices (Serial Ports)',
+                 xaxis_title='Serial Port',
+                 xaxis_name='Port',
+                 xaxis_model='results',
+                 xaxis_type='dut_serial_port',
+                 percent=True,
+                 **kwargs)

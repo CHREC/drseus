@@ -32,14 +32,17 @@ class campaigns(Table):
             record.result_set.count())
 
     class Meta:
-        fields = ('links', 'id', 'results', 'command', 'architecture', 'simics',
-                  'caches', 'execution_time', 'cycles', 'timestamp')
+        fields = ('links', 'id', 'results', 'command', 'description',
+                  'architecture', 'simics', 'caches', 'execution_time',
+                  'cycles', 'timestamp')
         model = models.campaign
         order_by = 'id'
         template = 'django_tables2/bootstrap.html'
 
 
 class campaign(Table):
+    description = TemplateColumn(
+        '<textarea id="edit_description">{{ value }}</textarea>')
     results = Column(empty_values=(), orderable=False)
     timestamp = DateTimeColumn(format=datetime_format)
 

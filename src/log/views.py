@@ -63,6 +63,9 @@ def campaign_page(request, campaign_id):
     campaign_table = tables.campaign(models.campaign.objects.filter(
         id=campaign_id))
     event_table = tables.event(campaign.event_set.all())
+    if request.method == 'POST' and 'save' in request.POST:
+        campaign.description = request.POST['description']
+        campaign.save()
     RequestConfig(request, paginate=False).configure(campaign_table)
     RequestConfig(request, paginate=False).configure(event_table)
     return render(request, 'campaign.html', {

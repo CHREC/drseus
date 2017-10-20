@@ -103,14 +103,29 @@ class openocd(jtag):
 
     def reset_dut(self, attempts=10):
         if self.power_switch:
-            try:
-                super().reset_dut(
-                    ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], 1)
-            except DrSEUsError:
-                self.power_cycle_dut()
-                super().reset_dut(
-                    ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'],
-                    max(attempts-1, 1))
+            if self.options.command == 'supervise':
+                for attempt in range(attempts):
+                    try:
+                        self.power_cycle_dut()
+                        super().reset_dut(
+                            ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'],
+                            1)
+                    except Exception as error:
+                        if attempt < attempts-1:
+                            sleep(10)
+                        else:
+                            raise error
+                    else:
+                        break
+            else:
+                try:
+                    super().reset_dut(
+                        ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], 1)
+                except DrSEUsError:
+                    self.power_cycle_dut()
+                    super().reset_dut(
+                        ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'],
+                        max(attempts-1, 1))
         else:
             super().reset_dut(
                 ['JTAG tap: zynq.dap tap/device found: 0x4ba00477'], attempts)

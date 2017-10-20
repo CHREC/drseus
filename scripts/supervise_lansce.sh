@@ -32,44 +32,75 @@ cd "$(dirname "$(dirname "$(readlink -f "$0")")")"
 
 printf "enter pynq0 campaign number: "
 read -r campaign0
-if ask 'disable caches for pynq0?' N; then
-    cache0="off"
+if ask 'disable l2 cache for pynq0?' N; then
+    if ask 'disable l1 cache for pynq0?' N; then
+        cache0="cache_off"
+    else
+        cache0="l2_off"
+    fi
 else
-    cache0="on"
+    cache0="cache_on"
 fi
 printf "enter pynq1 campaign number: "
 read -r campaign1
-if ask 'disable caches for pynq1?' N; then
-    cache1="off"
+if ask 'disable l2 cache for pynq1?' N; then
+    if ask 'disable l1 cache for pynq1?' N; then
+        cache1="cache_off"
+    else
+        cache1="l2_off"
+    fi
 else
-    cache1="on"
+    cache1="cache_on"
 fi
 printf "enter pynq2 campaign number: "
 read -r campaign2
-if ask 'disable caches for pynq2?' N; then
-    cache2="off"
+if ask 'disable l2 cache for pynq2?' N; then
+    if ask 'disable l1 cache for pynq2?' N; then
+        cache2="cache_off"
+    else
+        cache2="l2_off"
+    fi
 else
-    cache2="on"
+    cache2="cache_on"
 fi
 printf "enter pynq3 campaign number: "
 read -r campaign3
-if ask 'disable caches for pynq3?' N; then
-    cache3="off"
+if ask 'disable l2 cache for pynq3?' N; then
+    if ask 'disable l1 cache for pynq3?' N; then
+        cache3="cache_off"
+    else
+        cache3="l2_off"
+    fi
 else
-    cache3="on"
+    cache3="cache_on"
+fi
+printf "enter pynq7 campaign number: "
+read -r campaign7
+if ask 'disable l2 cache for pynq7?' N; then
+    if ask 'disable l1 cache for pynq7?' N; then
+        cache7="cache_off"
+    else
+        cache7="l2_off"
+    fi
+else
+    cache7="cache_on"
 fi
 
 tmux new-session -d -s supervise
-tmux send-keys -t supervise:0 "./drseus.py -c $campaign0 @conf/lansce/supervise/pynq0_cache_$cache0 --cmd 'supervise 0'" ENTER
+tmux send-keys -t supervise:0 "./drseus.py -c $campaign0 @conf/lansce/supervise/pynq0_$cache0 --cmd 'supervise 0'" ENTER
 tmux new-window -t supervise:1
-tmux send-keys -t supervise:1  "./drseus.py -c $campaign1 @conf/lansce/supervise/pynq1_cache_$cache1 --cmd 'supervise 0'" ENTER
+tmux send-keys -t supervise:1  "./drseus.py -c $campaign1 @conf/lansce/supervise/pynq1_$cache1 --cmd 'supervise 0'" ENTER
 tmux new-window -t supervise:2
-tmux send-keys -t supervise:2  "./drseus.py -c $campaign2 @conf/lansce/supervise/pynq2_cache_$cache2 --cmd 'supervise 0'" ENTER
+tmux send-keys -t supervise:2  "./drseus.py -c $campaign2 @conf/lansce/supervise/pynq2_$cache2 --cmd 'supervise 0'" ENTER
 tmux new-window -t supervise:3
-tmux send-keys -t supervise:3  "./drseus.py -c $campaign3 @conf/lansce/supervise/pynq3_cache_$cache3 --cmd 'supervise 0'" ENTER
+tmux send-keys -t supervise:3  "./drseus.py -c $campaign3 @conf/lansce/supervise/pynq3_$cache3 --cmd 'supervise 0'" ENTER
+tmux new-window -t supervise:4
+tmux send-keys -t supervise:4  "./drseus.py -c $campaign7 @conf/lansce/supervise/pynq7_$cache7 --cmd 'supervise 0'" ENTER
 tmux join-pane -s supervise:1 -t supervise:0
 tmux join-pane -s supervise:2 -t supervise:0
 tmux join-pane -s supervise:3 -t supervise:0
+tmux select-layout -t supervise:0 tiled
+tmux join-pane -s supervise:4 -t supervise:0
 tmux select-layout -t supervise:0 tiled
 
 tmux attach -t supervise

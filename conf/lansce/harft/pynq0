@@ -1,7 +1,0 @@
-@conf/lansce/harft/common
---dev
-003017A4D299
---aux_dev
-A503VT43
---login
-./init-script; cfgmgr_server& sleep 3; cfgmgr_client config 1

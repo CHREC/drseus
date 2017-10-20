@@ -154,8 +154,26 @@
     </section>
 {% endblock %}
 
+{% block sidebar_block %}
+    <li class="header">OPTIONS</li>
+    <li>
+        <a href="javascript:{}" onclick="save_description()">
+            <i class="fa fa-save"></i>
+            <span>Save Description</span>
+        </a>
+    </li>
+{% endblock %}
+
 {% block script %}
     <script>
         $('#info-campaign-link').addClass('active')
+
+        function save_description() {
+            var description = document.getElementById('edit_description').value;
+            $.post('', {'save': true, 'description': description, 'csrfmiddlewaretoken': '{{ csrf_token }}'});
+            setTimeout(function () {
+                window.location.reload();
+            }, 1000);
+        }
     </script>
 {% endblock %}
