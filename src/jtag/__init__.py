@@ -121,12 +121,20 @@ class jtag(object):
             except DrSEUsError as error:
                 attempt_exception(attempt, attempts, error,
                                   'Error resetting DUT')
+                if self.options.command == 'supervise':
+                    self.db.result.outcome_category = 'Pre execution error'
+                    self.db.result.outcome = 'Error resetting DUT'
+                    self.db.log_result()
             else:
                 try:
                     self.dut.do_login()
                 except DrSEUsError as error:
                     attempt_exception(attempt, attempts, error,
                                       'Error booting DUT')
+                    if self.options.command == 'supervise':
+                        self.db.result.outcome_category = 'Pre execution error'
+                        self.db.result.outcome = 'Error booting DUT'
+                        self.db.log_result()
                 else:
                     break
 

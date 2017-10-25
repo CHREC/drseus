@@ -26,8 +26,14 @@ parser.add_argument(
     '--timeout',
     type=int,
     metavar='SECONDS',
-    default=1200,
+    default=300,
     help='device read timeout [default=300]')
+parser.add_argument(
+    '--attempts',
+    type=int,
+    metavar='ATTEMPTS',
+    default=10,
+    help='attempts for retrying actions such as file transfer [default=10]')
 parser.add_argument(
     '--reset_ip',
     action='store_true',

@@ -1,0 +1,16 @@
+@conf/lansce/pynq0
+@conf/lansce/cache_off
+new
+--descr
+caches off, large image
+--arch
+a9
+--cmd
+./arm_fi_2d_conv_fft_serial lena_2400.bmp out_2400.bmp
+--timing
+1
+--files
+arm_fi_2d_conv_fft_serial
+lena_2400.bmp
+--output_file
+out_2400.bmp

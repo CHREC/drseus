@@ -4,3 +4,7 @@ root@buildroot:~#
 10.42.0.2
 --pass
 chrec
+--attempts
+2
+--timeout
+600

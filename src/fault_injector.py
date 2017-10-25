@@ -293,7 +293,6 @@ class fault_injector(object):
                     sleep(sleep_time)
 
         def perform_injections():
-            rebooted = False
             if timer is not None:
                 timer_start = perf_counter()
             while True:
@@ -317,10 +316,6 @@ class fault_injector(object):
                             self.db.result.outcome = str(error)
                             self.db.log_result()
                             continue
-                    elif rebooted:
-                        self.debugger.dut.write('\n')
-                        self.debugger.dut.do_login()
-                        rebooted = False
                     if self.db.campaign.aux and not self.options.aux_readonly:
                         self.db.log_event(
                             'Information', 'AUX', 'Command',
@@ -391,12 +386,19 @@ class fault_injector(object):
                         self.db.result.outcome = error.type
                     if self.db.campaign.aux:
                         self.debugger.aux.flush()
-                if self.options.command == 'supervise':
-                    if self.db.result.outcome == 'Reboot':
-                        rebooted = True
-                    elif self.db.result.outcome == 'Hanging':
-                        self.debugger.reset_dut()
-                self.db.log_result()
+                if self.options.command == 'supervise' and \
+                        self.db.result.outcome in ['Reboot', 'Hanging',
+                                                   'Kernel error']:
+                    self.db.log_result()
+                    while True:
+                        try:
+                            self.debugger.reset_dut()
+                        except:
+                            pass
+                        else:
+                            break
+                else:
+                    self.db.log_result()
             if self.options.command == 'inject':
                 self.close()
             elif self.options.command == 'supervise':

@@ -41,6 +41,7 @@ class result(Model):
     data_diff = FloatField(null=True)
     debugger_output = TextField(default=str)
     detected_errors = IntegerField(null=True)
+    dut_dev_serial = TextField(null=True)
     dut_output = TextField(default=str)
     dut_serial_port = TextField(null=True)
     execution_time = FloatField(null=True)
