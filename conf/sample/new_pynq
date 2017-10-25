@@ -1,0 +1,8 @@
+@conf/new/pynq
+--cmd
+./arm_fi_2d_conv_fft_omp lena_512.bmp out.bmp
+--files
+arm_fi_2d_conv_fft_omp
+lena_512.bmp
+--output_file
+out.bmp

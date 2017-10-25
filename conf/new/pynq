@@ -1,0 +1,4 @@
+@conf/pynq
+new
+--arch
+a9
