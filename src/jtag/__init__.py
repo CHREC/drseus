@@ -28,6 +28,8 @@ def find_devices():
             elif dev['ID_VENDOR_ID'] == '0403' and dev['ID_MODEL_ID'] == '6001':
                 devices['uart'][dev['DEVNAME']] = {
                     'type': 'pmod', 'serial': dev['ID_SERIAL_SHORT']}
+            elif dev['ID_VENDOR_ID'] == '0403' and dev['ID_MODEL_ID'] == '6014':
+                pass
             elif dev['SUBSYSTEM'] == 'tty':
                 devices['uart'][dev['DEVNAME']] = {'type': 'other'}
                 if 'ID_SERIAL_SHORT' in dev:
