@@ -67,9 +67,10 @@ def run():
     from .jtag import find_devices
     missing_args = []
     campaign = None
-    if options.command in ('inject', 'supervise', 'delete', 'regenerate') and \
-            not (options.command == 'delete' and
-                 options.selection in ('a', 'all')):
+    if options.command in (
+            'inject', 'supervise', 'delete', 'regenerate', 'hashes'
+            ) and not (options.command == 'delete' and
+                       options.selection in ('a', 'all')):
         campaign = database.get_campaign(options)
         if not options.campaign_id:
             options.campaign_id = campaign.id

@@ -1,6 +1,7 @@
 from datetime import datetime
 from difflib import SequenceMatcher
 from ftplib import FTP
+from hashlib import sha256
 from io import StringIO
 from os import listdir, makedirs, rename
 from os.path import exists, join
@@ -898,12 +899,13 @@ class dut(object):
                     'campaign-data/{}/gold/{}'.format(
                         self.db.campaign.id, self.db.campaign.output_file),
                     'rb') as solution:
-                solutionContents = solution.read()
+                solution_contents = solution.read()
             with open(join(result_folder, self.db.campaign.output_file),
                       'rb') as result:
-                resultContents = result.read()
+                result_contents = result.read()
+            self.db.result.data_hash = sha256(result_contents).hexdigest()
             self.db.result.data_diff = SequenceMatcher(
-                None, solutionContents, resultContents).quick_ratio()
+                None, solution_contents, result_contents).quick_ratio()
         if self.db.result.data_diff == 1.0:
             if not local_diff:
                 rmtree(result_folder)

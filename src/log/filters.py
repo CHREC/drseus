@@ -39,6 +39,7 @@ injection_choices = {
 }
 result_choices = {
     'campaign_id': [],
+    'data_hash': [],
     'dut_dev_serial': [],
     'dut_serial_port': [],
     'num_injections': [],
@@ -206,6 +207,8 @@ class result(FilterSet):
     data_diff_lt = NumberFilter(
         name='data_diff', label='Data diff (<)', lookup_expr='lt',
         widget=NumberInput(attrs={'class': 'form-control'}), help_text='')
+    data_hash = MultipleChoiceFilter(
+        widget=SelectMultiple(attrs={'class': 'form-control'}), help_text='')
     debugger_output = CharFilter(
         lookup_expr='icontains',
         widget=Textarea(attrs={'class': 'form-control', 'rows': 3}),

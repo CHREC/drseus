@@ -124,7 +124,7 @@ class results(Table):
     class Meta:
         fields = ('select_box', 'id_', 'dut_dev_serial', 'dut_serial_port',
                   'timestamp', 'outcome_category', 'outcome', 'execution_time',
-                  'cycles', 'data_diff', 'targets', 'registers')
+                  'cycles', 'data_diff', 'data_hash', 'targets', 'registers')
         model = models.result
         order_by = '-id_'
         template = 'django_tables2/bootstrap.html'
@@ -168,7 +168,7 @@ class result(Table):
     class Meta:
         fields = ('dut_dev_serial', 'dut_serial_port', 'timestamp',
                   'outcome_category', 'outcome', 'execution_time', 'cycles',
-                  'num_injections', 'data_diff', 'detected_errors',
+                  'num_injections', 'data_diff', 'data_hash', 'detected_errors',
                   'previous_result', 'next_result')
         model = models.result
         orderable = False

@@ -2,6 +2,7 @@ from copy import copy
 from datetime import datetime
 from django.core.management import execute_from_command_line as django_command
 from django.db import connection
+from hashlib import sha256
 from json import dump, load
 from multiprocessing import Process, Value
 from os import getcwd, listdir, mkdir, remove, walk
@@ -544,3 +545,29 @@ def launch_minicom(options):
         drseus.close()
     else:
         drseus.close(log=False)
+
+
+def update_hashes(options):
+    campaign = get_campaign(options)
+    progress_bar = ProgressBar(max_value=campaign.result_set.count(), widgets=[
+        Percentage(), ' (', SimpleProgress(format='%(value)d/%(max_value)d'),
+        ') ', Bar(), ' ', Timer()])
+    count = 0
+    with open('campaign-data/{}/gold/{}'.format(
+            campaign.id, campaign.output_file), 'rb') as solution_file:
+        solution_contents = solution_file.read()
+    gold_hash = sha256(solution_contents).hexdigest()
+    for result in campaign.result_set.all():
+        if result.data_diff == 1.0:
+            result.data_hash = gold_hash
+            result.save()
+        else:
+            result_location = 'campaign-data/{}/results/{}/{}'.format(
+                campaign.id, result.id, campaign.output_file)
+            if exists(result_location):
+                with open(result_location, 'rb') as result_file:
+                    result_contents = result_file.read()
+                result.data_hash = sha256(result_contents).hexdigest()
+                result.save()
+        count += 1
+        progress_bar.update(count)

@@ -311,3 +311,14 @@ def outcomes_by_port(**kwargs):
                  xaxis_type='dut_serial_port',
                  percent=True,
                  **kwargs)
+
+
+def results_by_data_hash(**kwargs):
+    kwargs['injections'] = kwargs['injections'].exclude(checkpoint__isnull=True)
+    create_chart(order=24,
+                 chart_title='Data Hashes',
+                 xaxis_title='Data Hash',
+                 xaxis_name='Hash',
+                 xaxis_model='results',
+                 xaxis_type='data_hash',
+                 **kwargs)

@@ -39,6 +39,7 @@ class result(Model):
     returned = NullBooleanField()
     cycles = BigIntegerField(null=True)
     data_diff = FloatField(null=True)
+    data_hash = TextField(null=True)
     debugger_output = TextField(default=str)
     detected_errors = IntegerField(null=True)
     dut_dev_serial = TextField(null=True)

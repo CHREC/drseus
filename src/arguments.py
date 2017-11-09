@@ -730,6 +730,13 @@ minicom = subparsers.add_parser(
     description='launch DUT in minicom')
 minicom.set_defaults(func='launch_minicom')
 
+hashes = subparsers.add_parser(
+    'hashes',
+    aliases=['h'],
+    help='recalculate output data hashes',
+    description='recalculate output data hashes')
+hashes.set_defaults(func='update_hashes')
+
 
 def get_options():
     options = parser.parse_args()
