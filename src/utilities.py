@@ -107,7 +107,9 @@ def detect_devices(options, use_power_switch=False):
                     new_device['uart'] = new_device.pop('serial')
                 if 'jtag' in new_devices:
                     new_device['jtag'] = new_devices['jtag'].popitem()[0]
-                devices = [dev for dev in devices if dev['outlet'] != outlet]
+                if outlet is not None:
+                    devices = [dev for dev in devices
+                               if dev['outlet'] != outlet]
                 devices = [dev for dev in devices
                            if dev['uart'] != new_device['uart']]
                 devices.append(new_device)
