@@ -20,9 +20,13 @@ from .arguments import get_options, parser
 # TODO: add support for injection of multi-bit upsets
 # TODO: add documentation on system design, including module interaction
 
+## Feb 7, 2018: Commentation by SSR
 
 def run():
+    ## parse the options from the input (arguments.py)
     options = get_options()
+
+    ## Django configuration setup
     settings.configure(
         ALLOWED_HOSTS=['*'],
         DATABASES={
@@ -60,19 +64,22 @@ def run():
         ],
         TIME_ZONE='UTC'
     )
-    setup()
     # we can't (indirectly) import anything from log until django is setup
+    ## Setup django
+    setup()
     from . import database
     from . import utilities
     from .jtag import find_devices
     missing_args = []
     campaign = None
+    ## Options for pre-existing campaigns
     if options.command in (
             'inject', 'supervise', 'delete', 'regenerate', 'hashes'
             ) and not (options.command == 'delete' and
                        options.selection in ('a', 'all')):
         campaign = database.get_campaign(options)
         if not options.campaign_id:
+            ## Get the last id if one isn't specified
             options.campaign_id = campaign.id
             if not options.command == 'delete' and input(
                     'no campaign was specified, continue with campaign id {}?'
@@ -81,7 +88,11 @@ def run():
                 return
         if options.command != 'regenerate':
             options.architecture = campaign.architecture
+
+    ## Find all of the UART devices
     uarts = find_devices()['uart']
+
+    ## DUT devices
     if not options.dut_serial_port and options.dut_dev_serial:
         for uart in uarts:
             if 'serial' in uarts[uart] and \
@@ -89,6 +100,7 @@ def run():
                 options.dut_serial_port = uart
                 if uarts[uart]['type'] == 'pynq':
                     options.dut_rtscts = False
+    ## Aux devices
     if not options.aux_serial_port and options.aux_dev_serial:
         for uart in uarts:
             if 'serial' in uarts[uart] and \
@@ -99,28 +111,36 @@ def run():
     if options.command in ('new', 'inject', 'supervise'):
         if (hasattr(options, 'simics') and not options.simics) or \
                 (campaign and not campaign.simics):
-            # not using simics
+            # DUT Not using simics
             if not options.dut_serial_port:
                 missing_args.append('--serial')
             if not options.dut_prompt:
                 missing_args.append('--prompt')
+
+            # AUX Not using simics
             if (hasattr(options, 'aux') and options.aux) or \
                     (campaign and campaign.aux):
                 if not options.aux_serial_port:
                     missing_args.append('--aux_serial')
                 if not options.aux_readonly and not options.aux_prompt:
                     missing_args.append('--aux_prompt')
+
+            ## JTAG IP Address needed if not using simics
             if not options.debugger_ip_address and (
                     (hasattr(options, 'architecture') and
                         options.architecture == 'p2020') or
                     (campaign and campaign.architecture == 'p2020')):
                 # using p2020 (not using simics)
                 missing_args.append('--jtag_ip')
+        ## If you want to supervise it you need to give the power switch ip
         if options.command == 'supervise' and not campaign.simics and \
                 options.power_switch_outlet is not None:
             missing_args.append('--power_ip')
+
     if options.command == 'minicom' and not options.dut_serial_port:
         missing_args.append('--serial')
+
+    ## If there are any missing arguments, complain about that
     if missing_args:
         parser.print_usage()
         print('error: the following arguments are required: {}'.format(
@@ -129,4 +149,5 @@ def run():
             print('\nAvailable serial devices:')
             utilities.list_devices(only_uart=True)
         return
+
     getattr(utilities, options.func)(options)

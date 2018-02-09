@@ -16,6 +16,7 @@ from .simics import simics
 class fault_injector(object):
     def __init__(self, options, power_switch=None):
         self.options = options
+        ## Load up the database for the campaign
         self.db = database(options)
         if self.db.campaign.simics and self.db.campaign.architecture in \
                 ['a9', 'p2020']:
@@ -311,6 +312,7 @@ class fault_injector(object):
                         try:
                             self.debugger.reset_dut()
                         except DrSEUsError as error:
+                            ## If we get a DRSEUs error, log it and keep going
                             self.db.result.outcome_category = \
                                 'Debugger error'
                             self.db.result.outcome = str(error)

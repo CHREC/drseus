@@ -75,6 +75,7 @@ class simics(object):
                 self.db.log_event(
                     'Information', 'Simics', 'Launched Simics')
                 break
+
         # TODO: Simics fails down there if no license \/
         if self.db.campaign.caches:
                 self.__command('disable-multithreading')
@@ -112,6 +113,7 @@ class simics(object):
             serial_ports = [0, 0]
         ssh_ports = []
         for line in buff.split('\n'):
+            ## If a pseudo terminal is found, get the serial ports
             if 'pseudo device opened: /dev/pts/' in line:
                 if checkpoint is None:
                     serial_ports.append(line.split(':')[1].strip())
@@ -121,6 +123,7 @@ class simics(object):
                     else:
                         serial_ports[0] = line.split(':')[1].strip()
                 found_settings += 1
+            ## If it's a TCP, get the ssh port
             elif 'Host TCP port' in line:
                 ssh_ports.append(int(line.split('->')[0].split()[-1]))
                 found_settings += 1
@@ -128,9 +131,12 @@ class simics(object):
                 break
             elif self.db.campaign.aux and found_settings == 4:
                 break
+        ## If nothing is found, just close everything
         else:
             self.close()
             raise DrSEUsError('Error finding port or pseudoterminal')
+
+        ## Set up the boot loader for p2020 architecture
         if self.board == 'p2020rdb':
             self.options.aux_prompt = self.options.dut_prompt = \
                 'root@p2020rdb:~#'
@@ -152,6 +158,8 @@ class simics(object):
                                        'setenv bootargs root=/dev/ram rw '
                                        'console=$consoledev,$baudrate; '
                                        'bootm ef080000 10000000 ef040000; ')
+
+        ## Set up the bootloader for a9 architecture
         elif self.board == 'a9x2':
             self.options.aux_prompt = self.options.dut_prompt = '\n#'
             if self.options.dut_uboot:
@@ -164,25 +172,31 @@ class simics(object):
             self.options.aux_uboot += ('setenv bootargs console=ttyAMA0 '
                                        'root=/dev/ram0 rw;'
                                        'bootm 0x40800000 0x70000000')
+
+        ## Set up some things on the simulated device
         self.options.dut_serial_port = serial_ports[0]
         self.options.dut_ip_address = '10.10.0.100'
         self.options.dut_scp_port = ssh_ports[0]
         self.dut = dut(self.db, self.options)
+
         if self.db.campaign.aux:
             self.options.aux_serial_port = serial_ports[1]
             self.options.aux_ip_address = '10.10.0.104'
             self.options.aux_scp_port = ssh_ports[1]
             self.aux = dut(self.db, self.options, aux=True)
+
         if checkpoint is None:
             self.continue_dut()
             self.dut.read_until('Hit any key')
             self.halt_dut()
+            ## Load root filesystems into memory (initrd)
             if self.board == 'p2020rdb':
                 self.__command('DUT_p2020rdb.soc.phys_mem.load-file '
                                '$initrd_image $initrd_addr')
                 if self.db.campaign.aux:
                     self.__command('AUX_p2020rdb_1.soc.phys_mem.load-file '
                                    '$initrd_image $initrd_addr')
+
             elif self.board == 'a9x2':
                 self.__command('DUT_a9x2.coretile.mpcore.phys_mem.load-file '
                                '$kernel_image $kernel_addr')
@@ -211,13 +225,22 @@ class simics(object):
             if self.db.campaign.aux:
                 self.aux.ip_address = '127.0.0.1'
                 if self.board == 'a9x2':
-                    self.aux.prompt = 'DrSEUs# '
+                    self.aux.prompt = 'DrSEUs# 'ff.split('\n'):
+            if 'pseudo device opened: /dev/pts/' in line:
+                if checkpoint is None:
+                    serial_ports.append(line.split(':')[1].strip())
+                else:
+                    if 'AUX_' in line:
+                        serial_ports[1] = line.split(':')[1].strip()
+                    else:
+                       
 
     def launch_simics_gui(self, checkpoint):
         if self.board == 'p2020rdb':
             serial_port = 'serial[0]'
         elif self.board == 'a9x2':
             serial_port = 'serial0'
+
         simics_commands = (
             'read-configuration {0}; new-text-console-comp text_console0; '
             'disconnect DUT_{1}.console0.serial DUT_{1}.{2}; '
@@ -233,6 +256,7 @@ class simics(object):
                 'connect text_console1.serial AUX_{0}_1.{1}; '
                 'connect-real-network-port-in ssh ethernet_switch0 '
                 'target-ip=10.10.0.104;'.format(self.board, serial_port))
+
         cwd = '{}/simics-workspace'.format(getcwd())
         call(['{}/simics-gui'.format(cwd), '-e', simics_commands], cwd=cwd)
 
@@ -246,6 +270,7 @@ class simics(object):
             if self.aux:
                 self.aux.close()
                 self.aux = None
+            ## Pause the DUT and send command to quit simics
             try:
                 self.halt_dut()
                 self.__command('quit')
@@ -588,11 +613,15 @@ class simics(object):
                 num_bits = get_num_bits(
                     injection.field, injection.register, injection.target,
                     self.targets)
+                ## Make sure bit to flip is in the range
                 if bit >= num_bits or bit < 0:
                     raise Exception('invalid bit: {} for num_bits: {}'.format(
                         bit, num_bits))
+
+                ## injected value, and fill it to the right bit size
                 value = int(value, base=0)
                 binary_list = list(bin(value)[2:].zfill(num_bits))
+                ## Flip the 1 to a 0 or the 0 to 1
                 binary_list[num_bits-1-bit] = (
                     '1' if binary_list[num_bits-1-bit] == '0' else '0')
                 injected_value = int(''.join(binary_list), 2)
@@ -602,14 +631,18 @@ class simics(object):
         # def inject_config(injected_checkpoint, injection):
             with simics_config(injected_checkpoint) as config:
                 config_object = injection.config_object
+                ## Get the register for injection
                 if injection.register_alias is None:
                     register = injection.register
                 else:
                     register = injection.register_alias
+
                 gold_value = config.get(config_object, register)
                 if gold_value is None:
                     raise Exception('error getting register value from config')
+
                 if injection.register_index is None:
+                    ## If you don't have an injected value, get one using flip_bit
                     if not injection.injected_value:
                         injected_value = flip_bit(gold_value, injection.bit)
                     else:
@@ -617,11 +650,13 @@ class simics(object):
                     config.set(config_object, register, injected_value)
                 else:
                     target = self.targets[injection.target]
+                    ## For cache injections
                     if 'type' in target and target['type'] == 'gcache' and \
                             injection.field == 'data':
                         cache_data = True
                     else:
                         cache_data = False
+
                     register_list_ = register_list = gold_value
                     if not injection.injected_value:
                         for index in injection.register_index:
@@ -672,6 +707,7 @@ class simics(object):
         injected_checkpoint = \
             'simics-workspace/injected-checkpoints/{}/{}/{}_injected'.format(
                 self.db.campaign.id, self.db.result.id, checkpoint)
+        ## Copy the gold checkpoints into injected checkpoints to compare to later
         makedirs(injected_checkpoint)
         checkpoint_files = listdir(gold_checkpoint)
         for checkpoint_file in checkpoint_files:

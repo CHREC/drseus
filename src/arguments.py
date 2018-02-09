@@ -68,6 +68,7 @@ parser.add_argument(
     default=[],
     help='error messages to check for in log file')
 
+## DUT device arguments
 dut_settings = parser.add_argument_group('DUT settings')
 dut_settings.add_argument(
     '--serial',
@@ -146,6 +147,7 @@ dut_settings.add_argument(
     default=[],
     help='executable(s) to run in the background')
 
+## Auxilliary device arguments
 aux_settings = parser.add_argument_group('AUX settings')
 aux_settings.add_argument(
     '--aux_serial',
@@ -228,6 +230,7 @@ aux_settings.add_argument(
     default=[],
     help='executable(s) to run in the background')
 
+## Debugging
 debugger_settings = parser.add_argument_group('debugger settings')
 debugger_settings.add_argument(
     '--jtag_ip',
@@ -245,6 +248,7 @@ debugger_settings.add_argument(
     dest='smp',
     help='do not use SMP mode in openocd')
 
+## SQL arguments
 database_settings = parser.add_argument_group('PostgreSQL settings')
 database_settings.add_argument(
     '--db_host',
@@ -293,6 +297,7 @@ database_settings.add_argument(
     action='store_true',
     help='prompt for superuser password')
 
+## SQL
 sqlite_settings = parser.add_argument_group('SQLite settings')
 sqlite_settings.add_argument(
     '--sqlite',
@@ -305,6 +310,7 @@ sqlite_settings.add_argument(
     default='campaign-data/db.sqlite',
     help='database file [default=campaign-data/db.sqlite]')
 
+## Power arguments
 power_settings = parser.add_argument_group('web power switch settings')
 power_settings.add_argument(
     '--power_ip',
@@ -331,6 +337,7 @@ subparsers = parser.add_subparsers(
     metavar='COMMAND',
     dest='command')
 
+## New Campaign arguments
 new_campaign = subparsers.add_parser(
     'new', aliases=['n'],
     help='create a new campaign',
@@ -442,6 +449,7 @@ new_simics_campaign.add_argument(
          '(actual number of checkpoints may be different) [default=1000]')
 new_campaign.set_defaults(func='create_campaign')
 
+## Injection arguments
 inject = subparsers.add_parser(
     'inject', aliases=['i'],
     help='perform fault injections on a campaign',
@@ -514,6 +522,7 @@ inject_simics.add_argument(
     help='extract diff memory blocks')
 inject.set_defaults(func='inject_campaign')
 
+## Interactive Superviser options
 supervise = subparsers.add_parser(
     'supervise', aliases=['s'],
     help='run interactive supervisor',
@@ -547,6 +556,7 @@ supervise.add_argument(
     help='maximum length for the history file [default=1000]')
 supervise.set_defaults(func='launch_supervisor')
 
+## Log viewer parser options
 log_viewer = subparsers.add_parser(
     'log', aliases=['l'],
     help='start the log web server',
@@ -568,6 +578,7 @@ detect_devices = subparsers.add_parser(
     description='assosciate jtag and uart ports on attached devices')
 detect_devices.set_defaults(func='detect_devices')
 
+## Power arguments
 power = subparsers.add_parser(
     'power', aliases=['p'],
     help='control web power switch',
@@ -602,6 +613,7 @@ power_list = power_subparsers.add_parser(
     description='list outlet statuses')
 power_list.set_defaults(func='list_outlets')
 
+## Campaign commands
 list_campaigns = subparsers.add_parser(
     'list', aliases=['ls'],
     help='list campaigns',
@@ -626,6 +638,7 @@ delete.add_argument(
     help='do not delete database user (drseus) when deleting {all, a}')
 delete.set_defaults(func='delete')
 
+## Openocd
 openocd = subparsers.add_parser(
     'openocd', aliases=['o'],
     help='launch openocd for DUT (only supported for openocd)',
@@ -636,6 +649,7 @@ openocd.add_argument(
     help='enable GDB port')
 openocd.set_defaults(func='launch_openocd')
 
+## Simics commands
 regenerate = subparsers.add_parser(
     'regenerate', aliases=['r'],
     help='regenerate injected state and launch in Simics '
@@ -711,6 +725,7 @@ serials = subparsers.add_parser(
     description='print information about currently connected devices')
 serials.set_defaults(func='list_devices')
 
+## Django
 django = subparsers.add_parser(
     'django',
     aliases=['dj'],
@@ -740,6 +755,7 @@ hashes.set_defaults(func='update_hashes')
 
 def get_options():
     options = parser.parse_args()
+    ## Check the option commands and put in shorthands
     if not hasattr(options, 'debug'):
         options.debug = True
     if options.command is None:
@@ -748,7 +764,7 @@ def get_options():
         options.command = 'new'
     elif options.command == 'i':
         options.command = 'inject'
-    elif options.command == 's':
+    elif options.command == 's':(
         options.command = 'supervise'
     elif options.command == 'o':
         options.command = 'openocd'

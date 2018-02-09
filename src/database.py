@@ -18,6 +18,8 @@ from .log.models import campaign as campaign_model
 
 def initialize_database(options):
     if options.db_postgresql:
+        ## Setup user and password if provided from arguments
+        ## And create the database
         commands = (
             'CREATE USER {} WITH PASSWORD \'{}\';'.format(options.db_user,
                                                           options.db_password),
@@ -39,6 +41,7 @@ def get_campaign(options):
     if options == 'all':
         return campaign_model.objects.all().order_by('id')
     elif options.campaign_description is not None:
+        ## For filtering the campaign by description
         if campaign_model.objects.filter(
                 description=options.campaign_description).count() > 1:
             raise Exception(
@@ -47,6 +50,7 @@ def get_campaign(options):
         return campaign_model.objects.get(
             description=options.campaign_description)
     elif not options.campaign_id:
+        ## If the id wasn't specified, just load the latest one
         return campaign_model.objects.latest('id')
     else:
         return campaign_model.objects.get(id=options.campaign_id)
@@ -201,6 +205,8 @@ class database(object):
             self.result.dut_dev_serial = self.options.dut_dev_serial
         if self.result.aux_serial_port is None:
             self.result.aux_serial_port = self.options.aux_serial_port
+        
+        ## if the outcome is not DrSEUs and hasn't exited, log the result
         if self.result.outcome_category != 'DrSEUs' and \
                 self.result.outcome != 'Exited':
             if self.result.dut_serial_port:
@@ -227,6 +233,7 @@ class database(object):
         elif description == self.log_exception:
             description = ''.join(format_exc())
         campaign = campaign or self.result is None
+
         event = (self.campaign if campaign else self.result).event_set.create(
             description=description,
             type=type_,
@@ -260,6 +267,7 @@ class database(object):
     def save(self, attempts=10):
         for attempt in range(attempts):
             try:
+                ## If there's no result, just save the campaign
                 if self.result is None:
                     self.campaign.save()
                 else:
@@ -278,4 +286,5 @@ class database(object):
                     raise Exception('Error saving {}'.format(
                         'result' if self.result is not None else 'campaign'))
             else:
+                ## If no exception was raised, we can break the loop
                 break
