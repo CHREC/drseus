@@ -226,13 +226,6 @@ class simics(object):
                 self.aux.ip_address = '127.0.0.1'
                 if self.board == 'a9x2':
                     self.aux.prompt = 'DrSEUs# '
-            if 'pseudo device opened: /dev/pts/' in line:
-                if checkpoint is None:
-                    serial_ports.append(line.split(':')[1].strip())
-                else:
-                    if 'AUX_' in line:
-                        serial_ports[1] = line.split(':')[1].strip()
-                    else:
                        
 
     def launch_simics_gui(self, checkpoint):
