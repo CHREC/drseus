@@ -764,7 +764,7 @@ def get_options():
         options.command = 'new'
     elif options.command == 'i':
         options.command = 'inject'
-    elif options.command == 's':(
+    elif options.command == 's':
         options.command = 'supervise'
     elif options.command == 'o':
         options.command = 'openocd'
