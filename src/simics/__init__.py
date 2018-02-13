@@ -225,7 +225,7 @@ class simics(object):
             if self.db.campaign.aux:
                 self.aux.ip_address = '127.0.0.1'
                 if self.board == 'a9x2':
-                    self.aux.prompt = 'DrSEUs# ':
+                    self.aux.prompt = 'DrSEUs# '
             if 'pseudo device opened: /dev/pts/' in line:
                 if checkpoint is None:
                     serial_ports.append(line.split(':')[1].strip())
