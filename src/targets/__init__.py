@@ -105,7 +105,7 @@ def calculate_target_bits(targets):
 
 
 def get_targets(architecture, type_, selected_targets, selected_registers,
-                caches):
+                caches=True):  # caches only matter for simics campaigns
     targets = load_targets('', architecture)
     targets_info = targets[type_]
     targets = targets['targets']
