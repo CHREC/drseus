@@ -1,5 +1,5 @@
 --serial
-/dev/ttyUSB1
+/dev/ttyUSB0
 --prompt
 root@p2020rdb:~#
 --aux_serial
@@ -7,4 +7,7 @@ root@p2020rdb:~#
 --aux_prompt
 root@p2020rdb:~#
 --jtag_ip
-10.42.0.51
+192.168.0.51
+--ip
+192.168.0.21
+--set_ip
