@@ -4,18 +4,21 @@ from numpy import linspace
 
 from . import create_chart
 
+orderNum = 0
 
 def overview(**kwargs):
+    orderNum += 1
     if 'success' not in kwargs or not kwargs['success']:
         kwargs['xaxis_model'] = 'results'
-    create_chart(order=1,
+    create_chart(order=orderNum,
                  chart_title='Overview',
                  pie=True,
                  **kwargs)
 
 
 def outcomes_by_target_combined(**kwargs):
-    create_chart(order=2,
+    orderNum += 1
+    create_chart(order=orderNum,
                  chart_title='Targets (Combined)',
                  xaxis_title='Injected Target',
                  xaxis_name='Target',
@@ -26,7 +29,8 @@ def outcomes_by_target_combined(**kwargs):
 
 
 def outcomes_by_target(**kwargs):
-    create_chart(order=3,
+    orderNum += 1
+    create_chart(order=orderNum,
                  chart_title='Targets',
                  xaxis_title='Injected Target',
                  xaxis_name='Target',
@@ -37,7 +41,8 @@ def outcomes_by_target(**kwargs):
 
 
 def data_diff_by_targets(**kwargs):
-    create_chart(order=4,
+    orderNum += 1
+    create_chart(order=orderNum,
                  chart_title='Data Destruction By Target',
                  xaxis_title='Injected Target',
                  xaxis_name='Target',
@@ -48,9 +53,10 @@ def data_diff_by_targets(**kwargs):
 
 
 def execution_time_by_target(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].filter(
         result__returned=True).exclude(result__execution_time__isnull=True)
-    create_chart(order=5,
+    create_chart(order=orderNum,
                  chart_title='Average Execution Time By Target',
                  xaxis_title='Injected Target',
                  xaxis_name='Target',
@@ -61,8 +67,9 @@ def execution_time_by_target(**kwargs):
 
 
 def outcomes_by_registers(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(target='TLB')
-    create_chart(order=6,
+    create_chart(order=orderNum,
                  chart_title='Registers',
                  xaxis_title='Injected Register',
                  xaxis_name='Register',
@@ -73,9 +80,10 @@ def outcomes_by_registers(**kwargs):
 
 
 def outcomes_by_register_fields(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(
         target='TLB').exclude(field__isnull=True)
-    create_chart(order=7,
+    create_chart(order=orderNum,
                  chart_title='Register Fields',
                  xaxis_title='Injected Register Field',
                  xaxis_name='Field',
@@ -86,8 +94,9 @@ def outcomes_by_register_fields(**kwargs):
 
 
 def outcomes_by_register_bits(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(target='TLB')
-    create_chart(order=8,
+    create_chart(order=orderNum,
                  chart_title='Register Bits',
                  xaxis_title='Injected Bit',
                  xaxis_name='Bit',
@@ -97,9 +106,10 @@ def outcomes_by_register_bits(**kwargs):
 
 
 def outcomes_by_register_access(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(
         target='TLB').exclude(register_access__isnull=True)
-    create_chart(order=9,
+    create_chart(order=orderNum,
                  chart_title='Register Access',
                  xaxis_title='Injected Register Acces',
                  xaxis_name='Access',
@@ -109,8 +119,9 @@ def outcomes_by_register_access(**kwargs):
 
 
 def outcomes_by_tlb_entries(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].filter(target='TLB')
-    create_chart(order=10,
+    create_chart(order=orderNum,
                  chart_title='TLB Entries',
                  xaxis_title='Injected TLB Entry',
                  xaxis_name='Entry',
@@ -121,8 +132,9 @@ def outcomes_by_tlb_entries(**kwargs):
 
 
 def outcomes_by_tlb_fields(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].filter(target='TLB')
-    create_chart(order=11,
+    create_chart(order=orderNum,
                  chart_title='TLB Fields',
                  xaxis_title='Injected TLB Field',
                  xaxis_name='Field',
@@ -133,6 +145,7 @@ def outcomes_by_tlb_fields(**kwargs):
 
 
 def outcomes_by_execution_times(**kwargs):
+    orderNum += 1
     kwargs['results'] = kwargs['results'].filter(returned=True).exclude(
         execution_time__isnull=True)
     avg = kwargs['results'].aggregate(
@@ -141,7 +154,7 @@ def outcomes_by_execution_times(**kwargs):
         StdDev('execution_time'))['execution_time__stddev']
     execution_times = linspace(max(0, avg-(std_dev*3)), avg+(std_dev*3), 1000,
                                endpoint=False).tolist()
-    create_chart(order=12,
+    create_chart(order=orderNum,
                  chart_title='Execution Times',
                  xaxis_title=(
                     'Execution Time (Seconds) for '
@@ -157,6 +170,7 @@ def outcomes_by_execution_times(**kwargs):
 
 
 def outcomes_by_injection_times(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(time__isnull=True)
     if not kwargs['injections'].count():
         return
@@ -164,7 +178,7 @@ def outcomes_by_injection_times(**kwargs):
                      kwargs['injections'].aggregate(Max('time'))['time__max'],
                      min(kwargs['injections'].count()/25, 1000),
                      endpoint=False).tolist()[1:]
-    create_chart(order=13,
+    create_chart(order=orderNum,
                  chart_title='Injections Over Time',
                  xaxis_title='Injection Time (Seconds)',
                  xaxis_name='Time',
@@ -176,6 +190,7 @@ def outcomes_by_injection_times(**kwargs):
 
 
 def data_diff_by_injection_times(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(time__isnull=True)
     if not kwargs['injections'].count():
         return
@@ -183,7 +198,7 @@ def data_diff_by_injection_times(**kwargs):
                      kwargs['injections'].aggregate(Max('time'))['time__max'],
                      min(kwargs['injections'].count()/25, 1000),
                      endpoint=False).tolist()[1:]
-    create_chart(order=14,
+    create_chart(order=orderNum,
                  chart_title='Data Destruction Over Time',
                  xaxis_title='Injection Time (Seconds)',
                  xaxis_name='Time',
@@ -198,8 +213,9 @@ def data_diff_by_injection_times(**kwargs):
 
 
 def outcomes_by_checkpoint(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(checkpoint__isnull=True)
-    create_chart(order=15,
+    create_chart(order=orderNum,
                  chart_title='Injections Over Time',
                  xaxis_title='Injected Checkpoint',
                  xaxis_name='Checkpoint',
@@ -209,8 +225,9 @@ def outcomes_by_checkpoint(**kwargs):
 
 
 def data_diff_by_checkpoint(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(checkpoint__isnull=True)
-    create_chart(order=16,
+    create_chart(order=orderNum,
                  chart_title='Data Destruction Over Time',
                  xaxis_title='Injected Checkpoint',
                  xaxis_name='Checkpoint',
@@ -222,9 +239,10 @@ def data_diff_by_checkpoint(**kwargs):
 
 
 def outcomes_by_num_injections(**kwargs):
+    orderNum += 1
     kwargs['results'] = kwargs['results'].exclude(
         num_injections=0).exclude(num_injections__isnull=True)
-    create_chart(order=17,
+    create_chart(order=orderNum,
                  chart_title='Injection Quantity',
                  xaxis_title='Injections Per Execution',
                  xaxis_name='Injections',
@@ -235,9 +253,10 @@ def outcomes_by_num_injections(**kwargs):
 
 
 def register_propagation(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(
         result__num_register_diffs__isnull=True)
-    create_chart(order=18,
+    create_chart(order=orderNum,
                  chart_title='Fault Propagation (Registers)',
                  xaxis_title='Injection Target',
                  xaxis_name='Target',
@@ -249,9 +268,10 @@ def register_propagation(**kwargs):
 
 
 def memory_propagation(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(
         result__num_memory_diffs__isnull=True)
-    create_chart(order=19,
+    create_chart(order=orderNum,
                  chart_title='Fault Propagation (Memory Blocks)',
                  xaxis_title='Injection Target',
                  xaxis_name='Target',
@@ -263,9 +283,10 @@ def memory_propagation(**kwargs):
 
 
 def register_propagation_combined(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(
         result__num_register_diffs__isnull=True)
-    create_chart(order=20,
+    create_chart(order=orderNum,
                  chart_title='Fault Propagation (Registers, Combined Targets)',
                  xaxis_title='Injection Target',
                  xaxis_name='Target',
@@ -277,9 +298,10 @@ def register_propagation_combined(**kwargs):
 
 
 def memory_propagation_combined(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(
         result__num_memory_diffs__isnull=True)
-    create_chart(order=21,
+    create_chart(order=orderNum,
                  chart_title='Fault Propagation '
                              '(Memory Blocks, Combined Targets)',
                  xaxis_title='Injection Target',
@@ -292,7 +314,8 @@ def memory_propagation_combined(**kwargs):
 
 
 def outcomes_by_device(**kwargs):
-    create_chart(order=22,
+    orderNum += 1
+    create_chart(order=orderNum,
                  chart_title='Devices (Serial Numbers)',
                  xaxis_title='Serial Number',
                  xaxis_name='Serial',
@@ -303,7 +326,8 @@ def outcomes_by_device(**kwargs):
 
 
 def outcomes_by_port(**kwargs):
-    create_chart(order=23,
+    orderNum += 1
+    create_chart(order=orderNum,
                  chart_title='Devices (Serial Ports)',
                  xaxis_title='Serial Port',
                  xaxis_name='Port',
@@ -314,8 +338,9 @@ def outcomes_by_port(**kwargs):
 
 
 def results_by_data_hash(**kwargs):
+    orderNum += 1
     kwargs['injections'] = kwargs['injections'].exclude(checkpoint__isnull=True)
-    create_chart(order=24,
+    create_chart(order=orderNum,
                  chart_title='Data Hashes',
                  xaxis_title='Data Hash',
                  xaxis_name='Hash',

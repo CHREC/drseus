@@ -1,5 +1,8 @@
---serial
-/dev/ttyUSB1
+--dev
+003017A4CF7A
 --prompt
 root@buildroot:~#
 --no_rtscts
+--ip
+192.168.0.22
+--set_ip
