@@ -95,7 +95,7 @@ outcomes_by_register_fields_order = order = order + 1
 def outcomes_by_register_fields(**kwargs):
     kwargs['injections'] = kwargs['injections'].exclude(
         target='TLB').exclude(field__isnull=True)
-    create_chart(order=order,
+    create_chart(order=outcomes_by_register_fields_order,
                  chart_title='Register Fields',
                  xaxis_title='Injected Register Field',
                  xaxis_name='Field',
@@ -307,7 +307,7 @@ memory_propagation_order = order = order + 1
 def memory_propagation(**kwargs):
     kwargs['injections'] = kwargs['injections'].exclude(
         result__num_memory_diffs__isnull=True)
-    create_chart(order=order,
+    create_chart(order=memory_propagation_order,
                  chart_title='Fault Propagation (Memory Blocks)',
                  xaxis_title='Injection Target',
                  xaxis_name='Target',
