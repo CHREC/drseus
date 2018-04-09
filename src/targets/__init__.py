@@ -353,8 +353,7 @@ def choose_injection(targets, selected_target_indices):
 
 def get_num_bits(field, register, target, targets):
     register = targets[target]['registers'][register]
-    if 'type' in targets[target] and \
-            targets[target]['type'] in ['gcache', 'tlb']:
+    if 'type' in targets[target] and targets[target]['type'] == 'gcache':
         num_bits = register['fields'][field]['bits']
     elif 'actual_bits' in register:
         num_bits = register['actual_bits']
