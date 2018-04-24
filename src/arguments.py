@@ -4,7 +4,7 @@ from platform import system
 
 parser = ArgumentParser(
     description='The Dynamic Robust Single Event Upset Simulator '
-                'was created by Ed Carlisle IV',
+                'was created by Dr. Ed Carlisle IV',
     fromfile_prefix_chars='@',
     epilog='Create a new campaign with sample configuration: '
            '"%(prog)s @conf/new/p2020". '

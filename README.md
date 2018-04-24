@@ -1,5 +1,5 @@
 # DrSEUs
-## The Dynamic Robust Single Event Upset Simulator, Created by Ed Carlisle IV
+## The Dynamic Robust Single Event Upset Simulator, Created by Dr. Ed Carlisle IV
 
 Fault injection framework and application for performing CPU fault injection on:
 
@@ -8,6 +8,8 @@ Fault injection framework and application for performing CPU fault injection on:
 * PYNQ (Using Integrated JTAG debugger)
 * Simics simulation of P2020RDB
 * Simics simulation of CoreTile Express A9x4 (Only two cores simulated)
+
+Support for automatially power cycling devices is included using this device: https://dlidirect.com/products/web-power-switch-7
 
 DrSEUs Terminology:
 
@@ -33,3 +35,16 @@ Example:
     * Navigate to http://localhost:8000 in your web browser
 
 Before using DrSEUs for the first time, you must first run "scripts/install_dependencies.sh" then run "scripts/setup_environment.sh"
+
+Adding support for new architectures:
+
+* Create a new debugger that extends jtag class (use src/jtag/bdi.py or src/jtag/openocd.py as a guide)
+* Define injection targets as json file (use src/targets/a9.json or src/targets/p2020.json as a guide)
+    * Any modifications to the jtag.json or simics.json in src/targets/a9/ or src/targets/p2020/ requires running scripts/merge.py to regenerate src/targets/a9.json and src/targets/p2020.json as only these files are used by DrSEUs
+    * If architecture does not require Simics or jtag specific behavior (e.g. only adding jtag support), only the top level "targets" dictionary is required to be defined
+* Modify __init__() in src/fault_injectory.py to use your new debugger class
+* In order to automatically detect USB devices, find_devices() in src/jtag/__init__.py will need to be modified to detect the corresponding VENDOR_ID and MODEL_ID
+* In order for DrSEUs to automatically spawn child processes for injecting on multiple hardware devices in parallel (without invoking drseus.py for each device), support must be added to injection_campaign() in src/utilities.py
+* Additional modifications for adding a new device to Simics:
+    * Modify __init__() in src/simics/__init__.py to use the new board's name for the new architecture
+    * Modify launch_simics() in src/simics/__init__.py to properly initialize the new device in Simics
