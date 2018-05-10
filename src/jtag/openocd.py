@@ -57,6 +57,7 @@ class openocd(jtag):
         return string
 
     def set_targets(self):
+        #database.architecture
         super().set_targets('a9')
 
     def open(self):

@@ -20,7 +20,7 @@ class fault_injector(object):
         if self.db.campaign.simics and self.db.campaign.architecture in \
                 ['a9', 'p2020']:
             self.debugger = simics(self.db, options)
-        elif options.jtag and self.db.campaign.architecture == 'a9':
+        elif options.jtag and (self.db.campaign.architecture in ['a9','a53']:
             self.debugger = openocd(self.db, options, power_switch)
         elif options.jtag and self.db.campaign.architecture == 'p2020':
             self.debugger = bdi(self.db, options)
