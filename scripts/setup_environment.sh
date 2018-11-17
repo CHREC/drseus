@@ -8,7 +8,7 @@ if [ ! -d python ]; then
     virtualenv python
 fi
 
-python/bin/pip3 install --upgrade django==1.11.12 django-filter django-tables2 \
+python/bin/pip3 install --upgrade django==1.11.12 django-filter==1.1.0 django-tables2 \
                                   numpy paramiko pip ply progressbar2 psycopg2 \
                                   pyserial pyudev scp termcolor terminaltables
 

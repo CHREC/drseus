@@ -24,7 +24,7 @@ def choices(queryset, attribute):
 event_choices = {
     'level': [],
     'source': [],
-    'type': []
+    'type': [],
 }
 injection_choices = {
     'bit': [],

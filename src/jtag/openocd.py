@@ -188,6 +188,7 @@ class openocd(jtag):
 
     def halt_dut(self):
         super().halt_dut('halt', ['target halted']*2)
+        #super().halt_dut('arm reg',['target halted']*2)
 
     def continue_dut(self):
         super().continue_dut('resume')

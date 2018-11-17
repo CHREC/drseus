@@ -2,7 +2,4 @@
 /dev/ttyUSB1
 --prompt
 root@buildroot:~#
---ip
-192.168.1.11
---set_ip
 --no_rtscts
