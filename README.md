@@ -70,11 +70,11 @@ Adding support for new architectures:
 ## Installation for Debian-based systems
 
     * Run the install dependencies script
-        * ./scripts/install_dependencies.sh
-        * be sure to select no when prompted to install simics unless you have a license
+        ./scripts/install_dependencies.sh
+        be sure to select no when prompted to install simics unless you have a license
     * Run the setup environment script
-        * ./scripts/setup_environment
+        ./scripts/setup_environment
     * Setup tftp server
-        * ./scripts/setup_tftp.sh
+        ./scripts/setup_tftp.sh
     * Make sure you have a cross-compiler for your desired architecture
-        * e.g. arm-linux-gnueabihf-gcc/g++
+        e.g. arm-linux-gnueabihf-gcc/g++
