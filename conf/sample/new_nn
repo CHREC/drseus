@@ -6,3 +6,5 @@ arm_neuralnetwork
 fc1_wb.bin
 fc2_wb.bin
 X_test.bin
+--output_file
+out.txt

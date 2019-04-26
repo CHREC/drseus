@@ -1,5 +1,0 @@
---serial
-/dev/ttyUSB1
---prompt
-root@buildroot:~#
---no_rtscts

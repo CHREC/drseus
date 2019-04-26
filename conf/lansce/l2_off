@@ -1,2 +1,0 @@
---uboot
-tftpboot 0x2080000 pynq/uImage && tftpboot 0x2000000 pynq/system_nol2.dtb && bootm 0x2080000 - 0x2000000

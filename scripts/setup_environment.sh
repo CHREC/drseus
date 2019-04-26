@@ -68,9 +68,5 @@ if [ -d simics-workspace ]; then
 fi
 
 if [ ! -d fiapps ]; then
-    printf 'clone fiapps git repo? [Y/n]: '
-    read -r fiapps
-    if [ "$fiapps" != "n" ]; then
-       git clone git@github.com:CHREC/fiapps.git
-    fi
+    mkdir fiapps
 fi

@@ -66,3 +66,15 @@ Adding support for new architectures:
 * Additional modifications for adding a new device to Simics:
     * Modify __init_\_() in src/simics/__init_\_.py to use the new board's name for the new architecture
     * Modify launch_simics() in src/simics/__init_\_.py to properly initialize the new device in Simics
+
+## Installation for Debian-based systems
+
+    * Run the install dependencies script
+        * ./scripts/install_dependencies.sh
+        * be sure to select no when prompted to install simics unless you have a license
+    * Run the setup environment script
+        * ./scripts/setup_environment
+    * Setup tftp server
+        * ./scripts/setup_tftp.sh
+    * Make sure you have a cross-compiler for your desired architecture
+        * e.g. arm-linux-gnueabihf-gcc/g++
