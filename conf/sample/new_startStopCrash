@@ -1,0 +1,5 @@
+@conf/new/zed
+--cmd
+/bin/sh start_stop_crash.sh
+--files
+start_stop_crash.sh
