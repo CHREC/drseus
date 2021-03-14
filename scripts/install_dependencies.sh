@@ -25,7 +25,7 @@ sudo apt-get install --yes libpq-dev libssl-dev minicom postgresql python3-dev \
 sudo pip3 install --upgrade virtualenv
 
 sudo apt-get install --yes automake libtool libusb-1.0-0-dev pkg-config
-if [ -d "openocd" ]; then
+if [ ! -d "openocd" ]; then
     git clone git://git.code.sf.net/p/openocd/code openocd
     (
         cd openocd
