@@ -597,6 +597,15 @@
                             ]
                         }
                     },
+                    "lr": {
+                        "alias": {
+                            "register": "gprs",
+                            "register_index": [
+                                1,
+                                14
+                            ]
+                        }
+                    },
                     "r2": {
                         "alias": {
                             "register": "gprs",
@@ -1878,6 +1887,7 @@
                 "r11_fiq": {},
                 "r12": {},
                 "r12_fiq": {},
+                "lr": {},
                 "r2": {},
                 "r3": {},
                 "r4": {},
